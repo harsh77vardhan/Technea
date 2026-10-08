@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import { ArrowRight } from 'lucide-react'
+import SkillExplorer from './SkillExplorer'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Memphis decorations: all inline SVG, all anchored to a corner.
@@ -166,6 +168,8 @@ function DecoBottomRight() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function Hero() {
+  const [isExplorerOpen, setIsExplorerOpen] = useState(false)
+
   return (
     <section className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#f2f3f5]">
 
@@ -203,16 +207,23 @@ export default function Hero() {
 
         {/* CTA — sharp-cornered, editorial weight, no rounded pill */}
         <div className="mt-10">
-          <a
-            href="#curriculum"
-            className="inline-flex items-center gap-3 bg-[#0f172a] px-9 py-4 text-[11px] font-bold uppercase tracking-[0.18em] text-white transition-colors hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0f172a] focus:ring-offset-4 focus:ring-offset-[#f2f3f5]"
+          <button
+            type="button"
+            onClick={() => setIsExplorerOpen(true)}
+            className="inline-flex items-center gap-3 bg-[#0f172a] px-9 py-4 text-[11px] font-bold uppercase tracking-[0.18em] text-white transition-colors hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0f172a] focus:ring-offset-4 focus:ring-offset-[#f2f3f5] cursor-pointer"
           >
             Build My Roadmap
             <ArrowRight className="h-4 w-4" />
-          </a>
+          </button>
         </div>
 
       </div>
+
+      {/* Full-Screen Skill Explorer Interface */}
+      <SkillExplorer
+        isOpen={isExplorerOpen}
+        onClose={() => setIsExplorerOpen(false)}
+      />
 
     </section>
   )
