@@ -1,0 +1,30 @@
+# Alembic Database Migrations
+
+This directory contains database migration scripts managed by Alembic.
+
+## Common Commands
+
+Generate a new migration revision based on model changes:
+```bash
+alembic revision --autogenerate -m "description of migration"
+```
+
+Apply all pending migrations to the database:
+```bash
+alembic upgrade head
+```
+
+Roll back the most recent migration:
+```bash
+alembic downgrade -1
+```
+
+View migration history:
+```bash
+alembic history --verbose
+```
+
+View current revision:
+```bash
+alembic current
+```
