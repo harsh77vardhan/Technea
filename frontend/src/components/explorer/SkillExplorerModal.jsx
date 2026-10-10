@@ -6,6 +6,7 @@ import LearningBrowser from './LearningBrowser'
 import ExplorerStickyFooter from './ExplorerStickyFooter'
 import LearningPathDetailPage from '../../pages/LearningPathDetailPage'
 import { SKILLS } from '../../data/skills'
+import { getSkills } from '../../services/api'
 
 export default function SkillExplorerModal({ isOpen, onClose, onSelectPath }) {
   const [stage, setStage] = useState('discover') // 'discover' (Stage 1) | 'explore' (Stage 2) | 'detail' (Stage 3)
@@ -17,9 +18,28 @@ export default function SkillExplorerModal({ isOpen, onClose, onSelectPath }) {
   const [isMounted, setIsMounted] = useState(isOpen)
   const [isPanelVisible, setIsPanelVisible] = useState(false)
   const [roadmapSuccessMessage, setRoadmapSuccessMessage] = useState(null)
+  const [apiSkills, setApiSkills] = useState([])
 
   const searchInputRef = useRef(null)
   const panelRef = useRef(null)
+
+  // Fetch skills from API for modal resolving
+  useEffect(() => {
+    let active = true
+    getSkills()
+      .then((data) => {
+        if (active && Array.isArray(data)) {
+          setApiSkills(data)
+        }
+      })
+      .catch((err) => {
+        console.warn('Could not fetch skills from API:', err.message)
+      })
+    return () => {
+      active = false
+    }
+  }, [])
+
 
   // Handle smooth entrance and exit animations of the slide
   useEffect(() => {
@@ -120,13 +140,24 @@ export default function SkillExplorerModal({ isOpen, onClose, onSelectPath }) {
         title: selectedPathObject.title,
         category: selectedPathObject.category,
         duration: selectedPathObject.duration,
-        level: selectedPathObject.difficulty,
+        level: selectedPathObject.level || selectedPathObject.difficulty || 'Beginner',
       }
     }
 
     if (selectedSkillId) {
-      const found = SKILLS.find((s) => s.id === selectedSkillId)
-      if (found) return found
+      const allSkills = apiSkills.length > 0 ? apiSkills : SKILLS
+      const found = allSkills.find(
+        (s) => s.id === selectedSkillId || String(s.id) === String(selectedSkillId)
+      )
+      if (found) {
+        return {
+          id: found.id,
+          title: found.name || found.title,
+          category: found.category,
+          duration: found.duration || '4 weeks',
+          level: found.level || 'Beginner',
+        }
+      }
     }
 
     if (submittedQuery) {
@@ -140,7 +171,8 @@ export default function SkillExplorerModal({ isOpen, onClose, onSelectPath }) {
     }
 
     return null
-  }, [selectedPathObject, selectedSkillId, submittedQuery])
+  }, [selectedPathObject, selectedSkillId, submittedQuery, apiSkills])
+
 
   const handleSelectLearningPath = (path) => {
     if (!path) return
