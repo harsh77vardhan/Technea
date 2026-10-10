@@ -4,15 +4,12 @@ import {
   Play,
   Clock,
   Star,
-  Users,
   Bookmark,
   Check,
   RotateCcw,
   AlertCircle,
   BookOpen,
-  Sparkles,
 } from 'lucide-react'
-import { getCourseRationale } from '../../utils/trackThemes'
 
 export default function FeaturedCoursesSection({
   courses = [],
@@ -140,10 +137,9 @@ export default function FeaturedCoursesSection({
                 : null)
 
             const rating = (4.8 + ((course.id * 7) % 3) * 0.1).toFixed(1)
-            const studentsCount = `${12 + (course.id % 15)}.${(course.id % 9) + 1}k`
             const instructorName = course.instructor || 'Technea Faculty'
             const instructorInitial = instructorName.charAt(0)
-            const rationale = getCourseRationale(course)
+            const platform = course.platform || 'YouTube'
 
             return (
               <motion.div
@@ -152,10 +148,10 @@ export default function FeaturedCoursesSection({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.35, delay: idx * 0.06 }}
                 whileHover={{ y: -5 }}
-                className="group relative rounded-2xl border border-white/10 bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04] transition-all duration-300 flex flex-col justify-between overflow-hidden shadow-lg hover:shadow-2xl"
+                className="group relative rounded-2xl border border-white/[0.08] bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04] transition-all duration-300 flex flex-col justify-between overflow-hidden shadow-sm hover:shadow-xl"
               >
-                <div className="p-5 space-y-4">
-                  {/* ── 16:9 THUMBNAIL WITH FLOATING OVERLAYS ──────────────── */}
+                <div className="p-4 sm:p-5 space-y-3.5">
+                  {/* ── 16:9 THUMBNAIL WITH DURATION & RATING ──────────────── */}
                   <div className="relative aspect-video w-full rounded-xl overflow-hidden bg-black border border-white/10 shadow-inner group/thumb">
                     {thumbnail ? (
                       <img
@@ -171,14 +167,10 @@ export default function FeaturedCoursesSection({
                     )}
 
                     {/* Dark gradient scrim */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 
-                    {/* Top overlay badges: Platform pill & Bookmark */}
-                    <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between gap-2">
-                      <span className="rounded-md border border-white/20 bg-black/70 backdrop-blur-md px-2 py-0.5 font-mono text-[10px] text-white font-medium">
-                        {course.platform || 'YouTube'}
-                      </span>
-
+                    {/* Top overlay: Bookmark */}
+                    <div className="absolute top-2.5 right-2.5 z-10">
                       <button
                         type="button"
                         onClick={(e) => {
@@ -186,10 +178,10 @@ export default function FeaturedCoursesSection({
                           toggleBookmark(course.id)
                         }}
                         aria-label={isBookmarked ? 'Remove bookmark' : 'Bookmark course'}
-                        className={`rounded-md p-1.5 backdrop-blur-md border transition-all cursor-pointer ${
+                        className={`rounded-lg p-1.5 backdrop-blur-md border transition-all cursor-pointer ${
                           isBookmarked
                             ? 'bg-amber-500/20 border-amber-500/40 text-amber-400'
-                            : 'bg-black/60 border-white/15 text-neutral-300 hover:text-white hover:bg-black/80'
+                            : 'bg-black/60 border-white/15 text-neutral-400 hover:text-white hover:bg-black/80'
                         }`}
                       >
                         <Bookmark
@@ -198,22 +190,15 @@ export default function FeaturedCoursesSection({
                       </button>
                     </div>
 
-                    {/* Centered Play Button Hover Overlay */}
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                      <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-black shadow-2xl transform group-hover:scale-110 transition-transform">
-                        <Play className="h-5 w-5 fill-black ml-0.5" />
-                      </div>
-                    </div>
-
                     {/* Bottom overlay: Rating & Duration */}
-                    <div className="absolute bottom-2.5 left-2.5 right-2.5 flex items-center justify-between text-[11px] font-mono text-neutral-300">
-                      <div className="flex items-center gap-1 text-amber-400 font-semibold">
+                    <div className="absolute bottom-2.5 left-2.5 right-2.5 flex items-center justify-between text-[11px] font-mono text-neutral-300 z-10 pointer-events-none">
+                      <div className="flex items-center gap-1 bg-black/70 backdrop-blur-md px-2 py-0.5 rounded-md text-amber-400 font-semibold border border-white/10">
                         <Star className="h-3 w-3 fill-amber-400" />
                         <span>{rating}</span>
                       </div>
 
                       {course.duration && (
-                        <div className="flex items-center gap-1 bg-black/70 backdrop-blur-md px-1.5 py-0.5 rounded text-neutral-300">
+                        <div className="flex items-center gap-1 bg-black/70 backdrop-blur-md px-2 py-0.5 rounded-md text-neutral-300 border border-white/10">
                           <Clock className="h-2.5 w-2.5" />
                           <span>{course.duration}</span>
                         </div>
@@ -221,58 +206,41 @@ export default function FeaturedCoursesSection({
                     </div>
                   </div>
 
-                  {/* ── COURSE TITLE & INSTRUCTOR AVATAR ──────────────────── */}
-                  <div className="space-y-2.5">
-                    <h3 className="text-base font-bold text-white tracking-tight leading-snug group-hover:text-neutral-100 transition-colors line-clamp-2">
+                  {/* ── COURSE TITLE, PLATFORM & INSTRUCTOR ──────────────── */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center rounded-md border border-white/10 bg-white/[0.04] px-2 py-0.5 font-mono text-[10px] text-neutral-300">
+                        {platform}
+                      </span>
+                    </div>
+
+                    <h3 className="text-sm sm:text-base font-semibold text-white tracking-tight leading-snug group-hover:text-neutral-100 transition-colors line-clamp-1">
                       {course.title}
                     </h3>
 
-                    {/* Instructor profile */}
-                    <div className="flex items-center justify-between gap-2 text-xs text-neutral-400">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/10 text-[10px] font-bold text-neutral-200">
-                          {instructorInitial}
-                        </div>
-                        <span className="truncate font-medium text-neutral-300">
-                          {instructorName}
-                        </span>
+                    <div className="flex items-center gap-2 text-xs text-neutral-400">
+                      <div className="flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-full bg-white/10 text-[9px] font-bold text-neutral-200">
+                        {instructorInitial}
                       </div>
-
-                      <div className="flex items-center gap-1 font-mono text-[11px] text-neutral-500 shrink-0">
-                        <Users className="h-3 w-3" />
-                        <span>{studentsCount}</span>
-                      </div>
-                    </div>
-
-                    {/* AI-CURATED RATIONALE CALLOUT: "Why this course" */}
-                    <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] p-2.5 space-y-1">
-                      <span className="text-[10px] font-mono uppercase tracking-wider text-sky-400 font-semibold flex items-center gap-1">
-                        <Sparkles className="h-2.5 w-2.5" />
-                        Why this course:
+                      <span className="truncate font-light text-neutral-400">
+                        {instructorName}
                       </span>
-                      <p className="text-[11px] text-neutral-300 font-light leading-relaxed line-clamp-2">
-                        {rationale}
-                      </p>
                     </div>
                   </div>
                 </div>
 
-                {/* ── CARD FOOTER CTA ───────────────────────────────────────── */}
-                <div className="p-5 pt-0">
-                  <div className="pt-3 border-t border-white/[0.06] flex items-center justify-between gap-3">
-                    <span className="font-mono text-[10px] text-neutral-500 uppercase tracking-wider">
-                      Official Embed
-                    </span>
-
+                {/* ── CARD FOOTER: MINIMAL START CTA ───────────────────────── */}
+                <div className="p-4 sm:p-5 pt-0">
+                  <div className="pt-3 border-t border-white/[0.06]">
                     <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
+                      whileHover={{ scale: 1.01 }}
+                      whileTap={{ scale: 0.99 }}
                       type="button"
                       onClick={() => onStartCourse(course)}
-                      className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-semibold transition-all cursor-pointer shadow-md ${
+                      className={`w-full inline-flex items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-xs font-semibold transition-all cursor-pointer ${
                         isEnrolled
                           ? 'bg-emerald-400 text-black'
-                          : 'bg-white text-black hover:bg-neutral-200'
+                          : 'bg-white text-black hover:bg-neutral-200 shadow-sm'
                       }`}
                     >
                       {isEnrolled ? (

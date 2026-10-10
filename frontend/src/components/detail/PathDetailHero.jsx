@@ -9,15 +9,50 @@ import {
   Clock,
   Compass,
   Terminal,
-  Layers,
-  Sparkles,
 } from 'lucide-react'
-import InteractiveCodeShowcase from './InteractiveCodeShowcase'
+import LearningSnapshotCard from './LearningSnapshotCard'
+
+function getConciseDescription(path) {
+  const title = (path?.title || '').toLowerCase()
+  if (title.includes('python')) {
+    return 'Learn Python fundamentals, problem solving, and real-world programming.'
+  }
+  if (title.includes('react')) {
+    return 'Build modern web applications with React components, hooks, and state.'
+  }
+  if (title.includes('machine learning') || title.includes('ai')) {
+    return 'Master machine learning models, data pipelines, and predictive algorithms.'
+  }
+  if (title.includes('data')) {
+    return 'Analyze, clean, and visualize datasets to derive actionable insights.'
+  }
+  if (title.includes('javascript') || title.includes('web')) {
+    return 'Build responsive, full-stack web applications and modern APIs.'
+  }
+  if (title.includes('java')) {
+    return 'Master object-oriented programming, modern Java APIs, and backend systems.'
+  }
+  if (title.includes('c++')) {
+    return 'Understand low-level systems programming, memory architecture, and modern C++.'
+  }
+  if (title.includes('algorithm') || title.includes('data structure')) {
+    return 'Master essential data structures and algorithms to solve complex problems.'
+  }
+
+  const raw = path?.description || ''
+  if (raw) {
+    const firstSentence = raw.split('.')[0]
+    return firstSentence ? `${firstSentence.trim()}.` : raw
+  }
+  return 'Step-by-step curriculum designed for rapid, practical mastery.'
+}
 
 export default function PathDetailHero({
   path,
   theme,
   metrics,
+  coursesCount = 0,
+  projectsCount = 3,
   onBack,
   onStartLearning,
   onExploreTimeline,
@@ -33,62 +68,12 @@ export default function PathDetailHero({
   }, [])
 
   const title = path?.title || 'Python Fundamentals'
-  const description =
-    path?.description ||
-    'Master core language mechanics, data structures, and idiomatic architecture through a guided, milestone-driven curriculum.'
+  const description = getConciseDescription(path)
   const level = path?.level || 'Beginner'
   const duration = path?.duration || '4 Weeks'
 
   return (
-    <section className="relative overflow-hidden pt-7 pb-12 sm:pb-16 border-b border-white/[0.08]">
-      {/* ── VERY SUBTLE DOMAIN-SPECIFIC CODE PARTICLES BACKGROUND ──────────── */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden select-none">
-        {/* Subtle Terminal Glow at Top */}
-        <div
-          className="absolute -top-32 left-1/3 h-80 w-[42rem] rounded-full blur-[140px] opacity-15"
-          style={{ backgroundColor: theme.accentHue }}
-        />
-
-        {/* Drifting Syntax Fragments */}
-        {theme.particles && (
-          <div className="absolute inset-0">
-            {theme.particles.map((frag, idx) => {
-              const xPos = [15, 78, 30, 85, 45, 65, 20, 92][idx % 8]
-              const yPos = [20, 35, 70, 80, 45, 15, 88, 60][idx % 8]
-
-              return (
-                <motion.span
-                  key={frag}
-                  initial={{ opacity: 0.05 }}
-                  animate={{
-                    opacity: [0.03, 0.09, 0.03],
-                    y: [0, -8, 0],
-                  }}
-                  transition={{
-                    duration: 8 + (idx % 4) * 2,
-                    repeat: Infinity,
-                    ease: 'easeInOut',
-                    delay: idx * 0.7,
-                  }}
-                  style={{ left: `${xPos}%`, top: `${yPos}%` }}
-                  className="absolute font-mono text-[11px] sm:text-xs text-neutral-400 select-none pointer-events-none"
-                >
-                  {frag}
-                </motion.span>
-              )
-            })}
-          </div>
-        )}
-
-        {/* Micro Linear Grid Accent */}
-        <div
-          className="absolute inset-0 opacity-[0.025]"
-          style={{
-            backgroundImage: `linear-gradient(to right, #ffffff 1px, transparent 1px), linear-gradient(to bottom, #ffffff 1px, transparent 1px)`,
-            backgroundSize: '40px 40px',
-          }}
-        />
-      </div>
+    <section className="relative overflow-hidden pt-6 pb-12 sm:pb-14 border-b border-white/[0.06]">
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-7">
         {/* ── TOP BREADCRUMB & UTILITY ROW ─────────────────────────────────── */}
@@ -138,95 +123,69 @@ export default function PathDetailHero({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
           {/* LEFT: Typography & Clear Intent */}
           <div className="lg:col-span-7 space-y-6">
-            {/* Metadata Badges Row */}
+            {/* Compact Metadata Chips */}
             <div className="flex flex-wrap items-center gap-2">
-              <span
-                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold backdrop-blur-md border ${theme.pillBg}`}
-              >
-                <Terminal className="h-3.5 w-3.5" />
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-mono text-neutral-300">
+                <Terminal className="h-3 w-3 text-neutral-400" />
                 <span>{theme.domain}</span>
               </span>
 
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-xs font-mono text-neutral-300">
-                <span className="flex items-center gap-1">
-                  {metrics.levelDots.map((isFilled, i) => (
-                    <span
-                      key={i}
-                      className={`h-1.5 w-1.5 rounded-full ${
-                        isFilled ? 'bg-emerald-400 shadow-[0_0_6px_#34d399]' : 'bg-neutral-600'
-                      }`}
-                    />
-                  ))}
-                </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-mono text-neutral-300">
                 <span>{level}</span>
               </span>
 
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-xs font-mono text-neutral-300">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-mono text-neutral-300">
                 <Clock className="h-3 w-3 text-neutral-400" />
                 <span>{duration}</span>
               </span>
-
-              <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-xs font-mono text-neutral-400">
-                <span>~{metrics.estimatedHours} Hours</span>
-              </span>
             </div>
 
-            {/* Bold Headline & Editorial Voice */}
+            {/* Bold Headline & Concise Editorial Voice */}
             <div className="space-y-3">
-              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-[1.06]">
+              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-[1.08]">
                 {title}
               </h1>
 
-              <p className="text-sm sm:text-base lg:text-lg text-neutral-300 font-light leading-relaxed max-w-2xl">
+              <p className="text-sm sm:text-base text-neutral-400 font-light leading-relaxed max-w-xl line-clamp-2">
                 {description}
               </p>
             </div>
 
-            {/* Quick Action CTAs */}
-            <div className="flex flex-wrap items-center gap-3.5 pt-1">
-              <motion.button
-                whileHover={{ scale: 1.02, y: -1 }}
-                whileTap={{ scale: 0.98 }}
-                type="button"
-                onClick={onStartLearning}
-                className="group relative inline-flex items-center gap-2.5 rounded-xl bg-white px-6 py-3.5 text-xs sm:text-sm font-semibold text-black transition-all cursor-pointer shadow-[0_0_30px_-5px_rgba(255,255,255,0.35)] hover:shadow-[0_0_40px_-5px_rgba(255,255,255,0.55)]"
-              >
-                <Play className="h-4 w-4 fill-black text-black group-hover:scale-110 transition-transform" />
-                <span>Start Learning Track</span>
-                <ArrowRight className="h-3.5 w-3.5 text-neutral-600 group-hover:text-black group-hover:translate-x-1 transition-all" />
-              </motion.button>
-
+            {/* Primary Action CTA */}
+            <div className="flex flex-wrap items-center gap-3 pt-1">
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 type="button"
-                onClick={onExploreTimeline}
-                className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/[0.04] px-5 py-3.5 text-xs sm:text-sm font-medium text-white hover:bg-white/[0.08] hover:border-white/25 transition-all cursor-pointer backdrop-blur-md"
+                onClick={onStartLearning}
+                className="group inline-flex items-center gap-2.5 rounded-xl bg-white px-6 py-3 text-xs sm:text-sm font-semibold text-black transition-all cursor-pointer shadow-[0_0_25px_rgba(255,255,255,0.2)] hover:shadow-[0_0_35px_rgba(255,255,255,0.35)] hover:bg-neutral-200"
               >
-                <Compass className="h-4 w-4 text-neutral-400" />
-                <span>Explore Curriculum</span>
+                <Play className="h-3.5 w-3.5 fill-black text-black" />
+                <span>Start Learning</span>
+                <ArrowRight className="h-3.5 w-3.5 text-neutral-600 group-hover:text-black group-hover:translate-x-0.5 transition-transform" />
               </motion.button>
-            </div>
 
-            {/* In-line Track Stats */}
-            <div className="pt-2 flex items-center gap-4 text-xs font-mono text-neutral-400">
-              <span className="flex items-center gap-1.5">
-                <Layers className="h-3.5 w-3.5 text-neutral-500" />
-                <strong className="text-neutral-200 font-medium">{metrics.stepsCount}</strong> Milestones
-              </span>
-              <span>•</span>
-              <span className="flex items-center gap-1.5">
-                <Sparkles className="h-3.5 w-3.5 text-neutral-500" />
-                <strong className="text-neutral-200 font-medium">3</strong> Capstones
-              </span>
-              <span>•</span>
-              <span className="text-emerald-400 font-medium">Free Embedded Curriculum</span>
+              <button
+                type="button"
+                onClick={onExploreTimeline}
+                className="inline-flex items-center gap-1.5 rounded-xl px-4 py-3 text-xs sm:text-sm font-medium text-neutral-400 hover:text-white transition-colors cursor-pointer"
+              >
+                <Compass className="h-3.5 w-3.5" />
+                <span>View Roadmap</span>
+              </button>
             </div>
           </div>
 
-          {/* RIGHT: Authentic Skill-Aware Interactive Code Showcase */}
+          {/* RIGHT: Premium Learning Snapshot Card */}
           <div className="lg:col-span-5">
-            <InteractiveCodeShowcase theme={theme} />
+            <LearningSnapshotCard
+              path={path}
+              theme={theme}
+              metrics={metrics}
+              coursesCount={coursesCount}
+              projectsCount={projectsCount}
+              onContinueLearning={onStartLearning}
+            />
           </div>
         </div>
       </div>

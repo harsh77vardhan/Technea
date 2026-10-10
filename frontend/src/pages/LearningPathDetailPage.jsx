@@ -16,7 +16,7 @@ import InteractiveRoadmap from '../components/detail/InteractiveRoadmap'
 import FeaturedCoursesSection from '../components/detail/FeaturedCoursesSection'
 import CapstoneProjectsSection from '../components/detail/CapstoneProjectsSection'
 import PathDetailSkeleton from '../components/detail/PathDetailSkeleton'
-import LearningProgressDashboard from '../components/detail/LearningProgressDashboard'
+import AbstractBackgroundGraphic from '../components/detail/AbstractBackgroundGraphic'
 
 /**
  * Safely check if an identifier is a valid positive numeric database ID
@@ -245,12 +245,6 @@ export default function LearningPathDetailPage({
     [currentPath, journeySteps.length, courses.length]
   )
 
-  const nextIncompleteStep = useMemo(() => {
-    return (
-      journeySteps.find((s) => !completedStepIds.includes(s.id || s.num)) || journeySteps[0]
-    )
-  }, [journeySteps, completedStepIds])
-
   const handleRetry = useCallback(() => {
     setLoading(true)
     setError(null)
@@ -375,12 +369,17 @@ export default function LearningPathDetailPage({
   }
 
   return (
-    <div className="min-h-screen bg-[#08090d] text-white selection:bg-white selection:text-black pb-24">
+    <div className="relative min-h-screen bg-[#08090d] text-white selection:bg-white selection:text-black pb-24 overflow-x-clip">
+      {/* ── ABSTRACT 2D GEOMETRIC BACKGROUND ELEMENT ──────────────────────── */}
+      <AbstractBackgroundGraphic />
+
       {/* ── 1. WORLD-CLASS HERO SECTION ───────────────────────────────────── */}
       <PathDetailHero
         path={currentPath}
         theme={theme}
         metrics={metrics}
+        coursesCount={courses.length}
+        projectsCount={projects.length}
         onBack={onBack}
         onStartLearning={handleStartPathLearning}
         onExploreTimeline={handleScrollToTimeline}
@@ -450,21 +449,7 @@ export default function LearningPathDetailPage({
       </div>
 
       {/* ── 3. MAIN CONTENT CONTAINER & STICKY SIDEBAR ─────────────────────── */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-8">
-        {/* Executive Learning Progress Cockpit */}
-        <LearningProgressDashboard
-          completedCount={completedStepIds.length}
-          totalSteps={journeySteps.length}
-          activeMilestoneTitle={
-            nextIncompleteStep
-              ? `${nextIncompleteStep.num}: ${nextIncompleteStep.title}`
-              : 'All Milestones Mastered'
-          }
-          onContinueLearning={handleStartPathLearning}
-          onResetProgress={handleResetProgress}
-          theme={theme}
-        />
-
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-start">
           {/* LEFT COLUMN: Roadmap, Courses & Capstones (8 Cols) */}
           <div className="lg:col-span-8 space-y-12">

@@ -11,6 +11,12 @@ import {
 } from 'lucide-react'
 import { getMilestoneMeta } from '../../utils/trackThemes'
 
+function getShortDescription(text) {
+  if (!text) return ''
+  const first = text.split('.')[0]?.trim()
+  return first ? `${first}.` : text
+}
+
 export default function InteractiveRoadmap({
   steps = [],
   completedStepIds = [],
@@ -101,8 +107,9 @@ export default function InteractiveRoadmap({
           if (filter === 'completed' && !isCompleted) return null
           if (filter === 'unlocked' && isCompleted) return null
 
-          const isExpanded = expandedStepId === stepKey || isCurrentActive
+          const isExpanded = expandedStepId === stepKey
           const meta = getMilestoneMeta(step, idx, steps.length, trackTitle)
+          const shortDesc = getShortDescription(step.topics)
 
           return (
             <motion.div
@@ -147,114 +154,63 @@ export default function InteractiveRoadmap({
               <div
                 className={`rounded-2xl border transition-all duration-300 overflow-hidden ${
                   isCompleted
-                    ? 'border-emerald-500/20 bg-emerald-500/[0.02] shadow-[0_4px_20px_-10px_rgba(16,185,129,0.1)]'
+                    ? 'border-emerald-500/20 bg-emerald-500/[0.02]'
                     : isCurrentActive
-                    ? 'border-sky-400/30 bg-white/[0.03] shadow-[0_0_25px_-8px_rgba(56,189,248,0.2)]'
+                    ? 'border-sky-400/30 bg-white/[0.03] shadow-[0_0_20px_-8px_rgba(56,189,248,0.15)]'
                     : isLocked
                     ? 'border-white/[0.06] bg-white/[0.01] opacity-75'
-                    : 'border-white/[0.08] bg-white/[0.02] hover:border-white/15'
+                    : 'border-white/[0.08] bg-white/[0.02] hover:border-white/15 hover:bg-white/[0.03]'
                 }`}
               >
-                {/* Header Row */}
+                {/* Header Row - Minimal Clean Timeline Card */}
                 <div
                   onClick={() => toggleExpand(stepKey)}
-                  className="p-4 sm:p-5 flex items-start justify-between gap-4 cursor-pointer select-none"
+                  className="p-4 sm:p-5 flex items-center justify-between gap-4 cursor-pointer select-none"
                 >
-                  <div className="space-y-2 min-w-0 flex-1">
-                    {/* Meta Row: Milestone Index + Status Badge + Time + Difficulty */}
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-mono text-[11px] font-bold text-neutral-300 bg-white/[0.04] px-2 py-0.5 rounded border border-white/10">
-                        Milestone {step.num}
+                  <div className="space-y-1 min-w-0 flex-1">
+                    <div className="flex items-center gap-2.5">
+                      <span className="font-mono text-xs font-semibold text-neutral-400">
+                        {step.num}
                       </span>
-
-                      {isCurrentActive && (
-                        <span className="font-mono text-[10px] font-semibold text-sky-400 bg-sky-500/10 border border-sky-500/20 px-2 py-0.5 rounded flex items-center gap-1">
-                          <Zap className="h-2.5 w-2.5" />
-                          Up Next
-                        </span>
-                      )}
-
+                      <h3
+                        className={`text-sm sm:text-base font-semibold tracking-tight transition-colors truncate ${
+                          isCompleted
+                            ? 'text-neutral-400 line-through decoration-emerald-500/50'
+                            : isCurrentActive
+                            ? 'text-white'
+                            : 'text-neutral-200 group-hover:text-white'
+                        }`}
+                      >
+                        {step.title}
+                      </h3>
                       {isCompleted && (
-                        <span className="font-mono text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded flex items-center gap-1">
+                        <span className="hidden sm:inline-flex items-center gap-1 font-mono text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
                           <CheckCircle2 className="h-2.5 w-2.5" />
-                          Mastered
+                          Done
                         </span>
                       )}
-
-                      {isLocked && (
-                        <span className="font-mono text-[10px] text-neutral-500 bg-white/[0.02] border border-white/[0.06] px-2 py-0.5 rounded flex items-center gap-1">
-                          <Lock className="h-2.5 w-2.5" />
-                          Locked
+                      {isCurrentActive && (
+                        <span className="hidden sm:inline-flex items-center gap-1 font-mono text-[10px] text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded-full border border-sky-500/20">
+                          <Zap className="h-2.5 w-2.5" />
+                          Current
                         </span>
                       )}
-
-                      <span className="font-mono text-[10px] text-neutral-400 border border-white/10 bg-white/[0.02] px-2 py-0.5 rounded">
-                        {meta.difficulty}
-                      </span>
-
-                      <span className="inline-flex items-center gap-1 font-mono text-[10px] text-neutral-400 border border-white/10 bg-white/[0.02] px-2 py-0.5 rounded">
-                        <Clock className="h-2.5 w-2.5" />
-                        <span>{meta.hours}</span>
-                      </span>
                     </div>
 
-                    {/* Title */}
-                    <h3
-                      className={`text-base sm:text-lg font-bold tracking-tight transition-colors ${
-                        isCompleted
-                          ? 'text-neutral-200 line-through decoration-emerald-500/40'
-                          : isCurrentActive
-                          ? 'text-white'
-                          : 'text-neutral-200'
-                      }`}
-                    >
-                      {step.title}
-                    </h3>
-
-                    {/* Core Mini-Project Highlight */}
-                    <div className="rounded-xl border border-white/[0.08] bg-black/40 px-3 py-2 flex items-center gap-2.5 text-xs text-neutral-300">
-                      <Terminal className="h-3.5 w-3.5 text-amber-400 shrink-0" />
-                      <span className="font-mono text-[11px] text-amber-300/90 font-medium">Mini-Project:</span>
-                      <span className="font-light truncate text-neutral-200">{meta.miniProject}</span>
-                    </div>
-
-                    {/* Concepts Covered Chips */}
-                    {meta.concepts && (
-                      <div className="flex flex-wrap gap-1.5 pt-0.5">
-                        {meta.concepts.map((concept) => (
-                          <span
-                            key={concept}
-                            className="rounded-md border border-white/10 bg-white/[0.02] px-2 py-0.5 font-mono text-[10px] text-neutral-400"
-                          >
-                            {concept}
-                          </span>
-                        ))}
-                      </div>
-                    )}
+                    {/* One-line description */}
+                    <p className="text-xs text-neutral-400 font-light truncate">
+                      {shortDesc}
+                    </p>
                   </div>
 
-                  {/* Right Actions: Mark Done + Accordion arrow */}
-                  <div className="flex items-center gap-2 shrink-0 pt-1">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        onToggleStep(stepKey)
-                      }}
-                      className={`hidden sm:inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-mono transition-all cursor-pointer ${
-                        isCompleted
-                          ? 'border border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
-                          : isCurrentActive
-                          ? 'border border-sky-400/40 bg-sky-400/10 text-sky-300 hover:bg-sky-400/20'
-                          : 'border border-white/10 bg-white/[0.03] text-neutral-400 hover:text-white'
-                      }`}
-                    >
-                      {isCompleted ? 'Completed' : 'Mark Done'}
-                    </button>
-
-                    <div className="h-7 w-7 rounded-lg border border-white/10 bg-white/[0.03] flex items-center justify-center text-neutral-400 hover:text-white transition-colors">
+                  {/* Right Actions: Expand Chevron */}
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="hidden md:inline font-mono text-[11px] text-neutral-500 group-hover:text-neutral-400 transition-colors">
+                      {isExpanded ? 'Collapse' : 'Details'}
+                    </span>
+                    <div className="h-7 w-7 rounded-lg border border-white/10 bg-white/[0.02] flex items-center justify-center text-neutral-400 group-hover:text-white transition-colors">
                       <ChevronDown
-                        className={`h-4 w-4 transition-transform duration-300 ${
+                        className={`h-3.5 w-3.5 transition-transform duration-200 ${
                           isExpanded ? 'rotate-180 text-white' : ''
                         }`}
                       />
@@ -270,28 +226,56 @@ export default function InteractiveRoadmap({
                       animate={{ height: 'auto', opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
                       transition={{ duration: 0.25 }}
-                      className="border-t border-white/[0.06] bg-black/40 p-4 sm:p-5 space-y-3"
+                      className="border-t border-white/[0.06] bg-black/40 p-4 sm:p-5 space-y-4"
                     >
-                      <div className="space-y-1">
-                        <h4 className="text-[11px] font-mono uppercase tracking-wider text-neutral-400 font-semibold">
-                          Curriculum & Syllabus Breakdown
-                        </h4>
-                        <p className="text-xs sm:text-sm text-neutral-300 leading-relaxed font-light">
-                          {step.topics}
-                        </p>
+                      {/* Meta badges */}
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-mono text-[10px] text-neutral-300 border border-white/10 bg-white/[0.04] px-2 py-0.5 rounded">
+                          {meta.difficulty}
+                        </span>
+                        <span className="inline-flex items-center gap-1 font-mono text-[10px] text-neutral-400 border border-white/10 bg-white/[0.04] px-2 py-0.5 rounded">
+                          <Clock className="h-2.5 w-2.5" />
+                          <span>{meta.hours}</span>
+                        </span>
                       </div>
+
+                      {/* Mini-Project Highlight */}
+                      <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-3 flex items-center gap-2.5 text-xs text-neutral-300">
+                        <Terminal className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+                        <span className="font-mono text-[11px] text-amber-300/90 font-medium shrink-0">Mini-Project:</span>
+                        <span className="font-light truncate text-neutral-200">{meta.miniProject}</span>
+                      </div>
+
+                      {/* Concepts Covered */}
+                      {meta.concepts && (
+                        <div className="space-y-1.5">
+                          <div className="font-mono text-[10px] uppercase tracking-wider text-neutral-400">
+                            Concepts Covered:
+                          </div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {meta.concepts.map((concept) => (
+                              <span
+                                key={concept}
+                                className="rounded-md border border-white/10 bg-white/[0.02] px-2 py-0.5 font-mono text-[10px] text-neutral-300"
+                              >
+                                {concept}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
 
                       <div className="pt-2 flex items-center justify-between border-t border-white/[0.06]">
                         <span className="text-[11px] font-mono text-neutral-500">
-                          Estimated time: {meta.hours} • Portfolio-ready code
+                          Estimated time: {meta.hours} • Hands-on lab
                         </span>
 
                         <button
                           type="button"
                           onClick={() => onToggleStep(stepKey)}
-                          className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
+                          className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
                             isCompleted
-                              ? 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700'
+                              ? 'border border-white/10 bg-white/[0.05] text-neutral-300 hover:bg-white/10'
                               : 'bg-emerald-400 text-black hover:bg-emerald-300 shadow-[0_0_15px_-3px_#34d399]'
                           }`}
                         >
