@@ -1,6 +1,7 @@
 """Centralized logging configuration."""
 
 import logging
+import logging.config
 import sys
 from app.core.config import settings
 
@@ -54,7 +55,7 @@ def setup_logging() -> None:
         },
     }
 
-    import logging.config
+    
 
     logging.config.dictConfig(logging_config)
 
