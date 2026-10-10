@@ -1,6 +1,17 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import { ArrowLeft, ArrowRight, AlertCircle, RotateCcw, Loader2 } from 'lucide-react'
-import { getLearningPathById } from '../services/api'
+import {
+  ArrowLeft,
+  ArrowRight,
+  AlertCircle,
+  RotateCcw,
+  Loader2,
+  Clock,
+  User,
+  Play,
+  BookOpen,
+  Check,
+} from 'lucide-react'
+import { getLearningPathById, getCourses, getSkills } from '../services/api'
 
 export default function LearningPathDetailPage({
   path = null,
@@ -11,6 +22,13 @@ export default function LearningPathDetailPage({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [retryKey, setRetryKey] = useState(0)
+
+  // Courses state
+  const [courses, setCourses] = useState([])
+  const [coursesLoading, setCoursesLoading] = useState(true)
+  const [coursesError, setCoursesError] = useState(null)
+  const [coursesRetryKey, setCoursesRetryKey] = useState(0)
+  const [enrolledCourseId, setEnrolledCourseId] = useState(null)
 
   // Use fetched details if available, otherwise passed path prop
   const currentPath = fetchedPath || path
@@ -44,11 +62,87 @@ export default function LearningPathDetailPage({
     }
   }, [pathId, hasSteps, retryKey])
 
+  // Fetch courses related to the current learning path
+  useEffect(() => {
+    let isMounted = true
+
+    Promise.all([getCourses(), getSkills()])
+      .then(([allCourses, allSkills]) => {
+        if (!isMounted) return
+
+        const pathTitle = (currentPath?.title || '').toLowerCase()
+        const pathCategory = (currentPath?.category || '').toLowerCase()
+
+        // Match skill by name or category
+        const matchedSkill = (allSkills || []).find((s) => {
+          const sName = (s.name || '').toLowerCase()
+          const sCat = (s.category || '').toLowerCase()
+          return (
+            pathTitle.includes(sName) ||
+            sName.includes(pathTitle) ||
+            pathCategory.includes(sCat) ||
+            sCat.includes(pathCategory)
+          )
+        })
+
+        let relevant = []
+        if (matchedSkill) {
+          relevant = (allCourses || []).filter((c) => c.skill_id === matchedSkill.id)
+        }
+
+        // Fallback matching by title keywords if no direct skill match
+        if (relevant.length === 0 && pathTitle) {
+          const keywords = pathTitle
+            .split(/\s+/)
+            .map((k) => k.trim().toLowerCase())
+            .filter((k) => k.length > 3)
+
+          relevant = (allCourses || []).filter((c) => {
+            const cTitle = (c.title || '').toLowerCase()
+            const cDesc = (c.description || '').toLowerCase()
+            return keywords.some((kw) => cTitle.includes(kw) || cDesc.includes(kw))
+          })
+        }
+
+        setCourses(relevant)
+        setCoursesError(null)
+        setCoursesLoading(false)
+      })
+      .catch((err) => {
+        if (isMounted) {
+          console.error('Failed to load courses:', err)
+          setCoursesError(err.message || 'Unable to load courses for this learning path.')
+          setCoursesLoading(false)
+        }
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [currentPath?.id, currentPath?.title, currentPath?.category, coursesRetryKey])
+
   const handleRetry = useCallback(() => {
     setLoading(true)
     setError(null)
     setRetryKey((k) => k + 1)
   }, [])
+
+  const handleRetryCourses = useCallback(() => {
+    setCoursesLoading(true)
+    setCoursesError(null)
+    setCoursesRetryKey((k) => k + 1)
+  }, [])
+
+  const handleStartCourse = useCallback(
+    (course) => {
+      setEnrolledCourseId(course.id)
+      onStartLearning(course)
+      setTimeout(() => {
+        setEnrolledCourseId(null)
+      }, 2500)
+    },
+    [onStartLearning]
+  )
 
   // Configured metadata matching backend API properties with optional fallbacks
   const title = currentPath?.title || 'Python Foundations'
@@ -303,6 +397,163 @@ export default function LearningPathDetailPage({
             </div>
           </aside>
         </div>
+
+        {/* ── COURSES SECTION ──────────────────────────────────────────────── */}
+        <section className="pt-8 border-t border-white/[0.08] space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h2 className="text-xs font-mono uppercase tracking-widest text-neutral-400 font-semibold">
+                Featured Courses
+              </h2>
+              <p className="mt-1 text-xs sm:text-sm text-neutral-400 font-light">
+                Curated courses and interactive video modules connected to this track
+              </p>
+            </div>
+            {!coursesLoading && !coursesError && courses.length > 0 && (
+              <span className="font-mono text-xs text-neutral-400 shrink-0">
+                {courses.length} {courses.length === 1 ? 'course' : 'courses'} available
+              </span>
+            )}
+          </div>
+
+          {/* Loading State Skeleton */}
+          {coursesLoading && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-pulse">
+              {[1, 2, 3].map((idx) => (
+                <div
+                  key={idx}
+                  className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-5 space-y-4"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="h-4 w-16 bg-white/10 rounded" />
+                    <div className="h-4 w-16 bg-white/10 rounded" />
+                  </div>
+                  <div className="h-5 w-3/4 bg-white/10 rounded" />
+                  <div className="space-y-1.5">
+                    <div className="h-3 w-full bg-white/5 rounded" />
+                    <div className="h-3 w-2/3 bg-white/5 rounded" />
+                  </div>
+                  <div className="pt-4 border-t border-white/[0.06] flex items-center justify-between">
+                    <div className="h-3.5 w-24 bg-white/5 rounded" />
+                    <div className="h-7 w-24 bg-white/10 rounded-lg" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Error State */}
+          {!coursesLoading && coursesError && (
+            <div className="rounded-xl border border-red-500/20 bg-red-500/[0.04] p-6 text-center space-y-3">
+              <div className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-red-500/10 text-red-400 mx-auto">
+                <AlertCircle className="h-4 w-4" />
+              </div>
+              <p className="text-xs text-red-300 font-medium">{coursesError}</p>
+              <div>
+                <button
+                  type="button"
+                  onClick={handleRetryCourses}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-black hover:bg-neutral-200 transition-colors cursor-pointer shadow-sm"
+                >
+                  <RotateCcw className="h-3 w-3" />
+                  <span>Retry Courses</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Empty State */}
+          {!coursesLoading && !coursesError && courses.length === 0 && (
+            <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-8 text-center space-y-2">
+              <div className="inline-flex items-center justify-center h-10 w-10 rounded-full bg-white/[0.04] text-neutral-400 mx-auto mb-1">
+                <BookOpen className="h-5 w-5" />
+              </div>
+              <p className="text-xs sm:text-sm text-neutral-300 font-medium">
+                No dedicated courses found for this learning path.
+              </p>
+              <p className="text-[11px] font-mono text-neutral-500">
+                New hands-on video modules and courses are added regularly.
+              </p>
+            </div>
+          )}
+
+          {/* Populated Courses Grid */}
+          {!coursesLoading && !coursesError && courses.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {courses.map((course) => {
+                const isEnrolled = enrolledCourseId === course.id
+
+                return (
+                  <div
+                    key={course.id}
+                    className="group rounded-xl border border-white/[0.08] bg-white/[0.02] p-5 flex flex-col justify-between hover:border-white/20 hover:bg-white/[0.04] transition-all"
+                  >
+                    <div className="space-y-3">
+                      {/* Platform & Duration Badges */}
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="rounded border border-white/10 bg-white/[0.04] px-2 py-0.5 font-mono text-[10px] text-neutral-300">
+                          {course.platform || 'Technea'}
+                        </span>
+                        {course.duration && (
+                          <span className="inline-flex items-center gap-1 font-mono text-[10px] text-neutral-400">
+                            <Clock className="h-3 w-3" />
+                            <span>{course.duration}</span>
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Course Title */}
+                      <h3 className="text-base font-semibold text-white tracking-tight group-hover:text-neutral-100 transition-colors">
+                        {course.title}
+                      </h3>
+
+                      {/* Description */}
+                      {course.description && (
+                        <p className="text-xs text-neutral-400 font-light line-clamp-2 leading-relaxed">
+                          {course.description}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Footer: Instructor & Start Learning button */}
+                    <div className="mt-5 pt-4 border-t border-white/[0.06] flex items-center justify-between gap-3">
+                      {course.instructor ? (
+                        <div className="inline-flex items-center gap-1.5 text-xs text-neutral-400 min-w-0">
+                          <User className="h-3.5 w-3.5 text-neutral-500 shrink-0" />
+                          <span className="truncate font-medium">{course.instructor}</span>
+                        </div>
+                      ) : (
+                        <div />
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => handleStartCourse(course)}
+                        className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer shadow-sm active:scale-95 shrink-0 ${
+                          isEnrolled
+                            ? 'bg-emerald-400 text-black'
+                            : 'bg-white text-black hover:bg-neutral-200'
+                        }`}
+                      >
+                        {isEnrolled ? (
+                          <>
+                            <Check className="h-3 w-3 stroke-[2.5]" />
+                            <span>Enrolled</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>Start Learning</span>
+                            <Play className="h-3 w-3 fill-current" />
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </section>
 
         {/* ── BOTTOM SECTION: Projects List ────────────────────────────────── */}
         <section className="pt-8 border-t border-white/[0.08] space-y-5">
