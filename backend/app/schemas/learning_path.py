@@ -15,6 +15,7 @@ class LearningPathBase(CustomBaseModel):
     category: str = Field(description="Category (e.g. Programming, AI & ML)", max_length=100)
     level: str = Field(description="Skill level (e.g. Beginner, Intermediate)", max_length=50)
     duration: str | None = Field(default=None, description="Estimated duration (e.g. 4 weeks)", max_length=100)
+    skill_id: int | None = Field(default=None, description="Optional associated skill ID")
 
 
 class LearningPathCreate(LearningPathBase):
@@ -31,6 +32,7 @@ class LearningPathUpdate(CustomBaseModel):
     category: str | None = Field(default=None, max_length=100)
     level: str | None = Field(default=None, max_length=50)
     duration: str | None = Field(default=None, max_length=100)
+    skill_id: int | None = None
 
 
 class LearningPathResponse(LearningPathBase):

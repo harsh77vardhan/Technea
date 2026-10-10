@@ -55,6 +55,15 @@ async function request(endpoint, options = {}) {
 }
 
 /**
+ * Check if value is a valid positive numeric database ID
+ */
+function isNumericId(val) {
+  if (val === null || val === undefined || typeof val === 'boolean' || val === '') return false
+  const num = Number(val)
+  return Number.isInteger(num) && num > 0
+}
+
+/**
  * Fetch all available skills
  * @returns {Promise<Array>} List of skill objects
  */
@@ -68,6 +77,9 @@ export async function getSkills() {
  * @returns {Promise<Object>}
  */
 export async function getSkillById(id) {
+  if (!isNumericId(id)) {
+    throw new Error(`Invalid skill ID: ${id}`)
+  }
   return request(`/skills/${id}`)
 }
 
@@ -85,23 +97,31 @@ export async function getLearningPaths() {
  * @returns {Promise<Object>}
  */
 export async function getLearningPathById(id) {
+  if (!isNumericId(id)) {
+    throw new Error(`Invalid learning path ID: ${id}`)
+  }
   return request(`/learning-paths/${id}`)
 }
 
 /**
- * Fetch courses, optionally filtered by associated skill ID
+ * Fetch courses, optionally filtered by associated skill ID or learning path ID
  * @param {Object} [params]
  * @param {number|string} [params.skill_id] - Optional skill filter
+ * @param {number|string} [params.learning_path_id] - Optional learning path filter
  * @returns {Promise<Array>} List of course objects
  */
 export async function getCourses(params = {}) {
   const query = new URLSearchParams()
-  if (params?.skill_id) {
+  if (isNumericId(params?.skill_id)) {
     query.append('skill_id', params.skill_id)
+  }
+  if (isNumericId(params?.learning_path_id)) {
+    query.append('learning_path_id', params.learning_path_id)
   }
   const queryString = query.toString() ? `?${query.toString()}` : ''
   return request(`/courses${queryString}`)
 }
+
 
 /**
  * Fetch a single course by ID
@@ -109,7 +129,35 @@ export async function getCourses(params = {}) {
  * @returns {Promise<Object>}
  */
 export async function getCourseById(id) {
+  if (!isNumericId(id)) {
+    throw new Error(`Invalid course ID: ${id}`)
+  }
   return request(`/courses/${id}`)
+}
+
+/**
+ * Fetch ordered lessons for a specific course
+ * @param {number|string} courseId - Course identifier
+ * @returns {Promise<Array>} List of lesson objects
+ */
+export async function getCourseLessons(courseId) {
+  if (!isNumericId(courseId)) {
+    return []
+  }
+  return request(`/courses/${courseId}/lessons`)
+}
+
+/**
+ * Fetch related courses recommendation
+ * @param {number|string} courseId - Course identifier
+ * @param {number} [limit=4] - Max courses
+ * @returns {Promise<Array>} List of related course objects
+ */
+export async function getRelatedCourses(courseId, limit = 4) {
+  if (!isNumericId(courseId)) {
+    return []
+  }
+  return request(`/courses/${courseId}/related?limit=${limit}`)
 }
 
 export default {
@@ -119,4 +167,7 @@ export default {
   getLearningPathById,
   getCourses,
   getCourseById,
+  getCourseLessons,
+  getRelatedCourses,
 }
+

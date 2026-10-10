@@ -10,6 +10,7 @@ from app.db.base import Base
 
 if TYPE_CHECKING:
     from app.models.course import Course
+    from app.models.learning_path import LearningPath
 
 
 class Skill(Base):
@@ -48,6 +49,10 @@ class Skill(Base):
         cascade="all, delete-orphan",
     )
 
+    learning_paths: Mapped[list["LearningPath"]] = relationship(
+        "LearningPath",
+        back_populates="skill",
+    )
+
     def __repr__(self) -> str:
         return f"<Skill(id={self.id}, name='{self.name}', category='{self.category}')>"
-

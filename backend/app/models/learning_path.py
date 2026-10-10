@@ -3,13 +3,15 @@
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, Integer, String, Text, func
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 
 if TYPE_CHECKING:
+    from app.models.course import Course
     from app.models.roadmap_step import RoadmapStep
+    from app.models.skill import Skill
 
 
 class LearningPath(Base):
@@ -44,10 +46,20 @@ class LearningPath(Base):
         String(100),
         nullable=True,
     )
+    skill_id: Mapped[int | None] = mapped_column(
+        ForeignKey("skills.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
         nullable=False,
+    )
+
+    skill: Mapped["Skill | None"] = relationship(
+        "Skill",
+        back_populates="learning_paths",
     )
 
     roadmap_steps: Mapped[list["RoadmapStep"]] = relationship(
@@ -55,6 +67,11 @@ class LearningPath(Base):
         back_populates="learning_path",
         cascade="all, delete-orphan",
         order_by="RoadmapStep.step_number",
+    )
+
+    courses: Mapped[list["Course"]] = relationship(
+        "Course",
+        back_populates="learning_path",
     )
 
     def __repr__(self) -> str:

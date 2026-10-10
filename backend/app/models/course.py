@@ -9,6 +9,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 
 if TYPE_CHECKING:
+    from app.models.learning_path import LearningPath
+    from app.models.lesson import Lesson
     from app.models.skill import Skill
 
 
@@ -44,9 +46,34 @@ class Course(Base):
         String(100),
         nullable=True,
     )
+    youtube_url: Mapped[str | None] = mapped_column(
+        String(500),
+        nullable=True,
+    )
+    youtube_video_id: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+    )
+    thumbnail_url: Mapped[str | None] = mapped_column(
+        String(500),
+        nullable=True,
+    )
+    playlist_url: Mapped[str | None] = mapped_column(
+        String(500),
+        nullable=True,
+    )
+    lesson_order: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+    )
     skill_id: Mapped[int] = mapped_column(
         ForeignKey("skills.id", ondelete="CASCADE"),
         nullable=False,
+        index=True,
+    )
+    learning_path_id: Mapped[int | None] = mapped_column(
+        ForeignKey("learning_paths.id", ondelete="SET NULL"),
+        nullable=True,
         index=True,
     )
     created_at: Mapped[datetime] = mapped_column(
@@ -58,6 +85,18 @@ class Course(Base):
     skill: Mapped["Skill"] = relationship(
         "Skill",
         back_populates="courses",
+    )
+
+    learning_path: Mapped["LearningPath | None"] = relationship(
+        "LearningPath",
+        back_populates="courses",
+    )
+
+    lessons: Mapped[list["Lesson"]] = relationship(
+        "Lesson",
+        back_populates="course",
+        cascade="all, delete-orphan",
+        order_by="Lesson.lesson_order",
     )
 
     def __repr__(self) -> str:

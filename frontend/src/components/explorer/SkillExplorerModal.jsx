@@ -5,15 +5,17 @@ import FloatingKeywords from './FloatingKeywords'
 import LearningBrowser from './LearningBrowser'
 import ExplorerStickyFooter from './ExplorerStickyFooter'
 import LearningPathDetailPage from '../../pages/LearningPathDetailPage'
+import CoursePlayerPage from '../../pages/CoursePlayerPage'
 import { SKILLS } from '../../data/skills'
 import { getSkills } from '../../services/api'
 
 export default function SkillExplorerModal({ isOpen, onClose, onSelectPath }) {
-  const [stage, setStage] = useState('discover') // 'discover' (Stage 1) | 'explore' (Stage 2) | 'detail' (Stage 3)
+  const [stage, setStage] = useState('discover') // 'discover' | 'explore' | 'detail' | 'player'
   const [searchQuery, setSearchQuery] = useState('')
   const [submittedQuery, setSubmittedQuery] = useState('')
   const [selectedSkillId, setSelectedSkillId] = useState(null)
   const [selectedPathObject, setSelectedPathObject] = useState(null)
+  const [selectedCourseObject, setSelectedCourseObject] = useState(null)
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
   const [isMounted, setIsMounted] = useState(isOpen)
   const [isPanelVisible, setIsPanelVisible] = useState(false)
@@ -62,6 +64,7 @@ export default function SkillExplorerModal({ isOpen, onClose, onSelectPath }) {
         setSubmittedQuery('')
         setSelectedSkillId(null)
         setSelectedPathObject(null)
+        setSelectedCourseObject(null)
         setRoadmapSuccessMessage(null)
       }, 250)
     }
@@ -74,7 +77,7 @@ export default function SkillExplorerModal({ isOpen, onClose, onSelectPath }) {
 
   // Mouse move handler for spatial parallax
   const handleMouseMove = (e) => {
-    if (stage === 'detail' || !panelRef.current) return
+    if (stage === 'detail' || stage === 'player' || !panelRef.current) return
     const rect = panelRef.current.getBoundingClientRect()
     const normX = ((e.clientX - rect.left) / rect.width) * 2 - 1
     const normY = ((e.clientY - rect.top) / rect.height) * 2 - 1
@@ -87,7 +90,9 @@ export default function SkillExplorerModal({ isOpen, onClose, onSelectPath }) {
 
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
-        if (stage === 'detail') {
+        if (stage === 'player') {
+          setStage('detail')
+        } else if (stage === 'detail') {
           setStage('explore')
         } else if (stage === 'explore') {
           setStage('discover')
@@ -104,7 +109,7 @@ export default function SkillExplorerModal({ isOpen, onClose, onSelectPath }) {
     window.addEventListener('keydown', handleKeyDown)
 
     const focusTimer = setTimeout(() => {
-      if (stage !== 'detail') {
+      if (stage !== 'detail' && stage !== 'player') {
         searchInputRef.current?.focus()
       }
     }, 120)
@@ -203,7 +208,7 @@ export default function SkillExplorerModal({ isOpen, onClose, onSelectPath }) {
         aria-modal="true"
         aria-label="Build Your Roadmap"
         className={`fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 md:p-6 lg:p-8 ${
-          stage === 'detail' ? 'hidden' : ''
+          stage === 'detail' || stage === 'player' ? 'hidden' : ''
         }`}
       >
         {/* ── Deep Cinematic Backdrop (Landing page visible behind with blur) ── */}
@@ -377,6 +382,29 @@ export default function SkillExplorerModal({ isOpen, onClose, onSelectPath }) {
           <LearningPathDetailPage
             path={selectedPathObject}
             onBack={handleBackToResults}
+            onStartLearning={(course) => {
+              setSelectedCourseObject(course)
+              setStage('player')
+            }}
+          />
+        </div>
+      )}
+
+      {/* ────────────────────────────────────────────────────────── */}
+      {/* FOURTH STATE: COURSE PLAYER                                */}
+      {/* ────────────────────────────────────────────────────────── */}
+      {stage === 'player' && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Course Player"
+          className="fixed inset-0 z-50 overflow-y-auto bg-[#08090d]"
+        >
+          <CoursePlayerPage
+            course={selectedCourseObject}
+            path={selectedPathObject}
+            onBack={() => setStage('detail')}
+            onSelectCourse={(newCourse) => setSelectedCourseObject(newCourse)}
           />
         </div>
       )}

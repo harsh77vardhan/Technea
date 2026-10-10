@@ -9,6 +9,7 @@ from app.models.skill import Skill
 from app.models.learning_path import LearningPath
 from app.models.course import Course
 from app.models.roadmap_step import RoadmapStep
+from app.models.lesson import Lesson
 
 __all__ = [
     "Base",
@@ -20,6 +21,7 @@ __all__ = [
     "LearningPath",
     "Course",
     "RoadmapStep",
+    "Lesson",
 ]
 
 
