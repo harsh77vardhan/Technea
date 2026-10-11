@@ -53,9 +53,12 @@ export default function PathDetailHero({
   metrics,
   coursesCount = 0,
   projectsCount = 3,
+  completedStepCount = 0,
+  totalSteps = 7,
   onBack,
   onStartLearning,
   onExploreTimeline,
+  onResetProgress,
 }) {
   const [copied, setCopied] = useState(false)
 
@@ -158,7 +161,7 @@ export default function PathDetailHero({
                 whileTap={{ scale: 0.98 }}
                 type="button"
                 onClick={onStartLearning}
-                className="group inline-flex items-center gap-2.5 rounded-xl bg-white px-6 py-3 text-xs sm:text-sm font-semibold text-black transition-all cursor-pointer shadow-[0_0_25px_rgba(255,255,255,0.2)] hover:shadow-[0_0_35px_rgba(255,255,255,0.35)] hover:bg-neutral-200"
+                className="group inline-flex items-center gap-2.5 rounded-xl bg-white px-6 py-3 text-xs sm:text-sm font-semibold text-black transition-all cursor-pointer shadow-sm hover:bg-neutral-200"
               >
                 <Play className="h-3.5 w-3.5 fill-black text-black" />
                 <span>Start Learning</span>
@@ -176,7 +179,7 @@ export default function PathDetailHero({
             </div>
           </div>
 
-          {/* RIGHT: Premium Learning Snapshot Card */}
+          {/* RIGHT: Premium Learning Companion Card */}
           <div className="lg:col-span-5">
             <LearningSnapshotCard
               path={path}
@@ -184,7 +187,10 @@ export default function PathDetailHero({
               metrics={metrics}
               coursesCount={coursesCount}
               projectsCount={projectsCount}
+              completedStepCount={completedStepCount}
+              totalSteps={totalSteps}
               onContinueLearning={onStartLearning}
+              onResetProgress={onResetProgress}
             />
           </div>
         </div>

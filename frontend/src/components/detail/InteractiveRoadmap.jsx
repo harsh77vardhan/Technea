@@ -133,9 +133,9 @@ export default function InteractiveRoadmap({
                 }
                 className={`absolute -left-[31px] sm:-left-[39px] top-4.5 flex h-7 w-7 items-center justify-center rounded-full border transition-all cursor-pointer z-10 ${
                   isCompleted
-                    ? 'border-emerald-500 bg-emerald-500 text-black shadow-[0_0_15px_#10b981]'
+                    ? 'border-emerald-500 bg-emerald-500 text-black'
                     : isCurrentActive
-                    ? 'border-sky-400 bg-[#08090d] text-sky-400 shadow-[0_0_15px_rgba(56,189,248,0.5)] ring-2 ring-sky-400/30'
+                    ? 'border-sky-400 bg-[#08090d] text-sky-400 ring-1 ring-sky-400/30'
                     : 'border-white/15 bg-[#0a0c10] text-neutral-500 hover:border-white/40 hover:text-neutral-300'
                 }`}
               >
@@ -152,11 +152,11 @@ export default function InteractiveRoadmap({
 
               {/* ── MILESTONE CARD BODY ────────────────────────────────────── */}
               <div
-                className={`rounded-2xl border transition-all duration-300 overflow-hidden ${
+                className={`rounded-none border transition-all duration-300 overflow-hidden ${
                   isCompleted
                     ? 'border-emerald-500/20 bg-emerald-500/[0.02]'
                     : isCurrentActive
-                    ? 'border-sky-400/30 bg-white/[0.03] shadow-[0_0_20px_-8px_rgba(56,189,248,0.15)]'
+                    ? 'border-sky-400/30 bg-white/[0.03]'
                     : isLocked
                     ? 'border-white/[0.06] bg-white/[0.01] opacity-75'
                     : 'border-white/[0.08] bg-white/[0.02] hover:border-white/15 hover:bg-white/[0.03]'
@@ -276,7 +276,7 @@ export default function InteractiveRoadmap({
                           className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
                             isCompleted
                               ? 'border border-white/10 bg-white/[0.05] text-neutral-300 hover:bg-white/10'
-                              : 'bg-emerald-400 text-black hover:bg-emerald-300 shadow-[0_0_15px_-3px_#34d399]'
+                              : 'bg-emerald-400 text-black hover:bg-emerald-300 shadow-sm'
                           }`}
                         >
                           <Check className="h-3.5 w-3.5 stroke-[2.5]" />

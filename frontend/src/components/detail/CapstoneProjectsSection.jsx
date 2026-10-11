@@ -42,12 +42,6 @@ export default function CapstoneProjectsSection({ projects = [], theme }) {
             whileHover={{ y: -6 }}
             className="group relative rounded-2xl border border-white/10 bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04] transition-all duration-300 flex flex-col justify-between overflow-hidden shadow-lg hover:shadow-2xl"
           >
-            {/* Subtle Ambient Accent Glow on Hover */}
-            <div
-              className="pointer-events-none absolute -inset-px opacity-0 group-hover:opacity-30 transition-opacity duration-300 blur-xl rounded-2xl"
-              style={{ backgroundColor: theme.accentHue }}
-            />
-
             <div className="relative z-10 p-6 space-y-5">
               {/* Card Top: Milestone & Difficulty */}
               <div className="flex items-center justify-between gap-2">

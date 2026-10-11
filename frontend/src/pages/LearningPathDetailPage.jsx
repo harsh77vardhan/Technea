@@ -11,8 +11,8 @@ import { getLearningPathById, getCourses, getSkills } from '../services/api'
 import { getTrackTheme, getTrackProjects, getTrackMetrics } from '../utils/trackThemes'
 
 import PathDetailHero from '../components/detail/PathDetailHero'
-import PathCommandCard from '../components/detail/PathCommandCard'
 import InteractiveRoadmap from '../components/detail/InteractiveRoadmap'
+import AILearningCompanionCard from '../components/detail/AILearningCompanionCard'
 import FeaturedCoursesSection from '../components/detail/FeaturedCoursesSection'
 import CapstoneProjectsSection from '../components/detail/CapstoneProjectsSection'
 import PathDetailSkeleton from '../components/detail/PathDetailSkeleton'
@@ -380,9 +380,12 @@ export default function LearningPathDetailPage({
         metrics={metrics}
         coursesCount={courses.length}
         projectsCount={projects.length}
+        completedStepCount={completedStepIds.length}
+        totalSteps={journeySteps.length}
         onBack={onBack}
         onStartLearning={handleStartPathLearning}
         onExploreTimeline={handleScrollToTimeline}
+        onResetProgress={handleResetProgress}
       />
 
       {/* ── 2. SEGMENTED NAVIGATION TABS (Linear / Raycast Style) ─────────── */}
@@ -486,18 +489,16 @@ export default function LearningPathDetailPage({
             )}
           </div>
 
-          {/* RIGHT COLUMN: Interactive Command Card / Sticky Hub (4 Cols) */}
-          <PathCommandCard
-            path={currentPath}
-            theme={theme}
-            metrics={metrics}
-            completedStepCount={completedStepIds.length}
-            totalSteps={journeySteps.length}
-            projectsCount={projects.length}
-            coursesCount={courses.length}
-            onStartLearning={handleStartPathLearning}
-            onResetProgress={handleResetProgress}
-          />
+          {/* RIGHT COLUMN: AI Learning Companion Card (4 Cols Sticky) */}
+          <aside className="lg:col-span-4 lg:sticky lg:top-20 self-start space-y-4">
+            <AILearningCompanionCard
+              userName="Harsh"
+              pathTitle={currentPath?.title || 'Python Fundamentals'}
+              onAskMentor={() => {
+                // Placeholder for Phase 2 Gemini API integration
+              }}
+            />
+          </aside>
         </div>
       </main>
     </div>
