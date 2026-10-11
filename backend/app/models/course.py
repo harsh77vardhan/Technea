@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, func
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, JSON, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -45,6 +45,16 @@ class Course(Base):
     duration: Mapped[str | None] = mapped_column(
         String(100),
         nullable=True,
+    )
+    difficulty: Mapped[str | None] = mapped_column(
+        String(50),
+        nullable=True,
+        default="Beginner",
+    )
+    tags: Mapped[list[str] | None] = mapped_column(
+        JSON,
+        nullable=True,
+        default=list,
     )
     youtube_url: Mapped[str | None] = mapped_column(
         String(500),

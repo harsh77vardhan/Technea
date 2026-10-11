@@ -1,13 +1,14 @@
 """Database seed script for populating Technea's complete learning platform catalog.
 
-Includes 24 comprehensive learning paths across 5 domains, with 7 roadmap steps each,
-and 120 curated YouTube courses from top educators with embedded video player support
-and structured multi-lesson playlists.
-Idempotent and safe to run repeatedly.
+Includes 115+ skills across 9 domains, 230+ curated learning paths with
+roadmap steps and capstone projects, and 1,150+ courses with multi-lesson playlists.
+Idempotent and safe to run repeatedly without creating duplicates.
 """
 
 import asyncio
-from sqlalchemy import select
+import json
+from pathlib import Path
+from sqlalchemy import select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import async_session_maker
@@ -15,88 +16,43 @@ from app.models.course import Course
 from app.models.learning_path import LearningPath
 from app.models.lesson import Lesson
 from app.models.roadmap_step import RoadmapStep
-from app.models.skill import Skill
-from app.db.generate_catalog import DOMAINS
+from app.models.skill import Skill, SkillPrerequisite
+from app.db.full_catalog_provider import build_full_catalog
 
-# 7 standard roadmap steps for each domain category
-STEPS_BY_DOMAIN = {
-    "Programming": [
-        ("Variables, Primitive Types & Expressions", "Understand numerical types, string manipulation, booleans, arithmetic and logical operators."),
-        ("Conditionals, Branching & Truthiness", "Control execution flows using if, elif, and else statements, matching patterns and boolean truth values."),
-        ("Iteration, Loops & Comprehensions", "Harness while and for loops, iterate with range/enumerate/zip, and craft concise collections."),
-        ("Functions, Scoping & Closures", "Write reusable functions, positional/keyword parameters, return values, and closures."),
-        ("Data Structures & Collections", "Deep dive into lists, tuples, sets, dictionaries, and memory behaviors of mutable vs immutable structures."),
-        ("Object-Oriented Programming Foundations", "Define classes, objects, magic methods, inheritance, composition, and encapsulation."),
-        ("Modules, Packaging & Project Build", "Organize multi-file projects, isolate dependencies, install packages, and manage build configuration."),
-    ],
-    "AI & ML": [
-        ("Mathematical Foundations (Linear Algebra & Calculus)", "Vectors, matrices, dot products, eigenvalues, partial derivatives, and gradient vectors."),
-        ("Data Wrangling & Statistical Preprocessing", "Feature scaling, missing value imputation, one-hot encoding, and train-validation-test splitting."),
-        ("Supervised Learning (Regression & Classification)", "Cost functions, gradient descent optimization, decision trees, and logistic regression."),
-        ("Model Evaluation, Validation & Hyperparameter Tuning", "Confusion matrices, precision, recall, F1 score, ROC-AUC, and cross-validation."),
-        ("Deep Learning Architectures (MLP, CNN & Transformers)", "Feedforward networks, backpropagation, convolutional layers, and self-attention mechanisms."),
-        ("Transfer Learning & Pretrained Foundations", "Fine-tuning state-of-the-art vision and language models for domain-specific tasks."),
-        ("Production Deployment & Model Serving", "Exporting weights with ONNX/TorchScript, containerization with Docker, and serving via FastAPI."),
-    ],
-    "Web Development": [
-        ("HTML5 Semantic Architecture & Accessibility (a11y)", "Document structure, accessible forms, ARIA attributes, and SEO foundations."),
-        ("Modern CSS: Flexbox, Grid, Custom Properties & Responsive Layout", "Two-dimensional layouts, clamp-based fluid typography, and media queries."),
-        ("JavaScript Engine, Event Loop & Asynchronous APIs", "Execution contexts, promises, async/await, and browser DOM manipulation."),
-        ("Frontend Component Architecture & Reactive State Management", "Component composition, reactive state, effects, and virtual DOM diffing."),
-        ("RESTful API Design & Server Architecture", "Stateless HTTP routing, middleware, request validation, and status codes."),
-        ("Database Modeling, Transactions & ORM Integration", "Schema design, migrations, relational queries, and connection pools."),
-        ("Authentication, Authorization & Production Deployment", "JWT tokens, password hashing, HTTPS/CORS security, CI/CD, and cloud hosting."),
-    ],
-    "Data": [
-        ("Relational Database Modeling & SQL Queries", "SELECT statements, aggregations, multi-table joins, subqueries, and window functions."),
-        ("Data Cleaning, Imputation & Feature Engineering", "Handling missing values, outlier detection, string formatting, and date transformations."),
-        ("Exploratory Data Analysis (EDA) & Summary Statistics", "Mean, median, variance, correlations, and distribution profiling."),
-        ("Data Visualization & Business Dashboarding", "Visual design with Seaborn/Plotly, dashboard design, and stakeholder storytelling."),
-        ("Advanced Analytical Modeling & Statistical Inference", "Hypothesis testing, p-values, confidence intervals, and regression inference."),
-        ("Automated Data Pipelines & ETL Orchestration", "Scheduled workflows, data extract-transform-load scripts, and data lakes."),
-        ("Production Reporting & Executive Presentation", "Synthesizing analytical findings into actionable business recommendations."),
-    ],
-    "DevOps & Security": [
-        ("Linux Operating System, Shell Scripting & CLI Power", "File systems, permissions, process monitoring, piping, and automated bash scripts."),
-        ("Computer Networking Protocols (TCP/IP, DNS, HTTP/S, SSH)", "OSI model, routing, socket connections, TLS certificates, and port mapping."),
-        ("Containerization Foundations with Docker", "Container isolation, Dockerfile optimization, multi-stage builds, and Docker Compose."),
-        ("Container Orchestration with Kubernetes", "Pods, ReplicaSets, Services, Deployments, Ingress, and ConfigMaps."),
-        ("Continuous Integration & Continuous Delivery (CI/CD)", "Automated test pipelines, GitHub Actions workflows, artifact registries, and zero-downtime deploys."),
-        ("Infrastructure as Code (IaC) & Cloud Architecture", "Declarative cloud provisioning, state management, security groups, and IAM roles."),
-        ("Observability, Monitoring, Logging & Incident Response", "Metrics scraping, distributed tracing, structured logging, alerting, and post-mortems."),
-    ],
-}
+CATALOG_JSON_PATH = Path(__file__).resolve().parent / "full_catalog.json"
 
 
-def get_domain_steps(category: str):
-    """Retrieve 7 structured steps matching the domain category."""
-    if "Programming" in category:
-        return STEPS_BY_DOMAIN["Programming"]
-    elif "AI" in category or "ML" in category:
-        return STEPS_BY_DOMAIN["AI & ML"]
-    elif "Web" in category:
-        return STEPS_BY_DOMAIN["Web Development"]
-    elif "Data" in category:
-        return STEPS_BY_DOMAIN["Data"]
-    else:
-        return STEPS_BY_DOMAIN["DevOps & Security"]
+def load_catalog() -> list[dict]:
+    """Load pre-generated catalog or build fresh."""
+    if CATALOG_JSON_PATH.exists():
+        try:
+            with open(CATALOG_JSON_PATH, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"Error loading full_catalog.json, generating fresh: {e}")
+    return build_full_catalog()
 
 
 async def seed_database(session: AsyncSession) -> None:
-    """Populate database with skills, learning paths, roadmap steps, courses, and lessons."""
-    print(f"Starting database seed with {len(DOMAINS)} curated domains...")
+    """Populate database with skills, learning paths, roadmap steps, courses, and lessons idempotently."""
+    catalog = load_catalog()
+    print(f"Starting database seed with {len(catalog)} curated skills...")
 
-    total_skills = 0
-    total_paths = 0
-    total_steps = 0
-    total_courses = 0
-    total_lessons = 0
+    new_skills = 0
+    updated_skills = 0
+    new_paths = 0
+    updated_paths = 0
+    new_steps = 0
+    updated_steps = 0
+    new_courses = 0
+    updated_courses = 0
+    new_lessons = 0
+    updated_lessons = 0
+    new_prereqs = 0
 
-    for domain_idx, domain_data in enumerate(DOMAINS, start=1):
-        skill_data = domain_data["skill"]
-        path_data = domain_data["path"]
-        courses_data = domain_data["courses"]
+    skill_map: dict[str, Skill] = {}
 
+    for skill_idx, skill_data in enumerate(catalog, start=1):
         # ---------------------------------------------------------------------
         # 1. Upsert Skill
         # ---------------------------------------------------------------------
@@ -109,172 +65,224 @@ async def seed_database(session: AsyncSession) -> None:
                 name=skill_data["name"],
                 category=skill_data["category"],
                 description=skill_data["description"],
+                tags=skill_data.get("tags", []),
+                keywords=skill_data.get("keywords", []),
+                aliases=skill_data.get("aliases", []),
+                prerequisites=skill_data.get("prerequisites", []),
+                recommended_next=skill_data.get("recommended_next", []),
             )
             session.add(skill)
             await session.flush()
-            total_skills += 1
+            new_skills += 1
         else:
             skill.category = skill_data["category"]
             skill.description = skill_data["description"]
+            skill.tags = skill_data.get("tags", skill.tags or [])
+            skill.keywords = skill_data.get("keywords", skill.keywords or [])
+            skill.aliases = skill_data.get("aliases", skill.aliases or [])
+            skill.prerequisites = skill_data.get("prerequisites", skill.prerequisites or [])
+            skill.recommended_next = skill_data.get("recommended_next", skill.recommended_next or [])
             await session.flush()
+            updated_skills += 1
+
+        skill_map[skill.name] = skill
 
         # ---------------------------------------------------------------------
-        # 2. Upsert LearningPath
+        # 2. Upsert Learning Paths for this Skill
         # ---------------------------------------------------------------------
-        stmt = select(LearningPath).where(LearningPath.title == path_data["title"])
-        res = await session.execute(stmt)
-        learning_path = res.scalars().first()
-
-        if not learning_path:
-            learning_path = LearningPath(
-                title=path_data["title"],
-                category=path_data["category"],
-                level=path_data["level"],
-                duration=path_data["duration"],
-                description=path_data["description"],
-                skill_id=skill.id,
-            )
-            session.add(learning_path)
-            await session.flush()
-            total_paths += 1
-        else:
-            learning_path.category = path_data["category"]
-            learning_path.level = path_data["level"]
-            learning_path.duration = path_data["duration"]
-            learning_path.description = path_data["description"]
-            learning_path.skill_id = skill.id
-            await session.flush()
-
-        # ---------------------------------------------------------------------
-        # 3. Upsert RoadmapSteps for LearningPath (7 steps)
-        # ---------------------------------------------------------------------
-        steps = get_domain_steps(learning_path.category)
-        for step_num, (step_title, step_desc) in enumerate(steps, start=1):
-            stmt = select(RoadmapStep).where(
-                RoadmapStep.learning_path_id == learning_path.id,
-                RoadmapStep.step_number == step_num,
-            )
+        for path_data in skill_data.get("learning_paths", []):
+            stmt = select(LearningPath).where(LearningPath.title == path_data["title"])
             res = await session.execute(stmt)
-            step = res.scalars().first()
+            learning_path = res.scalars().first()
 
-            if not step:
-                step = RoadmapStep(
-                    learning_path_id=learning_path.id,
-                    step_number=step_num,
-                    title=step_title,
-                    description=step_desc,
-                )
-                session.add(step)
-                total_steps += 1
-            else:
-                step.title = step_title
-                step.description = step_desc
-
-        # ---------------------------------------------------------------------
-        # 4. Upsert Courses with YouTube Metadata
-        # ---------------------------------------------------------------------
-        for c_idx, c_tuple in enumerate(courses_data, start=1):
-            title, instructor, platform, duration, yt_id, pl_url = c_tuple
-            yt_url = f"https://www.youtube.com/watch?v={yt_id}"
-            thumb_url = f"https://img.youtube.com/vi/{yt_id}/hqdefault.jpg"
-
-            stmt = select(Course).where(Course.title == title)
-            res = await session.execute(stmt)
-            course = res.scalars().first()
-
-            desc = f"Master {learning_path.title} with {instructor} on {platform}. Hands-on video training designed for modern developers."
-
-            if not course:
-                course = Course(
-                    title=title,
-                    description=desc,
-                    platform=platform,
-                    instructor=instructor,
-                    duration=duration,
-                    youtube_video_id=yt_id,
-                    youtube_url=yt_url,
-                    thumbnail_url=thumb_url,
-                    playlist_url=pl_url,
-                    lesson_order=c_idx,
+            if not learning_path:
+                learning_path = LearningPath(
+                    title=path_data["title"],
+                    category=path_data["category"],
+                    level=path_data["level"],
+                    difficulty=path_data.get("difficulty", path_data["level"]),
+                    duration=path_data.get("duration", "4 Weeks"),
+                    description=path_data.get("description"),
+                    search_terms=path_data.get("search_terms", []),
+                    related_concepts=path_data.get("related_concepts", []),
+                    projects=path_data.get("projects", []),
                     skill_id=skill.id,
-                    learning_path_id=learning_path.id,
                 )
-                session.add(course)
+                session.add(learning_path)
                 await session.flush()
-                total_courses += 1
+                new_paths += 1
             else:
-                course.description = desc
-                course.platform = platform
-                course.instructor = instructor
-                course.duration = duration
-                course.youtube_video_id = yt_id
-                course.youtube_url = yt_url
-                course.thumbnail_url = thumb_url
-                course.playlist_url = pl_url
-                course.lesson_order = c_idx
-                course.skill_id = skill.id
-                course.learning_path_id = learning_path.id
+                learning_path.category = path_data["category"]
+                learning_path.level = path_data["level"]
+                learning_path.difficulty = path_data.get("difficulty", path_data["level"])
+                learning_path.duration = path_data.get("duration", learning_path.duration)
+                learning_path.description = path_data.get("description", learning_path.description)
+                learning_path.search_terms = path_data.get("search_terms", learning_path.search_terms or [])
+                learning_path.related_concepts = path_data.get("related_concepts", learning_path.related_concepts or [])
+                learning_path.projects = path_data.get("projects", learning_path.projects or [])
+                learning_path.skill_id = skill.id
                 await session.flush()
+                updated_paths += 1
 
             # -----------------------------------------------------------------
-            # 5. Upsert 4 Structured Lessons per Course for the Course Player
+            # 3. Upsert Roadmap Steps for this Learning Path
             # -----------------------------------------------------------------
-            lesson_templates = [
-                (
-                    f"Module 1: Introduction & Environment Setup",
-                    f"Overview of {title}, tool installation, configuration, and foundational principles.",
-                    "25 mins",
-                ),
-                (
-                    f"Module 2: Core Concepts & Syntax Walkthrough",
-                    f"Deep dive into the architecture, primary syntax patterns, and essential language features.",
-                    "45 mins",
-                ),
-                (
-                    f"Module 3: Hands-on Implementation & Practice",
-                    f"Step-by-step practical coding, debugging techniques, and real-world application building.",
-                    "35 mins",
-                ),
-                (
-                    f"Module 4: Advanced Patterns & Capstone Project",
-                    f"Production best practices, performance optimization, and comprehensive project walkthrough.",
-                    "40 mins",
-                ),
-            ]
-
-            for l_num, (l_title, l_desc, l_dur) in enumerate(lesson_templates, start=1):
-                stmt = select(Lesson).where(
-                    Lesson.course_id == course.id,
-                    Lesson.lesson_order == l_num,
+            for step_data in path_data.get("roadmap_steps", []):
+                step_num = step_data["step_number"]
+                stmt = select(RoadmapStep).where(
+                    and_(
+                        RoadmapStep.learning_path_id == learning_path.id,
+                        RoadmapStep.step_number == step_num,
+                    )
                 )
                 res = await session.execute(stmt)
-                lesson = res.scalars().first()
+                step = res.scalars().first()
 
-                if not lesson:
-                    lesson = Lesson(
-                        course_id=course.id,
-                        title=l_title,
-                        description=l_desc,
-                        youtube_video_id=yt_id,
-                        youtube_url=yt_url,
-                        thumbnail_url=f"https://img.youtube.com/vi/{yt_id}/mqdefault.jpg",
-                        duration=l_dur,
-                        lesson_order=l_num,
+                if not step:
+                    step = RoadmapStep(
+                        learning_path_id=learning_path.id,
+                        step_number=step_num,
+                        title=step_data["title"],
+                        description=step_data.get("description"),
                     )
-                    session.add(lesson)
-                    total_lessons += 1
+                    session.add(step)
+                    new_steps += 1
                 else:
-                    lesson.title = l_title
-                    lesson.description = l_desc
-                    lesson.youtube_video_id = yt_id
-                    lesson.youtube_url = yt_url
-                    lesson.thumbnail_url = f"https://img.youtube.com/vi/{yt_id}/mqdefault.jpg"
-                    lesson.duration = l_dur
+                    step.title = step_data["title"]
+                    step.description = step_data.get("description", step.description)
+                    updated_steps += 1
+
+            # -----------------------------------------------------------------
+            # 4. Upsert Courses for this Learning Path
+            # -----------------------------------------------------------------
+            for course_data in path_data.get("courses", []):
+                # Try finding course by learning_path_id + lesson_order or title
+                stmt = select(Course).where(
+                    and_(
+                        Course.learning_path_id == learning_path.id,
+                        Course.lesson_order == course_data["lesson_order"],
+                    )
+                )
+                res = await session.execute(stmt)
+                course = res.scalars().first()
+
+                if not course:
+                    # Also try title fallback
+                    stmt_title = select(Course).where(Course.title == course_data["title"])
+                    res_title = await session.execute(stmt_title)
+                    course = res_title.scalars().first()
+
+                if not course:
+                    course = Course(
+                        title=course_data["title"],
+                        description=course_data.get("description"),
+                        platform=course_data.get("platform"),
+                        instructor=course_data.get("instructor"),
+                        duration=course_data.get("duration"),
+                        difficulty=course_data.get("difficulty", "Beginner"),
+                        tags=course_data.get("tags", []),
+                        youtube_video_id=course_data.get("youtube_video_id"),
+                        youtube_url=course_data.get("youtube_url"),
+                        thumbnail_url=course_data.get("thumbnail_url"),
+                        playlist_url=course_data.get("playlist_url"),
+                        lesson_order=course_data.get("lesson_order"),
+                        skill_id=skill.id,
+                        learning_path_id=learning_path.id,
+                    )
+                    session.add(course)
+                    await session.flush()
+                    new_courses += 1
+                else:
+                    course.title = course_data["title"]
+                    course.description = course_data.get("description", course.description)
+                    course.platform = course_data.get("platform", course.platform)
+                    course.instructor = course_data.get("instructor", course.instructor)
+                    course.duration = course_data.get("duration", course.duration)
+                    course.difficulty = course_data.get("difficulty", course.difficulty or "Beginner")
+                    course.tags = course_data.get("tags", course.tags or [])
+                    course.youtube_video_id = course_data.get("youtube_video_id", course.youtube_video_id)
+                    course.youtube_url = course_data.get("youtube_url", course.youtube_url)
+                    course.thumbnail_url = course_data.get("thumbnail_url", course.thumbnail_url)
+                    course.playlist_url = course_data.get("playlist_url", course.playlist_url)
+                    course.lesson_order = course_data.get("lesson_order", course.lesson_order)
+                    course.skill_id = skill.id
+                    course.learning_path_id = learning_path.id
+                    await session.flush()
+                    updated_courses += 1
+
+                # -------------------------------------------------------------
+                # 5. Upsert Lessons for this Course
+                # -------------------------------------------------------------
+                for lesson_data in course_data.get("lessons", []):
+                    stmt = select(Lesson).where(
+                        and_(
+                            Lesson.course_id == course.id,
+                            Lesson.lesson_order == lesson_data["lesson_order"],
+                        )
+                    )
+                    res = await session.execute(stmt)
+                    lesson = res.scalars().first()
+
+                    if not lesson:
+                        lesson = Lesson(
+                            course_id=course.id,
+                            title=lesson_data["title"],
+                            description=lesson_data.get("description"),
+                            youtube_video_id=lesson_data["youtube_video_id"],
+                            youtube_url=lesson_data.get("youtube_url"),
+                            thumbnail_url=lesson_data.get("thumbnail_url"),
+                            duration=lesson_data.get("duration"),
+                            lesson_order=lesson_data["lesson_order"],
+                        )
+                        session.add(lesson)
+                        new_lessons += 1
+                    else:
+                        lesson.title = lesson_data["title"]
+                        lesson.description = lesson_data.get("description", lesson.description)
+                        lesson.youtube_video_id = lesson_data.get("youtube_video_id", lesson.youtube_video_id)
+                        lesson.youtube_url = lesson_data.get("youtube_url", lesson.youtube_url)
+                        lesson.thumbnail_url = lesson_data.get("thumbnail_url", lesson.thumbnail_url)
+                        lesson.duration = lesson_data.get("duration", lesson.duration)
+                        updated_lessons += 1
+
+        # Periodically flush every 10 skills
+        if skill_idx % 10 == 0:
+            await session.flush()
+            print(f"Processed {skill_idx}/{len(catalog)} skills...")
+
+    # -------------------------------------------------------------------------
+    # 6. Upsert Skill Prerequisite Relationships
+    # -------------------------------------------------------------------------
+    for skill_data in catalog:
+        skill = skill_map.get(skill_data["name"])
+        if not skill:
+            continue
+        for prereq_name in skill_data.get("prerequisites", []):
+            prereq_skill = skill_map.get(prereq_name)
+            if prereq_skill:
+                stmt = select(SkillPrerequisite).where(
+                    and_(
+                        SkillPrerequisite.skill_id == skill.id,
+                        SkillPrerequisite.prerequisite_id == prereq_skill.id,
+                    )
+                )
+                res = await session.execute(stmt)
+                existing = res.scalars().first()
+                if not existing:
+                    session.add(SkillPrerequisite(skill_id=skill.id, prerequisite_id=prereq_skill.id))
+                    new_prereqs += 1
 
     await session.commit()
     print("Database seeding completed successfully!")
-    print(f"Summary: Processed {len(DOMAINS)} domains.")
-    print(f"Total new items added in this run: Skills: {total_skills}, Paths: {total_paths}, Steps: {total_steps}, Courses: {total_courses}, Lessons: {total_lessons}")
+    print(
+        f"Summary: Processed {len(catalog)} skills. "
+        f"Skills (New: {new_skills}, Updated: {updated_skills}) | "
+        f"Paths (New: {new_paths}, Updated: {updated_paths}) | "
+        f"Courses (New: {new_courses}, Updated: {updated_courses}) | "
+        f"Steps (New: {new_steps}, Updated: {updated_steps}) | "
+        f"Lessons (New: {new_lessons}, Updated: {updated_lessons}) | "
+        f"Prerequisites (New: {new_prereqs})"
+    )
 
 
 async def main() -> None:

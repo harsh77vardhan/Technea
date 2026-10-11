@@ -1,10 +1,10 @@
-"""Courses API endpoints."""
-
+from typing import Annotated
 from fastapi import APIRouter, HTTPException, Query, status
 from app.api.deps import DatabaseDep
 from app.schemas.course import CourseResponse
 from app.schemas.lesson import LessonResponse
 from app.services.course import course_service
+from app.services.search import search_service
 
 router = APIRouter(tags=["Courses"])
 
@@ -14,16 +14,22 @@ router = APIRouter(tags=["Courses"])
     response_model=list[CourseResponse],
     status_code=status.HTTP_200_OK,
     summary="List all courses",
-    description="Retrieve all available courses, optionally filtered by skill ID or learning path ID.",
+    description="Retrieve all available courses, optionally filtered by skill ID, learning path ID, or search query.",
 )
 async def get_courses(
     db: DatabaseDep,
-    skill_id: int | None = Query(default=None, description="Filter courses by associated skill ID"),
-    learning_path_id: int | None = Query(default=None, description="Filter courses by associated learning path ID"),
-    skip: int = Query(default=0, ge=0, description="Offset for pagination"),
-    limit: int = Query(default=200, ge=1, le=500, description="Limit for pagination"),
+    q: Annotated[str | None, Query(description="Search term for fuzzy or synonym course matching")] = None,
+    level: Annotated[str | None, Query(description="Optional difficulty level filter")] = None,
+    skill_id: Annotated[int | None, Query(description="Filter courses by associated skill ID")] = None,
+    learning_path_id: Annotated[int | None, Query(description="Filter courses by associated learning path ID")] = None,
+    skip: Annotated[int, Query(ge=0, description="Offset for pagination")] = 0,
+    limit: Annotated[int, Query(ge=1, le=2000, description="Limit for pagination")] = 200,
 ) -> list[CourseResponse]:
     """Retrieve courses."""
+    if q and isinstance(q, str):
+        courses = await search_service.search_courses(db, query=q, level=level, limit=limit)
+        return [CourseResponse.model_validate(course) for course in courses]
+
     if skill_id is not None or learning_path_id is not None:
         courses = await course_service.get_filtered(
             db,
@@ -90,9 +96,10 @@ async def get_course_lessons(
 async def get_related_courses(
     course_id: int,
     db: DatabaseDep,
-    limit: int = Query(default=4, ge=1, le=10, description="Max related courses to return"),
+    limit: Annotated[int, Query(ge=1, le=10, description="Max related courses to return")] = 4,
 ) -> list[CourseResponse]:
     """Retrieve related courses for recommendations."""
-    related = await course_service.get_related(db, course_id=course_id, limit=limit)
+    lim = limit if isinstance(limit, int) else 4
+    related = await course_service.get_related(db, course_id=course_id, limit=lim)
     return [CourseResponse.model_validate(course) for course in related]
 

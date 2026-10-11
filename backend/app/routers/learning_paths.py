@@ -1,5 +1,4 @@
-"""Learning paths API endpoints."""
-
+from typing import Annotated
 from fastapi import APIRouter, HTTPException, Query, status
 from app.api.deps import DatabaseDep
 from app.schemas.learning_path import LearningPathResponse
@@ -13,15 +12,25 @@ router = APIRouter(tags=["Learning Paths"])
     response_model=list[LearningPathResponse],
     status_code=status.HTTP_200_OK,
     summary="List all learning paths",
-    description="Retrieve all learning paths along with their associated roadmap steps.",
+    description="Retrieve learning paths along with their associated roadmap steps, supporting search and filtering.",
 )
 async def get_learning_paths(
     db: DatabaseDep,
-    skip: int = Query(default=0, ge=0, description="Offset for pagination"),
-    limit: int = Query(default=100, ge=1, le=100, description="Limit for pagination"),
+    q: Annotated[str | None, Query(description="Optional search query with fuzzy and synonym matching")] = None,
+    category: Annotated[str | None, Query(description="Optional domain category filter")] = None,
+    level: Annotated[str | None, Query(description="Optional difficulty level filter")] = None,
+    skip: Annotated[int, Query(ge=0, description="Offset for pagination")] = 0,
+    limit: Annotated[int, Query(ge=1, le=500, description="Limit for pagination")] = 250,
 ) -> list[LearningPathResponse]:
-    """Retrieve all learning paths."""
-    paths = await learning_path_service.get_multi_with_steps(db, skip=skip, limit=limit)
+    """Retrieve all learning paths with optional search and filters."""
+    paths = await learning_path_service.get_multi_with_steps(
+        db,
+        skip=skip,
+        limit=limit,
+        q=q,
+        category=category,
+        level=level,
+    )
     return [LearningPathResponse.model_validate(path) for path in paths]
 
 

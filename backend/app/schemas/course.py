@@ -1,7 +1,6 @@
-"""Pydantic schemas for Course entity."""
-
+from typing import Any
 from datetime import datetime
-from pydantic import Field
+from pydantic import Field, field_validator
 
 from app.schemas.common import CustomBaseModel
 from app.schemas.lesson import LessonResponse
@@ -15,6 +14,8 @@ class CourseBase(CustomBaseModel):
     platform: str | None = Field(default=None, description="Hosting platform or source", max_length=100)
     instructor: str | None = Field(default=None, description="Instructor name", max_length=255)
     duration: str | None = Field(default=None, description="Course duration", max_length=100)
+    difficulty: str | None = Field(default="Beginner", description="Course difficulty level", max_length=50)
+    tags: list[str] = Field(default_factory=list, description="Course tags")
     youtube_url: str | None = Field(default=None, description="Direct YouTube video or playlist URL", max_length=500)
     youtube_video_id: str | None = Field(default=None, description="YouTube Video ID for embedded player", max_length=100)
     thumbnail_url: str | None = Field(default=None, description="Thumbnail image URL", max_length=500)
@@ -22,6 +23,11 @@ class CourseBase(CustomBaseModel):
     lesson_order: int | None = Field(default=None, description="Order within track")
     skill_id: int = Field(description="ID of associated skill")
     learning_path_id: int | None = Field(default=None, description="Optional ID of associated learning path")
+
+    @field_validator("tags", mode="before")
+    @classmethod
+    def ensure_tags_list(cls, v: Any) -> list[str]:
+        return v if v is not None else []
 
 
 class CourseCreate(CourseBase):
@@ -38,6 +44,8 @@ class CourseUpdate(CustomBaseModel):
     platform: str | None = Field(default=None, max_length=100)
     instructor: str | None = Field(default=None, max_length=255)
     duration: str | None = Field(default=None, max_length=100)
+    difficulty: str | None = Field(default=None, max_length=50)
+    tags: list[str] | None = None
     youtube_url: str | None = Field(default=None, max_length=500)
     youtube_video_id: str | None = Field(default=None, max_length=100)
     thumbnail_url: str | None = Field(default=None, max_length=500)

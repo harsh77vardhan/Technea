@@ -64,11 +64,21 @@ function isNumericId(val) {
 }
 
 /**
- * Fetch all available skills
+ * Fetch all available skills with optional search or category filter
+ * @param {Object} [params]
+ * @param {string} [params.q] - Optional search query
+ * @param {string} [params.category] - Optional domain category filter
+ * @param {number} [params.limit=150] - Pagination limit
  * @returns {Promise<Array>} List of skill objects
  */
-export async function getSkills() {
-  return request('/skills')
+export async function getSkills(params = {}) {
+  const query = new URLSearchParams()
+  if (params.q) query.append('q', params.q)
+  if (params.category) query.append('category', params.category)
+  if (params.limit) query.append('limit', String(params.limit))
+  else query.append('limit', '150')
+  const queryString = query.toString() ? `?${query.toString()}` : ''
+  return request(`/skills${queryString}`)
 }
 
 /**
@@ -84,11 +94,78 @@ export async function getSkillById(id) {
 }
 
 /**
- * Fetch all curated learning paths with their roadmap steps
+ * Fetch skill graph relationships (prerequisites, recommended next skills, paths)
+ * @param {number|string} id - Skill identifier
+ * @returns {Promise<Object>}
+ */
+export async function getSkillRelationships(id) {
+  if (!isNumericId(id)) {
+    throw new Error(`Invalid skill ID: ${id}`)
+  }
+  return request(`/skills/${id}/relationships`)
+}
+
+/**
+ * Fetch curated learning paths with their roadmap steps, supporting search & filters
+ * @param {Object} [params]
+ * @param {string} [params.q] - Optional search query with fuzzy and synonym matching
+ * @param {string} [params.category] - Optional domain filter
+ * @param {string} [params.level] - Optional difficulty filter
+ * @param {number} [params.limit=250] - Pagination limit
  * @returns {Promise<Array>} List of learning path objects
  */
-export async function getLearningPaths() {
-  return request('/learning-paths')
+export async function getLearningPaths(params = {}) {
+  const query = new URLSearchParams()
+  if (params.q) query.append('q', params.q)
+  if (params.category) query.append('category', params.category)
+  if (params.level) query.append('level', params.level)
+  if (params.limit) query.append('limit', String(params.limit))
+  else query.append('limit', '250')
+  const queryString = query.toString() ? `?${query.toString()}` : ''
+  return request(`/learning-paths${queryString}`)
+}
+
+/**
+ * Unified platform search with fuzzy matching and synonym expansion
+ * @param {string} q - Search query term
+ * @param {Object} [options]
+ * @param {string} [options.category] - Optional category filter
+ * @param {string} [options.level] - Optional difficulty level
+ * @param {number} [options.limit=15] - Limit per entity
+ * @returns {Promise<Object>} { query, synonyms_expanded, fuzzy_corrections, learning_paths, skills, courses }
+ */
+export async function searchCatalog(q, options = {}) {
+  if (!q || !q.trim()) {
+    return {
+      query: '',
+      normalized_query: '',
+      synonyms_expanded: [],
+      fuzzy_corrections: [],
+      learning_paths: [],
+      skills: [],
+      courses: [],
+      total_matches: 0,
+    }
+  }
+  const query = new URLSearchParams()
+  query.append('q', q.trim())
+  if (options.category) query.append('category', options.category)
+  if (options.level) query.append('level', options.level)
+  if (options.limit) query.append('limit', String(options.limit))
+  return request(`/search?${query.toString()}`)
+}
+
+/**
+ * AI Intent understanding and learning progression recommendation
+ * @param {string} prompt - Natural language goal or background prompt
+ * @returns {Promise<Object>} { intent, recommended_progression, recommended_learning_paths, recommended_courses }
+ */
+export async function analyzeIntent(prompt) {
+  if (!prompt || !prompt.trim()) {
+    throw new Error('Prompt query is required')
+  }
+  const query = new URLSearchParams({ q: prompt.trim() })
+  return request(`/search/intent?${query.toString()}`)
 }
 
 /**
@@ -163,11 +240,14 @@ export async function getRelatedCourses(courseId, limit = 4) {
 export default {
   getSkills,
   getSkillById,
+  getSkillRelationships,
   getLearningPaths,
   getLearningPathById,
   getCourses,
   getCourseById,
   getCourseLessons,
   getRelatedCourses,
+  searchCatalog,
+  analyzeIntent,
 }
 

@@ -1,7 +1,6 @@
-"""Pydantic schemas for LearningPath entity."""
-
+from typing import Any
 from datetime import datetime
-from pydantic import Field
+from pydantic import Field, field_validator
 
 from app.schemas.common import CustomBaseModel
 from app.schemas.roadmap_step import RoadmapStepResponse
@@ -14,8 +13,17 @@ class LearningPathBase(CustomBaseModel):
     description: str | None = Field(default=None, description="Optional path description")
     category: str = Field(description="Category (e.g. Programming, AI & ML)", max_length=100)
     level: str = Field(description="Skill level (e.g. Beginner, Intermediate)", max_length=50)
+    difficulty: str | None = Field(default=None, description="Difficulty level alias (synced with level)", max_length=50)
     duration: str | None = Field(default=None, description="Estimated duration (e.g. 4 weeks)", max_length=100)
+    projects: list[dict] = Field(default_factory=list, description="Capstone projects")
+    search_terms: list[str] = Field(default_factory=list, description="Searchable keywords and terms")
+    related_concepts: list[str] = Field(default_factory=list, description="Related technical concepts")
     skill_id: int | None = Field(default=None, description="Optional associated skill ID")
+
+    @field_validator("projects", "search_terms", "related_concepts", mode="before")
+    @classmethod
+    def ensure_lists(cls, v: Any) -> list:
+        return v if v is not None else []
 
 
 class LearningPathCreate(LearningPathBase):
@@ -31,7 +39,11 @@ class LearningPathUpdate(CustomBaseModel):
     description: str | None = None
     category: str | None = Field(default=None, max_length=100)
     level: str | None = Field(default=None, max_length=50)
+    difficulty: str | None = Field(default=None, max_length=50)
     duration: str | None = Field(default=None, max_length=100)
+    projects: list[dict] | None = None
+    search_terms: list[str] | None = None
+    related_concepts: list[str] | None = None
     skill_id: int | None = None
 
 

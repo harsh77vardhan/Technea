@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import { ArrowRight, RotateCcw, AlertCircle, Loader2 } from 'lucide-react'
-import { getLearningPaths } from '../../services/api'
+import { ArrowRight, RotateCcw, AlertCircle, Loader2, Sparkles } from 'lucide-react'
+import { getLearningPaths, searchCatalog, analyzeIntent } from '../../services/api'
 import { COMPACT_FILTERS } from '../../constants/filters'
 
 export default function LearningBrowser({
@@ -12,6 +12,8 @@ export default function LearningBrowser({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [reloadKey, setReloadKey] = useState(0)
+  const [searchMeta, setSearchMeta] = useState({ fuzzy: [], synonyms: [] })
+  const [aiIntent, setAiIntent] = useState(null)
   const [activeFilters, setActiveFilters] = useState({
     level: null,
     duration: null,
@@ -20,30 +22,116 @@ export default function LearningBrowser({
     language: null,
   })
 
-  // Fetch learning paths asynchronously
+  // Fetch learning paths and process fuzzy/synonym/intent search
   useEffect(() => {
     let isMounted = true
 
-    getLearningPaths()
-      .then((data) => {
-        if (isMounted) {
-          setPaths(Array.isArray(data) ? data : [])
-          setError(null)
-          setLoading(false)
+    // Initialize state asynchronously to avoid React cascading render warnings
+    Promise.resolve().then(() => {
+      if (isMounted) {
+        setLoading(true)
+        setError(null)
+      }
+    })
+
+    const q = (submittedQuery || '').trim()
+
+    if (!q) {
+      getLearningPaths({ limit: 250 })
+        .then((data) => {
+          if (isMounted) {
+            setSearchMeta({ fuzzy: [], synonyms: [] })
+            setAiIntent(null)
+            setPaths(Array.isArray(data) ? data : [])
+            setLoading(false)
+          }
+        })
+        .catch((err) => {
+          if (isMounted) {
+            console.error('Failed to load learning paths from API:', err)
+            setError(err.message || 'Unable to load learning paths from server.')
+            setLoading(false)
+          }
+        })
+      return () => {
+        isMounted = false
+      }
+    }
+
+    // Detect if the query looks like a natural language learning goal / question
+    const isNaturalLanguage =
+      q.split(/\s+/).length >= 3 ||
+      /\b(never|want|build|start|learn|how|become|create|code|beginner|switch|path)\b/i.test(q)
+
+    const promises = [
+      searchCatalog(q, { limit: 30 }).catch((err) => {
+        console.warn('[Search] Catalog search error:', err.message)
+        return null
+      }),
+    ]
+
+    if (isNaturalLanguage) {
+      promises.push(
+        analyzeIntent(q).catch((err) => {
+          console.warn('[Intent] Intent parsing error:', err.message)
+          return null
+        })
+      )
+    }
+
+    Promise.all(promises).then(([searchRes, intentRes]) => {
+      if (!isMounted) return
+
+      let resolvedPaths = []
+      let fuzzy = []
+      let synonyms = []
+
+      if (searchRes) {
+        fuzzy = searchRes.fuzzy_corrections || []
+        synonyms = searchRes.synonyms_expanded || []
+        if (Array.isArray(searchRes.learning_paths) && searchRes.learning_paths.length > 0) {
+          resolvedPaths = searchRes.learning_paths
         }
-      })
-      .catch((err) => {
-        if (isMounted) {
-          console.error('Failed to load learning paths from API:', err)
-          setError(err.message || 'Unable to load learning paths from server.')
-          setLoading(false)
+      }
+
+      if (intentRes && intentRes.intent) {
+        setAiIntent(intentRes)
+        if (Array.isArray(intentRes.recommended_learning_paths) && intentRes.recommended_learning_paths.length > 0) {
+          const intentIds = new Set(intentRes.recommended_learning_paths.map((p) => p.id))
+          const nonDupes = resolvedPaths.filter((p) => !intentIds.has(p.id))
+          resolvedPaths = [...intentRes.recommended_learning_paths, ...nonDupes]
         }
-      })
+      } else {
+        setAiIntent(null)
+      }
+
+      setSearchMeta({ fuzzy, synonyms })
+
+      if (resolvedPaths.length > 0) {
+        setPaths(resolvedPaths)
+        setLoading(false)
+      } else {
+        // Fallback: fetch directly from learning-paths endpoint
+        getLearningPaths({ q, limit: 250 })
+          .then((data) => {
+            if (isMounted) {
+              setPaths(Array.isArray(data) ? data : [])
+              setLoading(false)
+            }
+          })
+          .catch((err) => {
+            if (isMounted) {
+              setError(err.message || 'Unable to load learning paths.')
+              setLoading(false)
+            }
+          })
+      }
+    })
 
     return () => {
       isMounted = false
     }
-  }, [reloadKey])
+  }, [submittedQuery, reloadKey])
 
   const handleRetry = useCallback(() => {
     setLoading(true)
@@ -51,33 +139,13 @@ export default function LearningBrowser({
     setReloadKey((k) => k + 1)
   }, [])
 
-  // Resolve search query matches against API data
-  const allPathsForQuery = useMemo(() => {
-    const q = (submittedQuery || '').trim().toLowerCase()
-    if (!q) return paths
-
-    return paths.filter((item) => {
-      const titleMatch = item.title?.toLowerCase().includes(q)
-      const catMatch = item.category?.toLowerCase().includes(q)
-      const descMatch = item.description?.toLowerCase().includes(q)
-      const stepsMatch = item.roadmap_steps?.some(
-        (step) =>
-          step.title?.toLowerCase().includes(q) ||
-          step.description?.toLowerCase().includes(q)
-      )
-      const topicsMatch = item.keyTopics?.some((t) =>
-        t.toLowerCase().includes(q)
-      )
-      return titleMatch || catMatch || descMatch || stepsMatch || topicsMatch
-    })
-  }, [paths, submittedQuery])
-
   // Apply active compact filters
   const filteredPaths = useMemo(() => {
-    return allPathsForQuery.filter((item) => {
+    return paths.filter((item) => {
       // Level filter
       if (activeFilters.level) {
-        if (!item.level || item.level.toLowerCase() !== activeFilters.level.toLowerCase()) {
+        const itemLevel = (item.level || item.difficulty || '').toLowerCase()
+        if (itemLevel !== activeFilters.level.toLowerCase()) {
           return false
         }
       }
@@ -113,7 +181,7 @@ export default function LearningBrowser({
 
       return true
     })
-  }, [allPathsForQuery, activeFilters])
+  }, [paths, activeFilters])
 
   const handleFilterToggle = (groupId, option) => {
     setActiveFilters((prev) => ({
@@ -146,15 +214,36 @@ export default function LearningBrowser({
           {displayTitle}
         </h1>
         <p className="mt-1 text-xs sm:text-sm text-neutral-400 font-light">
-          Explore learning paths, courses and projects
+          Explore curated learning paths, roadmaps and project milestones
         </p>
+
+        {/* Search feedback: Typo corrections & Synonym expansion */}
+        {searchMeta.fuzzy && searchMeta.fuzzy.length > 0 && (
+          <div className="mt-2.5 inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-1 text-xs text-neutral-300">
+            <span className="font-mono text-[10px] uppercase text-neutral-500 font-semibold">Matched:</span>
+            {searchMeta.fuzzy.map((c) => (
+              <span key={c} className="font-medium text-white">{c}</span>
+            ))}
+          </div>
+        )}
+
+        {searchMeta.synonyms && searchMeta.synonyms.length > 0 && !aiIntent && (
+          <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs text-neutral-400">
+            <span className="font-mono text-[10px] uppercase text-neutral-500">Related concepts:</span>
+            {searchMeta.synonyms.slice(0, 6).map((syn) => (
+              <span key={syn} className="rounded border border-white/5 bg-white/[0.02] px-2 py-0.5 text-[11px] text-neutral-400">
+                {syn}
+              </span>
+            ))}
+          </div>
+        )}
 
         <div className="mt-3 flex items-center justify-between">
           <p className="font-mono text-xs text-neutral-400 tracking-wider">
             {loading ? (
               <span className="inline-flex items-center gap-1.5 text-neutral-400">
                 <Loader2 className="h-3 w-3 animate-spin text-neutral-300" />
-                Fetching paths...
+                Scanning catalog...
               </span>
             ) : (
               `${filteredPaths.length} ${filteredPaths.length === 1 ? 'learning path' : 'learning paths'} found`
@@ -311,6 +400,62 @@ export default function LearningBrowser({
 
         {/* RIGHT RESULTS SECTION (Own separate vertical scroll) */}
         <main className="flex-1 h-full overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 pr-1 space-y-3 pb-6">
+          {/* ── AI Intent Blueprint Card ──────────────────────────────── */}
+          {!loading && aiIntent && (
+            <div className="rounded-xl border border-white/15 bg-gradient-to-b from-white/[0.05] to-white/[0.02] p-5 sm:p-6 mb-4 space-y-4 shadow-lg animate-in fade-in duration-300">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="inline-flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-white" />
+                  <span className="font-mono text-xs uppercase tracking-wider text-white font-semibold">
+                    AI Learning Blueprint
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 font-mono text-[11px] text-neutral-300">
+                    Level: {aiIntent.intent.experience_level}
+                  </span>
+                  <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 font-mono text-[11px] text-neutral-300">
+                    Domain: {aiIntent.intent.domain}
+                  </span>
+                </div>
+              </div>
+
+              <p className="text-xs sm:text-sm text-neutral-300 font-light leading-relaxed">
+                {aiIntent.intent.summary}
+              </p>
+
+              {/* Sequential Progression Roadmaps */}
+              {aiIntent.recommended_progression && aiIntent.recommended_progression.length > 0 && (
+                <div className="space-y-2 pt-2 border-t border-white/[0.08]">
+                  <span className="font-mono text-[10px] uppercase tracking-wider text-neutral-500 font-semibold block">
+                    Curated Step Progression
+                  </span>
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 overflow-x-auto pb-1 scrollbar-thin">
+                    {aiIntent.recommended_progression.map((step, idx) => (
+                      <div key={step.step} className="flex items-center gap-2 shrink-0">
+                        <div className="rounded-lg border border-white/10 bg-white/[0.04] p-3 text-left min-w-[150px]">
+                          <div className="flex items-center justify-between gap-2 text-[10px] font-mono text-neutral-400">
+                            <span>Step {step.step}</span>
+                            <span className="text-neutral-500">{step.estimated_duration}</span>
+                          </div>
+                          <div className="text-xs font-semibold text-white mt-1">
+                            {step.skill_name}
+                          </div>
+                          <div className="text-[11px] text-neutral-400 mt-0.5 line-clamp-1 font-light">
+                            {step.action}
+                          </div>
+                        </div>
+                        {idx < aiIntent.recommended_progression.length - 1 && (
+                          <ArrowRight className="h-3 w-3 text-neutral-600 shrink-0 hidden sm:block" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Loading State Skeleton */}
           {loading && (
             <div className="space-y-3 animate-pulse">
@@ -370,7 +515,7 @@ export default function LearningBrowser({
             <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-10 text-center">
               <p className="text-sm text-neutral-400 font-normal">
                 {paths.length === 0
-                  ? 'No learning paths available from database.'
+                  ? 'No learning paths found for this search.'
                   : 'No learning paths match these specific filters.'}
               </p>
               {hasActiveFilters && (
@@ -417,10 +562,10 @@ export default function LearningBrowser({
 
                     <div className="flex items-center gap-2">
                       <span className="rounded border border-white/10 bg-white/[0.04] px-2 py-0.5 font-mono text-[10px] text-neutral-300">
-                        {path.level}
+                        {path.level || path.difficulty || 'Beginner'}
                       </span>
                       <span className="rounded border border-white/10 bg-white/[0.04] px-2 py-0.5 font-mono text-[10px] text-neutral-300">
-                        {path.duration}
+                        {path.duration || '4 Weeks'}
                       </span>
                     </div>
                   </div>

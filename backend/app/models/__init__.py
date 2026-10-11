@@ -5,7 +5,7 @@ Import all database models here so Alembic can discover their metadata.
 
 from app.db.base import Base
 from app.models.base import IntIdMixin, TableNameMixin, TimestampMixin, UUIDIdMixin
-from app.models.skill import Skill
+from app.models.skill import Skill, SkillPrerequisite
 from app.models.learning_path import LearningPath
 from app.models.course import Course
 from app.models.roadmap_step import RoadmapStep
@@ -18,6 +18,7 @@ __all__ = [
     "UUIDIdMixin",
     "IntIdMixin",
     "Skill",
+    "SkillPrerequisite",
     "LearningPath",
     "Course",
     "RoadmapStep",
