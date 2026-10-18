@@ -12,6 +12,7 @@ from app.routers.roadmap_builder import router as roadmap_builder_router
 from app.routers.project import router as project_router
 from app.routers.community import router as community_router
 from app.routers.profile import router as profile_router
+from app.routers.ai import router as ai_router
 
 api_router = APIRouter()
 
@@ -29,6 +30,7 @@ api_router.include_router(
     learning_paths_router, prefix="/learning-paths", tags=["Learning Paths"]
 )
 api_router.include_router(courses_router, prefix="/courses", tags=["Courses"])
+api_router.include_router(ai_router, prefix="/ai", tags=["AI Mentor"])
 
 
 

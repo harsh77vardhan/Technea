@@ -1,0 +1,1313 @@
+"""Unified AI Service orchestrator for Technea.
+
+Manages primary (Gemini) and resilient fallback (Rule-Based / Mock) AI providers,
+ensuring consistent, safe, high-quality responses for learners across all platform features.
+"""
+
+import logging
+import random
+import re
+from typing import Any
+
+from app.core.config import settings
+from app.services.ai.base_provider import BaseAIProvider
+from app.services.ai.gemini_client import GeminiProvider, sanitize_text
+from app.services.ai.prompts import (
+    INTENT_CAREER_ADVICE,
+    INTENT_CASUAL,
+    INTENT_CODING_HELP,
+    INTENT_GREETING,
+    INTENT_LEARNING_ADVICE,
+    INTENT_NEXT_STEP,
+    INTENT_PROJECT_SUGGESTION,
+    INTENT_ROADMAP_REQUEST,
+    build_system_prompt,
+    classify_intent,
+)
+
+logger = logging.getLogger("technea.ai.service")
+
+
+class RuleBasedProvider(BaseAIProvider):
+    """High-quality pedagogical fallback AI provider.
+
+    Operates without external API dependencies or costs. Synthesizes structured,
+    domain-aware curriculums, debugging guidance, project recommendations,
+    and mentor coaching strictly adhering to Technea's AI Mentor personality.
+    """
+
+    @property
+    def provider_name(self) -> str:
+        return "rule_based"
+
+    @property
+    def is_configured(self) -> bool:
+        return True
+
+    def _choose(self, options: list[Any], rng: random.Random | None = None, seed: Any = None) -> Any:
+        """Select a random option, using rng instance, seed, or global random."""
+        if not options:
+            return ""
+        if rng is not None:
+            return rng.choice(options)
+        if seed is not None:
+            return random.Random(seed).choice(options)
+        return random.choice(options)
+
+    def _detect_domain(self, text: str, context: dict[str, Any] | None = None) -> str:
+        """Infer tech domain from query and context."""
+        if context and context.get("domain"):
+            return str(context["domain"]).lower()
+
+        t = text.lower()
+        if "python" in t and not any(w in t for w in ["machine learning", "deep learning", "neural", "rag"]):
+            return "python"
+        elif any(w in t for w in ["web", "html", "css", "javascript", "react", "frontend", "full stack", "next.js", "node", "typescript"]):
+            return "web_development"
+        elif any(w in t for w in ["ai", "machine learning", "ml", "deep learning", "neural", "llm", "rag", "pytorch", "gpt"]):
+            return "ai_ml"
+        elif any(w in t for w in ["cyber", "hack", "security", "pentest", "owasp", "network", "linux"]):
+            return "cybersecurity"
+        elif any(w in t for w in ["data", "sql", "analytics", "power bi", "pandas", "tableau", "warehouse"]):
+            return "data"
+        elif any(w in t for w in ["cloud", "devops", "docker", "kubernetes", "aws", "terraform", "ci/cd"]):
+            return "cloud_devops"
+        elif any(w in t for w in ["design", "ui", "ux", "figma", "prototype", "wireframe"]):
+            return "design"
+        elif any(w in t for w in ["video", "edit", "premiere", "davinci", "after effects", "youtube"]):
+            return "video_editing"
+        elif any(w in t for w in ["startup", "business", "freelance", "mvp", "marketing"]):
+            return "business"
+        elif "python" in t:
+            return "python"
+        return "general_tech"
+
+    def _detect_level(self, text: str, context: dict[str, Any] | None = None) -> str:
+        """Infer learner level from text and context."""
+        if context:
+            lvl = context.get("level") or context.get("learner_level") or context.get("experience_level")
+            if lvl:
+                return str(lvl).strip().title()
+
+        t = text.lower()
+        if any(w in t for w in ["never coded", "from zero", "scratch", "absolute beginner", "brand new"]):
+            return "Absolute Beginner"
+        elif any(w in t for w in ["advanced", "architect", "scale", "performance", "high throughput", "senior"]):
+            return "Advanced"
+        elif any(w in t for w in ["intermediate", "experienced", "transition", "next level", "mid-level"]):
+            return "Intermediate"
+        return "Beginner"
+
+    def _is_beginner(self, level: str) -> bool:
+        """Check whether the level corresponds to beginner tier."""
+        lvl = level.lower()
+        return any(b in lvl for b in ["beginner", "code initiate", "explorer", "novice", "absolute", "junior"])
+
+    def _generate_greeting_response(
+        self,
+        user_name: str | None = None,
+        level: str = "Beginner",
+        seed: Any = None,
+    ) -> str:
+        name_str = f", **{user_name}**" if user_name else ""
+        header = "### Technea AI Mentor"
+
+        greetings = [
+            f"Hey{name_str}, welcome back! Good to see you continuing your coding journey at the **{level}** level.",
+            f"Hello{name_str}! Great to connect. Ready to help you tackle your next coding goals at the **{level}** stage.",
+            f"Hi{name_str}, welcome! Good to see you here continuing at the **{level}** level.",
+            f"Hey{name_str}! Hope your coding is going well today as you build your **{level}** skills.",
+        ]
+
+        closings = [
+            "What would you like to build or learn today? (You can explore a tailored **Roadmap**, plan hands-on **Projects**, or tackle a coding milestone.)",
+            "Where should we focus today? (You can request a tailored **Roadmap**, plan **Projects**, or work through a technical challenge.)",
+            "What technical challenge or topic should we dive into today? (Explore structured **Roadmaps**, plan **Projects**, or review an algorithm.)",
+            "What would you like to master in our session? (You can explore **Roadmaps**, plan **Projects**, or tackle your next step.)",
+        ]
+
+        rng = random.Random(seed) if seed is not None else None
+        selected_greeting = self._choose(greetings, rng=rng)
+        selected_closing = self._choose(closings, rng=rng)
+
+        return (
+            f"{header}\n\n"
+            f"{selected_greeting}\n\n"
+            f"{selected_closing}"
+        )
+
+    def _generate_next_step_response(
+        self,
+        domain: str,
+        level: str,
+        prompt: str = "",
+        context: dict[str, Any] | None = None,
+        seed: Any = None,
+    ) -> str:
+        """Generate a personalized next step action plan with natural conversational flow."""
+        user_progress = (context.get("user_progress") or {}) if context else {}
+        active_roadmaps = user_progress.get("active_roadmaps", []) if isinstance(user_progress, dict) else []
+        completed_milestones = context.get("completed_milestones", 0) if context else 0
+        if isinstance(completed_milestones, list):
+            completed_milestones = len(completed_milestones)
+        is_beg = self._is_beginner(level)
+        p_lower = prompt.lower()
+        user_name = context.get("user_name") if context else None
+        name_prefix = f"{user_name}, " if user_name else ""
+
+        header = "### Action Plan: Your Next Engineering Steps"
+
+        # Check for HTML/CSS prerequisite completion
+        if ("html" in p_lower and "css" in p_lower) and any(w in p_lower for w in ["completed", "finished", "done"]):
+            conversation_body = (
+                f"{name_prefix}you have completed foundational HTML semantic markup and responsive CSS layout systems.\n\n"
+                "Your next focus should be **Modern JavaScript (ES6+)**. "
+                "Focus on core programming mechanics: functions, array methods (`map`/`filter`/`reduce`), DOM manipulation, and asynchronous `fetch` calls.\n\n"
+                "JavaScript provides the dynamic programming engine of the web. "
+                "Jumping directly into frontend frameworks like React without solid JavaScript fundamentals creates fragile code.\n\n"
+                "Once completed, you will have built an interactive, responsive single-page application with dynamic DOM updates and API data fetching without third-party frameworks."
+            )
+        # 1. Milestone Awareness from Active Roadmap
+        elif active_roadmaps:
+            ar = active_roadmaps[0]
+            current_step = ar.get("current_step", 1)
+            total_steps = ar.get("total_steps", 5)
+            roadmap_title = ar.get("title", "Active Track")
+            goal = ar.get("goal") or "Engineering Mastery"
+            cur_m = ar.get("current_milestone") or {}
+            cur_title = ar.get("current_milestone_title") or cur_m.get("title") or f"Milestone {current_step}"
+            cur_desc = ar.get("current_milestone_description") or cur_m.get("description") or ""
+            cur_proj = ar.get("current_project") or cur_m.get("project")
+
+            # Build precise milestone focus instruction
+            desc_focus = cur_desc.rstrip(".") if cur_desc else "core competencies"
+            proj_hint = ""
+            if cur_proj and isinstance(cur_proj, dict) and cur_proj.get("title"):
+                proj_hint = f" and build the practical deliverable: **{cur_proj['title']}**."
+            elif cur_desc and "build" not in cur_desc.lower():
+                proj_hint = " and build 2 responsive pages."
+            else:
+                proj_hint = "."
+
+            conversation_body = (
+                f"{name_prefix}you are currently at **{cur_title}** in your **{roadmap_title}** track "
+                f"({completed_milestones} milestone(s) completed, Goal: *{goal}*).\n\n"
+                f"Your next focus should be {desc_focus}{proj_hint}\n\n"
+                f"Mastering **{cur_title}** builds directly upon your earlier milestones "
+                f"and sets up the solid foundation you need before advancing to subsequent modules.\n\n"
+                f"Once completed, you will have a working deliverable pushed to GitHub showcasing your skills in "
+                f"**{cur_title}**."
+            )
+        else:
+            domain_label = domain.replace("_", " ").title()
+            if is_beg:
+                if domain == "ai_ml":
+                    conversation_body = (
+                        f"{name_prefix}you are currently building your foundational skills in **{domain_label}** at the **{level}** level.\n\n"
+                        "Your next focus should be Python data manipulation fundamentals: NumPy array operations, basic Pandas dataframes, "
+                        "and writing clean, parameterized functions.\n\n"
+                        "Machine learning algorithms require fluid numerical computing and data wrangling skills. "
+                        "Skipping straight to models or neural networks without data foundations leads to fragile code.\n\n"
+                        "Once completed, you will have an exploratory data analysis (EDA) notebook analyzing a real-world CSV dataset with summary statistics and visualizations."
+                    )
+                elif domain == "web_development":
+                    conversation_body = (
+                        f"{name_prefix}you are currently building your foundational skills in **{domain_label}** at the **{level}** level.\n\n"
+                        "Your next focus should be Modern JavaScript syntax and DOM manipulation fundamentals: functions, array methods (`map`/`filter`/`reduce`), "
+                        "and async/fetch calls before jumping into frontend frameworks.\n\n"
+                        "React and full-stack frameworks rely heavily on functional JavaScript patterns. "
+                        "Getting comfortable with them first makes learning frameworks so much easier.\n\n"
+                        "Once completed, you will have built an interactive, responsive single-page application communicating with an open API without third-party frameworks."
+                    )
+                else:
+                    conversation_body = (
+                        f"{name_prefix}you are currently establishing your programming foundations in **{domain_label}** at the **{level}** level.\n\n"
+                        "Your next focus should be core language syntax, control flow (loops/conditionals), and functions by completing "
+                        "3 small algorithmic or CLI exercises.\n\n"
+                        "Strong syntax fluency is the essential prerequisite before attempting web frameworks, APIs, or database integration.\n\n"
+                        "Once completed, you will have a working command-line interface (CLI) tool with input validation, error handling, and clean modular structure."
+                    )
+            else:
+                conversation_body = (
+                    f"{name_prefix}you are established at the **{level}** level in **{domain_label}**.\n\n"
+                    "Your next focus should be building an integrated, multi-tier project incorporating asynchronous API endpoints, persistent database storage, and unit test coverage.\n\n"
+                    "Bridging intermediate to senior capability requires shipping complete systems rather than isolated scripts.\n\n"
+                    "Once completed, you will have a fully containerized REST microservice with automated tests and CI workflow deployed to a staging environment."
+                )
+
+        action_steps = (
+            "#### Immediate Step-by-Step Action Plan:\n"
+            "1. **Next study session**: Focus strictly on the single concept outlined above. Write working code in your editor.\n"
+            "2. **This week**: Complete and test the practical deliverable. Avoid switching topics until this milestone passes verification.\n"
+            "3. **Verification**: Push your code to GitHub with a descriptive commit message and run tests.\n"
+        )
+
+        return f"{header}\n\n{conversation_body}\n\n{action_steps}"
+
+    def _generate_milestone_deep_dive_response(
+        self,
+        prompt: str,
+        domain: str,
+        level: str,
+        context: dict[str, Any] | None = None,
+        seed: Any = None,
+    ) -> str:
+        """Deeply breakdown the learner's active milestone: concepts, action items, deliverable, verification."""
+        user_progress = (context.get("user_progress") or {}) if context else {}
+        active_roadmaps = user_progress.get("active_roadmaps", []) if isinstance(user_progress, dict) else []
+
+        if active_roadmaps:
+            ar = active_roadmaps[0]
+            cur_m = ar.get("current_milestone") or {}
+            cur_title = ar.get("current_milestone_title") or cur_m.get("title") or "Active Milestone"
+            cur_desc = ar.get("current_milestone_description") or cur_m.get("description") or "Master core competencies."
+            key_skills = ar.get("current_key_skills") or cur_m.get("key_skills", [])
+            prereqs = ar.get("required_prerequisites") or cur_m.get("prerequisites", [])
+            action_items = ar.get("current_action_items") or cur_m.get("action_items", [])
+            project = ar.get("current_project") or cur_m.get("project")
+            upcoming = ar.get("upcoming_milestone_title") or "Upcoming Phase"
+            roadmap_title = ar.get("title", "Active Roadmap")
+        else:
+            cur_title = "Responsive Web Design & Foundations"
+            cur_desc = "HTML semantic markup, CSS Flexbox/Grid, and responsive layout principles."
+            key_skills = ["HTML5", "CSS3", "Flexbox", "CSS Grid", "Responsive Design"]
+            prereqs = ["Web Fundamentals"]
+            action_items = [
+                "Structure accessible semantic HTML markup with header, nav, main, section, and footer elements.",
+                "Implement a mobile-first responsive layout using modern CSS Flexbox and Grid.",
+                "Build and test responsive breakpoints across mobile, tablet, and desktop viewports.",
+            ]
+            project = {
+                "title": "Responsive Product Landing Page",
+                "description": "A fully responsive, accessible 2-page product site with interactive navigation.",
+                "tech_stack": ["HTML5", "CSS3", "Flexbox", "Grid"],
+            }
+            upcoming = "Modern JavaScript (ES6+) Fundamentals"
+            roadmap_title = "Web Development"
+
+        header = f"### Milestone Deep Dive: {cur_title}"
+
+        intro = (
+            f"Here is your in-depth technical focus for **{cur_title}** within your **{roadmap_title}** track.\n\n"
+            f"**Objective**: {cur_desc}"
+        )
+
+        # 1. Key Skills
+        skills_str = ", ".join(f"`{s}`" for s in key_skills) if key_skills else "`Foundations`"
+        skills_sec = f"#### 1. Core Competencies & Skills to Acquire:\n- Key Skills: {skills_str}"
+        if prereqs:
+            prereqs_str = ", ".join(f"`{p}`" for p in prereqs)
+            skills_sec += f"\n- Verified Prerequisites: {prereqs_str}"
+
+        # 2. Action Items
+        action_lines = ["#### 2. Practical Action Steps:"]
+        if action_items:
+            for idx, item in enumerate(action_items, 1):
+                action_lines.append(f"{idx}. {item}")
+        else:
+            action_lines.append("1. Set up your local workspace and repository with clean folder structure.")
+            action_lines.append(f"2. Implement the core concepts of {cur_title} in working code.")
+            action_lines.append("3. Write verification checks and edge-case tests.")
+        action_sec = "\n".join(action_lines)
+
+        # 3. Deliverable Lab Project
+        if project and isinstance(project, dict):
+            proj_title = project.get("title", "Hands-on Milestone Lab")
+            proj_desc = project.get("description", "A practical deliverable demonstrating milestone mastery.")
+            proj_stack = ", ".join(project.get("tech_stack", [])) if project.get("tech_stack") else "Modern Stack"
+            lab_sec = (
+                f"#### 3. Milestone Deliverable:\n"
+                f"- **Project**: **{proj_title}**\n"
+                f"- **Specification**: {proj_desc}\n"
+                f"- **Tech Stack**: {proj_stack}"
+            )
+        else:
+            lab_sec = (
+                f"#### 3. Milestone Deliverable:\n"
+                f"- Build 2 verified pages or modules showcasing your implementation of {cur_title}."
+            )
+
+        # 4. Schedule and verification
+        schedule_sec = (
+            "#### 4. Study Schedule & Verification Checklist:\n"
+            f"- **Next study session**: Implement the first action item in your editor and commit the initial scaffold.\n"
+            f"- **This week**: Complete the milestone deliverable, push to GitHub, and verify against prerequisites before advancing to **{upcoming}**."
+        )
+
+        return f"{header}\n\n{intro}\n\n{skills_sec}\n\n{action_sec}\n\n{lab_sec}\n\n{schedule_sec}"
+
+    def _generate_roadmap_response(
+        self,
+        domain: str,
+        level: str,
+        topic: str = "",
+        seed: Any = None,
+    ) -> str:
+        curricula = {
+            "python": [
+                ("Phase 1: Python Core Foundations & Data Structures", "2-3 Weeks", "Variables, control flow, functions, lists, dicts, tuples, sets, comprehensions, and type annotations. Milestone: Build an interactive CLI personal data manager."),
+                ("Phase 2: Object-Oriented Design & Pythonic Idioms", "3 Weeks", "Classes, inheritance, dunder methods, decorators, context managers, generators, and exception hierarchy. Milestone: Extensible event-driven plugin system."),
+                ("Phase 3: Asynchronous Programming & Concurrency", "3 Weeks", "Asyncio event loop, coroutines, tasks, gather, ThreadPoolExecutor, and non-blocking I/O patterns. Milestone: High-throughput concurrent web scraper and API aggregator."),
+                ("Phase 4: Modern Web APIs & Persistence with FastAPI", "4 Weeks", "FastAPI routing, Pydantic v2 schemas, SQLAlchemy 2.0 async ORM, PostgreSQL, and Alembic migrations. Milestone: Production REST API with JWT authentication and rate limiting."),
+                ("Phase 5: Production Architecture, Testing & CI/CD", "3-4 Weeks", "Pytest unit & integration suites, Docker multi-stage containerization, GitHub Actions CI, and Redis caching. Milestone: Production-ready microservice deployed with automated CI."),
+            ],
+            "web_development": [
+                ("Phase 1: Modern HTML5 & Semantic Web Foundations", "1-2 Weeks", "Semantic tags, accessible forms (WCAG), CSS Grid, Flexbox, and Tailwind CSS design systems. Milestone: Responsive multi-page portfolio."),
+                ("Phase 2: Modern JavaScript (ES2024+) & Async Programming", "3-4 Weeks", "Closures, event loop, Promises, Async/Await, Fetch API, and DOM manipulation. Milestone: Interactive state-driven web dashboard."),
+                ("Phase 3: React & Component Architecture", "4 Weeks", "Custom Hooks, reactive state, component composition, Context API, and client routing. Milestone: Collaborative task Kanban application."),
+                ("Phase 4: Full-Stack Backend & Database Capstone", "4-5 Weeks", "FastAPI or Node.js backend, PostgreSQL with async ORM, and REST/GraphQL API design. Milestone: Full-stack platform with secure user auth."),
+                ("Phase 5: Production Deployment & Observability", "3 Weeks", "Docker containerization, CI/CD automated deployment, caching with Redis, and monitoring. Milestone: Production cloud deployment."),
+            ],
+            "ai_ml": [
+                ("Phase 1: Python for AI & Numerical Foundations", "3-4 Weeks", "NumPy array vectorization, Pandas data structures, and mathematical intuition (linear algebra & calculus). Milestone: Exploratory data analysis suite."),
+                ("Phase 2: Supervised & Classical Machine Learning", "4-5 Weeks", "Scikit-Learn algorithms, feature engineering, cross-validation metrics, and hyperparameter tuning. Milestone: Predictive ML classification service."),
+                ("Phase 3: Deep Learning & PyTorch Foundations", "5 Weeks", "Tensors, autograd, neural network modules, loss functions, and backpropagation. Milestone: Computer vision image classifier."),
+                ("Phase 4: LLMs, Transformers & RAG Systems", "4-5 Weeks", "Attention mechanisms, vector databases (Chroma/Pinecone), embedding retrieval, and prompt engineering. Milestone: Production RAG question-answering assistant."),
+                ("Phase 5: Autonomous AI Agents & Production Capstone", "4 Weeks", "LangChain/LangGraph agent orchestration, tool execution loops, and streaming API endpoints. Milestone: Autonomous multi-tool coding agent."),
+            ],
+            "cybersecurity": [
+                ("Phase 1: Computing Fundamentals & Linux Mastery", "3 Weeks", "Linux CLI navigation, process permissions, bash scripting, and system security fundamentals. Milestone: Hardened Linux server setup."),
+                ("Phase 2: Computer Networking & Packet Analysis", "4 Weeks", "TCP/IP 3-way handshake, OSI layers, DNS, and Wireshark traffic inspection. Milestone: Network traffic inspection report."),
+                ("Phase 3: Ethical Hacking & Vulnerability Scanning", "4-5 Weeks", "Nmap reconnaissance, vulnerability assessment, and Metasploit fundamentals. Milestone: Isolated penetration testing lab."),
+                ("Phase 4: Web Application Security & OWASP Top 10", "4-5 Weeks", "SQL injection, XSS, CSRF, authentication bypass, and defensive remediation. Milestone: OWASP vulnerability audit and patch."),
+                ("Phase 5: Defensive Hardening & SOC Capstone", "4 Weeks", "SIEM log monitoring, firewall configuration, and incident triage protocols. Milestone: Incident response playbook implementation."),
+            ],
+            "cloud_devops": [
+                ("Phase 1: Linux Systems & Shell Automation", "3 Weeks", "Server administration, user privileges, systemd services, and Bash automation. Milestone: Automated server provisioning script."),
+                ("Phase 2: Git Version Control & Branching Workflows", "2 Weeks", "Feature branching, pull request reviews, and GitHub Actions CI triggers. Milestone: Automated linting and test pipeline."),
+                ("Phase 3: Docker Containerization", "3-4 Weeks", "Multi-stage Dockerfiles, image optimization, volume storage, and Docker Compose. Milestone: Containerized multi-tier web application."),
+                ("Phase 4: Cloud Infrastructure (AWS / GCP)", "4-5 Weeks", "VPCs, IAM policies, compute instances, object storage, and managed databases. Milestone: Cloud infrastructure deployment."),
+                ("Phase 5: Kubernetes & Infrastructure as Code", "5 Weeks", "Terraform declarative provisioning, Kubernetes pods, deployments, and Helm charts. Milestone: Auto-scaling Kubernetes cluster."),
+            ],
+            "data": [
+                ("Phase 1: SQL Mastery & Relational Databases", "3-4 Weeks", "Complex joins, window functions, aggregations, and query execution planning. Milestone: Analytical database schema and query suite."),
+                ("Phase 2: Python for Data Analytics (Pandas & Polars)", "4 Weeks", "Data wrangling, cleaning missing values, exploratory data analysis (EDA). Milestone: Automated dataset cleaning pipeline."),
+                ("Phase 3: Business Intelligence & Dashboarding", "3 Weeks", "Interactive dashboards using Power BI / Tableau and storytelling metrics. Milestone: Executive KPI reporting dashboard."),
+                ("Phase 4: Data Engineering Pipelines & ETL", "4-5 Weeks", "Automated pipelines, Parquet columnar storage, and Apache Airflow DAGs. Milestone: Production ETL pipeline with automated scheduling."),
+                ("Phase 5: Predictive Modeling & Machine Learning", "4 Weeks", "Supervised classification, regression, and model interpretability. Milestone: Production predictive analytics model."),
+            ],
+        }
+
+        # Resolve curriculum track
+        track_key = domain
+        if any(w in topic.lower() for w in ["ai engineer", "ai engineering", "machine learning", "deep learning"]) or domain == "ai_ml":
+            track_key = "ai_ml"
+        elif "python" in topic.lower() or domain == "python":
+            track_key = "python"
+        elif any(w in topic.lower() for w in ["cyber", "security", "hack"]) or domain == "cybersecurity":
+            track_key = "cybersecurity"
+        elif any(w in topic.lower() for w in ["devops", "cloud", "docker", "kubernetes"]) or domain == "cloud_devops":
+            track_key = "cloud_devops"
+        elif any(w in topic.lower() for w in ["data", "sql", "analytics"]) or domain == "data":
+            track_key = "data"
+        elif track_key not in curricula:
+            track_key = "web_development"
+
+        steps = curricula[track_key]
+        domain_title = track_key.replace("_", " ").title()
+        if track_key == "python":
+            domain_title = "Python Programming"
+        elif track_key == "ai_ml":
+            domain_title = "AI Engineering"
+
+        intros = [
+            f"### Engineering Roadmap: {domain_title} ({level})\n\n"
+            f"Here is your step-by-step roadmap to guide you through **{domain_title}**:",
+            f"### Learning Roadmap: {domain_title} ({level})\n\n"
+            f"Here is a practical path tailored for the **{level}** stage to build lasting capability in **{domain_title}**:",
+            f"### Phased Curriculum Roadmap: {domain_title} ({level})\n\n"
+            f"To achieve deep proficiency in **{domain_title}**, follow this sequential progression starting with your current phase:",
+        ]
+
+        action_tips = [
+            "*Mentor Note: Complete each milestone before jumping ahead. Building small, verified projects produces 10x deeper retention than skimming syntax.*",
+            "*Mentor Note: Commit your code daily to GitHub. A consistent commit history shows disciplined engineering habits to future employers.*",
+            "*Mentor Note: When you encounter errors in any phase, embrace the debugging process—reading stack traces is a core senior skill.*",
+        ]
+
+        rng = random.Random(seed) if seed is not None else None
+
+        p1_title, p1_duration, p1_desc = steps[0]
+        p2_title, p2_duration, p2_desc = steps[1] if len(steps) > 1 else ("Advanced Topics", "Ongoing", "")
+
+        p1_concepts = p1_desc.split("Milestone:")[0].strip().rstrip(".")
+        p1_project = p1_desc.split("Milestone:")[1].strip() if "Milestone:" in p1_desc else "Milestone deliverable"
+
+        lines = [
+            self._choose(intros, rng=rng),
+            "\n\n",
+            f"#### 1. Current Phase: {p1_title} *(Estimated Duration: {p1_duration})*\n",
+            f"Start by establishing rock-solid fundamentals in {p1_title.split(': ')[-1] if ': ' in p1_title else p1_title}. "
+            "Rushing ahead to frameworks or complex tooling without mastering core syntax creates debugging headaches later.\n\n",
+            "#### 2. This Week's Focus\n",
+            f"- **Key Concepts to Write in Code**: {p1_concepts}.\n",
+            "- **Daily Practice**: Open your editor, write small scripts for each concept, and inspect the outputs rather than only watching tutorials.\n\n",
+            "#### 3. Practice Project\n",
+            f"- **Project**: **{p1_project}**\n",
+            "- **Milestone Deliverable**: Build, test, and push the project to GitHub with a clean README.\n\n",
+            "#### 4. What Comes Next\n",
+            f"Once you complete Phase 1 and push your project deliverable, your immediate next phase is **{p2_title}** (*{p2_duration}*).\n\n",
+            "**Upcoming Roadmap Progression**:\n",
+        ]
+
+        for idx, (title, duration, desc) in enumerate(steps[1:], 2):
+            short_desc = desc.split(".")[0].strip()
+            lines.append(f"- **{title}** *({duration})*: {short_desc}.\n")
+
+        lines.append("\n### Recommended Next Actions on Technea:\n")
+        lines.append("1. **Set Up Your Workspace**: Initialize your repository and configure your development environment.\n")
+        lines.append("2. **Join Community Learning Rooms**: Connect with peers tackling the same milestones on Technea.\n")
+        lines.append("3. **Daily Coding Habit**: Log your practice and build your streak on the Technea Dashboard.\n\n")
+        lines.append(self._choose(action_tips, rng=rng))
+
+        return "".join(lines)
+
+    def _generate_coding_response(
+        self,
+        prompt: str,
+        domain: str,
+        level: str,
+        seed: Any = None,
+    ) -> str:
+        rng = random.Random(seed) if seed is not None else None
+        p = prompt.lower()
+
+        # 1. Recursion inquiry
+        if any(w in p for w in ["recursion", "recursive"]):
+            intros = [
+                "### Recursion: Intuition, Mechanics & Implementation\n\n"
+                "Recursion is one of computer science's most foundational problem-solving techniques. At its core, "
+                "**recursion is simply a function solving a problem by calling itself with a smaller subproblem**.",
+                "### Understanding Recursion: Mental Model & Execution Trace\n\n"
+                "Recursion follows two non-negotiable architectural rules: "
+                "a **Base Case** to stop, and a **Recursive Step** to advance toward termination.",
+                "### Demystifying Recursion: Step-by-Step Breakdown\n\n"
+                "Let's break down recursion systematically. Think of recursion like Russian nesting dolls (Matryoshka): "
+                "each doll opens to reveal a smaller version of itself, until you reach the smallest solid doll (the base case).",
+            ]
+
+            examples = [
+                (
+                    "Factorial Calculation (`n!`)",
+                    "```python\ndef factorial(n: int) -> int:\n"
+                    '    """Calculate factorial of n recursively.\n\n'
+                    "    Intuition:\n"
+                    "    - Base Case: 0! = 1! = 1. Without this, recursion runs forever!\n"
+                    "    - Recursive Step: n! = n * factorial(n - 1)\n"
+                    '    """\n'
+                    "    # 1. BASE CASE: Stop condition preventing infinite recursion\n"
+                    "    if n <= 1:\n"
+                    "        return 1\n\n"
+                    "    # 2. RECURSIVE STEP: Self-call with a strictly smaller problem\n"
+                    "    return n * factorial(n - 1)\n\n\n"
+                    "# Verify execution\n"
+                    "if __name__ == '__main__':\n"
+                    "    number = 5\n"
+                    '    result = factorial(number)\n'
+                    '    print(f"Factorial of {number} is: {result}")  # Outputs 120\n```',
+                    "**Execution Trace on the Call Stack:**\n"
+                    "1. `factorial(5)` pushes frame -> waits for `5 * factorial(4)`\n"
+                    "2. `factorial(4)` pushes frame -> waits for `4 * factorial(3)`\n"
+                    "3. `factorial(3)` pushes frame -> waits for `3 * factorial(2)`\n"
+                    "4. `factorial(2)` pushes frame -> waits for `2 * factorial(1)`\n"
+                    "5. `factorial(1)` hits **Base Case** -> returns `1` immediately!\n"
+                    "6. Frames pop in reverse order (LIFO): `2 * 1 = 2` -> `3 * 2 = 6` -> `4 * 6 = 24` -> `5 * 24 = 120`.",
+                ),
+                (
+                    "Countdown Timer with Base Case",
+                    "```python\ndef countdown(n: int) -> None:\n"
+                    '    """Print numbers counting down to blastoff recursively.\n\n'
+                    "    Intuition:\n"
+                    "    - Base Case: When n <= 0, print 'Blastoff!' and return.\n"
+                    "    - Recursive Step: Print current number, then countdown(n - 1).\n"
+                    '    """\n'
+                    "    # 1. BASE CASE\n"
+                    "    if n <= 0:\n"
+                    '        print("Blastoff!")\n'
+                    "        return None\n\n"
+                    "    # 2. WORK & RECURSIVE STEP\n"
+                    '    print(f"T-minus: {n}")\n'
+                    "    countdown(n - 1)\n\n\n"
+                    "# Verify execution\n"
+                    "if __name__ == '__main__':\n"
+                    "    countdown(3)\n```",
+                    "**Execution Trace on the Call Stack:**\n"
+                    "1. `countdown(3)` prints `T-minus: 3`, calls `countdown(2)`\n"
+                    "2. `countdown(2)` prints `T-minus: 2`, calls `countdown(1)`\n"
+                    "3. `countdown(1)` prints `T-minus: 1`, calls `countdown(0)`\n"
+                    "4. `countdown(0)` hits **Base Case**, prints `Blastoff!`, and returns!\n"
+                    "5. Each stack frame unwinds cleanly.",
+                ),
+            ]
+
+            tips = [
+                "*Senior Note: In Python, the default recursion depth limit is 1,000 (`sys.getrecursionlimit()`). For deeper calls, prefer iteration or tail-call patterns.*",
+                "*Senior Note: Every recursive call adds a frame to your call stack ($O(n)$ space complexity). Always identify the base case before writing any code.*",
+                "*Senior Note: If a recursive tree makes identical subproblem calculations (like naive Fibonacci), use memoization (`@functools.lru_cache`) to optimize from $O(2^n)$ to $O(n)$.*",
+            ]
+
+            chosen_intro = self._choose(intros, rng=rng)
+            chosen_example = self._choose(examples, rng=rng)
+            chosen_tip = self._choose(tips, rng=rng)
+
+            return (
+                f"{chosen_intro}\n\n"
+                "#### The Two Non-Negotiable Components:\n"
+                "1. **The Base Case**: The simplest terminating condition where the answer is known without further calls. It halts the recursion.\n"
+                "2. **The Recursive Step**: The logic that shrinks the problem and moves closer to the base case with every call.\n\n"
+                f"#### Practical Code Example: {chosen_example[0]}\n"
+                f"{chosen_example[1]}\n\n"
+                "#### Step-by-Step Intuition & Stack Mechanics\n"
+                f"{chosen_example[2]}\n\n"
+                "#### Key Takeaways for Everyday Engineering:\n"
+                "- Recursion is ideal for tree traversals (DOM trees, ASTs, file systems) and divide-and-conquer algorithms (Merge Sort, Binary Search).\n"
+                "- Always verify that every path leads toward your base case to prevent a `RecursionError: maximum recursion depth exceeded`.\n\n"
+                f"{chosen_tip}"
+            )
+
+        # 2. Async / Concurrency inquiry
+        if any(w in p for w in ["async", "asyncio", "await", "concurrency"]):
+            intros = [
+                "### Asynchronous Programming in Python: Intuition, Event Loop & Code\n\n"
+                "In traditional synchronous code, your program freezes while waiting for network requests, database queries, or disk I/O. "
+                "**Asynchronous programming allows your program to pause waiting tasks and execute other work concurrently on a single thread.**",
+                "### Python Concurrency: Async, Await & Non-Blocking I/O\n\n"
+                "Asynchronous concurrency in Python is powered by an **Event Loop**. While one task waits for an I/O response, "
+                "the event loop switches execution to another ready task—yielding massive throughput gains for I/O-bound systems.",
+            ]
+
+            code_block = (
+                "```python\n"
+                "import asyncio\n"
+                "import time\n"
+                "\n"
+                "async def fetch_service_data(service_name: str, delay_seconds: float) -> dict:\n"
+                '    """Simulate a non-blocking external API or database call."""\n'
+                '    print(f"[{time.strftime(\'%X\')}] Request sent to: {service_name}")\n'
+                "    # 'await' cooperatively yields control back to the event loop\n"
+                "    await asyncio.sleep(delay_seconds)\n"
+                '    print(f"[{time.strftime(\'%X\')}] Response received from: {service_name}")\n'
+                '    return {"service": service_name, "status": "200_OK", "latency": delay_seconds}\n'
+                "\n"
+                "async def main() -> None:\n"
+                "    start_time = time.perf_counter()\n"
+                "    \n"
+                "    # Run all 3 network queries concurrently in parallel!\n"
+                "    results = await asyncio.gather(\n"
+                '        fetch_service_data("UserAuthService", 1.0),\n'
+                '        fetch_service_data("CatalogService", 1.2),\n'
+                '        fetch_service_data("BillingService", 0.8),\n'
+                "    )\n"
+                "    \n"
+                "    total_time = time.perf_counter() - start_time\n"
+                '    print(f"\\nAll {len(results)} services fetched in {total_time:.2f}s (Synchronous would take 3.00s!)")\n'
+                "\n"
+                "if __name__ == '__main__':\n"
+                "    asyncio.run(main())\n"
+                "```"
+            )
+
+            tips = [
+                "*Senior Note: Never use blocking calls like `time.sleep()` or synchronous `requests.get()` inside `async` code; they block the entire event loop thread! Use `asyncio.sleep()` and `httpx.AsyncClient` instead.*",
+                "*Senior Note: Async does not mean multi-threading or multi-processing. It is cooperative single-threaded concurrency tailored for I/O operations.*",
+            ]
+
+            return (
+                f"{self._choose(intros, rng=rng)}\n\n"
+                "#### Core Concepts to Know:\n"
+                "- **`async def`**: Declares a coroutine function that returns a coroutine object when called.\n"
+                "- **`await`**: Pauses the execution of the coroutine until the awaited operation completes, allowing other tasks to run.\n"
+                "- **`asyncio.gather()`**: Fires multiple coroutines concurrently and waits for all of them to resolve.\n\n"
+                "#### Practical Code Example: Concurrent Microservice Fetching\n"
+                f"{code_block}\n\n"
+                "#### Step-by-Step Execution Breakdown:\n"
+                "1. `main()` fires `asyncio.gather()` with 3 tasks.\n"
+                "2. `UserAuthService` starts and hits `await asyncio.sleep(1.0)`. It yields control.\n"
+                "3. The event loop immediately switches to `CatalogService`, which also awaits.\n"
+                "4. The event loop switches to `BillingService`. All 3 are waiting simultaneously.\n"
+                "5. At 0.8s, `BillingService` finishes first and resumes. At 1.0s, `UserAuthService` finishes. At 1.2s, `CatalogService` finishes.\n"
+                "6. Total wall-clock elapsed time is ~1.2s instead of 3.0s!\n\n"
+                f"{self._choose(tips, rng=rng)}"
+            )
+
+        # 3. General Python / Coding question
+        intros = [
+            f"### Engineering Breakdown: {prompt[:60]}\n\n"
+            "Let's explore this with clean, modern code, step-by-step intuition, and production best practices.",
+            f"### Code Architecture Deep-Dive: {prompt[:60]}\n\n"
+            "Here is the practical, step-by-step implementation designed to build lasting technical intuition.",
+        ]
+
+        generic_code = (
+            "```python\n"
+            "from typing import Any\n"
+            "\n"
+            "def process_pipeline_data(items: list[dict[str, Any]]) -> list[dict[str, Any]]:\n"
+            '    """Filter and transform data with defensive type checking.\n'
+            '    \n'
+            '    Time Complexity: O(n) single pass.\n'
+            '    Space Complexity: O(n) for the transformed collection.\n'
+            '    """\n'
+            "    # Modern, readable list comprehension with conditional guard\n"
+            "    return [\n"
+            '        {"id": item["id"], "score": item.get("score", 0) * 1.1}\n'
+            "        for item in items\n"
+            '        if item.get("is_active", False)\n'
+            "    ]\n"
+            "\n"
+            "# Usage Example\n"
+            "sample_input = [\n"
+            '    {"id": 1, "is_active": True, "score": 100},\n'
+            '    {"id": 2, "is_active": False, "score": 80},\n'
+            '    {"id": 3, "is_active": True, "score": 50},\n'
+            "]\n"
+            "output = process_pipeline_data(sample_input)\n"
+            'print("Processed Active Items:", output)\n'
+            "```"
+        )
+
+        return (
+            f"{self._choose(intros, rng=rng)}\n\n"
+            "#### 1. Intuition & Architectural Mental Model\n"
+            "- Always aim for **pure functions**: given the same input, they should always return the same output without side effects.\n"
+            "- Prioritize **explicit type hints** (`typing` / built-in generics) so tools and peers understand data contracts instantly.\n"
+            "- Design for **fail-safe execution**: gracefully handle missing dictionary keys and unexpected types.\n\n"
+            "#### 2. Practical, Idiomatic Implementation\n"
+            f"{generic_code}\n\n"
+            "#### 3. Step-by-Step Code Walkthrough\n"
+            "- The list comprehension iterates across each record in a single linear pass ($O(n)$).\n"
+            "- The `.get('is_active', False)` guard protects against `KeyError` exceptions when records have missing fields.\n"
+            "- The transformed dictionary produces a clean, immutable payload ready for downstream consumption.\n\n"
+            "*Mentor Challenge: Try writing a unit test for this function using `pytest` covering empty lists and invalid inputs!*"
+        )
+
+    def _generate_project_response(
+        self,
+        domain: str,
+        level: str,
+        seed: Any = None,
+    ) -> str:
+        intros = [
+            f"### Recommended Portfolio Projects ({level} Level)\n\n"
+            "The fastest way to achieve technical mastery is to build real projects from scratch. "
+            f"Here are 3 specific, portfolio-grade projects calibrated directly to your **{level}** standing:",
+            f"### Capstone Project Specifications ({level} Level)\n\n"
+            "Employers and senior engineers look for production hygiene, clear architecture, and working deployments. "
+            f"Here are 3 high-signal project ideas calibrated for a **{level}** developer:",
+            f"### Portfolio Project Roadmap ({level} Level)\n\n"
+            "Building these projects will bridge the gap between reading syntax and shipping production software. "
+            f"Here is your 3-tier project roadmap for **{level}** skills:",
+        ]
+
+        if self._is_beginner(level):
+            projects = [
+                (
+                    "1. Personal Habit & Streak Tracker CLI",
+                    "- **Problem Solved**: Daily habit tracking with persistence and streak statistics.\n"
+                    "- **Key Features**: Add habits, mark daily completion, view current & longest streaks, JSON/SQLite persistence, and clean terminal formatting.\n"
+                    "- **Tech Stack**: Python 3.12+, Typer/Click, SQLite or JSON file storage.\n"
+                    "- **Portfolio Value**: Proves command-line UX design, file I/O, error handling, modular functions, and data validation."
+                ),
+                (
+                    "2. Responsive Developer Portfolio & Project Showcase",
+                    "- **Problem Solved**: An accessible, personal platform showcasing technical skills, live project demos, and resume links.\n"
+                    "- **Key Features**: Dark/light theme toggle, filterable project tags, responsive mobile-first navigation, WCAG AA accessibility, and contact modal.\n"
+                    "- **Tech Stack**: HTML5, Tailwind CSS, TypeScript, Vite.\n"
+                    "- **Portfolio Value**: Demonstrates modern CSS Grid/Flexbox layouts, semantic markup, DOM event handling, and clean code hygiene."
+                ),
+                (
+                    "3. Interactive Markdown Quiz & Flashcard Tool",
+                    "- **Problem Solved**: Spaced-repetition technical interview practice from local markdown notes.\n"
+                    "- **Key Features**: Parses markdown flashcards, tracks correct/incorrect answer streaks, stores scores in browser LocalStorage, and provides timer controls.\n"
+                    "- **Tech Stack**: JavaScript/React, LocalStorage API, CSS Modules.\n"
+                    "- **Portfolio Value**: Proves state management, string parsing, client-side storage, and user-centric UI design."
+                ),
+            ]
+        elif level == "Intermediate":
+            projects = [
+                (
+                    "1. Real-Time Collaborative Kanban Board",
+                    "- **Problem Solved**: Multi-user task coordination with live drag-and-drop state synchronization.\n"
+                    "- **Key Features**: WebSocket real-time board updates, JWT authentication with refresh tokens, task swimlanes, and PostgreSQL audit history.\n"
+                    "- **Tech Stack**: FastAPI or Node.js, WebSockets, React/Next.js, PostgreSQL, Tailwind CSS.\n"
+                    "- **Portfolio Value**: Proves full-stack competency, real-time bidirectional communication, relational database schemas, and state sync."
+                ),
+                (
+                    "2. Automated Content Aggregator & Digest Engine",
+                    "- **Problem Solved**: Curates technical articles and news via RSS/APIs with background worker scheduling and email digests.\n"
+                    "- **Key Features**: Scheduled background cron tasks, content deduplication, Redis caching, async task queue (Celery/RQ), and email notification dispatch.\n"
+                    "- **Tech Stack**: Python FastAPI, Celery, Redis, PostgreSQL, Docker, SendGrid/SMTP.\n"
+                    "- **Portfolio Value**: Demonstrates distributed background workers, rate limiting, caching strategies, and third-party API integration."
+                ),
+                (
+                    "3. RESTful E-Commerce Catalog & Checkout Service",
+                    "- **Problem Solved**: Micro-catalog platform handling inventory, cart sessions, and mock payment lifecycle.\n"
+                    "- **Key Features**: Full-text product search, transactional cart reservations, mock Stripe payment integration, OpenAPI schema docs, and unit test suite.\n"
+                    "- **Tech Stack**: Python FastAPI, SQLAlchemy 2.0 (async), PostgreSQL, Stripe API, pytest.\n"
+                    "- **Portfolio Value**: Demonstrates robust API architecture, ACID transactional integrity, mock third-party payment workflows, and automated testing."
+                ),
+            ]
+        else:  # Advanced
+            projects = [
+                (
+                    "1. High-Throughput Distributed Event Ingestion Pipeline",
+                    "- **Problem Solved**: Ingests, validates, and partitions streaming telemetry events with backpressure and dead-letter queues.\n"
+                    "- **Key Features**: Distributed stream ingestion, Kafka/Redis Streams consumer groups, ClickHouse analytics sink, and Prometheus metrics exporter.\n"
+                    "- **Tech Stack**: Apache Kafka / Redis Streams, Python (asyncio) / Go, ClickHouse, Prometheus & Grafana, Docker.\n"
+                    "- **Portfolio Value**: Demonstrates distributed systems engineering, backpressure handling, high throughput, and observability."
+                ),
+                (
+                    "2. Multi-Tenant SaaS Platform with Rate Limiting & RLS",
+                    "- **Problem Solved**: Multi-tenant workspace platform enforcing strict tenant isolation and distributed rate limits.\n"
+                    "- **Key Features**: Row-Level Security (RLS) in PostgreSQL, distributed sliding-window rate limiter in Redis, webhook delivery engine with retries, and Terraform provisioning.\n"
+                    "- **Tech Stack**: FastAPI, PostgreSQL RLS, Redis, Docker Compose, Terraform, GitHub Actions.\n"
+                    "- **Portfolio Value**: Proves enterprise-grade multi-tenancy, defense-in-depth security, cloud infrastructure provisioning, and production CI/CD."
+                ),
+                (
+                    "3. Autonomous RAG Knowledge Base Agent with Tool Sandbox",
+                    "- **Problem Solved**: Context-aware AI assistant that indexes documentation, executes sandboxed code, and answers developer queries.\n"
+                    "- **Key Features**: Hybrid vector/keyword retrieval, streaming LLM token completion, AST-sandboxed Python code execution, and evaluation metrics (RAGAS).\n"
+                    "- **Tech Stack**: Python, Qdrant/Pinecone, LangGraph, FastAPI, Docker sandbox.\n"
+                    "- **Portfolio Value**: Demonstrates advanced AI engineering, grounded retrieval pipelines, safe code sandboxing, and LLM evaluation."
+                ),
+            ]
+
+        starter_proj = projects[0][0].split(". ")[-1]
+        intro_guidance = (
+            f"For your current stage at the **{level}** level, I recommend starting with **Project 1: {starter_proj}**. "
+            "Building focused, hands-on projects reinforces input validation, clean code structure, and practical error handling "
+            "without getting bogged down in complex distributed systems. Once you push it to GitHub with tests and documentation, "
+            "you'll have a solid project to showcase on your portfolio.\n\n"
+        )
+
+        tips = [
+            "*Mentor Note: For whichever project you choose, deploy it live on a free platform (Railway, Render, Vercel) and include a 1-minute demo GIF in your GitHub README!*",
+            "*Mentor Note: Write a clear 'Architecture & Trade-offs' section in your README explaining why you chose your tech stack and how you handled edge cases.*",
+            "*Mentor Note: Commit feature branches and open Pull Requests against your own main branch to showcase professional Git etiquette.*",
+        ]
+
+        rng = random.Random(seed) if seed is not None else None
+        lines = [self._choose(intros, rng=rng), "\n\n", intro_guidance]
+        for title, details in projects:
+            lines.append(f"#### {title}\n{details}\n\n")
+
+        lines.append(self._choose(tips, rng=rng))
+        return "".join(lines)
+
+    def _generate_career_response(
+        self,
+        level: str,
+        domain: str,
+        seed: Any = None,
+    ) -> str:
+        rng = random.Random(seed) if seed is not None else None
+        intros = [
+            f"### Engineering Career Strategy ({level} Level)\n\n"
+            "Navigating a software engineering career requires more than just memorizing syntax. "
+            "Engineering leaders look for engineers who can **solve ambiguous problems, reason about trade-offs, and ship reliable software**.",
+            f"### Strategic Career Coaching ({level} Level)\n\n"
+            "To advance rapidly and stand out in hiring pipelines, you need a pragmatic strategy focused on "
+            "high-leverage skills rather than superficial resume padding.",
+            f"### Engineering Career Blueprint ({level} Level)\n\n"
+            "Here is the realistic, high-signal playbook for engineering career growth, technical interview readiness, and production excellence:",
+        ]
+
+        intro_guidance = (
+            f"At the **{level}** stage, your highest-leverage move is building one deep, production-tested capstone project "
+            "with automated tests and a live deployment. Senior engineering hiring teams prioritize code craftsmanship, "
+            "testing discipline, and architectural clarity over shallow tutorial clones.\n\n"
+        )
+
+        tips = [
+            "*Career Action: Schedule 1 hour this week to audit your GitHub profile. Archive dead repositories and polish the README of your top 2 projects.*",
+            "*Career Action: Practice explaining a tricky technical decision out loud. Being articulate during system design and code reviews is what distinguishes senior engineers.*",
+            "*Career Action: Connect with 2 developers in the Technea Community Rooms this week to do a peer code review or mock interview!*",
+        ]
+
+        return (
+            f"{self._choose(intros, rng=rng)}\n\n"
+            f"{intro_guidance}"
+            "#### 1. Portfolio Strategy: Depth Over Quantity\n"
+            "- **The Golden Rule**: One comprehensive, end-to-end deployed project with automated tests and a live URL beats 10 shallow tutorial clones every single time.\n"
+            "- **The README is Your Resume**: Document the problem statement, system architecture diagram, key technical challenges overcome, and instructions for running the test suite locally.\n"
+            "- **Showcase Code Craftsmanship**: Include typed function signatures, modular architecture, defensive input validation, and meaningful commit messages.\n\n"
+            "#### 2. System Design & Architectural Intuition\n"
+            "- **Master Trade-Offs**: Senior engineers don't have 'favorite' tools; they have trade-off evaluations (e.g. SQL vs. NoSQL, sync REST vs. async queues, horizontal vs. vertical scaling).\n"
+            "- **Understand the 'Why' Behind Caching & Indexing**: Learn when a Redis cache improves latency and when it introduces dangerous cache invalidation bugs.\n"
+            "- **Data Modeling Matters**: Spend time designing clean relational schemas and normalizing tables before writing a single API endpoint.\n\n"
+            "#### 3. Technical Interview Mastery\n"
+            "- **Pattern Recognition Over LeetCode Grinding**: Master fundamental patterns (Sliding Window, Two Pointers, BFS/DFS tree traversal, Hash Map lookups) rather than memorizing 500 solutions.\n"
+            "- **Communicate Out Loud**: Interviewers evaluate your problem formulation, clarifying questions, edge-case identification, and debugging poise when code fails.\n"
+            "- **Ask Great Questions**: At the end of interviews, ask about deployment cadence, incident post-mortems, and engineering on-call culture.\n\n"
+            "#### 4. Production Engineering Practices\n"
+            "- **Write Automated Tests**: Learn `pytest` or `jest`. Code without tests is technical debt from the minute it is written.\n"
+            "- **Containerization & CI/CD**: Package your applications in multi-stage `Dockerfiles` and set up a GitHub Actions workflow to run lints and tests on every push.\n"
+            "- **Observability & Logging**: Use structured logging (JSON format) and know how to trace a request across services using correlation IDs.\n\n"
+            "#### 5. Concrete Action Plan for Your Current Level:\n"
+            f"- **Focus for {level}**: Build one capstone project incorporating unit tests, containerization, and a deployed live demo URL. Actively participate in peer code reviews on Technea.\n\n"
+            f"{self._choose(tips, rng=rng)}"
+        )
+
+    def _generate_debugging_response(self, prompt: str, seed: Any = None) -> str:
+        rng = random.Random(seed) if seed is not None else None
+        intros = [
+            "### Systematic Debugging Protocol\n\n"
+            "Let's troubleshoot this issue systematically using Technea's 4-step debugging protocol:",
+            "### Root-Cause Diagnosis & Fix Strategy\n\n"
+            "Debugging is a detective process. Let's isolate the root cause and formulate a robust fix:",
+        ]
+
+        tips = [
+            "*Debugging Note: Always check the earliest line in the traceback that belongs to your code, rather than third-party library internals.*",
+            "*Debugging Note: Reproduce the error with a minimal isolated test case before changing production code.*",
+        ]
+
+        return (
+            f"{self._choose(intros, rng=rng)}\n\n"
+            "#### 1. Root Cause Analysis\n"
+            "- Carefully inspect the exact line and error type indicated in the stack trace.\n"
+            "- Verify variable state, variable types, and null/undefined values immediately before the failing line.\n"
+            "- Check for common edge cases: unhandled async promises, mismatched types, or missing environment variables.\n\n"
+            "#### 2. Isolation & Verification Steps\n"
+            "- **Structured Logging**: Add logging immediately before the point of failure to inspect inputs.\n"
+            "- **Reproduce in Isolation**: Create a minimal reproducible script with hardcoded inputs.\n"
+            "- **Check Environment**: Ensure all required packages, database connections, and environment variables are active.\n\n"
+            "#### 3. Defensive Code Best Practices\n"
+            "```python\n"
+            "# Example: Defensive data validation pattern\n"
+            "def safe_process_input(payload: dict) -> dict:\n"
+            '    if not isinstance(payload, dict):\n'
+            '        raise ValueError("Expected dictionary payload")\n'
+            '    value = payload.get("key")\n'
+            "    if value is None:\n"
+            '        return {"status": "missing_key", "data": None}\n'
+            '    return {"status": "ok", "data": str(value).strip()}\n'
+            "```\n\n"
+            "#### 4. Need more specific help?\n"
+            "Paste your **code snippet** and the **full error traceback** here, and I will dissect the exact line and provide the verified fix!\n\n"
+            f"{self._choose(tips, rng=rng)}"
+        )
+
+    def _generate_conceptual_response(
+        self,
+        prompt: str,
+        domain: str,
+        level: str = "Beginner",
+        seed: Any = None,
+    ) -> str:
+        rng = random.Random(seed) if seed is not None else None
+        intros = [
+            f"### Mentor Insight on: {prompt[:80]}\n\n"
+            "Here is the foundational breakdown to build an accurate mental model and production intuition:",
+            f"### Architecture & Implementation: {prompt[:80]}\n\n"
+            "Let's deconstruct the core concepts, modern patterns, and practical implementation for this topic:",
+        ]
+
+        tips = [
+            "*Mentor Note: Implement a small prototype and write unit tests to solidify this concept in your memory.*",
+            "*Mentor Note: Consider how this concept scales under high concurrency or large data volumes.*",
+        ]
+
+        return (
+            f"{self._choose(intros, rng=rng)}\n\n"
+            "#### 1. Core Concept & Architectural Mental Model\n"
+            f"When approaching **{prompt[:50]}**, keep these foundational principles in mind:\n"
+            "- **Separation of Concerns**: Keep business logic, data persistence, and interface rendering strictly isolated.\n"
+            "- **Idempotency & Predictability**: Aim for pure functions, predictable data contracts, and immutability where possible.\n"
+            "- **Defensive Engineering**: Always handle timeouts, missing values, and upstream failures gracefully.\n\n"
+            "#### 2. Modern Implementation Pattern\n"
+            "```python\n"
+            "# Production-ready, typed implementation pattern\n"
+            "from typing import Any\n"
+            "\n"
+            "def handle_service_operation(data: dict[str, Any]) -> dict[str, Any]:\n"
+            '    """Process request with strict input sanitation and validation."""\n'
+            "    sanitized = {k: v for k, v in data.items() if v is not None}\n"
+            '    return {"status": "success", "payload": sanitized}\n'
+            "```\n\n"
+            "#### 3. Recommended Next Steps:\n"
+            "- Test this implementation with unit tests covering boundary conditions and edge cases.\n"
+            "- Check Technea's related course modules for interactive guided exercises.\n"
+            "- Let me know if you would like me to deep-dive into any specific aspect!\n\n"
+            f"{self._choose(tips, rng=rng)}"
+        )
+
+    def _generate_casual_response(self, prompt: str, seed: Any = None) -> str:
+        """Handle casual chit-chat, gratitude, and acknowledgments warmly without unsolicited resources."""
+        p = prompt.lower()
+        if any(w in p for w in ["thank", "thx", "appreciate"]):
+            return (
+                "You're very welcome! Keep up the great practice. "
+                "Whenever you're ready to tackle your next milestone, plan a project, or review code, just let me know."
+            )
+        elif any(w in p for w in ["bye", "goodbye", "see you", "later"]):
+            return (
+                "Catch you later! Keep your coding streak going, and feel free to reach out whenever you're back in the editor."
+            )
+        else:
+            return (
+                "Glad to help! Let me know where you'd like to focus next—whether exploring a roadmap, choosing a project, or working through code."
+            )
+
+    async def generate_chat_response(
+        self,
+        prompt: str,
+        system_instruction: str | None = None,
+        conversation_history: list[dict[str, Any]] | None = None,
+        context: dict[str, Any] | None = None,
+        **kwargs: Any,
+    ) -> str:
+        """Synthesize a high-quality mentor response adhering strictly to Technea AI personality."""
+        p = prompt.strip().lower()
+        domain = self._detect_domain(p, context)
+        level = self._detect_level(p, context)
+        user_name = context.get("user_name") if context else None
+        seed = kwargs.get("seed")
+
+        # Intent classification
+        intent = context.get("classified_intent") if context else None
+        if not intent:
+            intent = classify_intent(prompt)
+
+        # Check for specific coding queries
+        has_recursion = any(w in p for w in ["recursion", "recursive"])
+        has_async = any(w in p for w in ["async", "asyncio", "await", "concurrency"])
+        has_debugging = any(w in p for w in ["error", "bug", "traceback", "exception", "failed", "fix", "why is this", "broken", "debugging"])
+
+        # Check for milestone deep dive inquiry
+        has_milestone_deep_dive = any(phrase in p for phrase in [
+            "what should i focus on for my next milestone",
+            "what should i focus on in my next milestone",
+            "what to focus on for my next milestone",
+            "focus on for my next milestone",
+            "milestone deep dive",
+            "tell me about my next milestone",
+            "what should i focus on next milestone",
+        ])
+
+        # Check for completed prerequisite (e.g. HTML/CSS)
+        has_html_css_completed = ("html" in p and "css" in p) and any(w in p for w in ["completed", "finished", "done"])
+
+        # Intent-driven dispatch
+        if has_debugging:
+            res = self._generate_debugging_response(prompt, seed=seed)
+        elif has_recursion or has_async:
+            res = self._generate_coding_response(prompt, domain, level, seed=seed)
+        elif has_milestone_deep_dive:
+            res = self._generate_milestone_deep_dive_response(prompt, domain, level, context=context, seed=seed)
+        elif has_html_css_completed or intent == INTENT_NEXT_STEP:
+            res = self._generate_next_step_response(domain, level, prompt=prompt, context=context, seed=seed)
+        elif intent == INTENT_GREETING:
+            res = self._generate_greeting_response(user_name, level, seed=seed)
+            return res  # Return short greeting directly without appending catalog block!
+        elif intent == INTENT_CASUAL:
+            res = self._generate_casual_response(prompt, seed=seed)
+            return res  # Return casual response directly without appending catalog block!
+        elif intent == INTENT_PROJECT_SUGGESTION:
+            res = self._generate_project_response(domain, level, seed=seed)
+        elif intent == INTENT_ROADMAP_REQUEST:
+            res = self._generate_roadmap_response(domain, level, topic=p, seed=seed)
+        elif intent == INTENT_CAREER_ADVICE:
+            res = self._generate_career_response(level, domain, seed=seed)
+        elif intent == INTENT_CODING_HELP:
+            res = self._generate_coding_response(prompt, domain, level, seed=seed)
+        elif intent == INTENT_LEARNING_ADVICE:
+            if any(w in p for w in ["next", "start", "begin", "where do i", "what should i"]):
+                res = self._generate_next_step_response(domain, level, prompt=prompt, context=context, seed=seed)
+            else:
+                res = self._generate_conceptual_response(prompt, domain, level, seed=seed)
+        else:
+            res = self._generate_conceptual_response(prompt, domain, level, seed=seed)
+
+        # Detect repeated question in conversation history and avoid identical repeating
+        if conversation_history:
+            prior_user_msgs = [
+                m.get("content", "").strip().lower()
+                for m in conversation_history
+                if isinstance(m, dict) and m.get("role") == "user"
+            ]
+            if prior_user_msgs:
+                last_user_msg = prior_user_msgs[-1]
+                if p == last_user_msg or (
+                    any(w in p for w in ["what next", "what should i do next"])
+                    and any(w in last_user_msg for w in ["what next", "what should i do next"])
+                ):
+                    res = (
+                        "Building directly upon our previous action plan, let's advance your implementation:\n\n"
+                        f"{res}"
+                    )
+
+        # Resource visibility rules: only show catalog resources when user asks for roadmap, what next, project, or learning advice
+        allow_catalog_resources = (
+            intent in {
+                INTENT_ROADMAP_REQUEST,
+                INTENT_NEXT_STEP,
+                INTENT_PROJECT_SUGGESTION,
+                INTENT_LEARNING_ADVICE,
+            }
+            and not (has_recursion or has_async or has_debugging or intent == INTENT_GREETING)
+        )
+        if context and allow_catalog_resources:
+            cat_block = self._build_catalog_references_block(context)
+            if cat_block and cat_block not in res:
+                res = f"{res}{cat_block}"
+
+        return res
+
+    def _build_catalog_references_block(self, context: dict[str, Any] | None) -> str:
+        """Synthesize concrete references to real Technea catalog items and active roadmaps."""
+        if not context:
+            return ""
+
+        paths = context.get("matched_paths", [])
+        projects = context.get("matched_projects", [])
+        skills = context.get("matched_skills", [])
+        user_progress = context.get("user_progress", {}) or {}
+        active_roadmaps = user_progress.get("active_roadmaps", []) if isinstance(user_progress, dict) else []
+
+        lines: list[str] = []
+
+        # If user has an active roadmap, surface it prominently
+        if active_roadmaps:
+            ar = active_roadmaps[0]
+            lines.append(
+                f"**Active Progress**: Continuing your path in **{ar['title']}** "
+                f"(Milestone {ar.get('current_step', 1)}/{ar.get('total_steps', 1)}, Goal: *{ar.get('goal', '')}*)."
+            )
+
+        cat_items: list[str] = []
+        if paths:
+            lp = paths[0]
+            step_info = f", {lp['step_count']} sequential milestones" if lp.get("step_count") else ""
+            cat_items.append(
+                f"**Technea Learning Path**: **{lp['title']}** "
+                f"({lp.get('estimated_hours', 'Curated Roadmap')}{step_info})"
+            )
+        if projects:
+            p = projects[0]
+            stack = ", ".join(p.get("tech_stack", [])[:3]) if p.get("tech_stack") else "Modern Stack"
+            cat_items.append(
+                f"**Hands-on Project**: **{p['title']}** ({p.get('difficulty', 'Intermediate')}) "
+                f"— Tech Stack: {stack}"
+            )
+        if skills:
+            s = skills[0]
+            cat_items.append(
+                f"**Technea Skill Track**: **{s['name']}** ({s.get('category', 'Engineering')})"
+            )
+
+        if cat_items:
+            lines.append("### Recommended Technea Resources:")
+            lines.extend([f"- {item}" for item in cat_items])
+
+        if lines:
+            return "\n\n" + "\n".join(lines)
+        return ""
+
+
+
+class AIService:
+    """Orchestrates AI interactions across providers with automatic resilience."""
+
+    def __init__(
+        self,
+        primary_provider: BaseAIProvider | None = None,
+        fallback_provider: BaseAIProvider | None = None,
+    ) -> None:
+        """Initialize AIService with primary and fallback providers.
+
+        Defaults to GeminiProvider as primary and RuleBasedProvider as fallback.
+        """
+        self.fallback_provider: BaseAIProvider = fallback_provider or RuleBasedProvider()
+        self.primary_provider: BaseAIProvider = primary_provider or GeminiProvider()
+        self.last_provider_used: str = (
+            self.primary_provider.provider_name
+            if self.primary_provider.is_configured
+            else self.fallback_provider.provider_name
+        )
+
+        logger.info(
+            "AIService initialized. Primary: %s (configured=%s), Fallback: %s",
+            self.primary_provider.provider_name,
+            self.primary_provider.is_configured,
+            self.fallback_provider.provider_name,
+        )
+
+    @property
+    def is_gemini_active(self) -> bool:
+        """Check whether the primary Gemini provider is configured."""
+        return self.primary_provider.is_configured
+
+    async def generate_response(
+        self,
+        prompt: str,
+        conversation_history: list[dict[str, Any]] | None = None,
+        context: dict[str, Any] | None = None,
+        system_instruction: str | None = None,
+        persona: str | None = "mentor",
+        **kwargs: Any,
+    ) -> str:
+        """Generate an AI response, guaranteeing a valid, high-quality answer.
+
+        First attempts to generate using the primary provider (Gemini).
+        If the primary provider is unconfigured, or encounters any error
+        (network, auth, rate limit, timeout), it seamlessly falls back to
+        the RuleBasedProvider.
+
+        Args:
+            prompt: User message or question.
+            conversation_history: Prior conversation turns.
+            context: Session contextual data (user level, current track, etc.).
+            system_instruction: Optional system instruction override.
+            persona: Persona identifier ("mentor", "architect", "debugger").
+            **kwargs: Generation configuration parameters.
+
+        Returns:
+            The generated response string.
+        """
+        if not prompt or not prompt.strip():
+            return "Please provide a question or topic so I can assist you on your learning journey!"
+
+        # Synthesize system instruction if not explicitly provided
+        effective_system_prompt = system_instruction
+        if not effective_system_prompt:
+            learner_level = None
+            domain = None
+            if context:
+                learner_level = context.get("level") or context.get("learner_level")
+                domain = context.get("domain")
+
+            effective_system_prompt = build_system_prompt(
+                learner_level=learner_level,
+                domain=domain,
+                context=context,
+                persona=persona,
+            )
+
+        # Attempt primary provider if configured
+        if self.primary_provider.is_configured:
+            try:
+                logger.debug(
+                    "Generating AI response using primary provider '%s'",
+                    self.primary_provider.provider_name,
+                )
+                response = await self.primary_provider.generate_chat_response(
+                    prompt=prompt.strip(),
+                    system_instruction=effective_system_prompt,
+                    conversation_history=conversation_history,
+                    context=context,
+                    **kwargs,
+                )
+                if response and response.strip():
+                    self.last_provider_used = self.primary_provider.provider_name
+                    return response.strip()
+
+                logger.warning(
+                    "Primary provider '%s' returned empty text. Falling back.",
+                    self.primary_provider.provider_name,
+                )
+            except Exception as exc:
+                clean_error = sanitize_text(str(exc))
+                logger.warning(
+                    "Primary AI provider '%s' failed (%s). Gracefully falling back to '%s'.",
+                    self.primary_provider.provider_name,
+                    clean_error,
+                    self.fallback_provider.provider_name,
+                )
+        else:
+            logger.debug(
+                "Primary provider '%s' is not configured. Using fallback '%s'.",
+                self.primary_provider.provider_name,
+                self.fallback_provider.provider_name,
+            )
+
+        # Execute fallback provider
+        try:
+            fallback_response = await self.fallback_provider.generate_chat_response(
+                prompt=prompt.strip(),
+                system_instruction=effective_system_prompt,
+                conversation_history=conversation_history,
+                context=context,
+                **kwargs,
+            )
+            self.last_provider_used = self.fallback_provider.provider_name
+            return fallback_response
+        except Exception as fallback_exc:
+            clean_fallback_error = sanitize_text(str(fallback_exc))
+            logger.error("Fallback provider execution failed: %s", clean_fallback_error)
+
+            self.last_provider_used = "safe_fallback"
+            # Absolute safety net: guaranteed friendly mentor reply
+            return (
+                "### Technea AI Mentor\n\n"
+                "I am here to guide your learning path! While connecting to my full knowledge base, "
+                "I encourage you to explore your current learning path and milestone roadmaps on the Technea dashboard. "
+                "Feel free to ask another question or explore the community learning rooms."
+            )
+
+    async def generate_chat_response(
+        self,
+        prompt: str | None = None,
+        system_instruction: str | None = None,
+        conversation_history: list[Any] | None = None,
+        context: dict[str, Any] | None = None,
+        persona: str | None = "mentor",
+        message: str | None = None,
+        return_metadata: bool = False,
+        **kwargs: Any,
+    ) -> str | tuple[str, str]:
+        """Generate AI chat response with automatic history normalization and provider fallback.
+
+        Accepts either 'prompt' or 'message' for the user input text, and handles
+        both dict-like and Pydantic ChatMessage conversation history entries.
+        """
+        text = prompt if prompt is not None else (message or "")
+
+        # Normalize conversation history if it contains Pydantic models or dicts
+        normalized_history: list[dict[str, Any]] | None = None
+        if conversation_history:
+            normalized_history = []
+            for item in conversation_history:
+                if hasattr(item, "model_dump"):
+                    normalized_history.append(item.model_dump())
+                elif hasattr(item, "dict"):
+                    normalized_history.append(item.dict())
+                elif isinstance(item, dict):
+                    normalized_history.append(item)
+
+        resp = await self.generate_response(
+            prompt=text,
+            conversation_history=normalized_history,
+            context=context,
+            system_instruction=system_instruction,
+            persona=persona,
+            **kwargs,
+        )
+
+        if return_metadata:
+            return resp, self.last_provider_used
+        return resp
+
+    async def close(self) -> None:
+        """Close resources for all active providers."""
+        await self.primary_provider.close()
+        await self.fallback_provider.close()
+
+    def get_status(self) -> dict[str, Any]:
+        """Return provider status metadata."""
+        return {
+            "primary_provider": self.primary_provider.provider_name,
+            "primary_configured": self.primary_provider.is_configured,
+            "gemini_model": getattr(self.primary_provider, "model", None),
+            "fallback_provider": self.fallback_provider.provider_name,
+            "timeout_seconds": getattr(self.primary_provider, "timeout", None),
+        }
+
+
+# Global singleton instance of AIService
+ai_service = AIService()
+
+
+def get_ai_service() -> AIService:
+    """Dependency injection factory for FastAPI endpoints."""
+    return ai_service

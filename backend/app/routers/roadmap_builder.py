@@ -3,6 +3,7 @@
 from fastapi import APIRouter, HTTPException, status
 from app.api.deps import CurrentUserDep, DatabaseDep
 from app.schemas.common import MessageResponse
+from app.schemas.learning_path import LearningPathResponse
 from app.schemas.roadmap_builder import (
     RoadmapDetailResponse,
     RoadmapGenerateRequest,
@@ -10,6 +11,7 @@ from app.schemas.roadmap_builder import (
     RoadmapProgressToggleRequest,
     RoadmapSaveRequest,
 )
+from app.services.learning_path import learning_path_service
 from app.services.roadmap_builder import roadmap_builder_service
 
 router = APIRouter(tags=["Roadmap Builder"])
@@ -75,6 +77,32 @@ async def get_my_roadmaps(
     """Retrieve all customized roadmaps created and saved by the current user."""
     roadmaps = await roadmap_builder_service.get_user_roadmaps(db, user_id=current_user.id)
     return [RoadmapDetailResponse.model_validate(r) for r in roadmaps]
+
+
+@router.get(
+    "/catalog",
+    response_model=list[LearningPathResponse],
+    status_code=status.HTTP_200_OK,
+    summary="Get curated roadmap catalog",
+    description="Retrieve curated catalog of role and skill-based roadmaps.",
+)
+async def get_roadmap_catalog(
+    db: DatabaseDep,
+    q: str | None = None,
+    category: str | None = None,
+    level: str | None = None,
+    limit: int = 100,
+) -> list[LearningPathResponse]:
+    """Retrieve curated roadmap catalog without requiring user authentication."""
+    paths, _, _ = await learning_path_service.get_multi_with_fallback(
+        db,
+        skip=0,
+        limit=limit,
+        q=q,
+        category=category,
+        level=level,
+    )
+    return [LearningPathResponse.model_validate(path) for path in paths]
 
 
 @router.get(

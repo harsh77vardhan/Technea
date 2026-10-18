@@ -23,6 +23,7 @@ import {
   Copy,
   CheckCheck,
   Edit3,
+  RotateCcw,
 } from 'lucide-react'
 import { useAuth } from '../../context/useAuth'
 import {
@@ -35,11 +36,12 @@ import {
   updateProjectStatusApi,
   getCommunityRoomsApi,
   toggleRoomJoinApi,
-  sendAiMentorChatApi,
+  sendAiChatApi,
   getUserProfileApi,
   getAvatarUrl,
 } from '../../services/api'
 import SpaceGardenAtmosphere from './SpaceGardenAtmosphere'
+import AIMessageRenderer from './AIMessageRenderer'
 
 let messageCounter = 1000
 function getNextMentorMsgId() {
@@ -49,6 +51,50 @@ function getNextMentorMsgId() {
 
 function getMentorTimeString() {
   return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+}
+
+const AI_MENTOR_SESSION_STORAGE_KEY = 'technea_ai_mentor_session_history_v1'
+
+function createDefaultMentorGreeting(user) {
+  const userName = user?.full_name ? user.full_name.split(' ')[0] : 'there'
+  return {
+    id: 'msg-default-1',
+    conversation_id: null,
+    sender: 'mentor',
+    text: `Hello ${userName}, how can I help you today?`,
+    suggestions: [
+      'What should I learn next based on my roadmaps?',
+      'How do I build full-stack projects that get hired?',
+      'Can you review my learning progression?',
+    ],
+    related_actions: [],
+    timestamp: getMentorTimeString(),
+  }
+}
+
+function loadSavedMentorSession() {
+  if (typeof window === 'undefined' || !window.sessionStorage) return null
+  try {
+    const raw = window.sessionStorage.getItem(AI_MENTOR_SESSION_STORAGE_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      return { conversation_id: null, messages: parsed }
+    }
+    if (parsed && typeof parsed === 'object') {
+      const messages = Array.isArray(parsed.messages) ? parsed.messages : null
+      if (messages && messages.length > 0) {
+        return {
+          conversation_id: typeof parsed.conversation_id === 'string' ? parsed.conversation_id : null,
+          messages,
+        }
+      }
+    }
+    return null
+  } catch (err) {
+    console.warn('Failed to load mentor session from sessionStorage:', err)
+    return null
+  }
 }
 
 function GithubIcon({ className = 'h-3 w-3' }) {
@@ -213,16 +259,20 @@ export default function LearningDashboardModal({
   const [githubUrlInput, setGithubUrlInput] = useState('')
 
   // AI Mentor Chat State
-  const [mentorMessages, setMentorMessages] = useState(() => [
-    {
-      id: 1,
-      sender: 'mentor',
-      text: `Hello ${user?.full_name ? user.full_name.split(' ')[0] : 'Harsh'}, how can I help you today?`,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    },
-  ])
+  const [mentorConversationId, setMentorConversationId] = useState(() => {
+    const saved = loadSavedMentorSession()
+    return saved?.conversation_id || null
+  })
+  const [mentorMessages, setMentorMessages] = useState(() => {
+    const saved = loadSavedMentorSession()
+    if (saved?.messages && saved.messages.length > 0) {
+      return saved.messages
+    }
+    return [createDefaultMentorGreeting(user)]
+  })
   const [mentorInput, setMentorInput] = useState('')
   const [isMentorTyping, setIsMentorTyping] = useState(false)
+  const isClearingChatRef = useRef(false)
   const chatBottomRef = useRef(null)
 
   useEffect(() => {
@@ -230,6 +280,35 @@ export default function LearningDashboardModal({
       chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' })
     }
   }, [activeTab, mentorMessages, isMentorTyping])
+
+  // Persist mentor conversation state to sessionStorage
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.sessionStorage) return
+
+    if (isClearingChatRef.current) {
+      isClearingChatRef.current = false
+      return
+    }
+
+    const isSingleDefault =
+      mentorMessages.length === 1 &&
+      mentorMessages[0].id === 'msg-default-1' &&
+      mentorMessages[0].sender === 'mentor'
+
+    if (isSingleDefault) {
+      return
+    }
+
+    try {
+      const payload = {
+        conversation_id: mentorConversationId || null,
+        messages: mentorMessages,
+      }
+      window.sessionStorage.setItem(AI_MENTOR_SESSION_STORAGE_KEY, JSON.stringify(payload))
+    } catch (err) {
+      console.warn('Failed to persist mentor session to sessionStorage:', err)
+    }
+  }, [mentorMessages, mentorConversationId])
 
   // Community Rooms State (Phase 4)
   const [communityRooms, setCommunityRooms] = useState([])
@@ -330,13 +409,14 @@ export default function LearningDashboardModal({
     }
   }
 
-  // AI Mentor Chat Action (Phase 3)
+  // AI Mentor Chat Action
   const handleSendMentorMessage = async (msgText) => {
     const textToSend = (msgText || mentorInput || '').trim()
     if (!textToSend || isMentorTyping) return
 
     const userMsg = {
       id: getNextMentorMsgId(),
+      conversation_id: mentorConversationId || null,
       sender: 'user',
       text: textToSend,
       timestamp: getMentorTimeString(),
@@ -347,21 +427,32 @@ export default function LearningDashboardModal({
     setIsMentorTyping(true)
 
     try {
-      const response = await sendAiMentorChatApi({
+      const conversationHistory = mentorMessages
+        .filter((m) => m.text && !m.isError)
+        .map((m) => ({
+          role: m.sender === 'user' ? 'user' : 'assistant',
+          content: m.text,
+        }))
+
+      const response = await sendAiChatApi({
         message: textToSend,
-        context_skill: dashboardData?.current_path?.category || null,
-        context_milestone: dashboardData?.current_path?.next_step_title || null,
+        conversation_history: conversationHistory,
       })
+
+      if (response?.conversation_id) {
+        setMentorConversationId(response.conversation_id)
+      }
 
       const mentorMsg = {
         id: getNextMentorMsgId(),
+        conversation_id: response?.conversation_id || mentorConversationId || null,
         sender: 'mentor',
-        text: response.reply,
-        warning: response.prerequisite_warning,
-        action_items: response.action_items,
-        quick_prompts: response.quick_prompts,
-        recommended_project: response.recommended_project,
-        suggested_next_step: response.suggested_next_step,
+        text: response?.response || response?.reply || 'Here to assist you on your engineering journey.',
+        suggestions: Array.isArray(response?.suggestions)
+          ? response.suggestions
+          : (Array.isArray(response?.quick_prompts) ? response.quick_prompts : []),
+        related_actions: Array.isArray(response?.related_actions) ? response.related_actions : [],
+        provider_used: response?.provider_used,
         timestamp: getMentorTimeString(),
       }
 
@@ -370,16 +461,73 @@ export default function LearningDashboardModal({
       console.error('Failed to get AI mentor response:', err)
       const errorMsg = {
         id: getNextMentorMsgId(),
+        conversation_id: mentorConversationId || null,
         sender: 'mentor',
-        text: 'I encountered an issue connecting to the technical mentorship database. Please try again.',
-        warning: null,
-        action_items: [],
-        quick_prompts: ['Am I ready for advanced full-stack projects?'],
+        text: 'I encountered an issue connecting to Technea AI. Please check your network or try again.',
+        suggestions: [
+          'What should I learn next based on my roadmaps?',
+          'How do I build full-stack projects that get hired?',
+        ],
+        related_actions: [],
         timestamp: getMentorTimeString(),
+        isError: true,
       }
       setMentorMessages((prev) => [...prev, errorMsg])
     } finally {
       setIsMentorTyping(false)
+    }
+  }
+
+  // Clear Chat and reset AI Mentor conversation
+  const handleClearMentorChat = () => {
+    isClearingChatRef.current = true
+    const defaultGreeting = createDefaultMentorGreeting(user)
+    setMentorConversationId(null)
+    setMentorMessages([defaultGreeting])
+    setMentorInput('')
+    if (typeof window !== 'undefined' && window.sessionStorage) {
+      try {
+        window.sessionStorage.removeItem(AI_MENTOR_SESSION_STORAGE_KEY)
+      } catch (err) {
+        console.warn('Failed to clear mentor session from sessionStorage:', err)
+      }
+    }
+    showToast('Conversation reset')
+  }
+
+  // Handle Interactive Related Action Pills from AI responses
+  const handleRelatedAction = (action) => {
+    if (!action) return
+    const { action_type, payload } = action
+
+    if (action_type === 'view_roadmap') {
+      if (payload?.path_id) {
+        onSelectPath({ id: payload.path_id, title: payload.title, slug: payload.slug })
+        onClose()
+      } else {
+        setActiveTab('roadmaps')
+      }
+    } else if (action_type === 'view_project') {
+      setActiveTab('projects')
+    } else if (action_type === 'explore_skill' || action_type === 'browse_catalog') {
+      if (typeof onOpenExplorer === 'function') {
+        onOpenExplorer(payload?.skill || payload?.skill_id)
+        onClose()
+      }
+    } else if (action_type === 'external_link' && typeof payload === 'string') {
+      window.open(payload, '_blank', 'noopener,noreferrer')
+    } else {
+      const titleLower = (action.title || '').toLowerCase()
+      if (titleLower.includes('roadmap')) {
+        setActiveTab('roadmaps')
+      } else if (titleLower.includes('project')) {
+        setActiveTab('projects')
+      } else if (titleLower.includes('skill') || titleLower.includes('catalog')) {
+        if (typeof onOpenExplorer === 'function') {
+          onOpenExplorer()
+          onClose()
+        }
+      }
     }
   }
 
@@ -1307,51 +1455,138 @@ export default function LearningDashboardModal({
                 {activeTab === 'mentor' && (
                   <div className="max-w-3xl mx-auto w-full flex flex-col min-h-[580px] sm:min-h-[640px]">
                     {/* Top: Simple Heading & Subtitle */}
-                    <div className="border-b border-white/[0.08] pb-4 mb-6">
-                      <h2 className="text-xl sm:text-2xl font-bold text-[#EDEDED] tracking-tight">
-                        Technea AI Mentor
-                      </h2>
-                      <p className="text-xs sm:text-sm text-[#8A8F98] mt-1">
-                        Your personal engineering companion
-                      </p>
+                    <div className="border-b border-white/[0.08] pb-4 mb-6 flex items-center justify-between gap-4">
+                      <div>
+                        <h2 className="text-xl sm:text-2xl font-bold text-[#EDEDED] tracking-tight">
+                          Technea AI Mentor
+                        </h2>
+                        <p className="text-xs sm:text-sm text-[#8A8F98] mt-1">
+                          Your personal engineering companion & codebase advisor
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={handleClearMentorChat}
+                          className="inline-flex items-center gap-1.5 border border-white/[0.08] text-[#8A8F98] hover:text-[#EDEDED] hover:bg-white/[0.04] px-2.5 py-1 rounded-[6px] text-xs font-mono transition-colors cursor-pointer"
+                          title="Reset conversation"
+                        >
+                          <RotateCcw className="h-3 w-3" />
+                          <span>Clear Chat</span>
+                        </button>
+                        <div className="hidden sm:flex items-center gap-2">
+                          <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                          <span className="text-[11px] font-mono text-[#8A8F98]">Online</span>
+                        </div>
+                      </div>
                     </div>
 
                     {/* Middle: Only the Conversation Area */}
                     <div className="flex-1 overflow-y-auto pr-1 space-y-6 max-h-[480px] min-h-[360px]">
-                      {mentorMessages.map((msg) =>
-                        msg.sender === 'user' ? (
+                      {mentorMessages.map((msg, idx) => {
+                        const isLatestMentor =
+                          msg.sender === 'mentor' &&
+                          !mentorMessages.slice(idx + 1).some((m) => m.sender === 'mentor')
+
+                        return msg.sender === 'user' ? (
                           <div key={msg.id} className="flex justify-end ml-auto">
                             <div className="max-w-xl rounded-[12px] bg-[#161822] border border-white/[0.08] px-4 py-3 text-xs sm:text-sm text-[#EDEDED] leading-relaxed whitespace-pre-wrap break-words">
                               {msg.text}
                             </div>
                           </div>
                         ) : (
-                          <div key={msg.id} className="flex items-start gap-3.5 max-w-2xl mr-auto">
+                          <div key={msg.id} className="flex items-start gap-3.5 max-w-2xl mr-auto w-full">
                             <div className="flex h-7 w-7 items-center justify-center rounded-[6px] border border-white/[0.08] bg-[#12131A] text-[#EDEDED] shrink-0 mt-0.5">
                               <Bot className="h-4 w-4" />
                             </div>
-                            <div className="flex-1 space-y-1.5">
-                              <span className="text-[11px] font-semibold text-[#8A8F98] block">
-                                AI Mentor
-                              </span>
-                              <div className="text-xs sm:text-sm text-[#D4D4D8] leading-relaxed whitespace-pre-wrap break-words">
-                                {msg.text}
+                            <div className="flex-1 space-y-2 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[11px] font-semibold text-[#8A8F98]">
+                                  Technea AI Mentor
+                                </span>
+                                {msg.timestamp && (
+                                  <span className="text-[10px] font-mono text-[#555555]">
+                                    {msg.timestamp}
+                                  </span>
+                                )}
                               </div>
+
+                              {/* AI Markdown & Code Blocks */}
+                              <AIMessageRenderer content={msg.text} />
+
+                              {/* Interactive Related Action Pills */}
+                              {Array.isArray(msg.related_actions) && msg.related_actions.length > 0 && (
+                                <div className="pt-2">
+                                  <div className="flex flex-wrap gap-2">
+                                    {msg.related_actions.map((act, actIdx) => (
+                                      <button
+                                        key={actIdx}
+                                        type="button"
+                                        onClick={() => handleRelatedAction(act)}
+                                        className="inline-flex items-center gap-1.5 rounded-[6px] border border-white/[0.12] bg-[#14151E] hover:bg-[#1C1E2A] hover:border-white/25 px-2.5 py-1 text-xs font-medium text-[#EDEDED] hover:text-white transition-all cursor-pointer shadow-sm group"
+                                      >
+                                        {act.action_type === 'view_roadmap' && (
+                                          <Compass className="h-3.5 w-3.5 text-emerald-400 group-hover:scale-110 transition-transform" />
+                                        )}
+                                        {act.action_type === 'view_project' && (
+                                          <FolderGit2 className="h-3.5 w-3.5 text-cyan-400 group-hover:scale-110 transition-transform" />
+                                        )}
+                                        {act.action_type === 'explore_skill' && (
+                                          <Layers className="h-3.5 w-3.5 text-amber-400 group-hover:scale-110 transition-transform" />
+                                        )}
+                                        {act.action_type === 'browse_catalog' && (
+                                          <Compass className="h-3.5 w-3.5 text-purple-400 group-hover:scale-110 transition-transform" />
+                                        )}
+                                        {!['view_roadmap', 'view_project', 'explore_skill', 'browse_catalog'].includes(act.action_type) && (
+                                          <ArrowRight className="h-3.5 w-3.5 text-[#8A8F98] group-hover:translate-x-0.5 transition-transform" />
+                                        )}
+                                        <span>{act.title}</span>
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Follow-up Suggestion Chips below the latest AI message */}
+                              {Array.isArray(msg.suggestions) && msg.suggestions.length > 0 && isLatestMentor && (
+                                <div className="pt-2.5">
+                                  <div className="flex items-center gap-1.5 mb-1.5 text-[10px] font-mono uppercase tracking-wider text-[#666666]">
+                                    <Sparkles className="h-2.5 w-2.5 text-[#8A8F98]" />
+                                    <span>Follow-up Suggestions</span>
+                                  </div>
+                                  <div className="flex flex-wrap gap-1.5">
+                                    {msg.suggestions.map((suggestion, sIdx) => (
+                                      <button
+                                        key={sIdx}
+                                        type="button"
+                                        disabled={isMentorTyping}
+                                        onClick={() => handleSendMentorMessage(suggestion)}
+                                        className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-[#0E0F14] hover:bg-[#181922] hover:border-white/20 px-3 py-1 text-xs text-[#A1A1AA] hover:text-[#EDEDED] transition-all cursor-pointer text-left shadow-sm disabled:opacity-50 disabled:cursor-not-allowed group"
+                                      >
+                                        <span className="text-[#666666] group-hover:text-[#8A8F98] transition-colors">↳</span>
+                                        <span>{suggestion}</span>
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           </div>
                         )
-                      )}
+                      })}
 
                       {isMentorTyping && (
                         <div className="flex items-start gap-3.5 max-w-2xl mr-auto">
                           <div className="flex h-7 w-7 items-center justify-center rounded-[6px] border border-white/[0.08] bg-[#12131A] text-[#EDEDED] shrink-0 mt-0.5">
                             <Bot className="h-4 w-4 animate-pulse" />
                           </div>
-                          <div className="flex items-center gap-1.5 text-xs text-[#8A8F98] pt-1.5 font-mono">
-                            <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#8A8F98] animate-bounce" />
-                            <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#8A8F98] animate-bounce [animation-delay:0.2s]" />
-                            <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#8A8F98] animate-bounce [animation-delay:0.4s]" />
-                            <span className="ml-1 text-[11px] text-[#8A8F98]">Thinking…</span>
+                          <div className="flex items-center gap-2.5 text-xs text-[#8A8F98] pt-1.5">
+                            <div className="flex items-center gap-1 py-1 px-2 rounded-full bg-[#12131A] border border-white/[0.06]">
+                              <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#EDEDED] animate-bounce [animation-delay:-0.3s]" />
+                              <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#EDEDED] animate-bounce [animation-delay:-0.15s]" />
+                              <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#EDEDED] animate-bounce" />
+                            </div>
+                            <span className="text-xs text-[#8A8F98] font-sans">Technea AI is thinking…</span>
                           </div>
                         </div>
                       )}

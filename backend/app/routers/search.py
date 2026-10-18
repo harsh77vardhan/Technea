@@ -44,6 +44,32 @@ async def search_catalog(
     )
 
 
+@router.post(
+    "",
+    response_model=UnifiedSearchResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Unified catalog search (POST)",
+    description="Fuzzy matching, synonym expansion, and ranked relevance search across skills, learning paths, and courses via JSON payload.",
+)
+async def search_catalog_post(
+    request: SearchQueryRequest,
+    db: DatabaseDep,
+) -> UnifiedSearchResponse:
+    """Execute unified search via POST body."""
+    query_str = request.q if (request.q and not request.query) else request.query
+    return await search_service.unified_search(
+        db=db,
+        query=query_str,
+        category=request.category,
+        level=request.level,
+        duration=request.duration,
+        goal=request.goal,
+        style=request.style,
+        language=request.language,
+        limit=request.limit,
+    )
+
+
 @router.get(
     "/intent",
     response_model=IntentRecommendationResponse,

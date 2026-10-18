@@ -38,6 +38,12 @@ from app.schemas.user import (
     UserUpdate,
     TokenResponse,
 )
+from app.schemas.ai import (
+    AIChatRequest,
+    AIChatResponse,
+    ChatMessage,
+    RelatedAction,
+)
 from app.schemas.progress import (
     RoadmapStepToggleRequest,
     LessonToggleRequest,
@@ -82,4 +88,8 @@ __all__ = [
     "GuestProgressSyncRequest",
     "DashboardEnrolledPath",
     "DashboardSummaryResponse",
+    "ChatMessage",
+    "AIChatRequest",
+    "RelatedAction",
+    "AIChatResponse",
 ]

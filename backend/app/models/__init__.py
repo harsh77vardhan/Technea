@@ -13,11 +13,13 @@ from app.models.lesson import Lesson
 from app.models.user import User
 from app.models.progress import (
     UserLearningPath,
+    UserLearningPathProgress,
     UserRoadmapProgress,
     UserLessonProgress,
 )
 from app.models.user_roadmap import (
     UserGeneratedRoadmap,
+    UserRoadmap,
     DailyLearningActivity,
 )
 from app.models.project import (
@@ -47,9 +49,11 @@ __all__ = [
     "Lesson",
     "User",
     "UserLearningPath",
+    "UserLearningPathProgress",
     "UserRoadmapProgress",
     "UserLessonProgress",
     "UserGeneratedRoadmap",
+    "UserRoadmap",
     "DailyLearningActivity",
     "Project",
     "UserProject",

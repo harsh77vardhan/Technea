@@ -79,6 +79,11 @@ class UserLearningPath(Base):
         return f"<UserLearningPath(user_id={self.user_id}, path_id={self.learning_path_id}, progress={self.progress_percent}%)>"
 
 
+# Alias for backward compatibility and clean referencing
+UserLearningPathProgress = UserLearningPath
+
+
+
 class UserRoadmapProgress(Base):
     """Tracks completion of individual roadmap steps/milestones for a user."""
 

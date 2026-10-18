@@ -161,3 +161,8 @@ class DailyLearningActivity(Base):
 
     def __repr__(self) -> str:
         return f"<DailyLearningActivity(user_id={self.user_id}, date='{self.activity_date}', streak={self.streak_count})>"
+
+
+# Alias for backward compatibility and clean referencing
+UserRoadmap = UserGeneratedRoadmap
+

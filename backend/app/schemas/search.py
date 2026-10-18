@@ -9,7 +9,8 @@ from app.schemas.course import CourseResponse
 class SearchQueryRequest(BaseModel):
     """Search request query payload."""
 
-    query: str = Field(description="Search or natural language intent query")
+    query: str = Field(default="", description="Search or natural language intent query")
+    q: str | None = Field(default=None, description="Optional alias for query")
     category: str | None = Field(default=None, description="Optional domain category filter")
     level: str | None = Field(default=None, description="Optional level/difficulty filter")
     duration: str | None = Field(default=None, description="Optional duration filter")

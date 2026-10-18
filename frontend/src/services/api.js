@@ -606,7 +606,23 @@ export async function getMyRoomsApi() {
    ========================================================================== */
 
 /**
- * Send query to context-aware AI Technical Mentor
+ * Send query to centralized AI Mentor chat endpoint
+ * @param {Object} data - { message: string, conversation_history?: Array<{ role: string, content: string }> }
+ * @returns {Promise<{ response: string, suggestions: string[], related_actions: Array<Object>, provider_used?: string }>}
+ */
+export async function sendAiChatApi(data) {
+  const payload = {
+    message: data?.message || '',
+    conversation_history: Array.isArray(data?.conversation_history) ? data.conversation_history : [],
+  }
+  return request('/ai/chat', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+/**
+ * Send query to context-aware AI Technical Mentor (legacy)
  * @param {Object} data - { message: string, context_skill?: string, context_milestone?: string }
  * @returns {Promise<Object>}
  */
@@ -728,6 +744,7 @@ export default {
   getCommunityRoomsApi,
   toggleRoomJoinApi,
   getMyRoomsApi,
+  sendAiChatApi,
   sendAiMentorChatApi,
   getSkills,
   getSkillById,
