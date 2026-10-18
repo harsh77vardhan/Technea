@@ -8,6 +8,28 @@ const API_BASE_URL =
   import.meta.env?.VITE_API_BASE_URL ||
   'http://127.0.0.1:8000/api/v1'
 
+const AUTH_TOKEN_KEY = 'technea_auth_token'
+
+export function getAuthToken() {
+  try {
+    return localStorage.getItem(AUTH_TOKEN_KEY)
+  } catch {
+    return null
+  }
+}
+
+export function setAuthToken(token) {
+  try {
+    if (token) {
+      localStorage.setItem(AUTH_TOKEN_KEY, token)
+    } else {
+      localStorage.removeItem(AUTH_TOKEN_KEY)
+    }
+  } catch (e) {
+    console.warn('Failed to persist auth token:', e)
+  }
+}
+
 /**
  * Reusable fetch wrapper with error handling and JSON parsing
  * @param {string} endpoint - Path relative to API_BASE_URL (e.g. '/skills')
@@ -19,6 +41,11 @@ async function request(endpoint, options = {}) {
   const defaultHeaders = {
     Accept: 'application/json',
     'Content-Type': 'application/json',
+  }
+
+  const token = getAuthToken()
+  if (token) {
+    defaultHeaders['Authorization'] = `Bearer ${token}`
   }
 
   const config = {
@@ -119,6 +146,10 @@ export async function getLearningPaths(params = {}) {
   if (params.q) query.append('q', params.q)
   if (params.category) query.append('category', params.category)
   if (params.level) query.append('level', params.level)
+  if (params.duration) query.append('duration', params.duration)
+  if (params.goal) query.append('goal', params.goal)
+  if (params.style) query.append('style', params.style)
+  if (params.language) query.append('language', params.language)
   if (params.limit) query.append('limit', String(params.limit))
   else query.append('limit', '250')
   const queryString = query.toString() ? `?${query.toString()}` : ''
@@ -127,32 +158,29 @@ export async function getLearningPaths(params = {}) {
 
 /**
  * Unified platform search with fuzzy matching and synonym expansion
- * @param {string} q - Search query term
+ * @param {string} [q=''] - Search query term
  * @param {Object} [options]
  * @param {string} [options.category] - Optional category filter
  * @param {string} [options.level] - Optional difficulty level
+ * @param {string} [options.duration] - Optional duration filter (e.g. '2 Weeks', '4 Weeks')
+ * @param {string} [options.goal] - Optional goal filter (e.g. 'Job', 'Projects')
+ * @param {string} [options.style] - Optional style filter (e.g. 'Projects', 'Videos')
+ * @param {string} [options.language] - Optional language filter (e.g. 'English', 'Hindi')
  * @param {number} [options.limit=15] - Limit per entity
- * @returns {Promise<Object>} { query, synonyms_expanded, fuzzy_corrections, learning_paths, skills, courses }
+ * @returns {Promise<Object>} { query, synonyms_expanded, fuzzy_corrections, learning_paths, skills, courses, is_fallback, fallback_message }
  */
-export async function searchCatalog(q, options = {}) {
-  if (!q || !q.trim()) {
-    return {
-      query: '',
-      normalized_query: '',
-      synonyms_expanded: [],
-      fuzzy_corrections: [],
-      learning_paths: [],
-      skills: [],
-      courses: [],
-      total_matches: 0,
-    }
-  }
+export async function searchCatalog(q = '', options = {}) {
   const query = new URLSearchParams()
-  query.append('q', q.trim())
+  if (q && q.trim()) query.append('q', q.trim())
   if (options.category) query.append('category', options.category)
   if (options.level) query.append('level', options.level)
+  if (options.duration) query.append('duration', options.duration)
+  if (options.goal) query.append('goal', options.goal)
+  if (options.style) query.append('style', options.style)
+  if (options.language) query.append('language', options.language)
   if (options.limit) query.append('limit', String(options.limit))
-  return request(`/search?${query.toString()}`)
+  const queryString = query.toString() ? `?${query.toString()}` : ''
+  return request(`/search${queryString}`)
 }
 
 /**
@@ -237,7 +265,156 @@ export async function getRelatedCourses(courseId, limit = 4) {
   return request(`/courses/${courseId}/related?limit=${limit}`)
 }
 
+/* ==========================================================================
+   Authentication API Endpoints
+   ========================================================================== */
+
+/**
+ * Register a new user account
+ * @param {Object} data - { email, password, full_name }
+ * @returns {Promise<{ access_token: string, token_type: string, user: Object }>}
+ */
+export async function signupApi(data) {
+  return request('/auth/signup', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+/**
+ * Authenticate existing user with email and password
+ * @param {Object} data - { email, password }
+ * @returns {Promise<{ access_token: string, token_type: string, user: Object }>}
+ */
+export async function loginApi(data) {
+  return request('/auth/login', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+/**
+ * Fetch authenticated user profile
+ * @returns {Promise<Object>}
+ */
+export async function getCurrentUserApi() {
+  return request('/auth/me')
+}
+
+/**
+ * Update user profile
+ * @param {Object} data - { full_name, avatar_url, bio, password }
+ * @returns {Promise<Object>}
+ */
+export async function updateProfileApi(data) {
+  return request('/auth/profile', {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  })
+}
+
+/**
+ * Informs the backend of user logout
+ * @returns {Promise<Object>}
+ */
+export async function logoutApi() {
+  try {
+    return await request('/auth/logout', { method: 'POST' })
+  } catch {
+    return { message: 'Logged out' }
+  }
+}
+
+/* ==========================================================================
+   User Progress & Dashboard API Endpoints
+   ========================================================================== */
+
+/**
+ * Fetch completed roadmap steps for a learning path
+ * @param {number|string} pathId
+ * @returns {Promise<{ learning_path_id: number, completed_step_ids: Array<number>, total_steps: number, progress_percent: number }>}
+ */
+export async function getPathProgressApi(pathId) {
+  if (!isNumericId(pathId)) return null
+  return request(`/progress/learning-paths/${pathId}`)
+}
+
+/**
+ * Toggle roadmap step milestone completion status
+ * @param {Object} data - { path_id: number, step_id: number, is_completed: boolean }
+ * @returns {Promise<Object>} Updated path progress
+ */
+export async function toggleStepProgressApi({ path_id, step_id, is_completed = true }) {
+  return request('/progress/steps/toggle', {
+    method: 'POST',
+    body: JSON.stringify({
+      learning_path_id: Number(path_id),
+      step_id: Number(step_id),
+      is_completed: Boolean(is_completed),
+    }),
+  })
+}
+
+/**
+ * Fetch completed lessons for a course
+ * @param {number|string} courseId
+ * @returns {Promise<{ course_id: number, completed_lesson_ids: Array<number>, total_lessons: number, progress_percent: number }>}
+ */
+export async function getCourseProgressApi(courseId) {
+  if (!isNumericId(courseId)) return null
+  return request(`/progress/courses/${courseId}`)
+}
+
+/**
+ * Toggle video lesson completion status
+ * @param {Object} data - { course_id: number, lesson_id: number, is_completed: boolean }
+ * @returns {Promise<Object>} Updated course progress
+ */
+export async function toggleLessonProgressApi({ course_id, lesson_id, is_completed = true }) {
+  return request('/progress/lessons/toggle', {
+    method: 'POST',
+    body: JSON.stringify({
+      course_id: Number(course_id),
+      lesson_id: Number(lesson_id),
+      is_completed: Boolean(is_completed),
+    }),
+  })
+}
+
+/**
+ * Sync guest localStorage progress to the user's account
+ * @param {Object} payload - { path_progress: Record<string, number[]>, course_progress: Record<string, number[]> }
+ * @returns {Promise<Object>}
+ */
+export async function syncGuestProgressApi(payload) {
+  return request('/progress/sync', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+/**
+ * Fetch user learning dashboard summary
+ * @returns {Promise<Object>} Dashboard analytics
+ */
+export async function getDashboardSummaryApi() {
+  return request('/progress/dashboard')
+}
+
 export default {
+  getAuthToken,
+  setAuthToken,
+  signupApi,
+  loginApi,
+  getCurrentUserApi,
+  updateProfileApi,
+  logoutApi,
+  getPathProgressApi,
+  toggleStepProgressApi,
+  getCourseProgressApi,
+  toggleLessonProgressApi,
+  syncGuestProgressApi,
+  getDashboardSummaryApi,
   getSkills,
   getSkillById,
   getSkillRelationships,
@@ -250,4 +427,5 @@ export default {
   searchCatalog,
   analyzeIntent,
 }
+
 

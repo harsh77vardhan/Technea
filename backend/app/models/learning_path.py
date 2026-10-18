@@ -65,6 +65,36 @@ class LearningPath(Base):
         nullable=True,
         default=list,
     )
+    goal: Mapped[str | None] = mapped_column(
+        String(50),
+        nullable=True,
+        default="Job",
+    )
+    goals: Mapped[list[str] | None] = mapped_column(
+        JSON,
+        nullable=True,
+        default=list,
+    )
+    style: Mapped[str | None] = mapped_column(
+        String(50),
+        nullable=True,
+        default="Projects",
+    )
+    styles: Mapped[list[str] | None] = mapped_column(
+        JSON,
+        nullable=True,
+        default=list,
+    )
+    language: Mapped[str | None] = mapped_column(
+        String(50),
+        nullable=True,
+        default="English",
+    )
+    languages: Mapped[list[str] | None] = mapped_column(
+        JSON,
+        nullable=True,
+        default=list,
+    )
     skill_id: Mapped[int | None] = mapped_column(
         ForeignKey("skills.id", ondelete="SET NULL"),
         nullable=True,

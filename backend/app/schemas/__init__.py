@@ -30,6 +30,23 @@ from app.schemas.skill import (
     SkillResponse,
     SkillUpdate,
 )
+from app.schemas.user import (
+    UserBase,
+    UserCreate,
+    UserLogin,
+    UserResponse,
+    UserUpdate,
+    TokenResponse,
+)
+from app.schemas.progress import (
+    RoadmapStepToggleRequest,
+    LessonToggleRequest,
+    PathProgressResponse,
+    CourseProgressResponse,
+    GuestProgressSyncRequest,
+    DashboardEnrolledPath,
+    DashboardSummaryResponse,
+)
 
 __all__ = [
     "CustomBaseModel",
@@ -52,4 +69,17 @@ __all__ = [
     "RoadmapStepBase",
     "RoadmapStepCreate",
     "RoadmapStepResponse",
+    "UserBase",
+    "UserCreate",
+    "UserLogin",
+    "UserResponse",
+    "UserUpdate",
+    "TokenResponse",
+    "RoadmapStepToggleRequest",
+    "LessonToggleRequest",
+    "PathProgressResponse",
+    "CourseProgressResponse",
+    "GuestProgressSyncRequest",
+    "DashboardEnrolledPath",
+    "DashboardSummaryResponse",
 ]

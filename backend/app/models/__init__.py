@@ -10,6 +10,12 @@ from app.models.learning_path import LearningPath
 from app.models.course import Course
 from app.models.roadmap_step import RoadmapStep
 from app.models.lesson import Lesson
+from app.models.user import User
+from app.models.progress import (
+    UserLearningPath,
+    UserRoadmapProgress,
+    UserLessonProgress,
+)
 
 __all__ = [
     "Base",
@@ -23,6 +29,10 @@ __all__ = [
     "Course",
     "RoadmapStep",
     "Lesson",
+    "User",
+    "UserLearningPath",
+    "UserRoadmapProgress",
+    "UserLessonProgress",
 ]
 
 

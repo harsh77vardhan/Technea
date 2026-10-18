@@ -12,6 +12,10 @@ class SearchQueryRequest(BaseModel):
     query: str = Field(description="Search or natural language intent query")
     category: str | None = Field(default=None, description="Optional domain category filter")
     level: str | None = Field(default=None, description="Optional level/difficulty filter")
+    duration: str | None = Field(default=None, description="Optional duration filter")
+    goal: str | None = Field(default=None, description="Optional goal filter")
+    style: str | None = Field(default=None, description="Optional learning style filter")
+    language: str | None = Field(default=None, description="Optional language filter")
     limit: int = Field(default=20, ge=1, le=100, description="Max results per entity")
 
 
@@ -45,8 +49,13 @@ class UnifiedSearchResponse(BaseModel):
     synonyms_expanded: list[str] = Field(default_factory=list, description="Synonyms detected for this query")
     fuzzy_corrections: list[str] = Field(default_factory=list, description="Typo corrections applied")
     learning_paths: list[LearningPathResponse] = Field(default_factory=list)
+    related_learning_paths: list[LearningPathResponse] = Field(
+        default_factory=list, description="Related learning paths in nearby technologies"
+    )
     skills: list[SkillResponse] = Field(default_factory=list)
     courses: list[CourseResponse] = Field(default_factory=list)
+    is_fallback: bool = Field(default=False, description="Whether results are closest fallback alternatives")
+    fallback_message: str | None = Field(default=None, description="Helpful note when showing recommended alternatives")
     total_matches: int = Field(default=0)
 
 

@@ -9,12 +9,12 @@ import CoursePlayerPage from '../../pages/CoursePlayerPage'
 import { SKILLS } from '../../data/skills'
 import { getSkills } from '../../services/api'
 
-export default function SkillExplorerModal({ isOpen, onClose, onSelectPath }) {
-  const [stage, setStage] = useState('discover') // 'discover' | 'explore' | 'detail' | 'player'
+export default function SkillExplorerModal({ isOpen, onClose, onSelectPath, initialPath = null }) {
+  const [stage, setStage] = useState(initialPath ? 'detail' : 'discover') // 'discover' | 'explore' | 'detail' | 'player'
   const [searchQuery, setSearchQuery] = useState('')
   const [submittedQuery, setSubmittedQuery] = useState('')
-  const [selectedSkillId, setSelectedSkillId] = useState(null)
-  const [selectedPathObject, setSelectedPathObject] = useState(null)
+  const [selectedSkillId, setSelectedSkillId] = useState(initialPath?.id || null)
+  const [selectedPathObject, setSelectedPathObject] = useState(initialPath || null)
   const [selectedCourseObject, setSelectedCourseObject] = useState(null)
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
   const [isMounted, setIsMounted] = useState(isOpen)
@@ -52,6 +52,11 @@ export default function SkillExplorerModal({ isOpen, onClose, onSelectPath }) {
       rafId = requestAnimationFrame(() => {
         setIsMounted(true)
         setIsPanelVisible(true)
+        if (initialPath) {
+          setSelectedPathObject(initialPath)
+          setSelectedSkillId(initialPath.id)
+          setStage('detail')
+        }
       })
     } else {
       rafId = requestAnimationFrame(() => {
@@ -73,7 +78,7 @@ export default function SkillExplorerModal({ isOpen, onClose, onSelectPath }) {
       cancelAnimationFrame(rafId)
       clearTimeout(timeoutId)
     }
-  }, [isOpen])
+  }, [isOpen, initialPath])
 
   // Mouse move handler for spatial parallax
   const handleMouseMove = (e) => {

@@ -21,10 +21,14 @@ router = APIRouter(tags=["Search"])
 )
 async def search_catalog(
     db: DatabaseDep,
-    q: Annotated[str, Query(min_length=1, description="Search query or keyword (e.g. 'pyhton', 'react', 'machine learning')")],
+    q: Annotated[str, Query(description="Search query or keyword (e.g. 'pyhton', 'react', 'machine learning')")] = "",
     category: Annotated[str | None, Query(description="Optional domain category filter")] = None,
     level: Annotated[str | None, Query(description="Optional difficulty level filter")] = None,
-    limit: Annotated[int, Query(ge=1, le=100, description="Max results per entity type")] = 15,
+    duration: Annotated[str | None, Query(description="Optional duration filter (e.g. '2 Weeks', '4 Weeks')")] = None,
+    goal: Annotated[str | None, Query(description="Optional goal filter (e.g. 'Job', 'Projects', 'College')")] = None,
+    style: Annotated[str | None, Query(description="Optional style filter (e.g. 'Projects', 'Videos', 'Interactive')")] = None,
+    language: Annotated[str | None, Query(description="Optional language filter (e.g. 'English', 'Hindi', 'Hinglish')")] = None,
+    limit: Annotated[int, Query(ge=1, le=500, description="Max results per entity type")] = 15,
 ) -> UnifiedSearchResponse:
     """Execute unified fuzzy and synonym search."""
     return await search_service.unified_search(
@@ -32,6 +36,10 @@ async def search_catalog(
         query=q,
         category=category,
         level=level,
+        duration=duration,
+        goal=goal,
+        style=style,
+        language=language,
         limit=limit,
     )
 

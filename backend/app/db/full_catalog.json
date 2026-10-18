@@ -434,6 +434,24 @@
               }
             ]
           }
+        ],
+        "goal": "College",
+        "goals": [
+          "College",
+          "Career Switch",
+          "Projects",
+          "Job"
+        ],
+        "style": "Projects",
+        "styles": [
+          "Projects",
+          "Interactive",
+          "Videos"
+        ],
+        "language": "English",
+        "languages": [
+          "English",
+          "Hinglish"
         ]
       },
       {
@@ -441,7 +459,7 @@
         "category": "Programming",
         "level": "Intermediate",
         "difficulty": "Intermediate",
-        "duration": "6 Weeks",
+        "duration": "8+ Weeks",
         "description": "Deep dive into OOP, dunder methods, metaclasses, decorators, generators, asyncio event loops, and high-performance concurrency.",
         "search_terms": [
           "advanced python",
@@ -838,6 +856,24 @@
               }
             ]
           }
+        ],
+        "goal": "Projects",
+        "goals": [
+          "Projects",
+          "Job",
+          "Career Switch"
+        ],
+        "style": "Mixed",
+        "styles": [
+          "Mixed",
+          "Projects",
+          "Videos",
+          "Interactive",
+          "Reading"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -884,7 +920,7 @@
         "category": "Programming",
         "level": "Beginner to Intermediate",
         "difficulty": "Beginner to Intermediate",
-        "duration": "6 Weeks",
+        "duration": "3 Weeks",
         "description": "Develop strong object-oriented principles, understand JVM ecosystem memory, and build robust backend Java applications.",
         "search_terms": [
           "java basics",
@@ -1276,6 +1312,23 @@
               }
             ]
           }
+        ],
+        "goal": "Career Switch",
+        "goals": [
+          "Career Switch",
+          "Job",
+          "College",
+          "Projects"
+        ],
+        "style": "Projects",
+        "styles": [
+          "Projects",
+          "Interactive",
+          "Videos"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -1283,7 +1336,7 @@
         "category": "Programming",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "8 Weeks",
+        "duration": "4 Weeks",
         "description": "Master JVM memory tuning, multithreading, concurrent collections, virtual threads, Spring Boot microservices, and design patterns.",
         "search_terms": [
           "enterprise java",
@@ -1680,6 +1733,23 @@
               }
             ]
           }
+        ],
+        "goal": "Career Switch",
+        "goals": [
+          "Career Switch",
+          "Job",
+          "Projects"
+        ],
+        "style": "Reading",
+        "styles": [
+          "Reading",
+          "Projects",
+          "Interactive",
+          "Videos"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -1726,7 +1796,7 @@
         "category": "Programming",
         "level": "Intermediate",
         "difficulty": "Intermediate",
-        "duration": "6 Weeks",
+        "duration": "4 Weeks",
         "description": "Understand raw pointers, references, memory layouts, RAII principles, and modern C++ standard template library (STL).",
         "search_terms": [
           "c++ basics",
@@ -2119,6 +2189,22 @@
               }
             ]
           }
+        ],
+        "goal": "Projects",
+        "goals": [
+          "Projects",
+          "Job",
+          "Career Switch"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Interactive",
+          "Projects"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -2126,7 +2212,7 @@
         "category": "Programming",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "8 Weeks",
+        "duration": "6 Weeks",
         "description": "Master move semantics, smart pointers, template metaprogramming, concepts, coroutines, and SIMD hardware acceleration.",
         "search_terms": [
           "modern c++",
@@ -2523,6 +2609,23 @@
               }
             ]
           }
+        ],
+        "goal": "Research",
+        "goals": [
+          "Research",
+          "Job",
+          "Projects"
+        ],
+        "style": "Interactive",
+        "styles": [
+          "Interactive",
+          "Projects",
+          "Videos"
+        ],
+        "language": "Hinglish",
+        "languages": [
+          "Hinglish",
+          "English"
         ]
       }
     ]
@@ -2963,6 +3066,30 @@
               }
             ]
           }
+        ],
+        "goal": "Projects",
+        "goals": [
+          "Projects",
+          "Job",
+          "Interview",
+          "College",
+          "Career Switch",
+          "Research"
+        ],
+        "style": "Projects",
+        "styles": [
+          "Projects",
+          "Videos",
+          "Reading",
+          "Interactive",
+          "Mixed"
+        ],
+        "language": "English",
+        "languages": [
+          "English",
+          "Hindi",
+          "Hinglish",
+          "Mixed"
         ]
       },
       {
@@ -2970,7 +3097,7 @@
         "category": "Programming",
         "level": "Intermediate to Advanced",
         "difficulty": "Intermediate to Advanced",
-        "duration": "5 Weeks",
+        "duration": "8+ Weeks",
         "description": "Deconstruct V8 JIT compilers, call stacks, microtask queues, memory leaks, custom event emitters, and modular architecture.",
         "search_terms": [
           "advanced javascript",
@@ -3367,6 +3494,30 @@
               }
             ]
           }
+        ],
+        "goal": "Job",
+        "goals": [
+          "Job",
+          "Career Switch",
+          "Projects",
+          "Interview",
+          "College",
+          "Research"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Projects",
+          "Interactive",
+          "Reading",
+          "Mixed"
+        ],
+        "language": "Hindi",
+        "languages": [
+          "Hindi",
+          "English",
+          "Hinglish",
+          "Mixed"
         ]
       }
     ]
@@ -3411,7 +3562,7 @@
         "category": "Programming",
         "level": "Beginner to Intermediate",
         "difficulty": "Beginner to Intermediate",
-        "duration": "4 Weeks",
+        "duration": "2 Weeks",
         "description": "Transition from JavaScript to typed applications using interfaces, generics, type narrowing, and strict compile checks.",
         "search_terms": [
           "typescript basics",
@@ -3808,6 +3959,25 @@
               }
             ]
           }
+        ],
+        "goal": "Job",
+        "goals": [
+          "Job",
+          "Career Switch",
+          "Projects"
+        ],
+        "style": "Interactive",
+        "styles": [
+          "Interactive",
+          "Projects",
+          "Videos"
+        ],
+        "language": "Mixed",
+        "languages": [
+          "Mixed",
+          "English",
+          "Hindi",
+          "Hinglish"
         ]
       },
       {
@@ -3815,7 +3985,7 @@
         "category": "Programming",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "5 Weeks",
+        "duration": "4 Weeks",
         "description": "Master conditional types, mapped types, template literal types, distributive unions, and building type-safe SDK libraries.",
         "search_terms": [
           "advanced typescript",
@@ -4212,6 +4382,22 @@
               }
             ]
           }
+        ],
+        "goal": "Projects",
+        "goals": [
+          "Projects",
+          "Job",
+          "Career Switch"
+        ],
+        "style": "Projects",
+        "styles": [
+          "Projects",
+          "Videos",
+          "Interactive"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -4256,7 +4442,7 @@
         "category": "Programming",
         "level": "Beginner to Intermediate",
         "difficulty": "Beginner to Intermediate",
-        "duration": "5 Weeks",
+        "duration": "3 Weeks",
         "description": "Understand Go syntax, struct composition, explicit error handling, interfaces, and idiomatic CLI and network tools.",
         "search_terms": [
           "learn go",
@@ -4654,6 +4840,23 @@
               }
             ]
           }
+        ],
+        "goal": "College",
+        "goals": [
+          "College",
+          "Interview",
+          "Job",
+          "Projects"
+        ],
+        "style": "Projects",
+        "styles": [
+          "Projects",
+          "Interactive",
+          "Videos"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -5058,6 +5261,24 @@
               }
             ]
           }
+        ],
+        "goal": "Career Switch",
+        "goals": [
+          "Career Switch",
+          "Job",
+          "Projects"
+        ],
+        "style": "Mixed",
+        "styles": [
+          "Mixed",
+          "Projects",
+          "Videos",
+          "Interactive",
+          "Reading"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -5103,7 +5324,7 @@
         "category": "Programming",
         "level": "Intermediate",
         "difficulty": "Intermediate",
-        "duration": "6 Weeks",
+        "duration": "4 Weeks",
         "description": "Master Rust ownership, borrowing rules, lifetimes, pattern matching, error handling with Result/Option, and Cargo packages.",
         "search_terms": [
           "learn rust",
@@ -5501,6 +5722,23 @@
               }
             ]
           }
+        ],
+        "goal": "Career Switch",
+        "goals": [
+          "Career Switch",
+          "Job",
+          "College",
+          "Projects"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Interactive",
+          "Projects"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -5508,7 +5746,7 @@
         "category": "Programming",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "8 Weeks",
+        "duration": "8+ Weeks",
         "description": "Build high-speed network proxies, asynchronous runtimes with Tokio, FFI native bindings, and unsafe memory primitives.",
         "search_terms": [
           "advanced rust",
@@ -5905,6 +6143,23 @@
               }
             ]
           }
+        ],
+        "goal": "Research",
+        "goals": [
+          "Research",
+          "Job",
+          "Projects"
+        ],
+        "style": "Reading",
+        "styles": [
+          "Reading",
+          "Projects",
+          "Interactive",
+          "Videos"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -5947,7 +6202,7 @@
         "category": "Programming",
         "level": "Beginner to Intermediate",
         "difficulty": "Beginner to Intermediate",
-        "duration": "4 Weeks",
+        "duration": "5 Weeks",
         "description": "Master Kotlin null safety, expressive syntax, extension functions, lambdas, and modern JVM application patterns.",
         "search_terms": [
           "learn kotlin",
@@ -6344,6 +6599,22 @@
               }
             ]
           }
+        ],
+        "goal": "Projects",
+        "goals": [
+          "Projects",
+          "Job",
+          "Career Switch"
+        ],
+        "style": "Reading",
+        "styles": [
+          "Reading",
+          "Interactive",
+          "Projects"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -6351,7 +6622,7 @@
         "category": "Programming",
         "level": "Intermediate to Advanced",
         "difficulty": "Intermediate to Advanced",
-        "duration": "6 Weeks",
+        "duration": "4 Weeks",
         "description": "Harness structured concurrency, suspend functions, Flows, state channels, and Android Jetpack Compose integration.",
         "search_terms": [
           "kotlin coroutines",
@@ -6747,6 +7018,23 @@
               }
             ]
           }
+        ],
+        "goal": "Job",
+        "goals": [
+          "Job",
+          "Career Switch",
+          "Projects"
+        ],
+        "style": "Interactive",
+        "styles": [
+          "Interactive",
+          "Projects",
+          "Videos"
+        ],
+        "language": "Hinglish",
+        "languages": [
+          "Hinglish",
+          "English"
         ]
       }
     ]
@@ -6793,7 +7081,7 @@
         "category": "Programming",
         "level": "Absolute Beginner",
         "difficulty": "Absolute Beginner",
-        "duration": "4 Weeks",
+        "duration": "2 Weeks",
         "description": "Zero-to-one guide to computational thinking, problem solving, flow control, variable scope, and clean code fundamentals.",
         "search_terms": [
           "how to code",
@@ -7191,6 +7479,23 @@
               }
             ]
           }
+        ],
+        "goal": "Interview",
+        "goals": [
+          "Interview",
+          "College",
+          "Job"
+        ],
+        "style": "Interactive",
+        "styles": [
+          "Interactive",
+          "Projects",
+          "Videos"
+        ],
+        "language": "Hinglish",
+        "languages": [
+          "Hinglish",
+          "English"
         ]
       },
       {
@@ -7198,7 +7503,7 @@
         "category": "Programming",
         "level": "Beginner to Intermediate",
         "difficulty": "Beginner to Intermediate",
-        "duration": "4 Weeks",
+        "duration": "6 Weeks",
         "description": "Sharpen analytical thinking by decomposing complex challenges, writing pseudocode, tracing logic, and testing edge cases.",
         "search_terms": [
           "problem solving coding",
@@ -7593,6 +7898,23 @@
               }
             ]
           }
+        ],
+        "goal": "Interview",
+        "goals": [
+          "Interview",
+          "Job",
+          "College"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Projects",
+          "Interactive"
+        ],
+        "language": "Hindi",
+        "languages": [
+          "Hindi",
+          "English"
         ]
       }
     ]
@@ -7638,7 +7960,7 @@
         "category": "Programming",
         "level": "Intermediate",
         "difficulty": "Intermediate",
-        "duration": "8 Weeks",
+        "duration": "3 Weeks",
         "description": "Analyze complexity with Big-O, master fundamental data structures (arrays, trees, graphs), and solve algorithmic puzzles.",
         "search_terms": [
           "dsa roadmap",
@@ -8031,6 +8353,25 @@
               }
             ]
           }
+        ],
+        "goal": "Interview",
+        "goals": [
+          "Interview",
+          "Job",
+          "College"
+        ],
+        "style": "Projects",
+        "styles": [
+          "Projects",
+          "Interactive",
+          "Videos"
+        ],
+        "language": "Mixed",
+        "languages": [
+          "Mixed",
+          "English",
+          "Hindi",
+          "Hinglish"
         ]
       },
       {
@@ -8038,7 +8379,7 @@
         "category": "Programming",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "8 Weeks",
+        "duration": "8+ Weeks",
         "description": "Deep dive into memoization, tabulation, topological sorting, Dijkstra, Bellman-Ford, union-find, and complex algorithmic optimizations.",
         "search_terms": [
           "dynamic programming",
@@ -8435,6 +8776,22 @@
               }
             ]
           }
+        ],
+        "goal": "Interview",
+        "goals": [
+          "Interview",
+          "Job",
+          "College"
+        ],
+        "style": "Projects",
+        "styles": [
+          "Projects",
+          "Videos",
+          "Interactive"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -8479,7 +8836,7 @@
         "category": "Programming",
         "level": "Intermediate to Advanced",
         "difficulty": "Intermediate to Advanced",
-        "duration": "6 Weeks",
+        "duration": "4 Weeks",
         "description": "Master fast I/O, bitwise manipulations, modular arithmetic, coordinate compression, and Codeforces Div 2 strategies.",
         "search_terms": [
           "competitive programming tutorial",
@@ -8875,6 +9232,22 @@
               }
             ]
           }
+        ],
+        "goal": "Interview",
+        "goals": [
+          "Interview",
+          "Job",
+          "College"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Interactive",
+          "Projects"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -8882,7 +9255,7 @@
         "category": "Programming",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "8 Weeks",
+        "duration": "4 Weeks",
         "description": "Implement persistent segment trees, Heavy-Light Decomposition (HLD), suffix arrays, and advanced contest combinatorics.",
         "search_terms": [
           "elite competitive programming",
@@ -9277,6 +9650,24 @@
               }
             ]
           }
+        ],
+        "goal": "Interview",
+        "goals": [
+          "Interview",
+          "Job",
+          "College"
+        ],
+        "style": "Mixed",
+        "styles": [
+          "Mixed",
+          "Projects",
+          "Videos",
+          "Interactive",
+          "Reading"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -9719,6 +10110,23 @@
               }
             ]
           }
+        ],
+        "goal": "Career Switch",
+        "goals": [
+          "Career Switch",
+          "Job",
+          "College",
+          "Projects"
+        ],
+        "style": "Reading",
+        "styles": [
+          "Reading",
+          "Interactive",
+          "Projects"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -10122,6 +10530,23 @@
               }
             ]
           }
+        ],
+        "goal": "Job",
+        "goals": [
+          "Job",
+          "Career Switch",
+          "Projects"
+        ],
+        "style": "Reading",
+        "styles": [
+          "Reading",
+          "Projects",
+          "Interactive",
+          "Videos"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -10167,7 +10592,7 @@
         "category": "Programming",
         "level": "Beginner",
         "difficulty": "Beginner",
-        "duration": "5 Weeks",
+        "duration": "2 Weeks",
         "description": "Learn Swift syntax, optionals, structs, protocols, and build your first iOS applications with modern SwiftUI in Xcode.",
         "search_terms": [
           "learn swift",
@@ -10564,6 +10989,22 @@
               }
             ]
           }
+        ],
+        "goal": "Projects",
+        "goals": [
+          "Projects",
+          "Job",
+          "Career Switch"
+        ],
+        "style": "Interactive",
+        "styles": [
+          "Interactive",
+          "Projects",
+          "Videos"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -10571,7 +11012,7 @@
         "category": "Programming",
         "level": "Intermediate to Advanced",
         "difficulty": "Intermediate to Advanced",
-        "duration": "7 Weeks",
+        "duration": "8+ Weeks",
         "description": "Build production iOS apps featuring MVVM architecture, Core Data / SwiftData persistence, async network layers, and App Store readiness.",
         "search_terms": [
           "advanced ios development",
@@ -10968,6 +11409,23 @@
               }
             ]
           }
+        ],
+        "goal": "Projects",
+        "goals": [
+          "Projects",
+          "Job",
+          "Career Switch"
+        ],
+        "style": "Interactive",
+        "styles": [
+          "Interactive",
+          "Projects",
+          "Videos"
+        ],
+        "language": "Hinglish",
+        "languages": [
+          "Hinglish",
+          "English"
         ]
       }
     ]
@@ -11411,6 +11869,23 @@
               }
             ]
           }
+        ],
+        "goal": "Interview",
+        "goals": [
+          "Interview",
+          "College",
+          "Job"
+        ],
+        "style": "Projects",
+        "styles": [
+          "Projects",
+          "Interactive",
+          "Videos"
+        ],
+        "language": "Hinglish",
+        "languages": [
+          "Hinglish",
+          "English"
         ]
       },
       {
@@ -11814,6 +12289,23 @@
               }
             ]
           }
+        ],
+        "goal": "Career Switch",
+        "goals": [
+          "Career Switch",
+          "Job",
+          "Projects"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Projects",
+          "Interactive"
+        ],
+        "language": "Hindi",
+        "languages": [
+          "Hindi",
+          "English"
         ]
       }
     ]
@@ -11860,7 +12352,7 @@
         "category": "AI & ML",
         "level": "Beginner",
         "difficulty": "Beginner",
-        "duration": "8 Weeks",
+        "duration": "4 Weeks",
         "description": "Grasp regression, classification, clustering, evaluation metrics, and practical scikit-learn pipelines.",
         "search_terms": [
           "machine learning roadmap",
@@ -12253,6 +12745,25 @@
               }
             ]
           }
+        ],
+        "goal": "Job",
+        "goals": [
+          "Job",
+          "Career Switch",
+          "Projects"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Interactive",
+          "Projects"
+        ],
+        "language": "Mixed",
+        "languages": [
+          "Mixed",
+          "English",
+          "Hindi",
+          "Hinglish"
         ]
       },
       {
@@ -12260,7 +12771,7 @@
         "category": "AI & ML",
         "level": "Intermediate to Advanced",
         "difficulty": "Intermediate to Advanced",
-        "duration": "8 Weeks",
+        "duration": "6 Weeks",
         "description": "Bridge the gap between experimental Jupyter models and live inference microservices using feature stores and drift monitoring.",
         "search_terms": [
           "production ml",
@@ -12657,6 +13168,22 @@
               }
             ]
           }
+        ],
+        "goal": "Research",
+        "goals": [
+          "Research",
+          "Job",
+          "Projects"
+        ],
+        "style": "Projects",
+        "styles": [
+          "Projects",
+          "Videos",
+          "Interactive"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -12703,7 +13230,7 @@
         "category": "AI & ML",
         "level": "Intermediate",
         "difficulty": "Intermediate",
-        "duration": "8 Weeks",
+        "duration": "5 Weeks",
         "description": "Learn forward and backpropagation, activation functions, CNNs, RNNs, and PyTorch training pipelines.",
         "search_terms": [
           "deep learning roadmap",
@@ -13094,6 +13621,23 @@
               }
             ]
           }
+        ],
+        "goal": "Research",
+        "goals": [
+          "Research",
+          "Job",
+          "Projects",
+          "College"
+        ],
+        "style": "Reading",
+        "styles": [
+          "Reading",
+          "Interactive",
+          "Projects"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -13101,7 +13645,7 @@
         "category": "AI & ML",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "6 Weeks",
+        "duration": "8+ Weeks",
         "description": "Deconstruct scaled dot-product attention, multi-head layers, positional encodings, encoder-decoder transformers from scratch.",
         "search_terms": [
           "transformer neural network",
@@ -13497,6 +14041,24 @@
               }
             ]
           }
+        ],
+        "goal": "Job",
+        "goals": [
+          "Job",
+          "Career Switch",
+          "Projects"
+        ],
+        "style": "Mixed",
+        "styles": [
+          "Mixed",
+          "Projects",
+          "Videos",
+          "Interactive",
+          "Reading"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -13542,7 +14104,7 @@
         "category": "AI & ML",
         "level": "Intermediate",
         "difficulty": "Intermediate",
-        "duration": "6 Weeks",
+        "duration": "2 Weeks",
         "description": "Understand latent spaces, diffusion mechanisms, GANs, transformer foundations, and prompt orchestration.",
         "search_terms": [
           "generative ai roadmap",
@@ -13933,6 +14495,23 @@
               }
             ]
           }
+        ],
+        "goal": "Career Switch",
+        "goals": [
+          "Career Switch",
+          "Job",
+          "College",
+          "Projects"
+        ],
+        "style": "Interactive",
+        "styles": [
+          "Interactive",
+          "Projects",
+          "Videos"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -13940,7 +14519,7 @@
         "category": "AI & ML",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "7 Weeks",
+        "duration": "4 Weeks",
         "description": "Train and fine-tune latent diffusion pipelines (Stable Diffusion / Flux), UNet denoising, ControlNet adapters, and video synthesis.",
         "search_terms": [
           "stable diffusion training",
@@ -14336,6 +14915,22 @@
               }
             ]
           }
+        ],
+        "goal": "Projects",
+        "goals": [
+          "Projects",
+          "Job",
+          "Career Switch"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Projects",
+          "Interactive"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -14383,7 +14978,7 @@
         "category": "AI & ML",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "6 Weeks",
+        "duration": "3 Weeks",
         "description": "Deconstruct self-attention mechanics, tokenization, pretraining, LoRA fine-tuning, and RAG architectures.",
         "search_terms": [
           "llm roadmap",
@@ -14775,6 +15370,22 @@
               }
             ]
           }
+        ],
+        "goal": "Projects",
+        "goals": [
+          "Projects",
+          "Job",
+          "Career Switch"
+        ],
+        "style": "Projects",
+        "styles": [
+          "Projects",
+          "Interactive",
+          "Videos"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -15178,6 +15789,23 @@
               }
             ]
           }
+        ],
+        "goal": "Career Switch",
+        "goals": [
+          "Career Switch",
+          "Job",
+          "Projects"
+        ],
+        "style": "Interactive",
+        "styles": [
+          "Interactive",
+          "Projects",
+          "Videos"
+        ],
+        "language": "Hinglish",
+        "languages": [
+          "Hinglish",
+          "English"
         ]
       }
     ]
@@ -15224,7 +15852,7 @@
         "category": "AI & ML",
         "level": "Intermediate",
         "difficulty": "Intermediate",
-        "duration": "5 Weeks",
+        "duration": "4 Weeks",
         "description": "Build single-agent autonomous loops utilizing ReAct reasoning, schema-validated tool calling, dynamic web search, and structured output.",
         "search_terms": [
           "ai agents tutorial",
@@ -15621,6 +16249,23 @@
               }
             ]
           }
+        ],
+        "goal": "Interview",
+        "goals": [
+          "Interview",
+          "College",
+          "Job"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Interactive",
+          "Projects"
+        ],
+        "language": "Hinglish",
+        "languages": [
+          "Hinglish",
+          "English"
         ]
       },
       {
@@ -15628,7 +16273,7 @@
         "category": "AI & ML",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "6 Weeks",
+        "duration": "8+ Weeks",
         "description": "Architect collaborative multi-agent teams with hierarchical state graphs, human-in-the-loop approvals, and asynchronous task queues.",
         "search_terms": [
           "multi agent systems",
@@ -16025,6 +16670,23 @@
               }
             ]
           }
+        ],
+        "goal": "Research",
+        "goals": [
+          "Research",
+          "Job",
+          "Projects"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Projects",
+          "Interactive"
+        ],
+        "language": "Hindi",
+        "languages": [
+          "Hindi",
+          "English"
         ]
       }
     ]
@@ -16069,7 +16731,7 @@
         "category": "AI & ML",
         "level": "Intermediate",
         "difficulty": "Intermediate",
-        "duration": "6 Weeks",
+        "duration": "5 Weeks",
         "description": "Master tokenization, embeddings (Word2Vec), sequence transformers (BERT/GPT), and text classification.",
         "search_terms": [
           "nlp roadmap",
@@ -16460,6 +17122,26 @@
               }
             ]
           }
+        ],
+        "goal": "Research",
+        "goals": [
+          "Research",
+          "Job",
+          "Projects",
+          "College"
+        ],
+        "style": "Reading",
+        "styles": [
+          "Reading",
+          "Interactive",
+          "Projects"
+        ],
+        "language": "Mixed",
+        "languages": [
+          "Mixed",
+          "English",
+          "Hindi",
+          "Hinglish"
         ]
       },
       {
@@ -16467,7 +17149,7 @@
         "category": "AI & ML",
         "level": "Intermediate to Advanced",
         "difficulty": "Intermediate to Advanced",
-        "duration": "6 Weeks",
+        "duration": "4 Weeks",
         "description": "Build bi-encoder and cross-encoder sentence transformers, dense semantic search engines, and multi-lingual named entity recognizers.",
         "search_terms": [
           "sentence transformers",
@@ -16863,6 +17545,23 @@
               }
             ]
           }
+        ],
+        "goal": "Research",
+        "goals": [
+          "Research",
+          "Job",
+          "Projects",
+          "College"
+        ],
+        "style": "Projects",
+        "styles": [
+          "Projects",
+          "Videos",
+          "Interactive"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -16908,7 +17607,7 @@
         "category": "AI & ML",
         "level": "Intermediate",
         "difficulty": "Intermediate",
-        "duration": "6 Weeks",
+        "duration": "2 Weeks",
         "description": "Learn spatial convolutions, edge detectors, OpenCV filters, YOLO object detectors, and semantic segmentation.",
         "search_terms": [
           "computer vision roadmap",
@@ -17299,6 +17998,23 @@
               }
             ]
           }
+        ],
+        "goal": "Research",
+        "goals": [
+          "Research",
+          "Job",
+          "Projects",
+          "College"
+        ],
+        "style": "Interactive",
+        "styles": [
+          "Interactive",
+          "Projects",
+          "Videos"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -17701,6 +18417,24 @@
               }
             ]
           }
+        ],
+        "goal": "Projects",
+        "goals": [
+          "Projects",
+          "Job",
+          "Career Switch"
+        ],
+        "style": "Mixed",
+        "styles": [
+          "Mixed",
+          "Projects",
+          "Videos",
+          "Interactive",
+          "Reading"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -17746,7 +18480,7 @@
         "category": "AI & ML",
         "level": "Intermediate",
         "difficulty": "Intermediate",
-        "duration": "6 Weeks",
+        "duration": "3 Weeks",
         "description": "Track experiments with MLflow, version datasets and weights with DVC, and automate model packaging in Docker containers.",
         "search_terms": [
           "mlops roadmap",
@@ -18143,6 +18877,23 @@
               }
             ]
           }
+        ],
+        "goal": "Career Switch",
+        "goals": [
+          "Career Switch",
+          "Job",
+          "College",
+          "Projects"
+        ],
+        "style": "Projects",
+        "styles": [
+          "Projects",
+          "Interactive",
+          "Videos"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -18150,7 +18901,7 @@
         "category": "AI & ML",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "8 Weeks",
+        "duration": "8+ Weeks",
         "description": "Orchestrate automated retraining DAGs on Kubernetes, deploy low-latency Triton inference servers, and configure Prometheus model drift alerts.",
         "search_terms": [
           "kubeflow pipelines",
@@ -18546,6 +19297,23 @@
               }
             ]
           }
+        ],
+        "goal": "Career Switch",
+        "goals": [
+          "Career Switch",
+          "Job",
+          "Projects"
+        ],
+        "style": "Reading",
+        "styles": [
+          "Reading",
+          "Projects",
+          "Interactive",
+          "Videos"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -18588,7 +19356,7 @@
         "category": "AI & ML",
         "level": "Beginner to Intermediate",
         "difficulty": "Beginner to Intermediate",
-        "duration": "3 Weeks",
+        "duration": "4 Weeks",
         "description": "Master system prompt framing, Few-Shot exemplars, Chain-of-Thought (CoT) reasoning, and reliable JSON structured outputs.",
         "search_terms": [
           "prompt engineering roadmap",
@@ -18984,6 +19752,22 @@
               }
             ]
           }
+        ],
+        "goal": "Projects",
+        "goals": [
+          "Projects",
+          "Job",
+          "Career Switch"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Interactive",
+          "Projects"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -19387,6 +20171,23 @@
               }
             ]
           }
+        ],
+        "goal": "Research",
+        "goals": [
+          "Research",
+          "Job",
+          "Projects"
+        ],
+        "style": "Interactive",
+        "styles": [
+          "Interactive",
+          "Projects",
+          "Videos"
+        ],
+        "language": "Hinglish",
+        "languages": [
+          "Hinglish",
+          "English"
         ]
       }
     ]
@@ -19430,7 +20231,7 @@
         "category": "AI & ML",
         "level": "Intermediate",
         "difficulty": "Intermediate",
-        "duration": "6 Weeks",
+        "duration": "5 Weeks",
         "description": "Build web applications with OpenAI / Anthropic APIs, token stream handling, structured Pydantic outputs, and cost optimization.",
         "search_terms": [
           "ai engineering roadmap",
@@ -19826,6 +20627,23 @@
               }
             ]
           }
+        ],
+        "goal": "Interview",
+        "goals": [
+          "Interview",
+          "College",
+          "Job"
+        ],
+        "style": "Reading",
+        "styles": [
+          "Reading",
+          "Interactive",
+          "Projects"
+        ],
+        "language": "Hinglish",
+        "languages": [
+          "Hinglish",
+          "English"
         ]
       },
       {
@@ -19833,7 +20651,7 @@
         "category": "AI & ML",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "8 Weeks",
+        "duration": "6 Weeks",
         "description": "Architect production AI products uniting React streaming chat UIs, FastAPI backends, vector similarity retrieval, and observability via LangSmith.",
         "search_terms": [
           "full stack ai app",
@@ -20229,6 +21047,23 @@
               }
             ]
           }
+        ],
+        "goal": "Job",
+        "goals": [
+          "Job",
+          "Career Switch",
+          "Projects"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Projects",
+          "Interactive"
+        ],
+        "language": "Hindi",
+        "languages": [
+          "Hindi",
+          "English"
         ]
       }
     ]
@@ -20271,7 +21106,7 @@
         "category": "AI & ML",
         "level": "Intermediate",
         "difficulty": "Intermediate",
-        "duration": "6 Weeks",
+        "duration": "2 Weeks",
         "description": "Understand Markov Decision Processes, value functions, Q-Learning, epsilon-greedy exploration, and Gymnasium gym environments.",
         "search_terms": [
           "reinforcement learning roadmap",
@@ -20667,6 +21502,25 @@
               }
             ]
           }
+        ],
+        "goal": "Job",
+        "goals": [
+          "Job",
+          "Career Switch",
+          "Projects"
+        ],
+        "style": "Interactive",
+        "styles": [
+          "Interactive",
+          "Projects",
+          "Videos"
+        ],
+        "language": "Mixed",
+        "languages": [
+          "Mixed",
+          "English",
+          "Hindi",
+          "Hinglish"
         ]
       },
       {
@@ -20674,7 +21528,7 @@
         "category": "AI & ML",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "8 Weeks",
+        "duration": "8+ Weeks",
         "description": "Implement Deep Q-Networks (DQN) with replay buffers, Proximal Policy Optimization (PPO), and actor-critic continuous control agents.",
         "search_terms": [
           "deep q learning dqn",
@@ -21070,6 +21924,22 @@
               }
             ]
           }
+        ],
+        "goal": "Projects",
+        "goals": [
+          "Projects",
+          "Job",
+          "Career Switch"
+        ],
+        "style": "Projects",
+        "styles": [
+          "Projects",
+          "Videos",
+          "Interactive"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -21116,7 +21986,7 @@
         "category": "AI & ML",
         "level": "Intermediate",
         "difficulty": "Intermediate",
-        "duration": "5 Weeks",
+        "duration": "3 Weeks",
         "description": "Build document question-answering systems with chunking strategies, embedding generation, ChromaDB vector indexing, and context synthesis.",
         "search_terms": [
           "rag tutorial",
@@ -21512,6 +22382,23 @@
               }
             ]
           }
+        ],
+        "goal": "College",
+        "goals": [
+          "College",
+          "Interview",
+          "Job",
+          "Projects"
+        ],
+        "style": "Projects",
+        "styles": [
+          "Projects",
+          "Interactive",
+          "Videos"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -21519,7 +22406,7 @@
         "category": "AI & ML",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "6 Weeks",
+        "duration": "4 Weeks",
         "description": "Scale vector search with Qdrant / Pinecone, HNSW indexing graphs, BM25 + dense hybrid search, reciprocal rank fusion (RRF), and cross-encoder rerankers.",
         "search_terms": [
           "enterprise rag",
@@ -21915,6 +22802,24 @@
               }
             ]
           }
+        ],
+        "goal": "Career Switch",
+        "goals": [
+          "Career Switch",
+          "Job",
+          "Projects"
+        ],
+        "style": "Mixed",
+        "styles": [
+          "Mixed",
+          "Projects",
+          "Videos",
+          "Interactive",
+          "Reading"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -21960,7 +22865,7 @@
         "category": "AI & ML",
         "level": "Beginner to Intermediate",
         "difficulty": "Beginner to Intermediate",
-        "duration": "6 Weeks",
+        "duration": "4 Weeks",
         "description": "Master tensors, CUDA device tensors, Autograd gradient computation, custom nn.Module architectures, Dataset/DataLoader pipelines, and training loops.",
         "search_terms": [
           "pytorch tutorial for beginners",
@@ -22356,6 +23261,23 @@
               }
             ]
           }
+        ],
+        "goal": "Research",
+        "goals": [
+          "Research",
+          "Job",
+          "Projects",
+          "College"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Interactive",
+          "Projects"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -22363,7 +23285,7 @@
         "category": "AI & ML",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "7 Weeks",
+        "duration": "6 Weeks",
         "description": "Scale multi-GPU training with DistributedDataParallel (DDP) and FSDP, export graph computations with TorchScript and ONNX, and optimize inference.",
         "search_terms": [
           "pytorch ddp tutorial",
@@ -22759,6 +23681,23 @@
               }
             ]
           }
+        ],
+        "goal": "Research",
+        "goals": [
+          "Research",
+          "Job",
+          "Projects"
+        ],
+        "style": "Reading",
+        "styles": [
+          "Reading",
+          "Projects",
+          "Interactive",
+          "Videos"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -22805,7 +23744,7 @@
         "category": "Web Development",
         "level": "Beginner to Intermediate",
         "difficulty": "Beginner to Intermediate",
-        "duration": "10 Weeks",
+        "duration": "5 Weeks",
         "description": "Build end-to-end applications uniting client interfaces, REST/GraphQL APIs, databases, and deployment.",
         "search_terms": [
           "full stack web development roadmap",
@@ -23196,6 +24135,22 @@
               }
             ]
           }
+        ],
+        "goal": "Projects",
+        "goals": [
+          "Projects",
+          "Job",
+          "Career Switch"
+        ],
+        "style": "Reading",
+        "styles": [
+          "Reading",
+          "Interactive",
+          "Projects"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -23203,7 +24158,7 @@
         "category": "Web Development",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "6 Weeks",
+        "duration": "8+ Weeks",
         "description": "Deploy low-latency web apps to Cloudflare Workers, master server-sent events (SSE), WebSocket real-time connections, and hydration.",
         "search_terms": [
           "modern web architecture",
@@ -23599,6 +24554,23 @@
               }
             ]
           }
+        ],
+        "goal": "Job",
+        "goals": [
+          "Job",
+          "Career Switch",
+          "Projects"
+        ],
+        "style": "Interactive",
+        "styles": [
+          "Interactive",
+          "Projects",
+          "Videos"
+        ],
+        "language": "Hinglish",
+        "languages": [
+          "Hinglish",
+          "English"
         ]
       }
     ]
@@ -23644,7 +24616,7 @@
         "category": "Web Development",
         "level": "Beginner",
         "difficulty": "Beginner",
-        "duration": "6 Weeks",
+        "duration": "2 Weeks",
         "description": "Master HTML5 semantics, modern CSS (Flexbox, Grid, Custom Properties), JavaScript DOM, and UI toolchains.",
         "search_terms": [
           "frontend development roadmap",
@@ -24035,6 +25007,23 @@
               }
             ]
           }
+        ],
+        "goal": "Interview",
+        "goals": [
+          "Interview",
+          "College",
+          "Job"
+        ],
+        "style": "Interactive",
+        "styles": [
+          "Interactive",
+          "Projects",
+          "Videos"
+        ],
+        "language": "Hinglish",
+        "languages": [
+          "Hinglish",
+          "English"
         ]
       },
       {
@@ -24042,7 +25031,7 @@
         "category": "Web Development",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "6 Weeks",
+        "duration": "4 Weeks",
         "description": "Optimize Core Web Vitals (LCP, FID, CLS), browser rendering performance, critical rendering paths, and micro-frontend federation.",
         "search_terms": [
           "web performance optimization",
@@ -24438,6 +25427,23 @@
               }
             ]
           }
+        ],
+        "goal": "Projects",
+        "goals": [
+          "Projects",
+          "Job",
+          "Career Switch"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Projects",
+          "Interactive"
+        ],
+        "language": "Hindi",
+        "languages": [
+          "Hindi",
+          "English"
         ]
       }
     ]
@@ -24483,7 +25489,7 @@
         "category": "Web Development",
         "level": "Intermediate",
         "difficulty": "Intermediate",
-        "duration": "6 Weeks",
+        "duration": "3 Weeks",
         "description": "Construct robust web APIs, manage relational/document databases, integrate authentication, and handle async jobs.",
         "search_terms": [
           "backend development roadmap",
@@ -24874,6 +25880,25 @@
               }
             ]
           }
+        ],
+        "goal": "Job",
+        "goals": [
+          "Job",
+          "Career Switch",
+          "Projects"
+        ],
+        "style": "Projects",
+        "styles": [
+          "Projects",
+          "Interactive",
+          "Videos"
+        ],
+        "language": "Mixed",
+        "languages": [
+          "Mixed",
+          "English",
+          "Hindi",
+          "Hinglish"
         ]
       },
       {
@@ -24881,7 +25906,7 @@
         "category": "Web Development",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "8 Weeks",
+        "duration": "6 Weeks",
         "description": "Architect event-driven microservices, implement distributed locking with Redis, message streaming via RabbitMQ, and gRPC RPCs.",
         "search_terms": [
           "distributed backend architecture",
@@ -25277,6 +26302,22 @@
               }
             ]
           }
+        ],
+        "goal": "Career Switch",
+        "goals": [
+          "Career Switch",
+          "Job",
+          "Projects"
+        ],
+        "style": "Projects",
+        "styles": [
+          "Projects",
+          "Videos",
+          "Interactive"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -25320,7 +26361,7 @@
         "category": "Web Development",
         "level": "Beginner",
         "difficulty": "Beginner",
-        "duration": "2 Weeks",
+        "duration": "4 Weeks",
         "description": "Learn document anatomy, semantic landmark tags (header, nav, article), accessible form validations, and SEO metadata.",
         "search_terms": [
           "html for beginners",
@@ -25717,6 +26758,23 @@
               }
             ]
           }
+        ],
+        "goal": "College",
+        "goals": [
+          "College",
+          "Interview",
+          "Job",
+          "Projects"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Interactive",
+          "Projects"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -25724,7 +26782,7 @@
         "category": "Web Development",
         "level": "Intermediate",
         "difficulty": "Intermediate",
-        "duration": "3 Weeks",
+        "duration": "8+ Weeks",
         "description": "Deep dive into WCAG 2.2 AA compliance, ARIA live regions, keyboard navigation trapping, and accessible dynamic components.",
         "search_terms": [
           "web accessibility tutorial",
@@ -26120,6 +27178,24 @@
               }
             ]
           }
+        ],
+        "goal": "Research",
+        "goals": [
+          "Research",
+          "Job",
+          "Projects"
+        ],
+        "style": "Mixed",
+        "styles": [
+          "Mixed",
+          "Projects",
+          "Videos",
+          "Interactive",
+          "Reading"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -26165,7 +27241,7 @@
         "category": "Web Development",
         "level": "Beginner to Intermediate",
         "difficulty": "Beginner to Intermediate",
-        "duration": "4 Weeks",
+        "duration": "5 Weeks",
         "description": "Master CSS specificity, box model, Flexbox one-dimensional alignment, CSS Grid two-dimensional matrices, and fluid typography.",
         "search_terms": [
           "css tutorial for beginners",
@@ -26561,6 +27637,23 @@
               }
             ]
           }
+        ],
+        "goal": "Career Switch",
+        "goals": [
+          "Career Switch",
+          "Job",
+          "College",
+          "Projects"
+        ],
+        "style": "Reading",
+        "styles": [
+          "Reading",
+          "Interactive",
+          "Projects"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -26964,6 +28057,23 @@
               }
             ]
           }
+        ],
+        "goal": "Job",
+        "goals": [
+          "Job",
+          "Career Switch",
+          "Projects"
+        ],
+        "style": "Reading",
+        "styles": [
+          "Reading",
+          "Projects",
+          "Interactive",
+          "Videos"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -27010,7 +28120,7 @@
         "category": "Web Development",
         "level": "Beginner to Intermediate",
         "difficulty": "Beginner to Intermediate",
-        "duration": "5 Weeks",
+        "duration": "2 Weeks",
         "description": "Master JSX, functional components, hooks (useState, useEffect, useMemo), state managers, and routing.",
         "search_terms": [
           "react tutorial for beginners",
@@ -27401,6 +28511,22 @@
               }
             ]
           }
+        ],
+        "goal": "Projects",
+        "goals": [
+          "Projects",
+          "Job",
+          "Career Switch"
+        ],
+        "style": "Interactive",
+        "styles": [
+          "Interactive",
+          "Projects",
+          "Videos"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -27803,6 +28929,23 @@
               }
             ]
           }
+        ],
+        "goal": "Projects",
+        "goals": [
+          "Projects",
+          "Job",
+          "Career Switch"
+        ],
+        "style": "Interactive",
+        "styles": [
+          "Interactive",
+          "Projects",
+          "Videos"
+        ],
+        "language": "Hinglish",
+        "languages": [
+          "Hinglish",
+          "English"
         ]
       }
     ]
@@ -27848,7 +28991,7 @@
         "category": "Web Development",
         "level": "Intermediate",
         "difficulty": "Intermediate",
-        "duration": "5 Weeks",
+        "duration": "3 Weeks",
         "description": "Learn Next.js 15 App Router conventions, layouts, nested routing, Server Actions, image optimization, and dynamic SEO metadata.",
         "search_terms": [
           "nextjs tutorial",
@@ -28244,6 +29387,23 @@
               }
             ]
           }
+        ],
+        "goal": "Interview",
+        "goals": [
+          "Interview",
+          "College",
+          "Job"
+        ],
+        "style": "Projects",
+        "styles": [
+          "Projects",
+          "Interactive",
+          "Videos"
+        ],
+        "language": "Hinglish",
+        "languages": [
+          "Hinglish",
+          "English"
         ]
       },
       {
@@ -28251,7 +29411,7 @@
         "category": "Web Development",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "6 Weeks",
+        "duration": "8+ Weeks",
         "description": "Build multi-tenant SaaS architectures, configure middleware authentication, edge caching with ISR, and deploy to Vercel/AWS.",
         "search_terms": [
           "enterprise nextjs architecture",
@@ -28646,6 +29806,23 @@
               }
             ]
           }
+        ],
+        "goal": "Career Switch",
+        "goals": [
+          "Career Switch",
+          "Job",
+          "Projects"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Projects",
+          "Interactive"
+        ],
+        "language": "Hindi",
+        "languages": [
+          "Hindi",
+          "English"
         ]
       }
     ]
@@ -29081,6 +30258,25 @@
               }
             ]
           }
+        ],
+        "goal": "Job",
+        "goals": [
+          "Job",
+          "Career Switch",
+          "Projects"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Interactive",
+          "Projects"
+        ],
+        "language": "Mixed",
+        "languages": [
+          "Mixed",
+          "English",
+          "Hindi",
+          "Hinglish"
         ]
       },
       {
@@ -29088,7 +30284,7 @@
         "category": "Web Development",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "6 Weeks",
+        "duration": "4 Weeks",
         "description": "Architect production microservices featuring JWT OAuth2 authentication, Redis caching, Celery task queues, and async testing.",
         "search_terms": [
           "production fastapi architecture",
@@ -29484,6 +30680,22 @@
               }
             ]
           }
+        ],
+        "goal": "Research",
+        "goals": [
+          "Research",
+          "Job",
+          "Projects"
+        ],
+        "style": "Projects",
+        "styles": [
+          "Projects",
+          "Videos",
+          "Interactive"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -29528,7 +30740,7 @@
         "category": "Web Development",
         "level": "Beginner to Intermediate",
         "difficulty": "Beginner to Intermediate",
-        "duration": "6 Weeks",
+        "duration": "5 Weeks",
         "description": "Master Model-View-Template (MVT) architecture, Django ORM relational queries, migrations, built-in authentication, and admin panel.",
         "search_terms": [
           "django tutorial for beginners",
@@ -29924,6 +31136,23 @@
               }
             ]
           }
+        ],
+        "goal": "College",
+        "goals": [
+          "College",
+          "Interview",
+          "Job",
+          "Projects"
+        ],
+        "style": "Reading",
+        "styles": [
+          "Reading",
+          "Interactive",
+          "Projects"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -30327,6 +31556,24 @@
               }
             ]
           }
+        ],
+        "goal": "Job",
+        "goals": [
+          "Job",
+          "Career Switch",
+          "Projects"
+        ],
+        "style": "Mixed",
+        "styles": [
+          "Mixed",
+          "Projects",
+          "Videos",
+          "Interactive",
+          "Reading"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -30371,7 +31618,7 @@
         "category": "Web Development",
         "level": "Beginner to Intermediate",
         "difficulty": "Beginner to Intermediate",
-        "duration": "5 Weeks",
+        "duration": "2 Weeks",
         "description": "Understand Node runtime internals, CommonJS/ES modules, asynchronous file I/O, event emitters, streams, and HTTP servers.",
         "search_terms": [
           "learn nodejs",
@@ -30767,6 +32014,23 @@
               }
             ]
           }
+        ],
+        "goal": "Career Switch",
+        "goals": [
+          "Career Switch",
+          "Job",
+          "College",
+          "Projects"
+        ],
+        "style": "Interactive",
+        "styles": [
+          "Interactive",
+          "Projects",
+          "Videos"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -30774,7 +32038,7 @@
         "category": "Web Development",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "6 Weeks",
+        "duration": "8+ Weeks",
         "description": "Build event-driven serverless architectures with AWS Lambda / Vercel Serverless, cold-start optimization, and SQS queue processing.",
         "search_terms": [
           "aws lambda nodejs",
@@ -31170,6 +32434,23 @@
               }
             ]
           }
+        ],
+        "goal": "Projects",
+        "goals": [
+          "Projects",
+          "Job",
+          "Career Switch"
+        ],
+        "style": "Reading",
+        "styles": [
+          "Reading",
+          "Projects",
+          "Interactive",
+          "Videos"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -31214,7 +32495,7 @@
         "category": "Web Development",
         "level": "Intermediate",
         "difficulty": "Intermediate",
-        "duration": "8 Weeks",
+        "duration": "3 Weeks",
         "description": "Build cohesive end-to-end applications pairing React frontend components with Node/Express backends and PostgreSQL databases.",
         "search_terms": [
           "full stack javascript roadmap",
@@ -31610,6 +32891,30 @@
               }
             ]
           }
+        ],
+        "goal": "Projects",
+        "goals": [
+          "Projects",
+          "Job",
+          "College",
+          "Interview",
+          "Career Switch",
+          "Research"
+        ],
+        "style": "Projects",
+        "styles": [
+          "Projects",
+          "Interactive",
+          "Videos",
+          "Reading",
+          "Mixed"
+        ],
+        "language": "English",
+        "languages": [
+          "English",
+          "Hindi",
+          "Hinglish",
+          "Mixed"
         ]
       },
       {
@@ -31617,7 +32922,7 @@
         "category": "Web Development",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "10 Weeks",
+        "duration": "4 Weeks",
         "description": "Architect enterprise SaaS platforms with multi-tenancy, Stripe payment billing, role-based access control, and automated CI/CD.",
         "search_terms": [
           "build saas full stack",
@@ -32013,6 +33318,23 @@
               }
             ]
           }
+        ],
+        "goal": "Career Switch",
+        "goals": [
+          "Career Switch",
+          "Job",
+          "Projects"
+        ],
+        "style": "Interactive",
+        "styles": [
+          "Interactive",
+          "Projects",
+          "Videos"
+        ],
+        "language": "Hinglish",
+        "languages": [
+          "Hinglish",
+          "English"
         ]
       }
     ]
@@ -32056,7 +33378,7 @@
         "category": "Web Development",
         "level": "Beginner",
         "difficulty": "Beginner",
-        "duration": "3 Weeks",
+        "duration": "4 Weeks",
         "description": "Accelerate UI development with utility classes, responsive breakpoints, flexbox/grid shortcuts, and dark mode toggles.",
         "search_terms": [
           "tailwind css tutorial for beginners",
@@ -32452,6 +33774,23 @@
               }
             ]
           }
+        ],
+        "goal": "Interview",
+        "goals": [
+          "Interview",
+          "College",
+          "Job"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Interactive",
+          "Projects"
+        ],
+        "language": "Hinglish",
+        "languages": [
+          "Hinglish",
+          "English"
         ]
       },
       {
@@ -32459,7 +33798,7 @@
         "category": "Web Development",
         "level": "Intermediate",
         "difficulty": "Intermediate",
-        "duration": "4 Weeks",
+        "duration": "6 Weeks",
         "description": "Extend Tailwind config tokens, build accessible reusable component libraries, configure typography/forms plugins, and use Tailwind v4.",
         "search_terms": [
           "tailwind design system",
@@ -32855,6 +34194,23 @@
               }
             ]
           }
+        ],
+        "goal": "Research",
+        "goals": [
+          "Research",
+          "Job",
+          "Projects"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Projects",
+          "Interactive"
+        ],
+        "language": "Hindi",
+        "languages": [
+          "Hindi",
+          "English"
         ]
       }
     ]
@@ -32899,7 +34255,7 @@
         "category": "Web Development",
         "level": "Beginner to Intermediate",
         "difficulty": "Beginner to Intermediate",
-        "duration": "4 Weeks",
+        "duration": "5 Weeks",
         "description": "Structure clean REST APIs with modular Express routers, middleware logging, input validation with Zod, and CORS security.",
         "search_terms": [
           "express js tutorial",
@@ -33295,6 +34651,25 @@
               }
             ]
           }
+        ],
+        "goal": "Job",
+        "goals": [
+          "Job",
+          "Career Switch",
+          "Projects"
+        ],
+        "style": "Reading",
+        "styles": [
+          "Reading",
+          "Interactive",
+          "Projects"
+        ],
+        "language": "Mixed",
+        "languages": [
+          "Mixed",
+          "English",
+          "Hindi",
+          "Hinglish"
         ]
       },
       {
@@ -33302,7 +34677,7 @@
         "category": "Web Development",
         "level": "Intermediate to Advanced",
         "difficulty": "Intermediate to Advanced",
-        "duration": "5 Weeks",
+        "duration": "8+ Weeks",
         "description": "Harden Express backends with Helmet security headers, rate limiters, JWT token verification, and integration with Prisma ORM.",
         "search_terms": [
           "secure express api",
@@ -33698,6 +35073,22 @@
               }
             ]
           }
+        ],
+        "goal": "Job",
+        "goals": [
+          "Job",
+          "Career Switch",
+          "Projects"
+        ],
+        "style": "Projects",
+        "styles": [
+          "Projects",
+          "Videos",
+          "Interactive"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -33741,7 +35132,7 @@
         "category": "Web Development",
         "level": "Intermediate",
         "difficulty": "Intermediate",
-        "duration": "4 Weeks",
+        "duration": "2 Weeks",
         "description": "Understand GraphQL type systems, write expressive queries and mutations, build schemas, and implement resolver functions.",
         "search_terms": [
           "graphql tutorial for beginners",
@@ -34137,6 +35528,23 @@
               }
             ]
           }
+        ],
+        "goal": "College",
+        "goals": [
+          "College",
+          "Interview",
+          "Job",
+          "Projects"
+        ],
+        "style": "Interactive",
+        "styles": [
+          "Interactive",
+          "Projects",
+          "Videos"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -34144,7 +35552,7 @@
         "category": "Web Development",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "6 Weeks",
+        "duration": "4 Weeks",
         "description": "Architect federated GraphQL subgraphs, solve N+1 query problems with DataLoader, implement real-time subscriptions, and secure endpoints.",
         "search_terms": [
           "apollo federation tutorial",
@@ -34540,6 +35948,24 @@
               }
             ]
           }
+        ],
+        "goal": "Projects",
+        "goals": [
+          "Projects",
+          "Job",
+          "Career Switch"
+        ],
+        "style": "Mixed",
+        "styles": [
+          "Mixed",
+          "Projects",
+          "Videos",
+          "Interactive",
+          "Reading"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -34584,7 +36010,7 @@
         "category": "Cybersecurity",
         "level": "Beginner",
         "difficulty": "Beginner",
-        "duration": "6 Weeks",
+        "duration": "3 Weeks",
         "description": "Understand network security, penetration testing basics, cryptography, security hygiene, and defensive operations.",
         "search_terms": [
           "cyber security for beginners",
@@ -34975,6 +36401,23 @@
               }
             ]
           }
+        ],
+        "goal": "Career Switch",
+        "goals": [
+          "Career Switch",
+          "Job",
+          "College",
+          "Projects"
+        ],
+        "style": "Projects",
+        "styles": [
+          "Projects",
+          "Interactive",
+          "Videos"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -34982,7 +36425,7 @@
         "category": "Cybersecurity",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "8 Weeks",
+        "duration": "6 Weeks",
         "description": "Architect enterprise defense architectures, segment network zones, implement Zero Trust models, and establish NIST compliance.",
         "search_terms": [
           "enterprise cybersecurity architecture",
@@ -35378,6 +36821,23 @@
               }
             ]
           }
+        ],
+        "goal": "Career Switch",
+        "goals": [
+          "Career Switch",
+          "Job",
+          "Projects"
+        ],
+        "style": "Reading",
+        "styles": [
+          "Reading",
+          "Projects",
+          "Interactive",
+          "Videos"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -35422,7 +36882,7 @@
         "category": "Cybersecurity",
         "level": "Intermediate",
         "difficulty": "Intermediate",
-        "duration": "8 Weeks",
+        "duration": "4 Weeks",
         "description": "Learn Kali Linux utilities, reconnaissance with Nmap/Shodan, vulnerability scanning, and exploitation with Metasploit.",
         "search_terms": [
           "ethical hacking course",
@@ -35818,6 +37278,22 @@
               }
             ]
           }
+        ],
+        "goal": "Projects",
+        "goals": [
+          "Projects",
+          "Job",
+          "Career Switch"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Interactive",
+          "Projects"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -35825,7 +37301,7 @@
         "category": "Cybersecurity",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "10 Weeks",
+        "duration": "8+ Weeks",
         "description": "Tackle vulnerable machines on HackTheBox / TryHackMe, write custom buffer overflow exploits, and pivot through internal subnets.",
         "search_terms": [
           "oscp preparation guide",
@@ -36221,6 +37697,23 @@
               }
             ]
           }
+        ],
+        "goal": "Research",
+        "goals": [
+          "Research",
+          "Job",
+          "Projects"
+        ],
+        "style": "Interactive",
+        "styles": [
+          "Interactive",
+          "Projects",
+          "Videos"
+        ],
+        "language": "Hinglish",
+        "languages": [
+          "Hinglish",
+          "English"
         ]
       }
     ]
@@ -36264,7 +37757,7 @@
         "category": "Cybersecurity",
         "level": "Beginner to Intermediate",
         "difficulty": "Beginner to Intermediate",
-        "duration": "6 Weeks",
+        "duration": "5 Weeks",
         "description": "Understand TCP/IP 3-way handshakes, capture network packets with Wireshark, analyze DNS/HTTP traffic, and identify spoofing.",
         "search_terms": [
           "network security roadmap",
@@ -36660,6 +38153,23 @@
               }
             ]
           }
+        ],
+        "goal": "Interview",
+        "goals": [
+          "Interview",
+          "College",
+          "Job"
+        ],
+        "style": "Reading",
+        "styles": [
+          "Reading",
+          "Interactive",
+          "Projects"
+        ],
+        "language": "Hinglish",
+        "languages": [
+          "Hinglish",
+          "English"
         ]
       },
       {
@@ -36667,7 +38177,7 @@
         "category": "Cybersecurity",
         "level": "Intermediate to Advanced",
         "difficulty": "Intermediate to Advanced",
-        "duration": "6 Weeks",
+        "duration": "4 Weeks",
         "description": "Configure stateful firewalls (iptables/pfSense), WireGuard VPN tunnels, Snort intrusion detection (IDS), and 802.1X network access control.",
         "search_terms": [
           "pfsense firewall setup",
@@ -37063,6 +38573,23 @@
               }
             ]
           }
+        ],
+        "goal": "Job",
+        "goals": [
+          "Job",
+          "Career Switch",
+          "Projects"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Projects",
+          "Interactive"
+        ],
+        "language": "Hindi",
+        "languages": [
+          "Hindi",
+          "English"
         ]
       }
     ]
@@ -37107,7 +38634,7 @@
         "category": "Cybersecurity",
         "level": "Intermediate",
         "difficulty": "Intermediate",
-        "duration": "6 Weeks",
+        "duration": "2 Weeks",
         "description": "Explore SQL Injection, Cross-Site Scripting (XSS), CSRF, SSRF, broken access controls using Burp Suite community edition.",
         "search_terms": [
           "owasp top 10 tutorial",
@@ -37503,6 +39030,25 @@
               }
             ]
           }
+        ],
+        "goal": "Job",
+        "goals": [
+          "Job",
+          "Career Switch",
+          "Projects"
+        ],
+        "style": "Interactive",
+        "styles": [
+          "Interactive",
+          "Projects",
+          "Videos"
+        ],
+        "language": "Mixed",
+        "languages": [
+          "Mixed",
+          "English",
+          "Hindi",
+          "Hinglish"
         ]
       },
       {
@@ -37510,7 +39056,7 @@
         "category": "Cybersecurity",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "7 Weeks",
+        "duration": "6 Weeks",
         "description": "Find severe web flaws: Server-Side Request Forgery (SSRF), JWT tampering, Insecure Deserialization, race conditions, and OAuth flaws.",
         "search_terms": [
           "advanced web hacking",
@@ -37906,6 +39452,22 @@
               }
             ]
           }
+        ],
+        "goal": "Projects",
+        "goals": [
+          "Projects",
+          "Job",
+          "Career Switch"
+        ],
+        "style": "Projects",
+        "styles": [
+          "Projects",
+          "Videos",
+          "Interactive"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -37949,7 +39511,7 @@
         "category": "Cybersecurity",
         "level": "Intermediate",
         "difficulty": "Intermediate",
-        "duration": "5 Weeks",
+        "duration": "3 Weeks",
         "description": "Secure Linux servers: disable root login, configure SSH key pairs, set strict chmod/chown permissions, and deploy UFW firewall and Fail2ban.",
         "search_terms": [
           "linux security tutorial",
@@ -38345,6 +39907,23 @@
               }
             ]
           }
+        ],
+        "goal": "College",
+        "goals": [
+          "College",
+          "Interview",
+          "Job",
+          "Projects"
+        ],
+        "style": "Projects",
+        "styles": [
+          "Projects",
+          "Interactive",
+          "Videos"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -38352,7 +39931,7 @@
         "category": "Cybersecurity",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "6 Weeks",
+        "duration": "8+ Weeks",
         "description": "Configure Mandatory Access Control (MAC) with SELinux and AppArmor, audit system logs with auditd, and tune kernel sysctl parameters.",
         "search_terms": [
           "selinux tutorial",
@@ -38748,6 +40327,24 @@
               }
             ]
           }
+        ],
+        "goal": "Career Switch",
+        "goals": [
+          "Career Switch",
+          "Job",
+          "Projects"
+        ],
+        "style": "Mixed",
+        "styles": [
+          "Mixed",
+          "Projects",
+          "Videos",
+          "Interactive",
+          "Reading"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -39183,6 +40780,23 @@
               }
             ]
           }
+        ],
+        "goal": "Career Switch",
+        "goals": [
+          "Career Switch",
+          "Job",
+          "College",
+          "Projects"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Interactive",
+          "Projects"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -39586,6 +41200,23 @@
               }
             ]
           }
+        ],
+        "goal": "Research",
+        "goals": [
+          "Research",
+          "Job",
+          "Projects"
+        ],
+        "style": "Reading",
+        "styles": [
+          "Reading",
+          "Projects",
+          "Interactive",
+          "Videos"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -39626,7 +41257,7 @@
         "category": "Cybersecurity",
         "level": "Intermediate to Advanced",
         "difficulty": "Intermediate to Advanced",
-        "duration": "7 Weeks",
+        "duration": "5 Weeks",
         "description": "Master standardized penetration testing lifecycles: scope agreements, passive OSINT, network vulnerability verification, and reporting.",
         "search_terms": [
           "penetration testing roadmap",
@@ -40022,6 +41653,22 @@
               }
             ]
           }
+        ],
+        "goal": "Projects",
+        "goals": [
+          "Projects",
+          "Job",
+          "Career Switch"
+        ],
+        "style": "Reading",
+        "styles": [
+          "Reading",
+          "Interactive",
+          "Projects"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -40029,7 +41676,7 @@
         "category": "Cybersecurity",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "8 Weeks",
+        "duration": "6 Weeks",
         "description": "Infiltrate Windows enterprise environments: Kerberoasting, AS-REP roasting, BloodHound attack graphs, pass-the-hash, and Golden Tickets.",
         "search_terms": [
           "active directory pentesting",
@@ -40425,6 +42072,23 @@
               }
             ]
           }
+        ],
+        "goal": "Job",
+        "goals": [
+          "Job",
+          "Career Switch",
+          "Projects"
+        ],
+        "style": "Interactive",
+        "styles": [
+          "Interactive",
+          "Projects",
+          "Videos"
+        ],
+        "language": "Hinglish",
+        "languages": [
+          "Hinglish",
+          "English"
         ]
       }
     ]
@@ -40471,7 +42135,7 @@
         "category": "Cybersecurity",
         "level": "Intermediate",
         "difficulty": "Intermediate",
-        "duration": "5 Weeks",
+        "duration": "2 Weeks",
         "description": "Understand symmetric ciphers (AES-GCM), asymmetric key pairs (RSA, ECC), cryptographic hashing (SHA-256), and SSL/TLS certificates.",
         "search_terms": [
           "cryptography tutorial",
@@ -40867,6 +42531,23 @@
               }
             ]
           }
+        ],
+        "goal": "Interview",
+        "goals": [
+          "Interview",
+          "College",
+          "Job"
+        ],
+        "style": "Interactive",
+        "styles": [
+          "Interactive",
+          "Projects",
+          "Videos"
+        ],
+        "language": "Hinglish",
+        "languages": [
+          "Hinglish",
+          "English"
         ]
       },
       {
@@ -40874,7 +42555,7 @@
         "category": "Cybersecurity",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "7 Weeks",
+        "duration": "8+ Weeks",
         "description": "Explore post-quantum lattice cryptography (Kyber/Dilithium), Zero-Knowledge Proofs (zk-SNARKs), and homomorphic encryption.",
         "search_terms": [
           "post quantum cryptography",
@@ -41270,6 +42951,24 @@
               }
             ]
           }
+        ],
+        "goal": "Research",
+        "goals": [
+          "Research",
+          "Job",
+          "Projects",
+          "College"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Projects",
+          "Interactive"
+        ],
+        "language": "Hindi",
+        "languages": [
+          "Hindi",
+          "English"
         ]
       }
     ]
@@ -41313,7 +43012,7 @@
         "category": "Cybersecurity",
         "level": "Intermediate",
         "difficulty": "Intermediate",
-        "duration": "6 Weeks",
+        "duration": "3 Weeks",
         "description": "Harden cloud deployments: configure least-privilege IAM policies, secure AWS S3 buckets, enable CloudTrail auditing, and deploy GuardDuty.",
         "search_terms": [
           "cloud security roadmap",
@@ -41709,6 +43408,25 @@
               }
             ]
           }
+        ],
+        "goal": "Job",
+        "goals": [
+          "Job",
+          "Career Switch",
+          "Projects"
+        ],
+        "style": "Projects",
+        "styles": [
+          "Projects",
+          "Interactive",
+          "Videos"
+        ],
+        "language": "Mixed",
+        "languages": [
+          "Mixed",
+          "English",
+          "Hindi",
+          "Hinglish"
         ]
       },
       {
@@ -41716,7 +43434,7 @@
         "category": "Cybersecurity",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "6 Weeks",
+        "duration": "4 Weeks",
         "description": "Integrate automated security gates in GitHub Actions: static code analysis (SonarQube), container vulnerability scanning (Trivy), and IaC scanning (Checkov).",
         "search_terms": [
           "devsecops pipeline tutorial",
@@ -42112,6 +43830,22 @@
               }
             ]
           }
+        ],
+        "goal": "Career Switch",
+        "goals": [
+          "Career Switch",
+          "Job",
+          "Projects"
+        ],
+        "style": "Projects",
+        "styles": [
+          "Projects",
+          "Videos",
+          "Interactive"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -42157,7 +43891,7 @@
         "category": "Cybersecurity",
         "level": "Beginner to Intermediate",
         "difficulty": "Beginner to Intermediate",
-        "duration": "6 Weeks",
+        "duration": "4 Weeks",
         "description": "Master Security Operations Center (SOC) workflows: analyze Windows Event logs, write Splunk/Elasticsearch search queries, and triage alerts.",
         "search_terms": [
           "soc analyst roadmap",
@@ -42553,6 +44287,23 @@
               }
             ]
           }
+        ],
+        "goal": "College",
+        "goals": [
+          "College",
+          "Interview",
+          "Job",
+          "Projects"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Interactive",
+          "Projects"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -42560,7 +44311,7 @@
         "category": "Cybersecurity",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "8 Weeks",
+        "duration": "6 Weeks",
         "description": "Perform dead-box disk forensics (Autopsy/FTK), volatility RAM memory analysis, timeline creation, and root cause reporting.",
         "search_terms": [
           "digital forensics tutorial",
@@ -42956,6 +44707,24 @@
               }
             ]
           }
+        ],
+        "goal": "Research",
+        "goals": [
+          "Research",
+          "Job",
+          "Projects"
+        ],
+        "style": "Mixed",
+        "styles": [
+          "Mixed",
+          "Projects",
+          "Videos",
+          "Interactive",
+          "Reading"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -42999,7 +44768,7 @@
         "category": "Cybersecurity",
         "level": "Intermediate",
         "difficulty": "Intermediate",
-        "duration": "6 Weeks",
+        "duration": "5 Weeks",
         "description": "Setup safe sandbox analysis labs, perform static analysis (PE headers, strings, import tables), dynamic detonation with Process Monitor, and YARA rules.",
         "search_terms": [
           "malware analysis for beginners",
@@ -43395,6 +45164,23 @@
               }
             ]
           }
+        ],
+        "goal": "Career Switch",
+        "goals": [
+          "Career Switch",
+          "Job",
+          "College",
+          "Projects"
+        ],
+        "style": "Reading",
+        "styles": [
+          "Reading",
+          "Interactive",
+          "Projects"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -43402,7 +45188,7 @@
         "category": "Cybersecurity",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "8 Weeks",
+        "duration": "8+ Weeks",
         "description": "Disassemble compiled malware binaries using Ghidra and x64dbg, bypass anti-analysis defenses, unpack payload drops, and deobfuscate C2 strings.",
         "search_terms": [
           "ghidra tutorial reverse engineering",
@@ -43798,6 +45584,23 @@
               }
             ]
           }
+        ],
+        "goal": "Job",
+        "goals": [
+          "Job",
+          "Career Switch",
+          "Projects"
+        ],
+        "style": "Reading",
+        "styles": [
+          "Reading",
+          "Projects",
+          "Interactive",
+          "Videos"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -43841,7 +45644,7 @@
         "category": "Cybersecurity",
         "level": "Beginner to Intermediate",
         "difficulty": "Beginner to Intermediate",
-        "duration": "4 Weeks",
+        "duration": "2 Weeks",
         "description": "Understand authentication vs authorization, Role-Based Access Control (RBAC), Single Sign-On (SSO), and Multi-Factor Authentication (MFA).",
         "search_terms": [
           "iam roadmap",
@@ -44237,6 +46040,22 @@
               }
             ]
           }
+        ],
+        "goal": "Projects",
+        "goals": [
+          "Projects",
+          "Job",
+          "Career Switch"
+        ],
+        "style": "Interactive",
+        "styles": [
+          "Interactive",
+          "Projects",
+          "Videos"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -44244,7 +46063,7 @@
         "category": "Cybersecurity",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "6 Weeks",
+        "duration": "4 Weeks",
         "description": "Implement OAuth 2.0 authorization code flows with PKCE, OpenID Connect identity tokens, SAML federation, and Okta/Keycloak server setups.",
         "search_terms": [
           "oauth 2.0 pkce tutorial",
@@ -44640,6 +46459,23 @@
               }
             ]
           }
+        ],
+        "goal": "Projects",
+        "goals": [
+          "Projects",
+          "Job",
+          "Career Switch"
+        ],
+        "style": "Interactive",
+        "styles": [
+          "Interactive",
+          "Projects",
+          "Videos"
+        ],
+        "language": "Hinglish",
+        "languages": [
+          "Hinglish",
+          "English"
         ]
       }
     ]
@@ -44686,7 +46522,7 @@
         "category": "Cloud & DevOps",
         "level": "Beginner to Intermediate",
         "difficulty": "Beginner to Intermediate",
-        "duration": "6 Weeks",
+        "duration": "3 Weeks",
         "description": "Understand cloud service models (IaaS/PaaS/SaaS), AWS/GCP/Azure primitives, IAM, VPCs, and serverless architectures.",
         "search_terms": [
           "cloud computing roadmap",
@@ -45077,6 +46913,23 @@
               }
             ]
           }
+        ],
+        "goal": "Interview",
+        "goals": [
+          "Interview",
+          "College",
+          "Job"
+        ],
+        "style": "Projects",
+        "styles": [
+          "Projects",
+          "Interactive",
+          "Videos"
+        ],
+        "language": "Hinglish",
+        "languages": [
+          "Hinglish",
+          "English"
         ]
       },
       {
@@ -45084,7 +46937,7 @@
         "category": "Cloud & DevOps",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "7 Weeks",
+        "duration": "6 Weeks",
         "description": "Design fault-tolerant architectures across multiple cloud providers, hybrid-cloud connectivity, and cloud financial operations (FinOps).",
         "search_terms": [
           "multi cloud architecture",
@@ -45480,6 +47333,23 @@
               }
             ]
           }
+        ],
+        "goal": "Career Switch",
+        "goals": [
+          "Career Switch",
+          "Job",
+          "Projects"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Projects",
+          "Interactive"
+        ],
+        "language": "Hindi",
+        "languages": [
+          "Hindi",
+          "English"
         ]
       }
     ]
@@ -45523,7 +47393,7 @@
         "category": "Cloud & DevOps",
         "level": "Beginner",
         "difficulty": "Beginner",
-        "duration": "3 Weeks",
+        "duration": "4 Weeks",
         "description": "Master branch workflows, merges, rebases, pull requests, resolving merge conflicts, and GitHub collaboration.",
         "search_terms": [
           "git tutorial for beginners",
@@ -45914,6 +47784,25 @@
               }
             ]
           }
+        ],
+        "goal": "Job",
+        "goals": [
+          "Job",
+          "Career Switch",
+          "Projects"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Interactive",
+          "Projects"
+        ],
+        "language": "Mixed",
+        "languages": [
+          "Mixed",
+          "English",
+          "Hindi",
+          "Hinglish"
         ]
       },
       {
@@ -45921,7 +47810,7 @@
         "category": "Cloud & DevOps",
         "level": "Intermediate",
         "difficulty": "Intermediate",
-        "duration": "4 Weeks",
+        "duration": "8+ Weeks",
         "description": "Master interactive rebasing (git rebase -i), git bisect bug localization, reflog disaster recovery, submodules, and trunk-based development.",
         "search_terms": [
           "advanced git tutorial",
@@ -46317,6 +48206,22 @@
               }
             ]
           }
+        ],
+        "goal": "Research",
+        "goals": [
+          "Research",
+          "Job",
+          "Projects"
+        ],
+        "style": "Projects",
+        "styles": [
+          "Projects",
+          "Videos",
+          "Interactive"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -46361,7 +48266,7 @@
         "category": "Cloud & DevOps",
         "level": "Intermediate",
         "difficulty": "Intermediate",
-        "duration": "6 Weeks",
+        "duration": "5 Weeks",
         "description": "Learn containerization with Docker, orchestration with Kubernetes, CI/CD automated deployment, and IaC.",
         "search_terms": [
           "devops roadmap",
@@ -46752,6 +48657,23 @@
               }
             ]
           }
+        ],
+        "goal": "College",
+        "goals": [
+          "College",
+          "Interview",
+          "Job",
+          "Projects"
+        ],
+        "style": "Reading",
+        "styles": [
+          "Reading",
+          "Interactive",
+          "Projects"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -46759,7 +48681,7 @@
         "category": "Cloud & DevOps",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "7 Weeks",
+        "duration": "4 Weeks",
         "description": "Implement Google SRE methodologies: Service Level Objectives (SLOs), Error Budgets, incident command structures, and blameless postmortems.",
         "search_terms": [
           "site reliability engineering roadmap",
@@ -47155,6 +49077,24 @@
               }
             ]
           }
+        ],
+        "goal": "Job",
+        "goals": [
+          "Job",
+          "Career Switch",
+          "Projects"
+        ],
+        "style": "Mixed",
+        "styles": [
+          "Mixed",
+          "Projects",
+          "Videos",
+          "Interactive",
+          "Reading"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -47200,7 +49140,7 @@
         "category": "Cloud & DevOps",
         "level": "Beginner to Intermediate",
         "difficulty": "Beginner to Intermediate",
-        "duration": "6 Weeks",
+        "duration": "2 Weeks",
         "description": "Prepare for AWS Certified Solutions Architect: compute (EC2), storage (S3/EBS), databases (RDS), security (IAM), and networking (VPC).",
         "search_terms": [
           "aws solutions architect associate",
@@ -47596,6 +49536,23 @@
               }
             ]
           }
+        ],
+        "goal": "Career Switch",
+        "goals": [
+          "Career Switch",
+          "Job",
+          "College",
+          "Projects"
+        ],
+        "style": "Interactive",
+        "styles": [
+          "Interactive",
+          "Projects",
+          "Videos"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -47603,7 +49560,7 @@
         "category": "Cloud & DevOps",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "7 Weeks",
+        "duration": "6 Weeks",
         "description": "Build scalable serverless systems using AWS Lambda, API Gateway, DynamoDB single-table design, EventBridge, and Step Functions.",
         "search_terms": [
           "aws serverless architecture",
@@ -47999,6 +49956,23 @@
               }
             ]
           }
+        ],
+        "goal": "Projects",
+        "goals": [
+          "Projects",
+          "Job",
+          "Career Switch"
+        ],
+        "style": "Reading",
+        "styles": [
+          "Reading",
+          "Projects",
+          "Interactive",
+          "Videos"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -48041,7 +50015,7 @@
         "category": "Cloud & DevOps",
         "level": "Beginner",
         "difficulty": "Beginner",
-        "duration": "4 Weeks",
+        "duration": "3 Weeks",
         "description": "Master Microsoft Azure core concepts: Resource Groups, Virtual Machines, Azure Blob Storage, Azure SQL, and Entra ID (Azure AD).",
         "search_terms": [
           "az 900 tutorial",
@@ -48437,6 +50411,22 @@
               }
             ]
           }
+        ],
+        "goal": "Projects",
+        "goals": [
+          "Projects",
+          "Job",
+          "Career Switch"
+        ],
+        "style": "Projects",
+        "styles": [
+          "Projects",
+          "Interactive",
+          "Videos"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -48444,7 +50434,7 @@
         "category": "Cloud & DevOps",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "7 Weeks",
+        "duration": "8+ Weeks",
         "description": "Design enterprise Azure solutions with Azure Kubernetes Service (AKS), App Services, Azure Front Door, ExpressRoute, and Bicep IaC.",
         "search_terms": [
           "azure solutions architect az 305",
@@ -48840,6 +50830,23 @@
               }
             ]
           }
+        ],
+        "goal": "Career Switch",
+        "goals": [
+          "Career Switch",
+          "Job",
+          "Projects"
+        ],
+        "style": "Interactive",
+        "styles": [
+          "Interactive",
+          "Projects",
+          "Videos"
+        ],
+        "language": "Hinglish",
+        "languages": [
+          "Hinglish",
+          "English"
         ]
       }
     ]
@@ -49279,6 +51286,23 @@
               }
             ]
           }
+        ],
+        "goal": "Interview",
+        "goals": [
+          "Interview",
+          "College",
+          "Job"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Interactive",
+          "Projects"
+        ],
+        "language": "Hinglish",
+        "languages": [
+          "Hinglish",
+          "English"
         ]
       },
       {
@@ -49682,6 +51706,23 @@
               }
             ]
           }
+        ],
+        "goal": "Research",
+        "goals": [
+          "Research",
+          "Job",
+          "Projects"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Projects",
+          "Interactive"
+        ],
+        "language": "Hindi",
+        "languages": [
+          "Hindi",
+          "English"
         ]
       }
     ]
@@ -49728,7 +51769,7 @@
         "category": "Cloud & DevOps",
         "level": "Intermediate",
         "difficulty": "Intermediate",
-        "duration": "8 Weeks",
+        "duration": "5 Weeks",
         "description": "Master core Kubernetes abstractions: Pods, ReplicaSets, Deployments, Services (ClusterIP, NodePort), Ingress controllers, and kubectl.",
         "search_terms": [
           "kubernetes tutorial for beginners",
@@ -50124,6 +52165,25 @@
               }
             ]
           }
+        ],
+        "goal": "Job",
+        "goals": [
+          "Job",
+          "Career Switch",
+          "Projects"
+        ],
+        "style": "Reading",
+        "styles": [
+          "Reading",
+          "Interactive",
+          "Projects"
+        ],
+        "language": "Mixed",
+        "languages": [
+          "Mixed",
+          "English",
+          "Hindi",
+          "Hinglish"
         ]
       },
       {
@@ -50131,7 +52191,7 @@
         "category": "Cloud & DevOps",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "8 Weeks",
+        "duration": "6 Weeks",
         "description": "Package cloud apps with Helm charts, configure cert-manager TLS Ingress, implement Horizontal Pod Autoscalers (HPA), and ArgoCD GitOps.",
         "search_terms": [
           "helm charts tutorial",
@@ -50527,6 +52587,22 @@
               }
             ]
           }
+        ],
+        "goal": "Job",
+        "goals": [
+          "Job",
+          "Career Switch",
+          "Projects"
+        ],
+        "style": "Projects",
+        "styles": [
+          "Projects",
+          "Videos",
+          "Interactive"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -50571,7 +52647,7 @@
         "category": "Cloud & DevOps",
         "level": "Beginner to Intermediate",
         "difficulty": "Beginner to Intermediate",
-        "duration": "4 Weeks",
+        "duration": "2 Weeks",
         "description": "Write automated GitHub Actions YAML workflows: trigger on pull requests, run linting/testing matrixes, and build Docker containers.",
         "search_terms": [
           "github actions tutorial",
@@ -50967,6 +53043,23 @@
               }
             ]
           }
+        ],
+        "goal": "College",
+        "goals": [
+          "College",
+          "Interview",
+          "Job",
+          "Projects"
+        ],
+        "style": "Interactive",
+        "styles": [
+          "Interactive",
+          "Projects",
+          "Videos"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -50974,7 +53067,7 @@
         "category": "Cloud & DevOps",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "6 Weeks",
+        "duration": "8+ Weeks",
         "description": "Implement declarative continuous delivery with GitOps, blue-green deployments, canary releases using Flagger, and automated rollback.",
         "search_terms": [
           "gitops argocd tutorial",
@@ -51370,6 +53463,24 @@
               }
             ]
           }
+        ],
+        "goal": "Projects",
+        "goals": [
+          "Projects",
+          "Job",
+          "Career Switch"
+        ],
+        "style": "Mixed",
+        "styles": [
+          "Mixed",
+          "Projects",
+          "Videos",
+          "Interactive",
+          "Reading"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -51411,7 +53522,7 @@
         "category": "Cloud & DevOps",
         "level": "Beginner",
         "difficulty": "Beginner",
-        "duration": "5 Weeks",
+        "duration": "3 Weeks",
         "description": "Master Linux file hierarchies, file permissions (chmod/chown), process monitoring (top/htop/ps), systemd service management, and SSH access.",
         "search_terms": [
           "linux administration for beginners",
@@ -51807,6 +53918,23 @@
               }
             ]
           }
+        ],
+        "goal": "Career Switch",
+        "goals": [
+          "Career Switch",
+          "Job",
+          "College",
+          "Projects"
+        ],
+        "style": "Projects",
+        "styles": [
+          "Projects",
+          "Interactive",
+          "Videos"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -51814,7 +53942,7 @@
         "category": "Cloud & DevOps",
         "level": "Intermediate to Advanced",
         "difficulty": "Intermediate to Advanced",
-        "duration": "6 Weeks",
+        "duration": "4 Weeks",
         "description": "Diagnose server bottlenecks using vmstat, iostat, and strace; tune kernel parameters in /proc; manage LVM volumes and RAID storage.",
         "search_terms": [
           "linux performance tuning",
@@ -52210,6 +54338,23 @@
               }
             ]
           }
+        ],
+        "goal": "Career Switch",
+        "goals": [
+          "Career Switch",
+          "Job",
+          "Projects"
+        ],
+        "style": "Reading",
+        "styles": [
+          "Reading",
+          "Projects",
+          "Interactive",
+          "Videos"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -52255,7 +54400,7 @@
         "category": "Cloud & DevOps",
         "level": "Intermediate",
         "difficulty": "Intermediate",
-        "duration": "5 Weeks",
+        "duration": "4 Weeks",
         "description": "Write declarative HCL configurations, manage Terraform providers (AWS/Azure), inspect terraform plan outputs, and modularize code.",
         "search_terms": [
           "terraform tutorial for beginners",
@@ -52651,6 +54796,22 @@
               }
             ]
           }
+        ],
+        "goal": "Projects",
+        "goals": [
+          "Projects",
+          "Job",
+          "Career Switch"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Interactive",
+          "Projects"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -53054,6 +55215,23 @@
               }
             ]
           }
+        ],
+        "goal": "Research",
+        "goals": [
+          "Research",
+          "Job",
+          "Projects"
+        ],
+        "style": "Interactive",
+        "styles": [
+          "Interactive",
+          "Projects",
+          "Videos"
+        ],
+        "language": "Hinglish",
+        "languages": [
+          "Hinglish",
+          "English"
         ]
       }
     ]
@@ -53491,6 +55669,23 @@
               }
             ]
           }
+        ],
+        "goal": "Interview",
+        "goals": [
+          "Interview",
+          "College",
+          "Job"
+        ],
+        "style": "Reading",
+        "styles": [
+          "Reading",
+          "Interactive",
+          "Projects"
+        ],
+        "language": "Hinglish",
+        "languages": [
+          "Hinglish",
+          "English"
         ]
       },
       {
@@ -53498,7 +55693,7 @@
         "category": "Cloud & DevOps",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "7 Weeks",
+        "duration": "8+ Weeks",
         "description": "Scale big data analytical queries with BigQuery, stream event data with Cloud Pub/Sub, and train models using Vertex AI pipelines.",
         "search_terms": [
           "bigquery tutorial",
@@ -53894,6 +56089,23 @@
               }
             ]
           }
+        ],
+        "goal": "Job",
+        "goals": [
+          "Job",
+          "Career Switch",
+          "Projects"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Projects",
+          "Interactive"
+        ],
+        "language": "Hindi",
+        "languages": [
+          "Hindi",
+          "English"
         ]
       }
     ]
@@ -53937,7 +56149,7 @@
         "category": "Cloud & DevOps",
         "level": "Intermediate",
         "difficulty": "Intermediate",
-        "duration": "4 Weeks",
+        "duration": "2 Weeks",
         "description": "Understand the 3 pillars of observability, scrape application endpoints with Prometheus, and build visual Grafana dashboards.",
         "search_terms": [
           "prometheus and grafana tutorial",
@@ -54333,6 +56545,25 @@
               }
             ]
           }
+        ],
+        "goal": "Job",
+        "goals": [
+          "Job",
+          "Career Switch",
+          "Projects"
+        ],
+        "style": "Interactive",
+        "styles": [
+          "Interactive",
+          "Projects",
+          "Videos"
+        ],
+        "language": "Mixed",
+        "languages": [
+          "Mixed",
+          "English",
+          "Hindi",
+          "Hinglish"
         ]
       },
       {
@@ -54340,7 +56571,7 @@
         "category": "Cloud & DevOps",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "6 Weeks",
+        "duration": "4 Weeks",
         "description": "Instrument microservices with OpenTelemetry (OTel), collect distributed traces in Jaeger, and aggregate log streams with Grafana Loki.",
         "search_terms": [
           "opentelemetry tutorial",
@@ -54736,6 +56967,22 @@
               }
             ]
           }
+        ],
+        "goal": "Projects",
+        "goals": [
+          "Projects",
+          "Job",
+          "Career Switch"
+        ],
+        "style": "Projects",
+        "styles": [
+          "Projects",
+          "Videos",
+          "Interactive"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -54778,7 +57025,7 @@
         "category": "Cloud & DevOps",
         "level": "Intermediate to Advanced",
         "difficulty": "Intermediate to Advanced",
-        "duration": "6 Weeks",
+        "duration": "3 Weeks",
         "description": "Decompose monoliths using Domain-Driven Design (DDD), configure API Gateways, manage database-per-service, and implement the Saga pattern.",
         "search_terms": [
           "microservices architecture roadmap",
@@ -55174,6 +57421,23 @@
               }
             ]
           }
+        ],
+        "goal": "College",
+        "goals": [
+          "College",
+          "Interview",
+          "Job",
+          "Projects"
+        ],
+        "style": "Projects",
+        "styles": [
+          "Projects",
+          "Interactive",
+          "Videos"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -55181,7 +57445,7 @@
         "category": "Cloud & DevOps",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "7 Weeks",
+        "duration": "6 Weeks",
         "description": "Deploy Istio service mesh on Kubernetes, configure Envoy sidecar proxies, mutual TLS (mTLS) zero-trust, and dynamic traffic canary routing.",
         "search_terms": [
           "istio service mesh tutorial",
@@ -55577,6 +57841,24 @@
               }
             ]
           }
+        ],
+        "goal": "Career Switch",
+        "goals": [
+          "Career Switch",
+          "Job",
+          "Projects"
+        ],
+        "style": "Mixed",
+        "styles": [
+          "Mixed",
+          "Projects",
+          "Videos",
+          "Interactive",
+          "Reading"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -55620,7 +57902,7 @@
         "category": "Data",
         "level": "Beginner to Intermediate",
         "difficulty": "Beginner to Intermediate",
-        "duration": "8 Weeks",
+        "duration": "4 Weeks",
         "description": "Wrangle complex datasets, conduct statistical hypotheses, create informative visualizations, and build models.",
         "search_terms": [
           "data science roadmap",
@@ -56011,6 +58293,23 @@
               }
             ]
           }
+        ],
+        "goal": "Career Switch",
+        "goals": [
+          "Career Switch",
+          "Job",
+          "College",
+          "Projects"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Interactive",
+          "Projects"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -56018,7 +58317,7 @@
         "category": "Data",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "8 Weeks",
+        "duration": "8+ Weeks",
         "description": "Build production XGBoost/LightGBM tabular pipelines, hyperparameter search via Optuna, SHAP interpretability, and business KPI modeling.",
         "search_terms": [
           "xgboost tutorial",
@@ -56414,6 +58713,23 @@
               }
             ]
           }
+        ],
+        "goal": "Research",
+        "goals": [
+          "Research",
+          "Job",
+          "Projects"
+        ],
+        "style": "Reading",
+        "styles": [
+          "Reading",
+          "Projects",
+          "Interactive",
+          "Videos"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -56458,7 +58774,7 @@
         "category": "Data",
         "level": "Beginner",
         "difficulty": "Beginner",
-        "duration": "6 Weeks",
+        "duration": "5 Weeks",
         "description": "Master SQL querying, business intelligence dashboards (Tableau/PowerBI), spreadsheet modeling, and storytelling.",
         "search_terms": [
           "data analyst roadmap",
@@ -56849,6 +59165,22 @@
               }
             ]
           }
+        ],
+        "goal": "Projects",
+        "goals": [
+          "Projects",
+          "Job",
+          "Career Switch"
+        ],
+        "style": "Reading",
+        "styles": [
+          "Reading",
+          "Interactive",
+          "Projects"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -56856,7 +59188,7 @@
         "category": "Data",
         "level": "Intermediate to Advanced",
         "difficulty": "Intermediate to Advanced",
-        "duration": "6 Weeks",
+        "duration": "4 Weeks",
         "description": "Build automated customer retention cohort matrices, executive OKR tracking dashboards, and causal analytics models.",
         "search_terms": [
           "advanced business intelligence",
@@ -57252,6 +59584,23 @@
               }
             ]
           }
+        ],
+        "goal": "Job",
+        "goals": [
+          "Job",
+          "Career Switch",
+          "Projects"
+        ],
+        "style": "Interactive",
+        "styles": [
+          "Interactive",
+          "Projects",
+          "Videos"
+        ],
+        "language": "Hinglish",
+        "languages": [
+          "Hinglish",
+          "English"
         ]
       }
     ]
@@ -57295,7 +59644,7 @@
         "category": "Data",
         "level": "Beginner to Intermediate",
         "difficulty": "Beginner to Intermediate",
-        "duration": "5 Weeks",
+        "duration": "2 Weeks",
         "description": "Master relational schema normalization, indexing, joins, aggregate analytical functions, and ACID.",
         "search_terms": [
           "sql tutorial for beginners",
@@ -57687,6 +60036,23 @@
               }
             ]
           }
+        ],
+        "goal": "Interview",
+        "goals": [
+          "Interview",
+          "College",
+          "Job"
+        ],
+        "style": "Interactive",
+        "styles": [
+          "Interactive",
+          "Projects",
+          "Videos"
+        ],
+        "language": "Hinglish",
+        "languages": [
+          "Hinglish",
+          "English"
         ]
       },
       {
@@ -58090,6 +60456,23 @@
               }
             ]
           }
+        ],
+        "goal": "Projects",
+        "goals": [
+          "Projects",
+          "Job",
+          "Career Switch"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Projects",
+          "Interactive"
+        ],
+        "language": "Hindi",
+        "languages": [
+          "Hindi",
+          "English"
         ]
       }
     ]
@@ -58132,7 +60515,7 @@
         "category": "Data",
         "level": "Intermediate",
         "difficulty": "Intermediate",
-        "duration": "5 Weeks",
+        "duration": "3 Weeks",
         "description": "Design normalized 3NF schemas, draw ER diagrams, evaluate relational vs document trade-offs, and design high-scale key-value access patterns.",
         "search_terms": [
           "database modeling tutorial",
@@ -58528,6 +60911,25 @@
               }
             ]
           }
+        ],
+        "goal": "Job",
+        "goals": [
+          "Job",
+          "Career Switch",
+          "Projects"
+        ],
+        "style": "Projects",
+        "styles": [
+          "Projects",
+          "Interactive",
+          "Videos"
+        ],
+        "language": "Mixed",
+        "languages": [
+          "Mixed",
+          "English",
+          "Hindi",
+          "Hinglish"
         ]
       },
       {
@@ -58535,7 +60937,7 @@
         "category": "Data",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "7 Weeks",
+        "duration": "8+ Weeks",
         "description": "Architect primary-replica replication, Raft consensus, horizontal sharding, connection pooling with PgBouncer, and disaster recovery.",
         "search_terms": [
           "database sharding",
@@ -58931,6 +61333,22 @@
               }
             ]
           }
+        ],
+        "goal": "Career Switch",
+        "goals": [
+          "Career Switch",
+          "Job",
+          "Projects"
+        ],
+        "style": "Projects",
+        "styles": [
+          "Projects",
+          "Videos",
+          "Interactive"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -58973,7 +61391,7 @@
         "category": "Data",
         "level": "Intermediate",
         "difficulty": "Intermediate",
-        "duration": "6 Weeks",
+        "duration": "4 Weeks",
         "description": "Understand probability distributions, Central Limit Theorem, hypothesis testing, p-values, and Bayesian inference.",
         "search_terms": [
           "statistics for data science roadmap",
@@ -59364,6 +61782,23 @@
               }
             ]
           }
+        ],
+        "goal": "Research",
+        "goals": [
+          "Research",
+          "Job",
+          "Projects",
+          "College"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Interactive",
+          "Projects"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -59371,7 +61806,7 @@
         "category": "Data",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "6 Weeks",
+        "duration": "4 Weeks",
         "description": "Master Bayesian priors and posteriors, Markov Chain Monte Carlo (MCMC), sample size calculations, and multi-armed bandit experimentation.",
         "search_terms": [
           "bayesian statistics tutorial",
@@ -59767,6 +62202,25 @@
               }
             ]
           }
+        ],
+        "goal": "Research",
+        "goals": [
+          "Research",
+          "Job",
+          "Projects",
+          "College"
+        ],
+        "style": "Mixed",
+        "styles": [
+          "Mixed",
+          "Projects",
+          "Videos",
+          "Interactive",
+          "Reading"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -59811,7 +62265,7 @@
         "category": "Data",
         "level": "Beginner to Intermediate",
         "difficulty": "Beginner to Intermediate",
-        "duration": "4 Weeks",
+        "duration": "5 Weeks",
         "description": "Create publication-ready visual figures with Seaborn and Plotly, selecting chart types, color palettes, and interactive tooltips.",
         "search_terms": [
           "data visualization tutorial",
@@ -60207,6 +62661,23 @@
               }
             ]
           }
+        ],
+        "goal": "Career Switch",
+        "goals": [
+          "Career Switch",
+          "Job",
+          "College",
+          "Projects"
+        ],
+        "style": "Reading",
+        "styles": [
+          "Reading",
+          "Interactive",
+          "Projects"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -60214,7 +62685,7 @@
         "category": "Data",
         "level": "Intermediate to Advanced",
         "difficulty": "Intermediate to Advanced",
-        "duration": "5 Weeks",
+        "duration": "6 Weeks",
         "description": "Build live web dashboards with Streamlit and Dash, connecting real-time database feeds, dynamic filtering, and visual scrollytelling.",
         "search_terms": [
           "streamlit tutorial python",
@@ -60610,6 +63081,23 @@
               }
             ]
           }
+        ],
+        "goal": "Job",
+        "goals": [
+          "Job",
+          "Career Switch",
+          "Projects"
+        ],
+        "style": "Reading",
+        "styles": [
+          "Reading",
+          "Projects",
+          "Interactive",
+          "Videos"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -60653,7 +63141,7 @@
         "category": "Data",
         "level": "Intermediate",
         "difficulty": "Intermediate",
-        "duration": "6 Weeks",
+        "duration": "2 Weeks",
         "description": "Understand cluster computing architectures, HDFS distributed storage, PySpark DataFrame operations, and resilient distributed datasets (RDDs).",
         "search_terms": [
           "big data tutorial",
@@ -61049,6 +63537,22 @@
               }
             ]
           }
+        ],
+        "goal": "Projects",
+        "goals": [
+          "Projects",
+          "Job",
+          "Career Switch"
+        ],
+        "style": "Interactive",
+        "styles": [
+          "Interactive",
+          "Projects",
+          "Videos"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -61056,7 +63560,7 @@
         "category": "Data",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "7 Weeks",
+        "duration": "8+ Weeks",
         "description": "Architect event streams using Apache Kafka topics, consumer groups, exactly-once semantics, and Apache Flink stateful windowing.",
         "search_terms": [
           "apache kafka tutorial",
@@ -61452,6 +63956,23 @@
               }
             ]
           }
+        ],
+        "goal": "Projects",
+        "goals": [
+          "Projects",
+          "Job",
+          "Career Switch"
+        ],
+        "style": "Interactive",
+        "styles": [
+          "Interactive",
+          "Projects",
+          "Videos"
+        ],
+        "language": "Hinglish",
+        "languages": [
+          "Hinglish",
+          "English"
         ]
       }
     ]
@@ -61495,7 +64016,7 @@
         "category": "Data",
         "level": "Intermediate",
         "difficulty": "Intermediate",
-        "duration": "7 Weeks",
+        "duration": "3 Weeks",
         "description": "Design automated ETL/ELT pipelines, extract raw API feeds, transform data with Pandas/SQL, and write Parquet data lake files.",
         "search_terms": [
           "data engineering roadmap",
@@ -61891,6 +64412,23 @@
               }
             ]
           }
+        ],
+        "goal": "Interview",
+        "goals": [
+          "Interview",
+          "College",
+          "Job"
+        ],
+        "style": "Projects",
+        "styles": [
+          "Projects",
+          "Interactive",
+          "Videos"
+        ],
+        "language": "Hinglish",
+        "languages": [
+          "Hinglish",
+          "English"
         ]
       },
       {
@@ -61898,7 +64436,7 @@
         "category": "Data",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "8 Weeks",
+        "duration": "4 Weeks",
         "description": "Orchestrate DAGs using Apache Airflow, build modular transformation models with dbt, and manage Delta Lake ACID tables.",
         "search_terms": [
           "apache airflow tutorial",
@@ -62294,6 +64832,23 @@
               }
             ]
           }
+        ],
+        "goal": "Career Switch",
+        "goals": [
+          "Career Switch",
+          "Job",
+          "Projects"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Projects",
+          "Interactive"
+        ],
+        "language": "Hindi",
+        "languages": [
+          "Hindi",
+          "English"
         ]
       }
     ]
@@ -62335,7 +64890,7 @@
         "category": "Data",
         "level": "Intermediate",
         "difficulty": "Intermediate",
-        "duration": "5 Weeks",
+        "duration": "4 Weeks",
         "description": "Manage PostgreSQL servers, configure postgresql.conf, create specialized indexes (B-Tree, GIN, GiST), and run VACUUM maintenance.",
         "search_terms": [
           "postgresql tutorial",
@@ -62731,6 +65286,25 @@
               }
             ]
           }
+        ],
+        "goal": "Job",
+        "goals": [
+          "Job",
+          "Career Switch",
+          "Projects"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Interactive",
+          "Projects"
+        ],
+        "language": "Mixed",
+        "languages": [
+          "Mixed",
+          "English",
+          "Hindi",
+          "Hinglish"
         ]
       },
       {
@@ -63134,6 +65708,22 @@
               }
             ]
           }
+        ],
+        "goal": "Research",
+        "goals": [
+          "Research",
+          "Job",
+          "Projects"
+        ],
+        "style": "Projects",
+        "styles": [
+          "Projects",
+          "Videos",
+          "Interactive"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -63176,7 +65766,7 @@
         "category": "Data",
         "level": "Beginner to Intermediate",
         "difficulty": "Beginner to Intermediate",
-        "duration": "4 Weeks",
+        "duration": "5 Weeks",
         "description": "Model nested BSON documents, perform CRUD operations with Compass, build compound indexes, and link with Mongoose ODM.",
         "search_terms": [
           "mongodb tutorial for beginners",
@@ -63572,6 +66162,23 @@
               }
             ]
           }
+        ],
+        "goal": "College",
+        "goals": [
+          "College",
+          "Interview",
+          "Job",
+          "Projects"
+        ],
+        "style": "Reading",
+        "styles": [
+          "Reading",
+          "Interactive",
+          "Projects"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -63579,7 +66186,7 @@
         "category": "Data",
         "level": "Intermediate to Advanced",
         "difficulty": "Intermediate to Advanced",
-        "duration": "5 Weeks",
+        "duration": "8+ Weeks",
         "description": "Master multi-stage aggregation pipelines ($match, $group, $lookup, $unwind), replica set elections, and horizontal shard keys.",
         "search_terms": [
           "mongodb aggregation pipeline tutorial",
@@ -63975,6 +66582,24 @@
               }
             ]
           }
+        ],
+        "goal": "Job",
+        "goals": [
+          "Job",
+          "Career Switch",
+          "Projects"
+        ],
+        "style": "Mixed",
+        "styles": [
+          "Mixed",
+          "Projects",
+          "Videos",
+          "Interactive",
+          "Reading"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -64017,7 +66642,7 @@
         "category": "Data",
         "level": "Beginner to Intermediate",
         "difficulty": "Beginner to Intermediate",
-        "duration": "5 Weeks",
+        "duration": "2 Weeks",
         "description": "Transform data using Power Query M, design Star Schemas with 1-to-many relationships, and write calculated DAX measures (CALCULATE, FILTER).",
         "search_terms": [
           "power bi tutorial for beginners",
@@ -64413,6 +67038,23 @@
               }
             ]
           }
+        ],
+        "goal": "Career Switch",
+        "goals": [
+          "Career Switch",
+          "Job",
+          "College",
+          "Projects"
+        ],
+        "style": "Interactive",
+        "styles": [
+          "Interactive",
+          "Projects",
+          "Videos"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -64420,7 +67062,7 @@
         "category": "Data",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "6 Weeks",
+        "duration": "4 Weeks",
         "description": "Implement Row-Level Security (RLS), incremental dataset refresh, Power BI service workspaces, paginated reports, and CI/CD pipelines.",
         "search_terms": [
           "enterprise power bi architecture",
@@ -64816,6 +67458,23 @@
               }
             ]
           }
+        ],
+        "goal": "Projects",
+        "goals": [
+          "Projects",
+          "Job",
+          "Career Switch"
+        ],
+        "style": "Reading",
+        "styles": [
+          "Reading",
+          "Projects",
+          "Interactive",
+          "Videos"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -64859,7 +67518,7 @@
         "category": "Data",
         "level": "Beginner to Intermediate",
         "difficulty": "Beginner to Intermediate",
-        "duration": "4 Weeks",
+        "duration": "3 Weeks",
         "description": "Master NumPy array broadcasting, Pandas DataFrame indexing (loc, iloc), missing value handling, groupbys, and joins.",
         "search_terms": [
           "pandas tutorial for beginners",
@@ -65255,6 +67914,22 @@
               }
             ]
           }
+        ],
+        "goal": "Projects",
+        "goals": [
+          "Projects",
+          "Job",
+          "Career Switch"
+        ],
+        "style": "Projects",
+        "styles": [
+          "Projects",
+          "Interactive",
+          "Videos"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -65262,7 +67937,7 @@
         "category": "Data",
         "level": "Intermediate to Advanced",
         "difficulty": "Intermediate to Advanced",
-        "duration": "5 Weeks",
+        "duration": "6 Weeks",
         "description": "Transition to blazing-fast multithreaded query engines with Polars, Arrow memory layouts, lazy evaluation, and out-of-core computing.",
         "search_terms": [
           "polars python tutorial",
@@ -65658,6 +68333,23 @@
               }
             ]
           }
+        ],
+        "goal": "Career Switch",
+        "goals": [
+          "Career Switch",
+          "Job",
+          "Projects"
+        ],
+        "style": "Interactive",
+        "styles": [
+          "Interactive",
+          "Projects",
+          "Videos"
+        ],
+        "language": "Hinglish",
+        "languages": [
+          "Hinglish",
+          "English"
         ]
       }
     ]
@@ -65700,7 +68392,7 @@
         "category": "Data",
         "level": "Intermediate",
         "difficulty": "Intermediate",
-        "duration": "5 Weeks",
+        "duration": "4 Weeks",
         "description": "Understand Snowflake multi-cluster shared data architecture, virtual warehouses, loading data from S3, Time Travel, and Zero-Copy Cloning.",
         "search_terms": [
           "snowflake tutorial for beginners",
@@ -66096,6 +68788,23 @@
               }
             ]
           }
+        ],
+        "goal": "Interview",
+        "goals": [
+          "Interview",
+          "College",
+          "Job"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Interactive",
+          "Projects"
+        ],
+        "language": "Hinglish",
+        "languages": [
+          "Hinglish",
+          "English"
         ]
       },
       {
@@ -66103,7 +68812,7 @@
         "category": "Data",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "6 Weeks",
+        "duration": "8+ Weeks",
         "description": "Architect dimensional Kimball Star Schemas, Slowly Changing Dimensions (SCD Type 2), Data Vault 2.0 hubs/links/satellites, and cost governance.",
         "search_terms": [
           "kimball dimensional modeling",
@@ -66499,6 +69208,23 @@
               }
             ]
           }
+        ],
+        "goal": "Research",
+        "goals": [
+          "Research",
+          "Job",
+          "Projects"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Projects",
+          "Interactive"
+        ],
+        "language": "Hindi",
+        "languages": [
+          "Hindi",
+          "English"
         ]
       }
     ]
@@ -66540,7 +69266,7 @@
         "category": "Design",
         "level": "Beginner",
         "difficulty": "Beginner",
-        "duration": "4 Weeks",
+        "duration": "5 Weeks",
         "description": "Master visual hierarchy, 8pt spacing grids, modern typography pairings, accessible contrast ratios, and button/card styling.",
         "search_terms": [
           "ui design for beginners",
@@ -66936,6 +69662,25 @@
               }
             ]
           }
+        ],
+        "goal": "Job",
+        "goals": [
+          "Job",
+          "Career Switch",
+          "Projects"
+        ],
+        "style": "Reading",
+        "styles": [
+          "Reading",
+          "Interactive",
+          "Projects"
+        ],
+        "language": "Mixed",
+        "languages": [
+          "Mixed",
+          "English",
+          "Hindi",
+          "Hinglish"
         ]
       },
       {
@@ -66943,7 +69688,7 @@
         "category": "Design",
         "level": "Intermediate to Advanced",
         "difficulty": "Intermediate to Advanced",
-        "duration": "6 Weeks",
+        "duration": "4 Weeks",
         "description": "Craft component states, spring-based micro-interactions, dark mode token themes, and developer handoff documentation.",
         "search_terms": [
           "advanced ui design",
@@ -67339,6 +70084,22 @@
               }
             ]
           }
+        ],
+        "goal": "Job",
+        "goals": [
+          "Job",
+          "Career Switch",
+          "Projects"
+        ],
+        "style": "Projects",
+        "styles": [
+          "Projects",
+          "Videos",
+          "Interactive"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -67379,7 +70140,7 @@
         "category": "Design",
         "level": "Beginner",
         "difficulty": "Beginner",
-        "duration": "5 Weeks",
+        "duration": "2 Weeks",
         "description": "Conduct user research, synthesize empathy maps, draft user personas, diagram user flowcharts, and sketch low-fidelity wireframes.",
         "search_terms": [
           "ux design for beginners",
@@ -67775,6 +70536,23 @@
               }
             ]
           }
+        ],
+        "goal": "College",
+        "goals": [
+          "College",
+          "Interview",
+          "Job",
+          "Projects"
+        ],
+        "style": "Interactive",
+        "styles": [
+          "Interactive",
+          "Projects",
+          "Videos"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -68178,6 +70956,24 @@
               }
             ]
           }
+        ],
+        "goal": "Projects",
+        "goals": [
+          "Projects",
+          "Job",
+          "Career Switch"
+        ],
+        "style": "Mixed",
+        "styles": [
+          "Mixed",
+          "Projects",
+          "Videos",
+          "Interactive",
+          "Reading"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -68219,7 +71015,7 @@
         "category": "Design",
         "level": "Beginner to Intermediate",
         "difficulty": "Beginner to Intermediate",
-        "duration": "4 Weeks",
+        "duration": "3 Weeks",
         "description": "Master Figma frames, Auto Layout directional flex, constraints, reusable components, component variants, and interactive prototyping.",
         "search_terms": [
           "figma tutorial for beginners",
@@ -68615,6 +71411,23 @@
               }
             ]
           }
+        ],
+        "goal": "Career Switch",
+        "goals": [
+          "Career Switch",
+          "Job",
+          "College",
+          "Projects"
+        ],
+        "style": "Projects",
+        "styles": [
+          "Projects",
+          "Interactive",
+          "Videos"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -68622,7 +71435,7 @@
         "category": "Design",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "5 Weeks",
+        "duration": "8+ Weeks",
         "description": "Harness Figma Variables for multi-mode thematic switching (light/dark/compact), component boolean/text properties, and design token exports.",
         "search_terms": [
           "figma variables tutorial",
@@ -69018,6 +71831,23 @@
               }
             ]
           }
+        ],
+        "goal": "Career Switch",
+        "goals": [
+          "Career Switch",
+          "Job",
+          "Projects"
+        ],
+        "style": "Reading",
+        "styles": [
+          "Reading",
+          "Projects",
+          "Interactive",
+          "Videos"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -69060,7 +71890,7 @@
         "category": "Design",
         "level": "Intermediate",
         "difficulty": "Intermediate",
-        "duration": "8 Weeks",
+        "duration": "4 Weeks",
         "description": "Lead a complete digital product cycle: problem statement definition, competitive auditing, wireframing, high-fidelity UI, and prototype validation.",
         "search_terms": [
           "product design roadmap",
@@ -69456,6 +72286,22 @@
               }
             ]
           }
+        ],
+        "goal": "Projects",
+        "goals": [
+          "Projects",
+          "Job",
+          "Career Switch"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Interactive",
+          "Projects"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -69463,7 +72309,7 @@
         "category": "Design",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "7 Weeks",
+        "duration": "4 Weeks",
         "description": "Combine qualitative user feedback with quantitative event telemetry (Mixpanel/Amplitude), A/B testing variants, and activation funnel optimization.",
         "search_terms": [
           "data driven product design",
@@ -69859,6 +72705,23 @@
               }
             ]
           }
+        ],
+        "goal": "Research",
+        "goals": [
+          "Research",
+          "Job",
+          "Projects"
+        ],
+        "style": "Interactive",
+        "styles": [
+          "Interactive",
+          "Projects",
+          "Videos"
+        ],
+        "language": "Hinglish",
+        "languages": [
+          "Hinglish",
+          "English"
         ]
       }
     ]
@@ -69898,7 +72761,7 @@
         "category": "Design",
         "level": "Beginner",
         "difficulty": "Beginner",
-        "duration": "4 Weeks",
+        "duration": "5 Weeks",
         "description": "Understand foundational principles: balance, contrast, alignment, repetition, golden ratio layouts, and Adobe Illustrator vector pens.",
         "search_terms": [
           "graphic design for beginners",
@@ -70294,6 +73157,23 @@
               }
             ]
           }
+        ],
+        "goal": "Interview",
+        "goals": [
+          "Interview",
+          "College",
+          "Job"
+        ],
+        "style": "Reading",
+        "styles": [
+          "Reading",
+          "Interactive",
+          "Projects"
+        ],
+        "language": "Hinglish",
+        "languages": [
+          "Hinglish",
+          "English"
         ]
       },
       {
@@ -70301,7 +73181,7 @@
         "category": "Design",
         "level": "Intermediate",
         "difficulty": "Intermediate",
-        "duration": "5 Weeks",
+        "duration": "6 Weeks",
         "description": "Design cohesive brand collateral, editorial magazine layouts, modern geometric logos, and marketing campaign creative assets.",
         "search_terms": [
           "brand identity design tutorial",
@@ -70697,6 +73577,23 @@
               }
             ]
           }
+        ],
+        "goal": "Job",
+        "goals": [
+          "Job",
+          "Career Switch",
+          "Projects"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Projects",
+          "Interactive"
+        ],
+        "language": "Hindi",
+        "languages": [
+          "Hindi",
+          "English"
         ]
       }
     ]
@@ -70741,7 +73638,7 @@
         "category": "Design",
         "level": "Intermediate",
         "difficulty": "Intermediate",
-        "duration": "5 Weeks",
+        "duration": "2 Weeks",
         "description": "Architect scalable design systems using Atomic Design principles, color/spacing semantic tokens, component state matrices, and governance.",
         "search_terms": [
           "design systems roadmap",
@@ -71137,6 +74034,25 @@
               }
             ]
           }
+        ],
+        "goal": "Job",
+        "goals": [
+          "Job",
+          "Career Switch",
+          "Projects"
+        ],
+        "style": "Interactive",
+        "styles": [
+          "Interactive",
+          "Projects",
+          "Videos"
+        ],
+        "language": "Mixed",
+        "languages": [
+          "Mixed",
+          "English",
+          "Hindi",
+          "Hinglish"
         ]
       },
       {
@@ -71144,7 +74060,7 @@
         "category": "Design",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "6 Weeks",
+        "duration": "8+ Weeks",
         "description": "Automate design token pipelines: export Figma tokens to Style Dictionary, transform to CSS/Tailwind/iOS Swift tokens, and document in Storybook.",
         "search_terms": [
           "style dictionary design tokens",
@@ -71540,6 +74456,22 @@
               }
             ]
           }
+        ],
+        "goal": "Projects",
+        "goals": [
+          "Projects",
+          "Job",
+          "Career Switch"
+        ],
+        "style": "Projects",
+        "styles": [
+          "Projects",
+          "Videos",
+          "Interactive"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -71582,7 +74514,7 @@
         "category": "Design",
         "level": "Beginner to Intermediate",
         "difficulty": "Beginner to Intermediate",
-        "duration": "4 Weeks",
+        "duration": "3 Weeks",
         "description": "Design high-converting landing pages: arresting above-the-fold hero sections, feature grids, social proof testimonials, and crisp CTAs.",
         "search_terms": [
           "web design tutorial",
@@ -71978,6 +74910,23 @@
               }
             ]
           }
+        ],
+        "goal": "College",
+        "goals": [
+          "College",
+          "Interview",
+          "Job",
+          "Projects"
+        ],
+        "style": "Projects",
+        "styles": [
+          "Projects",
+          "Interactive",
+          "Videos"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -71985,7 +74934,7 @@
         "category": "Design",
         "level": "Intermediate to Advanced",
         "difficulty": "Intermediate to Advanced",
-        "duration": "5 Weeks",
+        "duration": "4 Weeks",
         "description": "Craft sophisticated multi-column editorial web designs, magazine typography layouts, asymmetric grids, and brutalist/minimalist aesthetics.",
         "search_terms": [
           "editorial web design",
@@ -72381,6 +75330,24 @@
               }
             ]
           }
+        ],
+        "goal": "Career Switch",
+        "goals": [
+          "Career Switch",
+          "Job",
+          "Projects"
+        ],
+        "style": "Mixed",
+        "styles": [
+          "Mixed",
+          "Projects",
+          "Videos",
+          "Interactive",
+          "Reading"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -72423,7 +75390,7 @@
         "category": "Design",
         "level": "Beginner to Intermediate",
         "difficulty": "Beginner to Intermediate",
-        "duration": "5 Weeks",
+        "duration": "4 Weeks",
         "description": "Design touch-first mobile applications: 44px/48px tap targets, thumb-friendly navigation, Apple HIG rules, and Google Material Design 3 guidelines.",
         "search_terms": [
           "mobile app design tutorial",
@@ -72819,6 +75786,23 @@
               }
             ]
           }
+        ],
+        "goal": "Career Switch",
+        "goals": [
+          "Career Switch",
+          "Job",
+          "College",
+          "Projects"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Interactive",
+          "Projects"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -73222,6 +76206,23 @@
               }
             ]
           }
+        ],
+        "goal": "Research",
+        "goals": [
+          "Research",
+          "Job",
+          "Projects"
+        ],
+        "style": "Reading",
+        "styles": [
+          "Reading",
+          "Projects",
+          "Interactive",
+          "Videos"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -73264,7 +76265,7 @@
         "category": "Design",
         "level": "Beginner",
         "difficulty": "Beginner",
-        "duration": "3 Weeks",
+        "duration": "5 Weeks",
         "description": "Translate abstract concepts into low-fidelity grayscale wireframes, map screen transitions, and test core user paths with stakeholders.",
         "search_terms": [
           "wireframing tutorial for beginners",
@@ -73660,6 +76661,22 @@
               }
             ]
           }
+        ],
+        "goal": "Projects",
+        "goals": [
+          "Projects",
+          "Job",
+          "Career Switch"
+        ],
+        "style": "Reading",
+        "styles": [
+          "Reading",
+          "Interactive",
+          "Projects"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -73667,7 +76684,7 @@
         "category": "Design",
         "level": "Intermediate to Advanced",
         "difficulty": "Intermediate to Advanced",
-        "duration": "5 Weeks",
+        "duration": "8+ Weeks",
         "description": "Build realistic prototypes with Figma Smart Animate, conditional component logic, interactive dropdown inputs, and realistic scroll dynamics.",
         "search_terms": [
           "figma smart animate tutorial",
@@ -74063,6 +77080,23 @@
               }
             ]
           }
+        ],
+        "goal": "Job",
+        "goals": [
+          "Job",
+          "Career Switch",
+          "Projects"
+        ],
+        "style": "Interactive",
+        "styles": [
+          "Interactive",
+          "Projects",
+          "Videos"
+        ],
+        "language": "Hinglish",
+        "languages": [
+          "Hinglish",
+          "English"
         ]
       }
     ]
@@ -74104,7 +77138,7 @@
         "category": "Design",
         "level": "Beginner to Intermediate",
         "difficulty": "Beginner to Intermediate",
-        "duration": "4 Weeks",
+        "duration": "2 Weeks",
         "description": "Formulate unbiased user interview questions, recruit representative participants, conduct live interviews, and synthesize thematic affinity maps.",
         "search_terms": [
           "user research tutorial",
@@ -74500,6 +77534,23 @@
               }
             ]
           }
+        ],
+        "goal": "Interview",
+        "goals": [
+          "Interview",
+          "Job",
+          "College"
+        ],
+        "style": "Interactive",
+        "styles": [
+          "Interactive",
+          "Projects",
+          "Videos"
+        ],
+        "language": "Hinglish",
+        "languages": [
+          "Hinglish",
+          "English"
         ]
       },
       {
@@ -74507,7 +77558,7 @@
         "category": "Design",
         "level": "Intermediate to Advanced",
         "difficulty": "Intermediate to Advanced",
-        "duration": "5 Weeks",
+        "duration": "4 Weeks",
         "description": "Conduct moderated think-aloud usability sessions, calculate System Usability Scale (SUS) scores, and analyze Hotjar click/scroll heatmaps.",
         "search_terms": [
           "usability testing roadmap",
@@ -74903,6 +77954,23 @@
               }
             ]
           }
+        ],
+        "goal": "Projects",
+        "goals": [
+          "Projects",
+          "Job",
+          "Career Switch"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Projects",
+          "Interactive"
+        ],
+        "language": "Hindi",
+        "languages": [
+          "Hindi",
+          "English"
         ]
       }
     ]
@@ -74944,7 +78012,7 @@
         "category": "Design",
         "level": "Beginner to Intermediate",
         "difficulty": "Beginner to Intermediate",
-        "duration": "4 Weeks",
+        "duration": "3 Weeks",
         "description": "Develop cohesive brand identities: mission translation, logo mark creation, color palette harmonies, and brand style guideline books.",
         "search_terms": [
           "brand identity design tutorial",
@@ -75340,6 +78408,25 @@
               }
             ]
           }
+        ],
+        "goal": "Job",
+        "goals": [
+          "Job",
+          "Career Switch",
+          "Projects"
+        ],
+        "style": "Projects",
+        "styles": [
+          "Projects",
+          "Interactive",
+          "Videos"
+        ],
+        "language": "Mixed",
+        "languages": [
+          "Mixed",
+          "English",
+          "Hindi",
+          "Hinglish"
         ]
       },
       {
@@ -75347,7 +78434,7 @@
         "category": "Design",
         "level": "Intermediate to Advanced",
         "difficulty": "Intermediate to Advanced",
-        "duration": "4 Weeks",
+        "duration": "6 Weeks",
         "description": "Master type anatomy (x-height, baseline, descenders), font classification (serif, sans, slab, monospace), tracking/kerning, and contrast pairing.",
         "search_terms": [
           "typography tutorial for designers",
@@ -75743,6 +78830,22 @@
               }
             ]
           }
+        ],
+        "goal": "Career Switch",
+        "goals": [
+          "Career Switch",
+          "Job",
+          "Projects"
+        ],
+        "style": "Projects",
+        "styles": [
+          "Projects",
+          "Videos",
+          "Interactive"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -75784,7 +78887,7 @@
         "category": "Design",
         "level": "Beginner",
         "difficulty": "Beginner",
-        "duration": "6 Weeks",
+        "duration": "4 Weeks",
         "description": "Navigate 3D viewports, extrude polygonal geometry, apply modifiers (Subdivision Surface, Mirror), and set up basic cameras and lighting.",
         "search_terms": [
           "blender beginner tutorial",
@@ -76180,6 +79283,23 @@
               }
             ]
           }
+        ],
+        "goal": "College",
+        "goals": [
+          "College",
+          "Interview",
+          "Job",
+          "Projects"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Interactive",
+          "Projects"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -76187,7 +79307,7 @@
         "category": "Design",
         "level": "Intermediate to Advanced",
         "difficulty": "Intermediate to Advanced",
-        "duration": "6 Weeks",
+        "duration": "8+ Weeks",
         "description": "Build modern isometric product illustrations, PBR procedural shaders, UV unwrapping, and export lightweight GLTF/GLB models for web Three.js.",
         "search_terms": [
           "blender for web design",
@@ -76583,6 +79703,24 @@
               }
             ]
           }
+        ],
+        "goal": "Research",
+        "goals": [
+          "Research",
+          "Job",
+          "Projects"
+        ],
+        "style": "Mixed",
+        "styles": [
+          "Mixed",
+          "Projects",
+          "Videos",
+          "Interactive",
+          "Reading"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -77021,6 +80159,23 @@
               }
             ]
           }
+        ],
+        "goal": "Career Switch",
+        "goals": [
+          "Career Switch",
+          "Job",
+          "College",
+          "Projects"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Projects",
+          "Interactive"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -77028,7 +80183,7 @@
         "category": "Video Editing",
         "level": "Intermediate to Advanced",
         "difficulty": "Intermediate to Advanced",
-        "duration": "6 Weeks",
+        "duration": "4 Weeks",
         "description": "Sync multi-camera interview shoots, edit high-tempo dynamic montage sequences, mask visual elements, and color grade with Lumetri scopes.",
         "search_terms": [
           "premiere pro multicam editing",
@@ -77424,6 +80579,22 @@
               }
             ]
           }
+        ],
+        "goal": "Job",
+        "goals": [
+          "Job",
+          "Career Switch",
+          "Projects"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Projects",
+          "Interactive"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -77465,7 +80636,7 @@
         "category": "Video Editing",
         "level": "Beginner to Intermediate",
         "difficulty": "Beginner to Intermediate",
-        "duration": "5 Weeks",
+        "duration": "2 Weeks",
         "description": "Edit efficiently on DaVinci's Cut and Edit pages, organize media pools, execute precision trims, and export cinematic videos for free.",
         "search_terms": [
           "davinci resolve tutorial for beginners",
@@ -77861,6 +81032,22 @@
               }
             ]
           }
+        ],
+        "goal": "Projects",
+        "goals": [
+          "Projects",
+          "Job",
+          "Career Switch"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Projects",
+          "Interactive"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -77868,7 +81055,7 @@
         "category": "Video Editing",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "7 Weeks",
+        "duration": "6 Weeks",
         "description": "Master node-based grading: lift/gamma/gain wheels, balance Log camera footage, secondary color qualifiers, power windows, and LUTs.",
         "search_terms": [
           "color grading davinci resolve tutorial",
@@ -78264,6 +81451,23 @@
               }
             ]
           }
+        ],
+        "goal": "Projects",
+        "goals": [
+          "Projects",
+          "Job",
+          "Career Switch"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Projects",
+          "Interactive"
+        ],
+        "language": "Hinglish",
+        "languages": [
+          "Hinglish",
+          "English"
         ]
       }
     ]
@@ -78307,7 +81511,7 @@
         "category": "Video Editing",
         "level": "Beginner to Intermediate",
         "difficulty": "Beginner to Intermediate",
-        "duration": "5 Weeks",
+        "duration": "3 Weeks",
         "description": "Learn core motion principles: keyframe interpolation, ease in/out curve adjustment, title cards, lower thirds, and animated shape layers.",
         "search_terms": [
           "motion graphics tutorial for beginners",
@@ -78703,6 +81907,23 @@
               }
             ]
           }
+        ],
+        "goal": "Interview",
+        "goals": [
+          "Interview",
+          "College",
+          "Job"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Projects",
+          "Interactive"
+        ],
+        "language": "Hinglish",
+        "languages": [
+          "Hinglish",
+          "English"
         ]
       },
       {
@@ -78710,7 +81931,7 @@
         "category": "Video Editing",
         "level": "Intermediate to Advanced",
         "difficulty": "Intermediate to Advanced",
-        "duration": "6 Weeks",
+        "duration": "8+ Weeks",
         "description": "Craft high-energy YouTube/commercial motion graphics: kinetic text reveals, 3D camera sweeps, tracking callouts, and modular MOGRT templates.",
         "search_terms": [
           "kinetic typography tutorial",
@@ -79106,6 +82327,23 @@
               }
             ]
           }
+        ],
+        "goal": "Career Switch",
+        "goals": [
+          "Career Switch",
+          "Job",
+          "Projects"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Projects",
+          "Interactive"
+        ],
+        "language": "Hindi",
+        "languages": [
+          "Hindi",
+          "English"
         ]
       }
     ]
@@ -79147,7 +82385,7 @@
         "category": "Video Editing",
         "level": "Beginner to Intermediate",
         "difficulty": "Beginner to Intermediate",
-        "duration": "5 Weeks",
+        "duration": "4 Weeks",
         "description": "Develop YouTube packaging: high-CTR title ideation, custom thumbnail composition, the first 30-second retention hook, and pacing.",
         "search_terms": [
           "youtube content creation roadmap",
@@ -79543,6 +82781,25 @@
               }
             ]
           }
+        ],
+        "goal": "Job",
+        "goals": [
+          "Job",
+          "Career Switch",
+          "Projects"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Projects",
+          "Interactive"
+        ],
+        "language": "Mixed",
+        "languages": [
+          "Mixed",
+          "English",
+          "Hindi",
+          "Hinglish"
         ]
       },
       {
@@ -79550,7 +82807,7 @@
         "category": "Video Editing",
         "level": "Intermediate to Advanced",
         "difficulty": "Intermediate to Advanced",
-        "duration": "6 Weeks",
+        "duration": "4 Weeks",
         "description": "Optimize average percentage viewed (APV), engineer emotional curiosity loops, edit high-production YouTube documentaries, and scale production.",
         "search_terms": [
           "youtube retention editing",
@@ -79946,6 +83203,22 @@
               }
             ]
           }
+        ],
+        "goal": "Research",
+        "goals": [
+          "Research",
+          "Job",
+          "Projects"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Projects",
+          "Interactive"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -79989,7 +83262,7 @@
         "category": "Video Editing",
         "level": "Beginner to Intermediate",
         "difficulty": "Beginner to Intermediate",
-        "duration": "6 Weeks",
+        "duration": "5 Weeks",
         "description": "Master compositions, spatial vs temporal keyframes, parenting null objects, layer masking, track mattes, and graph editor velocity curves.",
         "search_terms": [
           "after effects tutorial for beginners",
@@ -80385,6 +83658,23 @@
               }
             ]
           }
+        ],
+        "goal": "College",
+        "goals": [
+          "College",
+          "Interview",
+          "Job",
+          "Projects"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Projects",
+          "Interactive"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -80392,7 +83682,7 @@
         "category": "Video Editing",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "7 Weeks",
+        "duration": "6 Weeks",
         "description": "Harness JavaScript Expressions (wiggle, loopOut, valueAtTime), 3D camera projections, particle systems, and Rotobrush 3 AI extraction.",
         "search_terms": [
           "after effects expressions tutorial",
@@ -80788,6 +84078,22 @@
               }
             ]
           }
+        ],
+        "goal": "Job",
+        "goals": [
+          "Job",
+          "Career Switch",
+          "Projects"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Projects",
+          "Interactive"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -80829,7 +84135,7 @@
         "category": "Video Editing",
         "level": "Beginner to Intermediate",
         "difficulty": "Beginner to Intermediate",
-        "duration": "5 Weeks",
+        "duration": "2 Weeks",
         "description": "Master the exposure triangle (Aperture, Shutter Speed 180\u00b0 rule, ISO), 3-point lighting setups, lens focal lengths, and camera composition.",
         "search_terms": [
           "cinematography tutorial for beginners",
@@ -81225,6 +84531,23 @@
               }
             ]
           }
+        ],
+        "goal": "Career Switch",
+        "goals": [
+          "Career Switch",
+          "Job",
+          "College",
+          "Projects"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Projects",
+          "Interactive"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -81232,7 +84555,7 @@
         "category": "Video Editing",
         "level": "Intermediate to Advanced",
         "difficulty": "Intermediate to Advanced",
-        "duration": "6 Weeks",
+        "duration": "8+ Weeks",
         "description": "Design professional creator studio setups, match multi-camera color temperatures, record dual-system 32-bit float audio, and film dynamic B-roll.",
         "search_terms": [
           "youtube studio lighting setup",
@@ -81628,6 +84951,22 @@
               }
             ]
           }
+        ],
+        "goal": "Projects",
+        "goals": [
+          "Projects",
+          "Job",
+          "Career Switch"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Projects",
+          "Interactive"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -81670,7 +85009,7 @@
         "category": "Video Editing",
         "level": "Beginner to Intermediate",
         "difficulty": "Beginner to Intermediate",
-        "duration": "4 Weeks",
+        "duration": "3 Weeks",
         "description": "Clean background hum with noise reduction, balance dialogue levels with EQ and compression, and master to broadcast loudness standards (-14 LUFS).",
         "search_terms": [
           "audio editing tutorial for video",
@@ -82066,6 +85405,22 @@
               }
             ]
           }
+        ],
+        "goal": "Projects",
+        "goals": [
+          "Projects",
+          "Job",
+          "Career Switch"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Projects",
+          "Interactive"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -82073,7 +85428,7 @@
         "category": "Video Editing",
         "level": "Intermediate to Advanced",
         "difficulty": "Intermediate to Advanced",
-        "duration": "5 Weeks",
+        "duration": "4 Weeks",
         "description": "Layer immersive whooshes, risers, and impact SFX; record realistic foley sounds; restore clipped distortion using iZotope RX modules.",
         "search_terms": [
           "sound design tutorial for video",
@@ -82469,6 +85824,23 @@
               }
             ]
           }
+        ],
+        "goal": "Career Switch",
+        "goals": [
+          "Career Switch",
+          "Job",
+          "Projects"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Projects",
+          "Interactive"
+        ],
+        "language": "Hinglish",
+        "languages": [
+          "Hinglish",
+          "English"
         ]
       }
     ]
@@ -82511,7 +85883,7 @@
         "category": "Video Editing",
         "level": "Beginner",
         "difficulty": "Beginner",
-        "duration": "3 Weeks",
+        "duration": "4 Weeks",
         "description": "Master vertical 9:16 safe zones, rapid 1.5-second jump cuts, animated Hormozi-style subtitle text, sound effects, and trend integration.",
         "search_terms": [
           "tiktok video editing tutorial",
@@ -82907,6 +86279,23 @@
               }
             ]
           }
+        ],
+        "goal": "Interview",
+        "goals": [
+          "Interview",
+          "College",
+          "Job"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Projects",
+          "Interactive"
+        ],
+        "language": "Hinglish",
+        "languages": [
+          "Hinglish",
+          "English"
         ]
       },
       {
@@ -82914,7 +86303,7 @@
         "category": "Video Editing",
         "level": "Intermediate",
         "difficulty": "Intermediate",
-        "duration": "4 Weeks",
+        "duration": "6 Weeks",
         "description": "Build viral short-form retention loops: seamless loop endings, visual zoom punches, sound effect emphasis, and high-CTR thumbnail covers.",
         "search_terms": [
           "viral shorts editing tutorial",
@@ -83310,6 +86699,23 @@
               }
             ]
           }
+        ],
+        "goal": "Research",
+        "goals": [
+          "Research",
+          "Job",
+          "Projects"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Projects",
+          "Interactive"
+        ],
+        "language": "Hindi",
+        "languages": [
+          "Hindi",
+          "English"
         ]
       }
     ]
@@ -83747,6 +87153,25 @@
               }
             ]
           }
+        ],
+        "goal": "Job",
+        "goals": [
+          "Job",
+          "Career Switch",
+          "Projects"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Projects",
+          "Interactive"
+        ],
+        "language": "Mixed",
+        "languages": [
+          "Mixed",
+          "English",
+          "Hindi",
+          "Hinglish"
         ]
       },
       {
@@ -83754,7 +87179,7 @@
         "category": "Video Editing",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "6 Weeks",
+        "duration": "8+ Weeks",
         "description": "Master micro-pacing, tension escalation, rhythmic editing synced to orchestral scores, and psychological subtext in cinematic edits.",
         "search_terms": [
           "advanced film editing pacing",
@@ -84150,6 +87575,22 @@
               }
             ]
           }
+        ],
+        "goal": "Job",
+        "goals": [
+          "Job",
+          "Career Switch",
+          "Projects"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Projects",
+          "Interactive"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -84192,7 +87633,7 @@
         "category": "Video Editing",
         "level": "Beginner to Intermediate",
         "difficulty": "Beginner to Intermediate",
-        "duration": "4 Weeks",
+        "duration": "2 Weeks",
         "description": "Synchronize multiple camera angles via audio waveforms or timecode, switch angles live with keyboard shortcuts, and balance exposure.",
         "search_terms": [
           "multicam editing premiere pro",
@@ -84588,6 +88029,23 @@
               }
             ]
           }
+        ],
+        "goal": "College",
+        "goals": [
+          "College",
+          "Interview",
+          "Job",
+          "Projects"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Projects",
+          "Interactive"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -84595,7 +88053,7 @@
         "category": "Video Editing",
         "level": "Intermediate",
         "difficulty": "Intermediate",
-        "duration": "5 Weeks",
+        "duration": "4 Weeks",
         "description": "Build broadcast-grade live stream scenes in OBS Studio / ATEM Mini, configure hardware encoders (NVENC), lower-third overlays, and audio gates.",
         "search_terms": [
           "obs studio tutorial for streaming",
@@ -84991,6 +88449,22 @@
               }
             ]
           }
+        ],
+        "goal": "Projects",
+        "goals": [
+          "Projects",
+          "Job",
+          "Career Switch"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Projects",
+          "Interactive"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -85031,7 +88505,7 @@
         "category": "Video Editing",
         "level": "Intermediate",
         "difficulty": "Intermediate",
-        "duration": "4 Weeks",
+        "duration": "3 Weeks",
         "description": "Standardize raw media folder hierarchies, transcode lightweight editing proxies (ProRes Proxy), and manage client feedback via Frame.io.",
         "search_terms": [
           "video editing workflow tutorial",
@@ -85427,6 +88901,23 @@
               }
             ]
           }
+        ],
+        "goal": "Career Switch",
+        "goals": [
+          "Career Switch",
+          "Job",
+          "College",
+          "Projects"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Projects",
+          "Interactive"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -85434,7 +88925,7 @@
         "category": "Video Editing",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "5 Weeks",
+        "duration": "6 Weeks",
         "description": "Scale team post-production: Network Attached Storage (NAS) multi-user editing, automated ingestion scripts, color space standardization, and QC.",
         "search_terms": [
           "nas for video editing 10gbe",
@@ -85830,6 +89321,22 @@
               }
             ]
           }
+        ],
+        "goal": "Career Switch",
+        "goals": [
+          "Career Switch",
+          "Job",
+          "Projects"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Projects",
+          "Interactive"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -86264,6 +89771,22 @@
               }
             ]
           }
+        ],
+        "goal": "Projects",
+        "goals": [
+          "Projects",
+          "Job",
+          "Career Switch"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Projects",
+          "Interactive"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -86271,7 +89794,7 @@
         "category": "Video Editing",
         "level": "Intermediate",
         "difficulty": "Intermediate",
-        "duration": "4 Weeks",
+        "duration": "8+ Weeks",
         "description": "Translate scripts into sequential visual storyboard frames, indicate camera angles (wide, medium, close-up), camera movement, and blocking.",
         "search_terms": [
           "storyboarding tutorial for filmmaking",
@@ -86667,6 +90190,23 @@
               }
             ]
           }
+        ],
+        "goal": "Research",
+        "goals": [
+          "Research",
+          "Job",
+          "Projects"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Projects",
+          "Interactive"
+        ],
+        "language": "Hinglish",
+        "languages": [
+          "Hinglish",
+          "English"
         ]
       }
     ]
@@ -86707,7 +90247,7 @@
         "category": "Business",
         "level": "Beginner to Intermediate",
         "difficulty": "Beginner to Intermediate",
-        "duration": "6 Weeks",
+        "duration": "5 Weeks",
         "description": "Test startup hypotheses: fill out the Business Model Canvas, interview early adopters, build a Minimum Viable Product (MVP), and validate demand.",
         "search_terms": [
           "lean startup tutorial",
@@ -87103,6 +90643,23 @@
               }
             ]
           }
+        ],
+        "goal": "Interview",
+        "goals": [
+          "Interview",
+          "College",
+          "Job"
+        ],
+        "style": "Reading",
+        "styles": [
+          "Reading",
+          "Interactive",
+          "Projects"
+        ],
+        "language": "Hinglish",
+        "languages": [
+          "Hinglish",
+          "English"
         ]
       },
       {
@@ -87110,7 +90667,7 @@
         "category": "Business",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "8 Weeks",
+        "duration": "4 Weeks",
         "description": "Measure Product-Market Fit (Sean Ellis 40% test), navigate early stage corporate equity, establish advisory boards, and scale operations.",
         "search_terms": [
           "product market fit metrics",
@@ -87506,6 +91063,23 @@
               }
             ]
           }
+        ],
+        "goal": "Job",
+        "goals": [
+          "Job",
+          "Career Switch",
+          "Projects"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Projects",
+          "Interactive"
+        ],
+        "language": "Hindi",
+        "languages": [
+          "Hindi",
+          "English"
         ]
       }
     ]
@@ -87549,7 +91123,7 @@
         "category": "Business",
         "level": "Beginner to Intermediate",
         "difficulty": "Beginner to Intermediate",
-        "duration": "6 Weeks",
+        "duration": "2 Weeks",
         "description": "Master the PM lifecycle: write Product Requirement Documents (PRDs), run Scrum ceremonies, write user stories with acceptance criteria, and prioritize.",
         "search_terms": [
           "product management for beginners",
@@ -87945,6 +91519,25 @@
               }
             ]
           }
+        ],
+        "goal": "Job",
+        "goals": [
+          "Job",
+          "Career Switch",
+          "Projects"
+        ],
+        "style": "Interactive",
+        "styles": [
+          "Interactive",
+          "Projects",
+          "Videos"
+        ],
+        "language": "Mixed",
+        "languages": [
+          "Mixed",
+          "English",
+          "Hindi",
+          "Hinglish"
         ]
       },
       {
@@ -87952,7 +91545,7 @@
         "category": "Business",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "8 Weeks",
+        "duration": "6 Weeks",
         "description": "Bridge complex engineering tradeoffs: evaluate technical debt vs features, define API contracts, run continuous discovery, and lead product strategy.",
         "search_terms": [
           "technical product manager roadmap",
@@ -88348,6 +91941,22 @@
               }
             ]
           }
+        ],
+        "goal": "Projects",
+        "goals": [
+          "Projects",
+          "Job",
+          "Career Switch"
+        ],
+        "style": "Projects",
+        "styles": [
+          "Projects",
+          "Videos",
+          "Interactive"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -88387,7 +91996,7 @@
         "category": "Business",
         "level": "Beginner",
         "difficulty": "Beginner",
-        "duration": "5 Weeks",
+        "duration": "3 Weeks",
         "description": "Understand modern marketing channels: customer persona definition, high-converting copywriting, email drip sequences, and social media distribution.",
         "search_terms": [
           "digital marketing roadmap",
@@ -88783,6 +92392,23 @@
               }
             ]
           }
+        ],
+        "goal": "College",
+        "goals": [
+          "College",
+          "Interview",
+          "Job",
+          "Projects"
+        ],
+        "style": "Projects",
+        "styles": [
+          "Projects",
+          "Interactive",
+          "Videos"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -88790,7 +92416,7 @@
         "category": "Business",
         "level": "Intermediate to Advanced",
         "difficulty": "Intermediate to Advanced",
-        "duration": "6 Weeks",
+        "duration": "8+ Weeks",
         "description": "Manage paid ad budgets: Meta Ads Manager campaign structures, Google Search Intent bidding, creative testing frameworks, and ROAS optimization.",
         "search_terms": [
           "meta ads tutorial 2024",
@@ -89186,6 +92812,24 @@
               }
             ]
           }
+        ],
+        "goal": "Career Switch",
+        "goals": [
+          "Career Switch",
+          "Job",
+          "Projects"
+        ],
+        "style": "Mixed",
+        "styles": [
+          "Mixed",
+          "Projects",
+          "Videos",
+          "Interactive",
+          "Reading"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -89624,6 +93268,23 @@
               }
             ]
           }
+        ],
+        "goal": "Career Switch",
+        "goals": [
+          "Career Switch",
+          "Job",
+          "College",
+          "Projects"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Interactive",
+          "Projects"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -89631,7 +93292,7 @@
         "category": "Business",
         "level": "Intermediate to Advanced",
         "difficulty": "Intermediate to Advanced",
-        "duration": "6 Weeks",
+        "duration": "4 Weeks",
         "description": "Scale from low-cost gigs to $10k+ advisory retainers: productized services, scope-creep boundary enforcement, and client lifetime referrals.",
         "search_terms": [
           "productized consulting services",
@@ -90027,6 +93688,23 @@
               }
             ]
           }
+        ],
+        "goal": "Research",
+        "goals": [
+          "Research",
+          "Job",
+          "Projects"
+        ],
+        "style": "Reading",
+        "styles": [
+          "Reading",
+          "Projects",
+          "Interactive",
+          "Videos"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -90465,6 +94143,22 @@
               }
             ]
           }
+        ],
+        "goal": "Projects",
+        "goals": [
+          "Projects",
+          "Job",
+          "Career Switch"
+        ],
+        "style": "Reading",
+        "styles": [
+          "Reading",
+          "Interactive",
+          "Projects"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -90868,6 +94562,23 @@
               }
             ]
           }
+        ],
+        "goal": "Job",
+        "goals": [
+          "Job",
+          "Career Switch",
+          "Projects"
+        ],
+        "style": "Interactive",
+        "styles": [
+          "Interactive",
+          "Projects",
+          "Videos"
+        ],
+        "language": "Hinglish",
+        "languages": [
+          "Hinglish",
+          "English"
         ]
       }
     ]
@@ -90910,7 +94621,7 @@
         "category": "Business",
         "level": "Beginner to Intermediate",
         "difficulty": "Beginner to Intermediate",
-        "duration": "4 Weeks",
+        "duration": "2 Weeks",
         "description": "Master keyword intent research (Ahrefs/SEMrush), on-page SEO (titles, H1s, internal linking), content clusters, and search algorithm basics.",
         "search_terms": [
           "seo tutorial for beginners",
@@ -91306,6 +95017,23 @@
               }
             ]
           }
+        ],
+        "goal": "Interview",
+        "goals": [
+          "Interview",
+          "College",
+          "Job"
+        ],
+        "style": "Interactive",
+        "styles": [
+          "Interactive",
+          "Projects",
+          "Videos"
+        ],
+        "language": "Hinglish",
+        "languages": [
+          "Hinglish",
+          "English"
         ]
       },
       {
@@ -91313,7 +95041,7 @@
         "category": "Business",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "6 Weeks",
+        "duration": "8+ Weeks",
         "description": "Audit technical crawlers: robots.txt, XML sitemaps, canonical tags, schema markup (JSON-LD), and programmatic database-driven SEO pages.",
         "search_terms": [
           "technical seo audit tutorial",
@@ -91709,6 +95437,23 @@
               }
             ]
           }
+        ],
+        "goal": "Projects",
+        "goals": [
+          "Projects",
+          "Job",
+          "Career Switch"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Projects",
+          "Interactive"
+        ],
+        "language": "Hindi",
+        "languages": [
+          "Hindi",
+          "English"
         ]
       }
     ]
@@ -91750,7 +95495,7 @@
         "category": "Business",
         "level": "Beginner to Intermediate",
         "difficulty": "Beginner to Intermediate",
-        "duration": "4 Weeks",
+        "duration": "3 Weeks",
         "description": "Build an investor-ready 10-slide pitch deck: problem clarity, solution demo, market sizing (TAM/SAM/SOM), business model, and team pedigree.",
         "search_terms": [
           "how to make a pitch deck",
@@ -92146,6 +95891,25 @@
               }
             ]
           }
+        ],
+        "goal": "Job",
+        "goals": [
+          "Job",
+          "Career Switch",
+          "Projects"
+        ],
+        "style": "Projects",
+        "styles": [
+          "Projects",
+          "Interactive",
+          "Videos"
+        ],
+        "language": "Mixed",
+        "languages": [
+          "Mixed",
+          "English",
+          "Hindi",
+          "Hinglish"
         ]
       },
       {
@@ -92153,7 +95917,7 @@
         "category": "Business",
         "level": "Intermediate to Advanced",
         "difficulty": "Intermediate to Advanced",
-        "duration": "5 Weeks",
+        "duration": "4 Weeks",
         "description": "Manage investor momentum: SAFE notes, valuation caps, handling brutal VC partner Q&A, term negotiation, and creating syndicates.",
         "search_terms": [
           "how to raise pre seed funding",
@@ -92549,6 +96313,22 @@
               }
             ]
           }
+        ],
+        "goal": "Career Switch",
+        "goals": [
+          "Career Switch",
+          "Job",
+          "Projects"
+        ],
+        "style": "Projects",
+        "styles": [
+          "Projects",
+          "Videos",
+          "Interactive"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -92591,7 +96371,7 @@
         "category": "Business",
         "level": "Intermediate",
         "difficulty": "Intermediate",
-        "duration": "5 Weeks",
+        "duration": "4 Weeks",
         "description": "Build dynamic 3-statement financial models in Excel: Revenue forecasting, Cost of Goods Sold (COGS), Operating Expenses (OpEx), and cash runway.",
         "search_terms": [
           "financial modeling for startups",
@@ -92987,6 +96767,23 @@
               }
             ]
           }
+        ],
+        "goal": "College",
+        "goals": [
+          "College",
+          "Interview",
+          "Job",
+          "Projects"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Interactive",
+          "Projects"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -93390,6 +97187,24 @@
               }
             ]
           }
+        ],
+        "goal": "Research",
+        "goals": [
+          "Research",
+          "Job",
+          "Projects"
+        ],
+        "style": "Mixed",
+        "styles": [
+          "Mixed",
+          "Projects",
+          "Videos",
+          "Interactive",
+          "Reading"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -93431,7 +97246,7 @@
         "category": "Business",
         "level": "Beginner to Intermediate",
         "difficulty": "Beginner to Intermediate",
-        "duration": "4 Weeks",
+        "duration": "5 Weeks",
         "description": "Run consultative sales calls: qualification using BANT/MEDDIC, finding customer pain points, pitching ROI, and pipeline CRM stages.",
         "search_terms": [
           "b2b sales tutorial for beginners",
@@ -93827,6 +97642,23 @@
               }
             ]
           }
+        ],
+        "goal": "Career Switch",
+        "goals": [
+          "Career Switch",
+          "Job",
+          "College",
+          "Projects"
+        ],
+        "style": "Reading",
+        "styles": [
+          "Reading",
+          "Interactive",
+          "Projects"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -93834,7 +97666,7 @@
         "category": "Business",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "6 Weeks",
+        "duration": "8+ Weeks",
         "description": "Navigate complex multi-stakeholder buying committees, handle procurement security reviews, and negotiate high-value contract terms without discounts.",
         "search_terms": [
           "enterprise solution selling",
@@ -94230,6 +98062,23 @@
               }
             ]
           }
+        ],
+        "goal": "Job",
+        "goals": [
+          "Job",
+          "Career Switch",
+          "Projects"
+        ],
+        "style": "Reading",
+        "styles": [
+          "Reading",
+          "Projects",
+          "Interactive",
+          "Videos"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]
@@ -94270,7 +98119,7 @@
         "category": "Business",
         "level": "Intermediate",
         "difficulty": "Intermediate",
-        "duration": "5 Weeks",
+        "duration": "2 Weeks",
         "description": "Define corporate North Star metrics, establish leading vs lagging indicators, and link departmental OKRs directly to financial outcomes.",
         "search_terms": [
           "business analytics roadmap",
@@ -94666,6 +98515,22 @@
               }
             ]
           }
+        ],
+        "goal": "Projects",
+        "goals": [
+          "Projects",
+          "Job",
+          "Career Switch"
+        ],
+        "style": "Interactive",
+        "styles": [
+          "Interactive",
+          "Projects",
+          "Videos"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       },
       {
@@ -94673,7 +98538,7 @@
         "category": "Business",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "5 Weeks",
+        "duration": "4 Weeks",
         "description": "Build executive C-suite dashboard packs, automate weekly business reviews (WBR), and facilitate data-driven board meeting presentations.",
         "search_terms": [
           "executive dashboard design",
@@ -95069,6 +98934,23 @@
               }
             ]
           }
+        ],
+        "goal": "Projects",
+        "goals": [
+          "Projects",
+          "Job",
+          "Career Switch"
+        ],
+        "style": "Interactive",
+        "styles": [
+          "Interactive",
+          "Projects",
+          "Videos"
+        ],
+        "language": "Hinglish",
+        "languages": [
+          "Hinglish",
+          "English"
         ]
       }
     ]
@@ -95109,7 +98991,7 @@
         "category": "Business",
         "level": "Beginner to Intermediate",
         "difficulty": "Beginner to Intermediate",
-        "duration": "4 Weeks",
+        "duration": "3 Weeks",
         "description": "Launch an online store with Shopify: product catalog creation, checkout payment gateway setup, shipping profiles, and mobile UI optimization.",
         "search_terms": [
           "shopify tutorial for beginners",
@@ -95505,6 +99387,23 @@
               }
             ]
           }
+        ],
+        "goal": "Interview",
+        "goals": [
+          "Interview",
+          "College",
+          "Job"
+        ],
+        "style": "Projects",
+        "styles": [
+          "Projects",
+          "Interactive",
+          "Videos"
+        ],
+        "language": "Hinglish",
+        "languages": [
+          "Hinglish",
+          "English"
         ]
       },
       {
@@ -95908,6 +99807,23 @@
               }
             ]
           }
+        ],
+        "goal": "Career Switch",
+        "goals": [
+          "Career Switch",
+          "Job",
+          "Projects"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Projects",
+          "Interactive"
+        ],
+        "language": "Hindi",
+        "languages": [
+          "Hindi",
+          "English"
         ]
       }
     ]
@@ -95950,7 +99866,7 @@
         "category": "Business",
         "level": "Intermediate",
         "difficulty": "Intermediate",
-        "duration": "5 Weeks",
+        "duration": "4 Weeks",
         "description": "Understand how VC funds make money (2/20 fee structure, power law returns), deconstruct Term Sheets, liquidation preferences, and board seats.",
         "search_terms": [
           "how venture capital works",
@@ -96346,6 +100262,25 @@
               }
             ]
           }
+        ],
+        "goal": "Job",
+        "goals": [
+          "Job",
+          "Career Switch",
+          "Projects"
+        ],
+        "style": "Videos",
+        "styles": [
+          "Videos",
+          "Interactive",
+          "Projects"
+        ],
+        "language": "Mixed",
+        "languages": [
+          "Mixed",
+          "English",
+          "Hindi",
+          "Hinglish"
         ]
       },
       {
@@ -96353,7 +100288,7 @@
         "category": "Business",
         "level": "Advanced",
         "difficulty": "Advanced",
-        "duration": "6 Weeks",
+        "duration": "8+ Weeks",
         "description": "Prepare for institutional Series A rounds: managing due diligence data rooms, building detailed Carta cap tables, and negotiating anti-dilution clauses.",
         "search_terms": [
           "series a fundraising guide",
@@ -96749,6 +100684,22 @@
               }
             ]
           }
+        ],
+        "goal": "Research",
+        "goals": [
+          "Research",
+          "Job",
+          "Projects"
+        ],
+        "style": "Projects",
+        "styles": [
+          "Projects",
+          "Videos",
+          "Interactive"
+        ],
+        "language": "English",
+        "languages": [
+          "English"
         ]
       }
     ]

@@ -17,7 +17,8 @@ import {
   BookOpen,
   Share2,
 } from 'lucide-react'
-import { getCourseById, getCourseLessons, getRelatedCourses, getCourses } from '../services/api'
+import { getCourseById, getCourseLessons, getRelatedCourses, getCourses, getCourseProgressApi, toggleLessonProgressApi } from '../services/api'
+import { useAuth } from '../context/useAuth'
 
 /**
  * Validates whether an ID is a valid database numeric ID
@@ -34,6 +35,7 @@ export default function CoursePlayerPage({
   onBack = () => {},
   onSelectCourse = () => {},
 }) {
+  const { user } = useAuth()
   const [courseData, setCourseData] = useState(course)
   const [lessons, setLessons] = useState(course?.lessons || [])
   const [relatedCourses, setRelatedCourses] = useState([])
@@ -73,6 +75,31 @@ export default function CoursePlayerPage({
       console.warn('Failed to save lesson progress:', e)
     }
   }, [completedLessonIds, storageKey, courseData?.id])
+
+  // Synchronize completed lessons with server when user is authenticated
+  useEffect(() => {
+    if (!user || !courseData?.id || !isNumericId(courseData.id)) return
+    let isMounted = true
+
+    getCourseProgressApi(courseData.id)
+      .then((data) => {
+        if (isMounted && data?.completed_lesson_ids) {
+          setCompletedLessonIds(data.completed_lesson_ids)
+          try {
+            localStorage.setItem(storageKey, JSON.stringify(data.completed_lesson_ids))
+          } catch (e) {
+            console.warn('Failed to cache lesson progress locally:', e)
+          }
+        }
+      })
+      .catch((err) => {
+        console.warn('Could not load course progress from server:', err)
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [user, courseData?.id, storageKey])
 
   // Resolve active learning path and fetch corresponding first course & lessons
   useEffect(() => {
@@ -182,15 +209,30 @@ export default function CoursePlayerPage({
   }, [currentVideoId])
 
   // Toggle lesson completed status
-  const handleToggleComplete = useCallback((lessonId) => {
-    setCompletedLessonIds((prev) => {
-      if (prev.includes(lessonId)) {
-        return prev.filter((id) => id !== lessonId)
-      } else {
-        return [...prev, lessonId]
-      }
-    })
-  }, [])
+  const handleToggleComplete = useCallback(
+    (lessonId) => {
+      setCompletedLessonIds((prev) => {
+        const isCompleted = !prev.includes(lessonId)
+        const next = isCompleted
+          ? [...prev, lessonId]
+          : prev.filter((id) => id !== lessonId)
+
+        // Sync with backend if authenticated
+        if (user && isNumericId(courseData?.id) && isNumericId(lessonId)) {
+          toggleLessonProgressApi({
+            course_id: courseData.id,
+            lesson_id: lessonId,
+            is_completed: isCompleted,
+          }).catch((err) => {
+            console.warn('Failed to save lesson progress to server:', err)
+          })
+        }
+
+        return next
+      })
+    },
+    [user, courseData]
+  )
 
   // Navigation handlers
   const hasPrevious = activeLessonIndex > 0

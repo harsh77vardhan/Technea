@@ -18,9 +18,15 @@ class LearningPathBase(CustomBaseModel):
     projects: list[dict] = Field(default_factory=list, description="Capstone projects")
     search_terms: list[str] = Field(default_factory=list, description="Searchable keywords and terms")
     related_concepts: list[str] = Field(default_factory=list, description="Related technical concepts")
+    goal: str | None = Field(default="Job", description="Primary goal", max_length=50)
+    goals: list[str] = Field(default_factory=list, description="Applicable goals")
+    style: str | None = Field(default="Projects", description="Primary learning style", max_length=50)
+    styles: list[str] = Field(default_factory=list, description="Applicable styles")
+    language: str | None = Field(default="English", description="Primary language", max_length=50)
+    languages: list[str] = Field(default_factory=list, description="Supported languages")
     skill_id: int | None = Field(default=None, description="Optional associated skill ID")
 
-    @field_validator("projects", "search_terms", "related_concepts", mode="before")
+    @field_validator("projects", "search_terms", "related_concepts", "goals", "styles", "languages", mode="before")
     @classmethod
     def ensure_lists(cls, v: Any) -> list:
         return v if v is not None else []
@@ -44,6 +50,12 @@ class LearningPathUpdate(CustomBaseModel):
     projects: list[dict] | None = None
     search_terms: list[str] | None = None
     related_concepts: list[str] | None = None
+    goal: str | None = None
+    goals: list[str] | None = None
+    style: str | None = None
+    styles: list[str] | None = None
+    language: str | None = None
+    languages: list[str] | None = None
     skill_id: int | None = None
 
 

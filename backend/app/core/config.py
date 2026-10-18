@@ -23,6 +23,8 @@ class Settings(BaseSettings):
     ENVIRONMENT: Literal["development", "staging", "production"] = "development"
     DEBUG: bool = True
     SECRET_KEY: str = "change-this-in-production-with-a-secure-random-secret-key"
+    JWT_ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
 
     # API Routing Configuration
     API_V1_STR: str = "/api/v1"

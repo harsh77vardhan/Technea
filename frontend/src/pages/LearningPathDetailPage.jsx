@@ -7,7 +7,8 @@ import {
   Layers,
   Code2,
 } from 'lucide-react'
-import { getLearningPathById, getCourses, getSkills } from '../services/api'
+import { getLearningPathById, getCourses, getSkills, getPathProgressApi, toggleStepProgressApi } from '../services/api'
+import { useAuth } from '../context/useAuth'
 import { getTrackTheme, getTrackProjects, getTrackMetrics } from '../utils/trackThemes'
 
 import PathDetailHero from '../components/detail/PathDetailHero'
@@ -33,6 +34,7 @@ export default function LearningPathDetailPage({
   onBack = () => {},
   onStartLearning = () => {},
 }) {
+  const { user } = useAuth()
   const [fetchedPath, setFetchedPath] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -210,22 +212,61 @@ export default function LearningPathDetailPage({
     }
   })
 
-  // Synchronize localStorage when step progress changes
+  // Synchronize progress with server when user is authenticated
+  useEffect(() => {
+    if (!user || !currentPath?.id || !isNumericId(currentPath.id)) return
+    let isMounted = true
+
+    getPathProgressApi(currentPath.id)
+      .then((data) => {
+        if (isMounted && data?.completed_step_ids) {
+          setCompletedStepIds(data.completed_step_ids)
+          try {
+            localStorage.setItem(stepStorageKey, JSON.stringify(data.completed_step_ids))
+          } catch (e) {
+            console.warn('Failed to cache progress locally:', e)
+          }
+        }
+      })
+      .catch((err) => {
+        console.warn('Could not load path progress from server:', err)
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [user, currentPath?.id, stepStorageKey])
+
+  // Synchronize localStorage and server when step progress changes
   const handleToggleStep = useCallback(
     (stepKey) => {
       setCompletedStepIds((prev) => {
-        const next = prev.includes(stepKey)
-          ? prev.filter((id) => id !== stepKey)
-          : [...prev, stepKey]
+        const isCompleted = !prev.includes(stepKey)
+        const next = isCompleted
+          ? [...prev, stepKey]
+          : prev.filter((id) => id !== stepKey)
+
         try {
           localStorage.setItem(stepStorageKey, JSON.stringify(next))
         } catch (e) {
           console.warn('Could not save step progress:', e)
         }
+
+        // Save to backend if logged in
+        if (user && isNumericId(currentPath?.id) && isNumericId(stepKey)) {
+          toggleStepProgressApi({
+            path_id: currentPath.id,
+            step_id: stepKey,
+            is_completed: isCompleted,
+          }).catch((err) => {
+            console.warn('Failed to save milestone progress to server:', err)
+          })
+        }
+
         return next
       })
     },
-    [stepStorageKey]
+    [stepStorageKey, user, currentPath]
   )
 
   const handleResetProgress = useCallback(() => {

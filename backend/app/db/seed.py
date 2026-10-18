@@ -106,6 +106,12 @@ async def seed_database(session: AsyncSession) -> None:
                     search_terms=path_data.get("search_terms", []),
                     related_concepts=path_data.get("related_concepts", []),
                     projects=path_data.get("projects", []),
+                    goal=path_data.get("goal", "Job"),
+                    goals=path_data.get("goals", [path_data.get("goal", "Job")]),
+                    style=path_data.get("style", "Projects"),
+                    styles=path_data.get("styles", [path_data.get("style", "Projects")]),
+                    language=path_data.get("language", "English"),
+                    languages=path_data.get("languages", [path_data.get("language", "English")]),
                     skill_id=skill.id,
                 )
                 session.add(learning_path)
@@ -120,6 +126,12 @@ async def seed_database(session: AsyncSession) -> None:
                 learning_path.search_terms = path_data.get("search_terms", learning_path.search_terms or [])
                 learning_path.related_concepts = path_data.get("related_concepts", learning_path.related_concepts or [])
                 learning_path.projects = path_data.get("projects", learning_path.projects or [])
+                learning_path.goal = path_data.get("goal", learning_path.goal or "Job")
+                learning_path.goals = path_data.get("goals", learning_path.goals or ["Job"])
+                learning_path.style = path_data.get("style", learning_path.style or "Projects")
+                learning_path.styles = path_data.get("styles", learning_path.styles or ["Projects"])
+                learning_path.language = path_data.get("language", learning_path.language or "English")
+                learning_path.languages = path_data.get("languages", learning_path.languages or ["English"])
                 learning_path.skill_id = skill.id
                 await session.flush()
                 updated_paths += 1

@@ -9,21 +9,6 @@ export const COMPACT_FILTERS = {
     '4 Weeks',
     '8+ Weeks',
   ],
-  goal: [
-    'College',
-    'Job',
-    'Projects',
-  ],
-  style: [
-    'Projects',
-    'Videos',
-    'Reading',
-  ],
-  language: [
-    'English',
-    'Hindi',
-    'Hinglish',
-  ],
 }
 
 export const LEARNING_PATHS = [
