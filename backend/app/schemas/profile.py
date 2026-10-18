@@ -54,6 +54,8 @@ class UserProfilePublicResponse(BaseModel):
     github_url: str | None = None
     linkedin_url: str | None = None
     portfolio_url: str | None = None
+    website_url: str | None = None
+    profile_visibility: str = "public"
     joined_date: str
 
     # Follow counts & state
@@ -98,6 +100,20 @@ class ProfileUpdateRequest(BaseModel):
     github_url: str | None = Field(default=None, max_length=500)
     linkedin_url: str | None = Field(default=None, max_length=500)
     portfolio_url: str | None = Field(default=None, max_length=500)
+    website_url: str | None = Field(default=None, max_length=500)
+    profile_visibility: str | None = Field(default="public", max_length=20)
+
+
+class UserStatsResponse(BaseModel):
+    """User learning statistics and progression summary."""
+
+    xp_points: int
+    developer_level: str
+    learning_streak: int
+    completed_roadmaps_count: int
+    completed_milestones_count: int
+    completed_lessons_count: int
+    completed_projects_count: int
 
 
 class FollowUserItem(BaseModel):

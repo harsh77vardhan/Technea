@@ -1,9 +1,11 @@
 """Authentication and user account router."""
 
-from fastapi import APIRouter, HTTPException, status
+from typing import Annotated
+from fastapi import APIRouter, File, HTTPException, UploadFile, status
 from app.api.deps import CurrentUserDep, DatabaseDep
 from app.core.security import create_access_token
 from app.schemas.common import MessageResponse
+from app.schemas.profile import AvatarUploadResponse
 from app.schemas.user import (
     TokenResponse,
     UserCreate,
@@ -11,7 +13,10 @@ from app.schemas.user import (
     UserResponse,
     UserUpdate,
 )
+from app.services.profile import profile_service
+from app.services.storage import get_storage_service
 from app.services.user import user_service
+
 
 router = APIRouter(tags=["Authentication"])
 
@@ -119,3 +124,34 @@ async def logout(
 ) -> MessageResponse:
     """Inform the client of successful logout (client drops JWT token)."""
     return MessageResponse(message="Successfully logged out.")
+
+
+@router.post(
+    "/avatar",
+    response_model=AvatarUploadResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Upload user avatar image",
+)
+async def upload_avatar_auth(
+    current_user: CurrentUserDep,
+    db: DatabaseDep,
+    file: Annotated[UploadFile, File(description="Avatar image file (PNG, JPEG, WebP)")],
+) -> AvatarUploadResponse:
+    """Upload new avatar image, validate type & size, save safely, and update user.avatar_url."""
+    storage = get_storage_service()
+    if current_user.avatar_url:
+        try:
+            await storage.delete_file(current_user.avatar_url)
+        except Exception:
+            pass
+
+    avatar_url = await storage.save_file(file, subfolder="avatars")
+    current_user.avatar_url = avatar_url
+    await db.commit()
+    await db.refresh(current_user)
+
+    return AvatarUploadResponse(
+        avatar_url=current_user.avatar_url,
+        message="Avatar uploaded successfully",
+    )
+

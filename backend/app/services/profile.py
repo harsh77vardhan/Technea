@@ -27,7 +27,9 @@ from app.schemas.profile import (
     ProfileSkillItem,
     ProfileUpdateRequest,
     UserProfilePublicResponse,
+    UserStatsResponse,
 )
+from app.services.storage import get_storage_service
 
 # Uploads & Static storage directories
 UPLOADS_DIR = Path(__file__).resolve().parent.parent.parent / "uploads"
@@ -254,6 +256,40 @@ class ProfileService:
             ),
         ]
 
+        is_private_restricted = (user.profile_visibility == "private" and not is_own_profile)
+
+        if is_private_restricted:
+            return UserProfilePublicResponse(
+                id=user.id,
+                username=user.username or user.email.split("@")[0].lower(),
+                full_name=user.full_name or "Technea Engineer",
+                avatar_url=user.avatar_url,
+                bio="This profile is private.",
+                location=None,
+                github_url=None,
+                linkedin_url=None,
+                website_url=None,
+                portfolio_url=None,
+                profile_visibility="private",
+                joined_date=user.created_at.strftime("%B %Y") if user.created_at else "October 2026",
+                followers_count=followers_count,
+                following_count=following_count,
+                is_following=is_following,
+                is_own_profile=False,
+                developer_level=dev_level,
+                xp_points=xp_points,
+                next_level_xp=next_level_xp,
+                level_progress_percent=progress_percent,
+                learning_streak=learning_streak,
+                completed_milestones_count=milestones_count,
+                completed_courses_count=lessons_count,
+                completed_projects_count=completed_projects_count,
+                joined_rooms_count=joined_rooms_count,
+                skills=[],
+                projects=[],
+                achievements=[],
+            )
+
         return UserProfilePublicResponse(
             id=user.id,
             username=user.username or user.email.split("@")[0].lower(),
@@ -263,7 +299,9 @@ class ProfileService:
             location=user.location or "Global",
             github_url=user.github_url,
             linkedin_url=user.linkedin_url,
+            website_url=user.website_url,
             portfolio_url=user.portfolio_url,
+            profile_visibility=user.profile_visibility or "public",
             joined_date=user.created_at.strftime("%B %Y") if user.created_at else "October 2026",
             followers_count=followers_count,
             following_count=following_count,
@@ -325,6 +363,10 @@ class ProfileService:
         user.github_url = payload.github_url.strip() if payload.github_url else None
         user.linkedin_url = payload.linkedin_url.strip() if payload.linkedin_url else None
         user.portfolio_url = payload.portfolio_url.strip() if payload.portfolio_url else None
+        if payload.website_url is not None:
+            user.website_url = payload.website_url.strip() if payload.website_url else None
+        if payload.profile_visibility is not None:
+            user.profile_visibility = payload.profile_visibility.strip().lower()
         if payload.avatar_url is not None:
             user.avatar_url = payload.avatar_url.strip() or None
 
@@ -333,63 +375,91 @@ class ProfileService:
 
         return await self.get_public_profile(db, user.username, viewer_id=user_id)
 
+    async def get_user_stats(
+        self,
+        db: AsyncSession,
+        user_id: uuid.UUID,
+    ) -> UserStatsResponse:
+        """Calculate and return learning statistics for the specified user."""
+        user_stmt = select(User.id).where(User.id == user_id)
+        user_exists = (await db.execute(user_stmt)).scalar_one_or_none()
+        if not user_exists:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found.",
+            )
+
+        # 1. Completed milestones count
+        milestones_count_stmt = select(func.count(UserRoadmapProgress.id)).where(
+            UserRoadmapProgress.user_id == user_id,
+            UserRoadmapProgress.is_completed.is_(True),
+        )
+        milestones_count = (await db.execute(milestones_count_stmt)).scalar() or 0
+
+        # 2. Completed lessons count
+        lessons_count_stmt = select(func.count(UserLessonProgress.id)).where(
+            UserLessonProgress.user_id == user_id,
+            UserLessonProgress.is_completed.is_(True),
+        )
+        lessons_count = (await db.execute(lessons_count_stmt)).scalar() or 0
+
+        # 3. Completed projects count
+        projects_count_stmt = select(func.count(UserProject.id)).where(
+            UserProject.user_id == user_id,
+            UserProject.status == "completed",
+        )
+        completed_projects_count = (await db.execute(projects_count_stmt)).scalar() or 0
+
+        # 4. Completed roadmaps count (both user generated roadmaps and catalog learning paths)
+        completed_gen_roadmaps_stmt = select(func.count(UserGeneratedRoadmap.id)).where(
+            UserGeneratedRoadmap.user_id == user_id,
+            UserGeneratedRoadmap.progress_percent >= 100,
+        )
+        completed_gen_roadmaps = (await db.execute(completed_gen_roadmaps_stmt)).scalar() or 0
+
+        completed_paths_stmt = select(func.count(UserLearningPath.id)).where(
+            UserLearningPath.user_id == user_id,
+            (UserLearningPath.status == "completed") | (UserLearningPath.progress_percent >= 100),
+        )
+        completed_paths = (await db.execute(completed_paths_stmt)).scalar() or 0
+        completed_roadmaps_count = completed_gen_roadmaps + completed_paths
+
+        # 5. Learning streak
+        streak_stmt = (
+            select(DailyLearningActivity.streak_count)
+            .where(DailyLearningActivity.user_id == user_id)
+            .order_by(DailyLearningActivity.activity_date.desc())
+            .limit(1)
+        )
+        streak_res = await db.execute(streak_stmt)
+        learning_streak = streak_res.scalar() or 1
+
+        # 6. Progression XP & Developer Tier
+        xp_points = (
+            milestones_count * 50
+            + lessons_count * 20
+            + completed_projects_count * 150
+            + learning_streak * 10
+        )
+        dev_level, _, _ = self._calculate_developer_level(xp_points)
+
+        return UserStatsResponse(
+            xp_points=xp_points,
+            developer_level=dev_level,
+            learning_streak=learning_streak,
+            completed_roadmaps_count=completed_roadmaps_count,
+            completed_milestones_count=milestones_count,
+            completed_lessons_count=lessons_count,
+            completed_projects_count=completed_projects_count,
+        )
+
     async def upload_avatar(
         self,
         db: AsyncSession,
         user_id: uuid.UUID,
         file: UploadFile,
     ) -> AvatarUploadResponse:
-        """Store uploaded avatar image in uploads directory and update user.avatar_url."""
-        content_type = (file.content_type or "").lower().strip()
-        filename = file.filename or "avatar.png"
-        ext = Path(filename).suffix.lower()
-
-        allowed_mimes = {"image/jpeg", "image/png", "image/webp", "image/jpg"}
-        allowed_exts = {".jpg", ".jpeg", ".png", ".webp"}
-
-        if content_type not in allowed_mimes and ext not in allowed_exts:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid file type. Supported formats: JPG, PNG, WebP.",
-            )
-
-        contents = await file.read()
-        if len(contents) > 5 * 1024 * 1024:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="File too large. Maximum size is 5MB.",
-            )
-
-        if len(contents) == 0:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Uploaded file is empty.",
-            )
-
-        if not ext or ext not in allowed_exts:
-            if "png" in content_type:
-                ext = ".png"
-            elif "webp" in content_type:
-                ext = ".webp"
-            else:
-                ext = ".jpg"
-
-        unique_filename = f"{user_id}_{int(time.time())}_{uuid.uuid4().hex[:8]}{ext}"
-        target_path = AVATAR_DIR / unique_filename
-
-        with open(target_path, "wb") as f:
-            f.write(contents)
-
-        # Mirror copy to static/avatars for backward compatibility
-        try:
-            static_target = STATIC_DIR / "avatars" / unique_filename
-            with open(static_target, "wb") as f:
-                f.write(contents)
-        except Exception:
-            pass
-
-        avatar_url = f"/uploads/avatars/{unique_filename}"
-
+        """Store uploaded avatar image in storage and update user.avatar_url."""
         user_stmt = select(User).where(User.id == user_id)
         user = (await db.execute(user_stmt)).scalar_one_or_none()
         if not user:
@@ -398,6 +468,14 @@ class ProfileService:
                 detail="User account not found.",
             )
 
+        storage = get_storage_service()
+        if user.avatar_url:
+            try:
+                await storage.delete_file(user.avatar_url)
+            except Exception:
+                pass
+
+        avatar_url = await storage.save_file(file, subfolder="avatars")
         user.avatar_url = avatar_url
         await db.commit()
         await db.refresh(user)

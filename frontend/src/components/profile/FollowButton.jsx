@@ -12,8 +12,14 @@ export default function FollowButton({
 }) {
   const { user, openAuthModal } = useAuth()
   const [isFollowing, setIsFollowing] = useState(initialIsFollowing)
+  const [prevProps, setPrevProps] = useState({ username, initialIsFollowing })
   const [isLoading, setIsLoading] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
+
+  if (prevProps.username !== username || prevProps.initialIsFollowing !== initialIsFollowing) {
+    setPrevProps({ username, initialIsFollowing })
+    setIsFollowing(initialIsFollowing)
+  }
 
   if (isSelf || (user && user.username === username)) {
     return null

@@ -183,10 +183,33 @@ export function AuthProvider({ children }) {
     }
   }, [closeDashboard])
 
+  // Refresh current user data from server
+  const refreshUser = useCallback(async () => {
+    try {
+      const userData = await getCurrentUserApi()
+      if (userData) {
+        setUser(userData)
+        return userData
+      }
+    } catch (err) {
+      console.warn('Failed to refresh user profile:', err)
+    }
+    return null
+  }, [])
+
   // Update profile
   const updateProfile = useCallback(async (data) => {
-    if (data && (data.avatar_url !== undefined || data.full_name !== undefined)) {
+    if (data && typeof data === 'object' && !data.password) {
       setUser((prev) => (prev ? { ...prev, ...data } : data))
+      try {
+        const freshUser = await getCurrentUserApi()
+        if (freshUser) {
+          setUser(freshUser)
+          return freshUser
+        }
+      } catch {
+        // keep optimistic state
+      }
       return data
     }
     const updated = await updateProfileApi(data)
@@ -206,6 +229,7 @@ export function AuthProvider({ children }) {
     signup,
     logout,
     updateProfile,
+    refreshUser,
     syncLocalGuestProgress,
     isAuthModalOpen,
     authModalMode,

@@ -69,6 +69,15 @@ class User(Base, UUIDIdMixin, TimestampMixin):
         String(500),
         nullable=True,
     )
+    website_url: Mapped[str | None] = mapped_column(
+        String(500),
+        nullable=True,
+    )
+    profile_visibility: Mapped[str] = mapped_column(
+        String(20),
+        default="public",
+        nullable=False,
+    )
     is_active: Mapped[bool] = mapped_column(
         Boolean,
         default=True,

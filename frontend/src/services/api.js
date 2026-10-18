@@ -638,39 +638,84 @@ export async function sendAiMentorChatApi(data) {
    ========================================================================== */
 
 /**
- * Fetch public developer portfolio profile by username
+ * Fetch public developer portfolio profile by username or ID
+ * GET /users/{username} (and fallback /users/profile/{username})
  * @param {string} username
  * @returns {Promise<Object>}
  */
 export async function getPublicProfileApi(username) {
-  return request(`/users/profile/${encodeURIComponent(username)}`)
+  const cleanUsername = String(username || '').replace(/^@/, '').trim()
+  if (!cleanUsername) {
+    throw new Error('Username is required to fetch profile')
+  }
+  try {
+    return await request(`/users/${encodeURIComponent(cleanUsername)}`)
+  } catch {
+    return await request(`/users/profile/${encodeURIComponent(cleanUsername)}`)
+  }
 }
 
 /**
  * Update authenticated user's profile details
+ * PUT /auth/profile (and fallback /users/me/profile)
  * @param {Object} data - { full_name, username, bio?, location?, avatar_url?, github_url?, linkedin_url?, portfolio_url? }
  * @returns {Promise<Object>}
  */
 export async function updateMyProfileApi(data) {
-  return request('/users/me/profile', {
-    method: 'PUT',
-    body: JSON.stringify(data),
-  })
+  try {
+    return await request('/auth/profile', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    })
+  } catch {
+    return await request('/users/me/profile', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    })
+  }
 }
 
 /**
  * Upload profile avatar image
+ * POST /auth/avatar (and fallback /users/avatar)
  * @param {File} file
  * @returns {Promise<Object>}
  */
 export async function uploadAvatarApi(file) {
   const formData = new FormData()
   formData.append('file', file)
-  return request('/users/avatar', {
-    method: 'POST',
-    body: formData,
-  })
+  try {
+    return await request('/auth/avatar', {
+      method: 'POST',
+      body: formData,
+    })
+  } catch {
+    const fallbackFormData = new FormData()
+    fallbackFormData.append('file', file)
+    return await request('/users/avatar', {
+      method: 'POST',
+      body: fallbackFormData,
+    })
+  }
 }
+
+/**
+ * Fetch authenticated user's profile and learning statistics
+ * GET /users/me/stats (and fallback /progress/dashboard)
+ * @returns {Promise<Object>}
+ */
+export async function getUserStatsApi() {
+  try {
+    return await request('/users/me/stats')
+  } catch {
+    try {
+      return await request('/progress/dashboard')
+    } catch {
+      return await request('/progress/profile')
+    }
+  }
+}
+
 
 /**
  * Follow a Technea developer
@@ -764,7 +809,9 @@ export default {
   unfollowUserApi,
   getUserFollowersApi,
   getUserFollowingApi,
+  getUserStatsApi,
 }
+
 
 export { getAvatarUrl } from '../utils/avatar'
 

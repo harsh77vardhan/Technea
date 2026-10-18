@@ -9,6 +9,7 @@ import LearningDashboardModal from './components/dashboard/LearningDashboardModa
 import SkillExplorerModal from './components/explorer/SkillExplorerModal'
 import RoadmapBuilderModal from './components/roadmap/RoadmapBuilderModal'
 import ProfilePage from './pages/ProfilePage'
+import PublicProfilePage from './pages/PublicProfilePage'
 
 function AppContent() {
   const {
@@ -25,10 +26,12 @@ function AppContent() {
   const [selectedDashboardPath, setSelectedDashboardPath] = useState(null)
   const [isDirectExplorerOpen, setIsDirectExplorerOpen] = useState(false)
   const [currentPath, setCurrentPath] = useState(() => window.location.pathname)
+  const [currentSearch, setCurrentSearch] = useState(() => window.location.search)
 
   useEffect(() => {
     const handlePopState = () => {
       setCurrentPath(window.location.pathname)
+      setCurrentSearch(window.location.search)
     }
     window.addEventListener('popstate', handlePopState)
     return () => window.removeEventListener('popstate', handlePopState)
@@ -45,9 +48,12 @@ function AppContent() {
   }
 
   const isProfileRoute = currentPath.startsWith('/profile')
+  const searchParams = new URLSearchParams(currentSearch)
+  const isEditRequested = searchParams.get('edit') === 'true'
+
   let profileUsername = null
   if (currentPath.startsWith('/profile/')) {
-    profileUsername = currentPath.slice('/profile/'.length).split('/')[0]
+    profileUsername = currentPath.slice('/profile/'.length).split('/')[0].split('?')[0]
   } else if (currentPath === '/profile') {
     profileUsername = user?.username || ''
   }
@@ -59,13 +65,29 @@ function AppContent() {
         : 'bg-[#f8fafc] text-neutral-900 selection:bg-neutral-900 selection:text-white'
     }`}>
       {isProfileRoute ? (
-        <ProfilePage
-          username={profileUsername || user?.username}
-          onBackToHome={() => {
-            window.history.pushState({}, '', '/')
-            setCurrentPath('/')
-          }}
-        />
+        currentPath.startsWith('/profile/') && profileUsername ? (
+          <PublicProfilePage
+            username={profileUsername}
+            initialEditOpen={isEditRequested}
+            onBackToHome={() => {
+              window.history.pushState({}, '', '/')
+              setCurrentPath('/')
+              setCurrentSearch('')
+              window.dispatchEvent(new PopStateEvent('popstate'))
+            }}
+          />
+        ) : (
+          <ProfilePage
+            username={profileUsername || user?.username}
+            initialEditOpen={isEditRequested}
+            onBackToHome={() => {
+              window.history.pushState({}, '', '/')
+              setCurrentPath('/')
+              setCurrentSearch('')
+              window.dispatchEvent(new PopStateEvent('popstate'))
+            }}
+          />
+        )
       ) : (
         <>
           <Navbar />
@@ -73,6 +95,7 @@ function AppContent() {
           <Footer />
         </>
       )}
+
 
       {/* Global Authentication Modal */}
       <AuthModal

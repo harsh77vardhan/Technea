@@ -17,6 +17,8 @@ class UserBase(BaseModel):
     github_url: str | None = Field(default=None, max_length=500)
     linkedin_url: str | None = Field(default=None, max_length=500)
     portfolio_url: str | None = Field(default=None, max_length=500)
+    website_url: str | None = Field(default=None, max_length=500)
+    profile_visibility: str = Field(default="public", max_length=20)
 
 
 class UserCreate(BaseModel):
@@ -46,6 +48,8 @@ class UserUpdate(BaseModel):
     github_url: str | None = Field(default=None, max_length=500)
     linkedin_url: str | None = Field(default=None, max_length=500)
     portfolio_url: str | None = Field(default=None, max_length=500)
+    website_url: str | None = Field(default=None, max_length=500)
+    profile_visibility: str = Field(default="public", max_length=20)
     password: str | None = Field(default=None, min_length=8, max_length=128)
 
 
@@ -57,6 +61,8 @@ class UserResponse(UserBase):
     id: uuid.UUID
     is_active: bool
     created_at: datetime
+    website_url: str | None = Field(default=None, max_length=500)
+    profile_visibility: str = Field(default="public", max_length=20)
 
 
 class TokenResponse(BaseModel):
@@ -65,3 +71,16 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserResponse
+
+
+class UserStatsResponse(BaseModel):
+    """Schema for user learning statistics response."""
+
+    xp_points: int
+    developer_level: str
+    learning_streak: int
+    completed_roadmaps_count: int
+    completed_milestones_count: int
+    completed_lessons_count: int
+    completed_projects_count: int
+

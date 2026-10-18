@@ -1,7 +1,8 @@
 """User service providing database operations for users."""
 
 import uuid
-from sqlalchemy import select
+from fastapi import HTTPException, status
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import get_password_hash, verify_password
@@ -56,13 +57,40 @@ class UserService:
         return user
 
     async def update(self, db: AsyncSession, db_obj: User, obj_in: UserUpdate) -> User:
-        """Update user profile information and optional password."""
+        """Update user profile information, links, visibility, and optional password."""
+        if obj_in.username is not None:
+            clean_username = obj_in.username.strip().lower()
+            if clean_username != (db_obj.username or "").lower():
+                conflict_stmt = select(User.id).where(
+                    func.lower(User.username) == clean_username,
+                    User.id != db_obj.id,
+                )
+                conflict_res = await db.execute(conflict_stmt)
+                if conflict_res.scalar_one_or_none():
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"The username '{clean_username}' is already taken.",
+                    )
+                db_obj.username = clean_username
+
         if obj_in.full_name is not None:
             db_obj.full_name = obj_in.full_name.strip() if obj_in.full_name else None
         if obj_in.avatar_url is not None:
             db_obj.avatar_url = obj_in.avatar_url.strip() if obj_in.avatar_url else None
         if obj_in.bio is not None:
             db_obj.bio = obj_in.bio.strip() if obj_in.bio else None
+        if obj_in.location is not None:
+            db_obj.location = obj_in.location.strip() if obj_in.location else None
+        if obj_in.github_url is not None:
+            db_obj.github_url = obj_in.github_url.strip() if obj_in.github_url else None
+        if obj_in.linkedin_url is not None:
+            db_obj.linkedin_url = obj_in.linkedin_url.strip() if obj_in.linkedin_url else None
+        if obj_in.portfolio_url is not None:
+            db_obj.portfolio_url = obj_in.portfolio_url.strip() if obj_in.portfolio_url else None
+        if obj_in.website_url is not None:
+            db_obj.website_url = obj_in.website_url.strip() if obj_in.website_url else None
+        if "profile_visibility" in obj_in.model_fields_set and obj_in.profile_visibility is not None:
+            db_obj.profile_visibility = obj_in.profile_visibility.strip().lower()
         if obj_in.password is not None and len(obj_in.password) >= 8:
             db_obj.hashed_password = get_password_hash(obj_in.password)
 

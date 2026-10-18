@@ -10,26 +10,26 @@ from app.schemas.profile import (
     FollowUserItem,
     ProfileUpdateRequest,
     UserProfilePublicResponse,
+    UserStatsResponse,
 )
 from app.services.profile import profile_service
+from app.services.storage import get_storage_service
 
 router = APIRouter(tags=["User Profiles & Community"])
 
 
 @router.get(
-    "/profile/{username}",
+    "/me/profile",
     response_model=UserProfilePublicResponse,
     status_code=status.HTTP_200_OK,
-    summary="Get public developer profile by username",
+    summary="Get authenticated user's full developer profile",
 )
-async def get_public_profile(
-    username: str,
+async def get_my_profile(
+    current_user: CurrentUserDep,
     db: DatabaseDep,
-    optional_user: OptionalUserDep,
 ) -> UserProfilePublicResponse:
-    """Retrieve public developer portfolio, verified learning metrics, projects, and social stats."""
-    viewer_id = optional_user.id if optional_user else None
-    return await profile_service.get_public_profile(db, username_or_id=username, viewer_id=viewer_id)
+    """Retrieve authenticated user's own developer profile."""
+    return await profile_service.get_public_profile(db, username_or_id=str(current_user.id), viewer_id=current_user.id)
 
 
 @router.put(
@@ -45,6 +45,20 @@ async def update_my_profile(
 ) -> UserProfilePublicResponse:
     """Edit user full name, unique username, bio, location, and social developer URLs."""
     return await profile_service.update_profile(db, user_id=current_user.id, payload=payload)
+
+
+@router.get(
+    "/me/stats",
+    response_model=UserStatsResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Get authenticated user's learning statistics",
+)
+async def get_my_stats(
+    current_user: CurrentUserDep,
+    db: DatabaseDep,
+) -> UserStatsResponse:
+    """Retrieve authenticated user's learning statistics and developer progress metrics."""
+    return await profile_service.get_user_stats(db, user_id=current_user.id)
 
 
 @router.post(
@@ -65,7 +79,22 @@ async def upload_avatar(
     file: Annotated[UploadFile, File(description="Avatar image file (PNG, JPEG, WebP)")],
 ) -> AvatarUploadResponse:
     """Upload new avatar image, validate type & size, save safely, update user.avatar_url and return URL."""
-    return await profile_service.upload_avatar(db, user_id=current_user.id, file=file)
+    storage = get_storage_service()
+    if current_user.avatar_url:
+        try:
+            await storage.delete_file(current_user.avatar_url)
+        except Exception:
+            pass
+
+    avatar_url = await storage.save_file(file, subfolder="avatars")
+    current_user.avatar_url = avatar_url
+    await db.commit()
+    await db.refresh(current_user)
+
+    return AvatarUploadResponse(
+        avatar_url=avatar_url,
+        message="Profile photo updated successfully.",
+    )
 
 
 @router.post(
@@ -143,3 +172,26 @@ async def get_user_following(
     """Retrieve list of developers this user follows."""
     viewer_id = optional_user.id if optional_user else None
     return await profile_service.get_following(db, target_username=username, viewer_id=viewer_id)
+
+
+@router.get(
+    "/{username}",
+    response_model=UserProfilePublicResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Get public developer profile by username",
+)
+@router.get(
+    "/profile/{username}",
+    response_model=UserProfilePublicResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Get public developer profile by username (backward compatibility)",
+)
+async def get_public_profile(
+    username: str,
+    db: DatabaseDep,
+    optional_user: OptionalUserDep,
+) -> UserProfilePublicResponse:
+    """Retrieve public developer portfolio, verified learning metrics, projects, and social stats."""
+    viewer_id = optional_user.id if optional_user else None
+    return await profile_service.get_public_profile(db, username_or_id=username, viewer_id=viewer_id)
+
