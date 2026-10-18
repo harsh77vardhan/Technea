@@ -72,10 +72,14 @@ class GeneratedRoadmapData(BaseModel):
 
 
 class RoadmapGenerateRequest(BaseModel):
-    """User input prompt to generate a tailored roadmap."""
+    """User input prompt and onboarding profile to generate a personalized roadmap."""
 
     goal: str = Field(..., min_length=2, max_length=500, description="Career goal or desire (e.g. 'I want to become a Full Stack Developer')")
     experience_level: str | None = Field(default="Beginner", description="Optional experience tier")
+    current_level: str | None = Field(default="Complete beginner", description="Complete beginner | Basic knowledge | Intermediate")
+    available_time: str | None = Field(default="1 hour/day", description="30 minutes/day | 1 hour/day | 2+ hours/day")
+    main_goal: str | None = Field(default="Job", description="Internship | Job | Freelancing | College | Startup")
+    preferred_style: str | None = Field(default="Projects", description="Projects | Videos | Reading")
 
 
 class RoadmapGenerateResponse(BaseModel):

@@ -1,14 +1,22 @@
 import { useState, useEffect, useRef } from 'react'
-import { Menu, X, ArrowRight, LayoutDashboard, LogOut, ChevronDown, Sparkles } from 'lucide-react'
+import { Menu, X, ArrowRight, LayoutDashboard, LogOut, ChevronDown, Sparkles, User } from 'lucide-react'
 import { useAuth } from '../../context/useAuth'
 import TechneaLogo from './TechneaLogo'
+import { getAvatarUrl } from '../../utils/avatar'
 
 export default function Navbar() {
   const { user, openAuthModal, openDashboard, openRoadmapBuilder, logout } = useAuth()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [isVisible, setIsVisible] = useState(true)
+  const [avatarError, setAvatarError] = useState(false)
+  const [prevUserAvatar, setPrevUserAvatar] = useState(user?.avatar_url)
   const menuRef = useRef(null)
+
+  if (user?.avatar_url !== prevUserAvatar) {
+    setPrevUserAvatar(user?.avatar_url)
+    setAvatarError(false)
+  }
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -114,9 +122,18 @@ export default function Navbar() {
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
                   className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white py-1 pl-1.5 pr-2.5 text-xs font-medium text-slate-700 hover:border-slate-300 hover:bg-slate-50 transition cursor-pointer shadow-xs"
                 >
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-tr from-blue-600 to-purple-600 text-[11px] font-bold text-white shadow-xs">
-                    {displayName.charAt(0).toUpperCase()}
-                  </div>
+                  {user.avatar_url && !avatarError ? (
+                    <img
+                      src={getAvatarUrl(user.avatar_url)}
+                      alt={displayName}
+                      onError={() => setAvatarError(true)}
+                      className="h-7 w-7 rounded-lg object-cover border border-slate-200"
+                    />
+                  ) : (
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-tr from-blue-600 to-purple-600 text-[11px] font-bold text-white shadow-xs">
+                      {displayName.charAt(0).toUpperCase()}
+                    </div>
+                  )}
                   <span className="max-w-[100px] truncate font-semibold text-slate-900">
                     {displayName}
                   </span>
@@ -130,6 +147,20 @@ export default function Navbar() {
                       <p className="text-xs font-semibold text-slate-900 truncate">{displayName}</p>
                       <p className="text-[11px] text-slate-500 truncate font-mono">{user.email}</p>
                     </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setUserMenuOpen(false)
+                        const targetUrl = user.username ? `/profile/${user.username}` : '/profile'
+                        window.history.pushState({}, '', targetUrl)
+                        window.dispatchEvent(new PopStateEvent('popstate'))
+                      }}
+                      className="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 hover:text-blue-600 transition cursor-pointer"
+                    >
+                      <User className="h-4 w-4 text-slate-400" />
+                      <span>Developer Profile</span>
+                    </button>
 
                     <button
                       type="button"
@@ -232,10 +263,37 @@ export default function Navbar() {
             <div className="pt-2 border-t border-slate-100">
               {user ? (
                 <div className="space-y-2">
-                  <div className="px-3 py-1">
-                    <p className="text-xs font-semibold text-slate-900">{displayName}</p>
-                    <p className="text-[11px] text-slate-500 font-mono">{user.email}</p>
+                  <div className="px-3 py-1 flex items-center gap-3">
+                    {user.avatar_url && !avatarError ? (
+                      <img
+                        src={getAvatarUrl(user.avatar_url)}
+                        alt={displayName}
+                        onError={() => setAvatarError(true)}
+                        className="h-8 w-8 rounded-lg object-cover border border-slate-200 shrink-0"
+                      />
+                    ) : (
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-tr from-blue-600 to-purple-600 text-xs font-bold text-white shadow-xs shrink-0">
+                        {displayName.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-slate-900 truncate">{displayName}</p>
+                      <p className="text-[11px] text-slate-500 font-mono truncate">{user.email}</p>
+                    </div>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMobileMenuOpen(false)
+                      const targetUrl = user.username ? `/profile/${user.username}` : '/profile'
+                      window.history.pushState({}, '', targetUrl)
+                      window.dispatchEvent(new PopStateEvent('popstate'))
+                    }}
+                    className="w-full flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white py-2.5 text-xs font-semibold text-slate-800 hover:bg-slate-50 shadow-xs"
+                  >
+                    <User className="h-3.5 w-3.5 text-slate-500" />
+                    <span>Developer Profile</span>
+                  </button>
                   <button
                     type="button"
                     onClick={() => {

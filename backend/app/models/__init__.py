@@ -20,6 +20,18 @@ from app.models.user_roadmap import (
     UserGeneratedRoadmap,
     DailyLearningActivity,
 )
+from app.models.project import (
+    Project,
+    UserProject,
+)
+from app.models.community import (
+    LearningRoom,
+    UserLearningRoom,
+)
+from app.models.achievement import (
+    UserAchievement,
+)
+from app.models.follow import Follow
 
 __all__ = [
     "Base",
@@ -39,6 +51,12 @@ __all__ = [
     "UserLessonProgress",
     "UserGeneratedRoadmap",
     "DailyLearningActivity",
+    "Project",
+    "UserProject",
+    "LearningRoom",
+    "UserLearningRoom",
+    "UserAchievement",
+    "Follow",
 ]
 
 

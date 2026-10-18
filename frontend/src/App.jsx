@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import AuthProvider from './context/AuthContext'
 import { useAuth } from './context/useAuth'
 import Navbar from './components/layout/Navbar'
@@ -8,9 +8,11 @@ import AuthModal from './components/auth/AuthModal'
 import LearningDashboardModal from './components/dashboard/LearningDashboardModal'
 import SkillExplorerModal from './components/explorer/SkillExplorerModal'
 import RoadmapBuilderModal from './components/roadmap/RoadmapBuilderModal'
+import ProfilePage from './pages/ProfilePage'
 
 function AppContent() {
   const {
+    user,
     isAuthModalOpen,
     closeAuthModal,
     authModalMode,
@@ -22,6 +24,15 @@ function AppContent() {
   } = useAuth()
   const [selectedDashboardPath, setSelectedDashboardPath] = useState(null)
   const [isDirectExplorerOpen, setIsDirectExplorerOpen] = useState(false)
+  const [currentPath, setCurrentPath] = useState(() => window.location.pathname)
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setCurrentPath(window.location.pathname)
+    }
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [])
 
   const handleSelectPathFromDashboard = (path) => {
     setSelectedDashboardPath(path)
@@ -33,11 +44,35 @@ function AppContent() {
     setIsDirectExplorerOpen(true)
   }
 
+  const isProfileRoute = currentPath.startsWith('/profile')
+  let profileUsername = null
+  if (currentPath.startsWith('/profile/')) {
+    profileUsername = currentPath.slice('/profile/'.length).split('/')[0]
+  } else if (currentPath === '/profile') {
+    profileUsername = user?.username || ''
+  }
+
   return (
-    <div className="flex min-h-screen flex-col bg-[#f8fafc] text-neutral-900 antialiased selection:bg-neutral-900 selection:text-white">
-      <Navbar />
-      <LandingPage />
-      <Footer />
+    <div className={`flex min-h-screen flex-col antialiased ${
+      isProfileRoute
+        ? 'bg-[#050505] text-[#EDEDED] selection:bg-[#333333] selection:text-white'
+        : 'bg-[#f8fafc] text-neutral-900 selection:bg-neutral-900 selection:text-white'
+    }`}>
+      {isProfileRoute ? (
+        <ProfilePage
+          username={profileUsername || user?.username}
+          onBackToHome={() => {
+            window.history.pushState({}, '', '/')
+            setCurrentPath('/')
+          }}
+        />
+      ) : (
+        <>
+          <Navbar />
+          <LandingPage />
+          <Footer />
+        </>
+      )}
 
       {/* Global Authentication Modal */}
       <AuthModal

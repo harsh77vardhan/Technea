@@ -5,6 +5,8 @@ from app.api.deps import CurrentUserDep, DatabaseDep
 from app.schemas.common import MessageResponse
 from app.schemas.progress import (
     AIBuddyResponse,
+    AIMentorChatRequest,
+    AIMentorChatResponse,
     CourseProgressResponse,
     DailyActivityResponse,
     DailyTaskToggleRequest,
@@ -200,4 +202,24 @@ async def get_user_profile(
 ) -> UserProfileResponse:
     """Retrieve user skills mastery, badges, and learning milestones profile."""
     return await progress_service.get_user_profile(db, user_id=current_user.id)
+
+
+@router.post(
+    "/ai-mentor/chat",
+    response_model=AIMentorChatResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Interactive chat with context-aware AI technical mentor",
+)
+async def ai_mentor_chat(
+    payload: AIMentorChatRequest,
+    current_user: CurrentUserDep,
+    db: DatabaseDep,
+) -> AIMentorChatResponse:
+    """Provide real-time pedagogical answers, prerequisite checks, and next steps."""
+    return await progress_service.ai_mentor_chat(
+        db,
+        user_id=current_user.id,
+        payload=payload,
+    )
+
 

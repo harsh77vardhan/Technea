@@ -848,13 +848,36 @@ class RoadmapBuilderService:
         db: AsyncSession,
         goal: str,
         experience_level: str = "Beginner",
+        current_level: str | None = None,
+        available_time: str | None = None,
+        main_goal: str | None = None,
+        preferred_style: str | None = None,
     ) -> RoadmapGenerateResponse:
-        """Construct an exhaustive, catalog-connected roadmap from user's career goal."""
+        """Construct an exhaustive, catalog-connected roadmap from user's career goal and onboarding profile."""
         blueprint_key = self.identify_blueprint_key(goal)
         bp = CAREER_BLUEPRINTS[blueprint_key]
 
+        effective_level = current_level or experience_level or "Beginner"
+        effective_goal = main_goal or "Job"
+        effective_time = available_time or "1 hour/day"
+        effective_style = preferred_style or "Projects"
+
         target_role = self.extract_role_title(goal, bp["target_role"])
         roadmap_title = f"{target_role} Roadmap"
+
+        # Calculate tailored duration based on time availability
+        raw_duration = bp.get("estimated_duration", "18 Weeks")
+        duration_num_match = re.search(r"\d+", raw_duration)
+        base_weeks = int(duration_num_match.group(0)) if duration_num_match else 16
+
+        if "30 min" in effective_time.lower():
+            adjusted_weeks = round(base_weeks * 1.4)
+            tailored_duration = f"{adjusted_weeks} Weeks (Self-Paced)"
+        elif "2+" in effective_time.lower():
+            adjusted_weeks = max(8, round(base_weeks * 0.7))
+            tailored_duration = f"{adjusted_weeks} Weeks (Intensive)"
+        else:
+            tailored_duration = f"{base_weeks} Weeks (Standard)"
 
         # Query all existing catalog paths & courses in advance for fast, intelligent linkage
         catalog_paths_res = await db.execute(
@@ -914,17 +937,21 @@ class RoadmapBuilderService:
 
                 total_courses_count += len(matched_courses_refs)
 
-                # Generate hands-on milestone project spec
+                # Generate hands-on milestone project spec tailored to style
+                project_diff = "Intermediate" if raw_phase["phase_number"] >= 3 else "Beginner"
+                if effective_level == "Intermediate":
+                    project_diff = "Intermediate" if raw_phase["phase_number"] <= 2 else "Advanced"
+
                 milestone_project = ProjectSpec(
                     title=f"{raw_m['title']} Practice Lab",
-                    description=f"Construct an end-to-end practical deliverable demonstrating proficiency in {', '.join(raw_m['skills'][:3])}.",
+                    description=f"Construct a hands-on practical deliverable demonstrating proficiency in {', '.join(raw_m['skills'][:3])}.",
                     tech_stack=raw_m["skills"][:4],
                     key_features=[
                         f"Implement clean, modular architecture utilizing {raw_m['skills'][0]}",
                         f"Write structured unit and integration tests verifying implementation",
                         f"Publish version-controlled GitHub repository with comprehensive README",
                     ],
-                    difficulty="Intermediate" if raw_phase["phase_number"] >= 3 else "Beginner",
+                    difficulty=project_diff,
                 )
 
                 milestone = RoadmapMilestone(
@@ -954,6 +981,113 @@ class RoadmapBuilderService:
                 )
             )
 
+        # ── Tailored Outcome Phase based on User's Main Goal ──
+        final_phase_num = len(constructed_phases) + 1
+        if effective_goal in ["Job", "Internship"]:
+            outcome_phase = RoadmapPhase(
+                phase_number=final_phase_num,
+                title=f"Phase {final_phase_num}: Technical Interview & Production Readiness",
+                description="Consolidate portfolio repos, practice system design defense, and drill data structures interview patterns.",
+                estimated_duration="3 Weeks",
+                milestones=[
+                    RoadmapMilestone(
+                        id=f"m{final_phase_num}-1",
+                        step_number=1,
+                        title="Technical Interview Drills & Problem Solving",
+                        description="Master top technical interview patterns, complexity analysis, and whiteboard problem solving.",
+                        estimated_weeks="2 Weeks",
+                        category="Interview Prep",
+                        key_skills=["Algorithms", "Data Structures", "Big-O", "STAR Method"],
+                        action_items=[
+                            "Solve top 25 high-frequency technical interview questions",
+                            "Conduct peer mock interview with timed whiteboard explanation",
+                            "Draft STAR method answers for architectural tradeoffs and debugging war stories",
+                        ],
+                        courses=[],
+                        project=ProjectSpec(
+                            title="Production Portfolio Showcase",
+                            description="Deploy a personal engineering portfolio showcasing live projects, architecture diagrams, and GitHub codebases.",
+                            tech_stack=["React", "Tailwind CSS", "Vite", "Vercel / Cloudflare"],
+                            key_features=[
+                                "Live interactive project demos with source code links",
+                                "Embedded Lighthouse 100/100 performance and accessibility scores",
+                                "Contact form connected to transactional email webhook",
+                            ],
+                            difficulty="Intermediate",
+                        ),
+                    ),
+                    RoadmapMilestone(
+                        id=f"m{final_phase_num}-2",
+                        step_number=2,
+                        title="System Architecture Defense & Resume Polish",
+                        description="Structure resume bullet points around measurable business impact, and practice architectural defense.",
+                        estimated_weeks="1 Week",
+                        category="Career Strategy",
+                        key_skills=["System Design", "Resume Optimization", "GitHub Polish"],
+                        action_items=[
+                            "Format resume following Google XYZ resume formula (Accomplished [X] as measured by [Y] by doing [Z])",
+                            "Document system architecture diagrams (C4 model) for top 2 projects",
+                            "Verify all GitHub repositories have clean commit histories and comprehensive READMEs",
+                        ],
+                        courses=[],
+                    ),
+                ],
+            )
+            constructed_phases.append(outcome_phase)
+            milestone_counter += 2
+        elif effective_goal == "Freelancing":
+            outcome_phase = RoadmapPhase(
+                phase_number=final_phase_num,
+                title=f"Phase {final_phase_num}: Client Delivery & Monetization",
+                description="Master client project scoping, milestone billing, contract agreements, and headless CMS integrations.",
+                estimated_duration="2 Weeks",
+                milestones=[
+                    RoadmapMilestone(
+                        id=f"m{final_phase_num}-1",
+                        step_number=1,
+                        title="Client Scoping & Payment Integration",
+                        description="Implement Stripe payments, customer invoices, and headless CMS client handoffs.",
+                        estimated_weeks="2 Weeks",
+                        category="Freelance",
+                        key_skills=["Stripe API", "Invoicing", "Client Delivery", "CMS"],
+                        action_items=[
+                            "Integrate Stripe Checkout and subscription billing webhooks",
+                            "Set up headless CMS (Strapi / Sanity) allowing non-technical client editing",
+                            "Draft standard Statement of Work (SOW) and scope creep protection clauses",
+                        ],
+                        courses=[],
+                    ),
+                ],
+            )
+            constructed_phases.append(outcome_phase)
+            milestone_counter += 1
+        elif effective_goal == "Startup":
+            outcome_phase = RoadmapPhase(
+                phase_number=final_phase_num,
+                title=f"Phase {final_phase_num}: Rapid MVP & Cloud Scaling",
+                description="Deploy production SaaS infrastructure, multi-tenancy auth, user analytics, and launch MVP.",
+                estimated_duration="2 Weeks",
+                milestones=[
+                    RoadmapMilestone(
+                        id=f"m{final_phase_num}-1",
+                        step_number=1,
+                        title="Production SaaS Multi-tenancy & Telemetry",
+                        description="Configure tenant isolation, error tracking with Sentry, and user conversion funnel analytics.",
+                        estimated_weeks="2 Weeks",
+                        category="Startup Architecture",
+                        key_skills=["Multi-tenancy", "Telemetry", "PostHog", "Sentry", "Cloud Launch"],
+                        action_items=[
+                            "Implement multi-tenant database isolation or organizational RBAC",
+                            "Configure centralized error logging with Sentry and product telemetry with PostHog",
+                            "Conduct load test simulating 500 concurrent users with zero memory leaks",
+                        ],
+                        courses=[],
+                    ),
+                ],
+            )
+            constructed_phases.append(outcome_phase)
+            milestone_counter += 1
+
         capstone_data = bp.get("capstone")
         capstone_spec = (
             ProjectSpec(
@@ -970,9 +1104,9 @@ class RoadmapBuilderService:
         roadmap_data = GeneratedRoadmapData(
             target_role=target_role,
             goal=goal,
-            experience_level=experience_level,
-            summary=bp["summary"],
-            estimated_total_duration=bp["estimated_duration"],
+            experience_level=effective_level,
+            summary=f"{bp['summary']} Customized for {effective_goal} outcome, {effective_time} commitment, and {effective_style}-first learning style.",
+            estimated_total_duration=tailored_duration,
             total_milestones=milestone_counter,
             total_courses=total_courses_count,
             total_projects=milestone_counter + (1 if capstone_spec else 0),
@@ -984,8 +1118,8 @@ class RoadmapBuilderService:
             title=roadmap_title,
             goal=goal,
             target_role=target_role,
-            experience_level=experience_level,
-            estimated_duration=bp["estimated_duration"],
+            experience_level=effective_level,
+            estimated_duration=tailored_duration,
             roadmap_data=roadmap_data,
         )
 

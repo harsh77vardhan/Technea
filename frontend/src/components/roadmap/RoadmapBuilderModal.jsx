@@ -49,9 +49,14 @@ export default function RoadmapBuilderModal({
 
   // Generation & View States
   const [stage, setStage] = useState('input') // 'input' | 'generating' | 'view'
+  const [onboardingStep, setOnboardingStep] = useState(0) // 0: Goal, 1: Level, 2: Time, 3: Outcome & Style
   const [goal, setGoal] = useState(() => initialGoal || '')
   const [prevGoalProp, setPrevGoalProp] = useState(initialGoal)
   const [experienceLevel, setExperienceLevel] = useState('Beginner')
+  const [currentLevel, setCurrentLevel] = useState('basic_knowledge')
+  const [availableTime, setAvailableTime] = useState('1_hour')
+  const [mainGoal, setMainGoal] = useState('get_job')
+  const [preferredStyle, setPreferredStyle] = useState('projects')
   const [generationStep, setGenerationStep] = useState(0)
   const [generatedData, setGeneratedData] = useState(null)
   const [savedRoadmapId, setSavedRoadmapId] = useState(null)
@@ -116,6 +121,10 @@ export default function RoadmapBuilderModal({
       const response = await generateRoadmapApi({
         goal: finalGoal,
         experience_level: experienceLevel,
+        current_level: currentLevel,
+        available_time: availableTime,
+        main_goal: mainGoal,
+        preferred_style: preferredStyle,
       })
 
       clearInterval(stepInterval)
@@ -131,6 +140,7 @@ export default function RoadmapBuilderModal({
       setStage('input')
     }
   }
+
 
   // Toggle milestone completion
   const handleToggleMilestone = async (milestoneId) => {
@@ -350,9 +360,9 @@ export default function RoadmapBuilderModal({
 
           {/* ──────────────── Modal Body Canvas ──────────────── */}
           <div className="relative z-10 flex-1 overflow-y-auto bg-[#050505] p-5 sm:p-8">
-            {/* ──────── STAGE 1: INPUT GOAL FORM ──────── */}
+            {/* ──────── STAGE 1: 4-STEP ONBOARDING QUESTIONNAIRE ──────── */}
             {stage === 'input' && (
-              <div className="mx-auto max-w-2xl py-6 sm:py-12 space-y-8">
+              <div className="mx-auto max-w-2xl py-4 sm:py-8 space-y-7">
                 {/* Header Copy */}
                 <div className="space-y-2 text-center">
                   <div className="inline-flex items-center gap-2 rounded-full border border-[#222222] bg-[#0E0E0E] px-3 py-1 text-[11px] font-mono text-[#A1A1A1]">
@@ -360,11 +370,36 @@ export default function RoadmapBuilderModal({
                     <span>Personalized Curriculum Synthesis</span>
                   </div>
                   <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#EDEDED]">
-                    What is your engineering career goal?
+                    Technea Career Roadmap Builder
                   </h2>
                   <p className="text-xs sm:text-sm text-[#737373] leading-relaxed max-w-lg mx-auto">
-                    Describe any role, domain, or technology ambition. Technea will synthesize a multi-phase curriculum connecting verified catalog courses, milestone timelines, and hands-on projects.
+                    Answer 4 quick onboarding questions. Technea synthesizes a bespoke multi-phase engineering curriculum calibrated to your schedule, baseline knowledge, and career outcome.
                   </p>
+                </div>
+
+                {/* Step Progress Pills */}
+                <div className="grid grid-cols-4 gap-1.5 sm:gap-2 text-[10px] sm:text-[11px] font-mono">
+                  {[
+                    { num: 0, label: '1. Goal' },
+                    { num: 1, label: '2. Level' },
+                    { num: 2, label: '3. Time' },
+                    { num: 3, label: '4. Outcome' },
+                  ].map((s) => (
+                    <button
+                      key={s.num}
+                      type="button"
+                      onClick={() => setOnboardingStep(s.num)}
+                      className={`rounded-[6px] border py-1.5 text-center transition-colors cursor-pointer ${
+                        onboardingStep === s.num
+                          ? 'border-[#EDEDED] bg-[#171717] text-[#EDEDED] font-bold'
+                          : onboardingStep > s.num
+                          ? 'border-[#262626] bg-[#0F0F0F] text-emerald-400 font-semibold'
+                          : 'border-[#1C1C1C] bg-[#0A0A0A] text-[#555555]'
+                      }`}
+                    >
+                      {s.label}
+                    </button>
+                  ))}
                 </div>
 
                 {error && (
@@ -373,85 +408,352 @@ export default function RoadmapBuilderModal({
                   </div>
                 )}
 
-                {/* Main Input Box */}
-                <div className="space-y-4">
-                  <div className="relative">
-                    <input
-                      type="text"
-                      value={goal}
-                      onChange={(e) => setGoal(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleGenerate()
-                      }}
-                      placeholder="e.g. I want to become a Full Stack Developer"
-                      className="w-full rounded-[8px] border border-[#262626] bg-[#0D0D0D] px-4 py-3.5 text-sm text-[#EDEDED] placeholder-[#555555] focus:border-[#444444] focus:outline-none font-mono shadow-inner"
-                      autoFocus
-                    />
-                  </div>
+                {/* ──── STEP 0: CAREER TARGET ──── */}
+                {onboardingStep === 0 && (
+                  <div className="space-y-5 rounded-[8px] border border-[#1F1F1F] bg-[#0A0A0A] p-5 sm:p-6 shadow-sm">
+                    <div className="space-y-1">
+                      <span className="text-[11px] font-mono uppercase tracking-wider text-amber-400">
+                        Step 1 of 4 • Career Target
+                      </span>
+                      <h3 className="text-base font-bold text-[#EDEDED]">
+                        What is your target engineering role or technology goal?
+                      </h3>
+                      <p className="text-xs text-[#737373]">
+                        Enter any engineering role, specialty, or dream job stack.
+                      </p>
+                    </div>
 
-                  {/* Quick Preset Chips */}
-                  <div className="space-y-2">
-                    <span className="text-[10px] font-mono uppercase tracking-wider text-[#666666] block">
-                      Popular Career Blueprints:
-                    </span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {QUICK_GOALS.map((qGoal) => (
+                    <div className="space-y-3">
+                      <input
+                        type="text"
+                        value={goal}
+                        onChange={(e) => setGoal(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && goal.trim()) setOnboardingStep(1)
+                        }}
+                        placeholder="e.g. Full Stack Developer, AI Engineer, Cloud Architect"
+                        className="w-full rounded-[8px] border border-[#262626] bg-[#0D0D0D] px-4 py-3.5 text-sm text-[#EDEDED] placeholder-[#555555] focus:border-[#444444] focus:outline-none font-mono shadow-inner"
+                        autoFocus
+                      />
+
+                      <div className="space-y-2">
+                        <span className="text-[10px] font-mono uppercase tracking-wider text-[#666666] block">
+                          Popular Career Blueprints:
+                        </span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {QUICK_GOALS.map((qGoal) => (
+                            <button
+                              key={qGoal}
+                              type="button"
+                              onClick={() => {
+                                setGoal(qGoal)
+                                setOnboardingStep(1)
+                              }}
+                              className={`rounded-[6px] border px-2.5 py-1.5 text-xs font-mono transition-colors cursor-pointer ${
+                                goal === qGoal
+                                  ? 'border-[#EDEDED] bg-[#141414] text-[#EDEDED] font-semibold'
+                                  : 'border-[#1F1F1F] bg-[#0C0C0C] text-[#888888] hover:text-[#EDEDED] hover:border-[#333333]'
+                              }`}
+                            >
+                              {qGoal}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setOnboardingStep(1)}
+                        disabled={!goal.trim()}
+                        className={`inline-flex items-center gap-2 rounded-[6px] px-4 py-2 text-xs font-bold transition-all cursor-pointer ${
+                          goal.trim()
+                            ? 'bg-[#EDEDED] text-[#050505] hover:bg-white'
+                            : 'bg-[#181818] text-[#555555] cursor-not-allowed border border-[#222222]'
+                        }`}
+                      >
+                        <span>Next: Current Level</span>
+                        <ArrowRight className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* ──── STEP 1: CURRENT LEVEL ──── */}
+                {onboardingStep === 1 && (
+                  <div className="space-y-5 rounded-[8px] border border-[#1F1F1F] bg-[#0A0A0A] p-5 sm:p-6 shadow-sm">
+                    <div className="space-y-1">
+                      <span className="text-[11px] font-mono uppercase tracking-wider text-amber-400">
+                        Step 2 of 4 • Current Level
+                      </span>
+                      <h3 className="text-base font-bold text-[#EDEDED]">
+                        What is your current programming knowledge baseline?
+                      </h3>
+                      <p className="text-xs text-[#737373]">
+                        This determines whether we start from foundational syntax or jump directly into system architecture.
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      {[
+                        {
+                          id: 'complete_beginner',
+                          lvl: 'Beginner',
+                          title: 'Complete Beginner',
+                          desc: 'Zero or minimal prior coding experience. Need basics from scratch.',
+                        },
+                        {
+                          id: 'basic_knowledge',
+                          lvl: 'Beginner',
+                          title: 'Basic Knowledge',
+                          desc: 'Know variables, loops, functions, and simple scripting syntax.',
+                        },
+                        {
+                          id: 'intermediate',
+                          lvl: 'Intermediate',
+                          title: 'Intermediate',
+                          desc: 'Built small projects; ready for full-stack patterns and databases.',
+                        },
+                        {
+                          id: 'advanced',
+                          lvl: 'Advanced',
+                          title: 'Advanced / Senior',
+                          desc: 'Experienced engineer leveling up cloud architecture & scaling.',
+                        },
+                      ].map((lvlOpt) => (
                         <button
-                          key={qGoal}
+                          key={lvlOpt.id}
                           type="button"
                           onClick={() => {
-                            setGoal(qGoal)
-                            handleGenerate(qGoal)
+                            setCurrentLevel(lvlOpt.id)
+                            setExperienceLevel(lvlOpt.lvl)
                           }}
-                          className="rounded-[6px] border border-[#1F1F1F] bg-[#0C0C0C] px-2.5 py-1.5 text-xs font-mono text-[#888888] hover:text-[#EDEDED] hover:border-[#333333] hover:bg-[#141414] transition-colors cursor-pointer"
-                        >
-                          {qGoal}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Experience Level Selector */}
-                  <div className="pt-2 space-y-2">
-                    <span className="text-[10px] font-mono uppercase tracking-wider text-[#666666] block">
-                      Target Experience Baseline:
-                    </span>
-                    <div className="grid grid-cols-3 gap-2">
-                      {['Beginner', 'Intermediate', 'Advanced'].map((lvl) => (
-                        <button
-                          key={lvl}
-                          type="button"
-                          onClick={() => setExperienceLevel(lvl)}
-                          className={`rounded-[6px] border py-2 text-xs font-mono transition-colors cursor-pointer ${
-                            experienceLevel === lvl
-                              ? 'border-[#EDEDED] bg-[#141414] text-[#EDEDED] font-bold'
-                              : 'border-[#1F1F1F] bg-[#0A0A0A] text-[#737373] hover:border-[#2E2E2E]'
+                          className={`rounded-[8px] border p-3.5 text-left transition-all cursor-pointer flex flex-col justify-between gap-1.5 ${
+                            currentLevel === lvlOpt.id
+                              ? 'border-[#EDEDED] bg-[#141414] ring-1 ring-white/20'
+                              : 'border-[#222222] bg-[#0D0D0D] hover:border-[#333333]'
                           }`}
                         >
-                          {lvl}
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-[#EDEDED]">{lvlOpt.title}</span>
+                            {currentLevel === lvlOpt.id && (
+                              <Check className="h-3.5 w-3.5 text-emerald-400 stroke-[3]" />
+                            )}
+                          </div>
+                          <p className="text-[11px] text-[#737373] leading-relaxed">{lvlOpt.desc}</p>
                         </button>
                       ))}
                     </div>
-                  </div>
 
-                  {/* Primary Submit CTA */}
-                  <div className="pt-4">
-                    <button
-                      type="button"
-                      onClick={() => handleGenerate()}
-                      disabled={!goal.trim()}
-                      className={`w-full flex items-center justify-center gap-2 rounded-[6px] py-3 text-xs font-bold transition-all shadow-md cursor-pointer ${
-                        goal.trim()
-                          ? 'bg-[#EDEDED] text-[#050505] hover:bg-white'
-                          : 'bg-[#181818] text-[#555555] cursor-not-allowed border border-[#222222]'
-                      }`}
-                    >
-                      <Sparkles className="h-3.5 w-3.5" />
-                      <span>Generate Personalized Roadmap</span>
-                      <ArrowRight className="h-3.5 w-3.5" />
-                    </button>
+                    <div className="flex items-center justify-between pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setOnboardingStep(0)}
+                        className="rounded-[6px] border border-[#222222] bg-[#111111] px-3.5 py-2 text-xs font-mono text-[#888888] hover:text-[#EDEDED] cursor-pointer"
+                      >
+                        Back
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setOnboardingStep(2)}
+                        className="inline-flex items-center gap-2 rounded-[6px] bg-[#EDEDED] px-4 py-2 text-xs font-bold text-[#050505] hover:bg-white cursor-pointer"
+                      >
+                        <span>Next: Available Time</span>
+                        <ArrowRight className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                   </div>
-                </div>
+                )}
+
+                {/* ──── STEP 2: AVAILABLE TIME ──── */}
+                {onboardingStep === 2 && (
+                  <div className="space-y-5 rounded-[8px] border border-[#1F1F1F] bg-[#0A0A0A] p-5 sm:p-6 shadow-sm">
+                    <div className="space-y-1">
+                      <span className="text-[11px] font-mono uppercase tracking-wider text-amber-400">
+                        Step 3 of 4 • Daily Commitment
+                      </span>
+                      <h3 className="text-base font-bold text-[#EDEDED]">
+                        How much time can you realistically invest each day?
+                      </h3>
+                      <p className="text-xs text-[#737373]">
+                        We calibrate milestone timelines and project scopes to match your available bandwidth.
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      {[
+                        {
+                          id: '30_mins',
+                          title: '30 mins / day',
+                          badge: 'Self-Paced Track',
+                          est: '16 – 20 Weeks',
+                          desc: 'Steady, sustainable momentum with bite-sized daily modules.',
+                        },
+                        {
+                          id: '1_hour',
+                          title: '1 hour / day',
+                          badge: 'Standard Track',
+                          est: '10 – 14 Weeks',
+                          desc: 'Balanced engineering progression with daily coding and project builds.',
+                        },
+                        {
+                          id: '2_plus_hours',
+                          title: '2+ hours / day',
+                          badge: 'Intensive Sprint',
+                          est: '6 – 8 Weeks',
+                          desc: 'Immersive accelerated bootcamp-speed trajectory.',
+                        },
+                      ].map((tOpt) => (
+                        <button
+                          key={tOpt.id}
+                          type="button"
+                          onClick={() => setAvailableTime(tOpt.id)}
+                          className={`rounded-[8px] border p-3.5 text-left transition-all cursor-pointer flex flex-col justify-between gap-2 ${
+                            availableTime === tOpt.id
+                              ? 'border-[#EDEDED] bg-[#141414] ring-1 ring-white/20'
+                              : 'border-[#222222] bg-[#0D0D0D] hover:border-[#333333]'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-[#EDEDED]">{tOpt.title}</span>
+                            {availableTime === tOpt.id && (
+                              <Check className="h-3.5 w-3.5 text-emerald-400 stroke-[3]" />
+                            )}
+                          </div>
+                          <span className="inline-block rounded-[4px] bg-[#1F1F1F] px-1.5 py-0.5 text-[10px] font-mono text-amber-400 self-start">
+                            {tOpt.badge} • {tOpt.est}
+                          </span>
+                          <p className="text-[11px] text-[#737373] leading-relaxed">{tOpt.desc}</p>
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="flex items-center justify-between pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setOnboardingStep(1)}
+                        className="rounded-[6px] border border-[#222222] bg-[#111111] px-3.5 py-2 text-xs font-mono text-[#888888] hover:text-[#EDEDED] cursor-pointer"
+                      >
+                        Back
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setOnboardingStep(3)}
+                        className="inline-flex items-center gap-2 rounded-[6px] bg-[#EDEDED] px-4 py-2 text-xs font-bold text-[#050505] hover:bg-white cursor-pointer"
+                      >
+                        <span>Next: Outcome & Style</span>
+                        <ArrowRight className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* ──── STEP 3: OUTCOME & LEARNING STYLE ──── */}
+                {onboardingStep === 3 && (
+                  <div className="space-y-6 rounded-[8px] border border-[#1F1F1F] bg-[#0A0A0A] p-5 sm:p-6 shadow-sm">
+                    <div className="space-y-1">
+                      <span className="text-[11px] font-mono uppercase tracking-wider text-amber-400">
+                        Step 4 of 4 • Outcome & Preferred Style
+                      </span>
+                      <h3 className="text-base font-bold text-[#EDEDED]">
+                        What is your primary milestone outcome and study method?
+                      </h3>
+                      <p className="text-xs text-[#737373]">
+                        We synthesize custom capstone projects and outcome phases (e.g. Technical Interview prep for jobs, MVP deployment for startups).
+                      </p>
+                    </div>
+
+                    {/* Outcome / Goal */}
+                    <div className="space-y-2">
+                      <span className="text-[10px] font-mono uppercase tracking-wider text-[#888888] block">
+                        Primary Career Goal:
+                      </span>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        {[
+                          { id: 'get_job', title: 'Get a Job', tip: 'Phase 5: Technical Interviews & Portfolio' },
+                          { id: 'get_internship', title: 'Get an Internship', tip: 'Verified fundamentals & projects' },
+                          { id: 'freelance', title: 'Freelancing', tip: 'Client delivery & payment APIs' },
+                          { id: 'startup', title: 'Build a Startup', tip: 'SaaS MVP, auth, & telemetry' },
+                          { id: 'college', title: 'College Curriculum', tip: 'Deep CS theory & data structures' },
+                        ].map((gOpt) => (
+                          <button
+                            key={gOpt.id}
+                            type="button"
+                            onClick={() => setMainGoal(gOpt.id)}
+                            className={`rounded-[6px] border p-2.5 text-left transition-all cursor-pointer flex flex-col justify-between ${
+                              mainGoal === gOpt.id
+                                ? 'border-[#EDEDED] bg-[#141414] text-[#EDEDED] font-bold'
+                                : 'border-[#222222] bg-[#0D0D0D] text-[#888888] hover:border-[#333333]'
+                            }`}
+                          >
+                            <span className="text-xs">{gOpt.title}</span>
+                            <span className="text-[9px] font-mono text-[#666666] mt-0.5">{gOpt.tip}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Preferred Learning Style */}
+                    <div className="space-y-2">
+                      <span className="text-[10px] font-mono uppercase tracking-wider text-[#888888] block">
+                        Preferred Learning Style:
+                      </span>
+                      <div className="grid grid-cols-3 gap-2">
+                        {[
+                          { id: 'projects', title: 'Hands-on Projects', desc: 'Repo-first, build while learning' },
+                          { id: 'videos', title: 'Video Courses', desc: 'Visual step-by-step guidance' },
+                          { id: 'reading', title: 'Reading & Docs', desc: 'Official specifications & guides' },
+                        ].map((sOpt) => (
+                          <button
+                            key={sOpt.id}
+                            type="button"
+                            onClick={() => setPreferredStyle(sOpt.id)}
+                            className={`rounded-[6px] border p-2.5 text-left transition-all cursor-pointer flex flex-col justify-between ${
+                              preferredStyle === sOpt.id
+                                ? 'border-[#EDEDED] bg-[#141414] text-[#EDEDED] font-bold'
+                                : 'border-[#222222] bg-[#0D0D0D] text-[#888888] hover:border-[#333333]'
+                            }`}
+                          >
+                            <span className="text-xs">{sOpt.title}</span>
+                            <span className="text-[9px] font-mono text-[#666666] mt-0.5">{sOpt.desc}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Synthesis Summary Pill */}
+                    <div className="rounded-[6px] border border-[#222222] bg-[#0E0E0E] p-3 text-xs font-mono text-[#888888] flex items-center justify-between">
+                      <span>Target: <strong className="text-[#EDEDED]">{goal || 'Software Engineer'}</strong></span>
+                      <span>Level: <strong className="text-amber-400 capitalize">{currentLevel.replace('_', ' ')}</strong></span>
+                      <span>Time: <strong className="text-emerald-400">{availableTime.replace('_', ' ')}</strong></span>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setOnboardingStep(2)}
+                        className="rounded-[6px] border border-[#222222] bg-[#111111] px-3.5 py-2 text-xs font-mono text-[#888888] hover:text-[#EDEDED] cursor-pointer"
+                      >
+                        Back
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleGenerate()}
+                        disabled={!goal.trim()}
+                        className={`inline-flex items-center gap-2 rounded-[6px] py-2.5 px-5 text-xs font-bold transition-all shadow-md cursor-pointer ${
+                          goal.trim()
+                            ? 'bg-[#EDEDED] text-[#050505] hover:bg-white'
+                            : 'bg-[#181818] text-[#555555] cursor-not-allowed border border-[#222222]'
+                        }`}
+                      >
+                        <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+                        <span>Synthesize Personalized Roadmap</span>
+                        <ArrowRight className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

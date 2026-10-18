@@ -12,7 +12,11 @@ from app.db.base import Base
 from app.models.base import TimestampMixin, UUIDIdMixin
 
 if TYPE_CHECKING:
+    from app.models.achievement import UserAchievement
+    from app.models.community import UserLearningRoom
+    from app.models.follow import Follow
     from app.models.progress import UserLearningPath, UserRoadmapProgress, UserLessonProgress
+    from app.models.project import UserProject
     from app.models.user_roadmap import UserGeneratedRoadmap, DailyLearningActivity
 
 
@@ -26,6 +30,12 @@ class User(Base, UUIDIdMixin, TimestampMixin):
         unique=True,
         index=True,
         nullable=False,
+    )
+    username: Mapped[str | None] = mapped_column(
+        String(50),
+        unique=True,
+        index=True,
+        nullable=True,
     )
     hashed_password: Mapped[str] = mapped_column(
         String(255),
@@ -41,6 +51,22 @@ class User(Base, UUIDIdMixin, TimestampMixin):
     )
     bio: Mapped[str | None] = mapped_column(
         Text,
+        nullable=True,
+    )
+    location: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+    )
+    github_url: Mapped[str | None] = mapped_column(
+        String(500),
+        nullable=True,
+    )
+    linkedin_url: Mapped[str | None] = mapped_column(
+        String(500),
+        nullable=True,
+    )
+    portfolio_url: Mapped[str | None] = mapped_column(
+        String(500),
         nullable=True,
     )
     is_active: Mapped[bool] = mapped_column(
@@ -78,6 +104,33 @@ class User(Base, UUIDIdMixin, TimestampMixin):
     daily_activities: Mapped[list["DailyLearningActivity"]] = relationship(
         "DailyLearningActivity",
         back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    projects: Mapped[list["UserProject"]] = relationship(
+        "UserProject",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    learning_rooms: Mapped[list["UserLearningRoom"]] = relationship(
+        "UserLearningRoom",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    achievements: Mapped[list["UserAchievement"]] = relationship(
+        "UserAchievement",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    followers: Mapped[list["Follow"]] = relationship(
+        "Follow",
+        foreign_keys="[Follow.following_id]",
+        back_populates="following",
+        cascade="all, delete-orphan",
+    )
+    following: Mapped[list["Follow"]] = relationship(
+        "Follow",
+        foreign_keys="[Follow.follower_id]",
+        back_populates="follower",
         cascade="all, delete-orphan",
     )
 

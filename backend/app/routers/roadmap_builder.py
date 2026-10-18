@@ -30,6 +30,10 @@ async def generate_roadmap(
         db,
         goal=payload.goal,
         experience_level=payload.experience_level or "Beginner",
+        current_level=payload.current_level,
+        available_time=payload.available_time,
+        main_goal=payload.main_goal,
+        preferred_style=payload.preferred_style,
     )
 
 

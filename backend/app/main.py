@@ -1,11 +1,11 @@
-"""FastAPI Application entry point for Technea backend."""
-
+import os
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.api.v1.api import api_router
 from app.core.config import settings
@@ -61,6 +61,16 @@ def create_application() -> FastAPI:
 
     # Mount API v1 router
     app.include_router(api_router, prefix=settings.API_V1_STR)
+
+    # User uploads directory for avatars
+    uploads_dir = os.path.join(os.path.dirname(__file__), "..", "uploads")
+    os.makedirs(os.path.join(uploads_dir, "avatars"), exist_ok=True)
+    app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
+
+    # Static assets directory for user uploaded avatars & assets
+    static_dir = os.path.join(os.path.dirname(__file__), "..", "static")
+    os.makedirs(os.path.join(static_dir, "avatars"), exist_ok=True)
+    app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
     @app.get(
         "/",

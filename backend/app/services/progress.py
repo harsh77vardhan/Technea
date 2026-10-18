@@ -17,8 +17,13 @@ from app.models.roadmap_step import RoadmapStep
 from app.models.skill import Skill
 from app.models.user import User
 from app.models.user_roadmap import DailyLearningActivity, UserGeneratedRoadmap
+from app.models.project import Project, UserProject
+from app.models.community import LearningRoom, UserLearningRoom
+from app.models.achievement import UserAchievement
 from app.schemas.progress import (
     AIBuddyResponse,
+    AIMentorChatRequest,
+    AIMentorChatResponse,
     CourseProgressResponse,
     DailyActivityResponse,
     DailyTaskItem,
@@ -34,8 +39,54 @@ from app.schemas.progress import (
 
 
 
+
 class ProgressService:
     """Service handling roadmap steps, lesson tracking, and dashboard summaries."""
+
+    @staticmethod
+    def compute_gamification(
+        milestones: int,
+        lessons: int,
+        completed_projects: int,
+        streak: int,
+    ) -> dict:
+        """Compute developer XP points and career tier level."""
+        xp = (milestones * 50) + (lessons * 20) + (completed_projects * 150) + (streak * 10)
+
+        tiers = [
+            (0, 250, "Code Initiate"),
+            (250, 600, "Junior Developer"),
+            (600, 1200, "Frontend Craftsman"),
+            (1200, 2000, "Full Stack Engineer"),
+            (2000, 3500, "Senior Systems Engineer"),
+            (3500, 6000, "Full Stack Architect"),
+        ]
+
+        dev_level = "Code Initiate"
+        next_xp = 250
+        tier_base = 0
+
+        for base_xp, target_xp, title in tiers:
+            if xp >= base_xp:
+                dev_level = title
+                tier_base = base_xp
+                next_xp = target_xp
+
+        if xp >= 6000:
+            dev_level = "Staff Platform Engineer"
+            tier_base = 6000
+            next_xp = xp + 1500
+
+        tier_span = max(1, next_xp - tier_base)
+        xp_in_tier = max(0, xp - tier_base)
+        progress_pct = min(100, round((xp_in_tier / tier_span) * 100))
+
+        return {
+            "xp_points": xp,
+            "developer_level": dev_level,
+            "next_level_xp": next_xp,
+            "level_progress_percent": progress_pct,
+        }
 
     async def get_path_progress(
         self,
@@ -454,6 +505,26 @@ class ProgressService:
         daily_act = await self.get_daily_activity(db, user_id=user_id)
         ai_buddy = await self.get_ai_buddy_guidance(db, user_id=user_id, current_path=current_path)
 
+        # Count user projects
+        up_stmt = select(UserProject).where(UserProject.user_id == user_id)
+        up_res = await db.execute(up_stmt)
+        user_projects = list(up_res.scalars().all())
+        completed_proj_count = sum(1 for p in user_projects if p.status == "completed")
+        active_proj_count = sum(1 for p in user_projects if p.status == "in_progress")
+
+        # Count joined learning rooms
+        room_stmt = select(func.count(UserLearningRoom.id)).where(UserLearningRoom.user_id == user_id)
+        room_res = await db.execute(room_stmt)
+        joined_rooms_count = room_res.scalar() or 0
+
+        # Compute gamification developer level and XP
+        gamification = self.compute_gamification(
+            milestones=total_milestones,
+            lessons=total_lessons,
+            completed_projects=completed_proj_count,
+            streak=daily_act.streak_count,
+        )
+
         return DashboardSummaryResponse(
             user_id=user_id,
             total_completed_milestones=total_milestones,
@@ -461,12 +532,20 @@ class ProgressService:
             total_active_paths=total_active_paths,
             overall_progress_percent=avg_progress,
             streak_count=daily_act.streak_count,
+            xp_points=gamification["xp_points"],
+            developer_level=gamification["developer_level"],
+            next_level_xp=gamification["next_level_xp"],
+            level_progress_percent=gamification["level_progress_percent"],
+            completed_projects_count=completed_proj_count,
+            active_projects_count=active_proj_count,
+            joined_rooms_count=joined_rooms_count,
             current_path=current_path,
             enrolled_paths=enrolled_paths,
             skills_overview=skills_overview,
             ai_buddy=ai_buddy,
             daily_activity=daily_act,
         )
+
 
     async def get_daily_activity(
         self,
@@ -660,7 +739,39 @@ class ProgressService:
         rm_count_res = await db.execute(rm_count_stmt)
         total_roadmaps = rm_count_res.scalar() or 0
 
-        total_projects = max(1 if total_roadmaps > 0 else 0, round(dashboard.total_completed_milestones / 2))
+        # Fetch user's projects
+        up_stmt = (
+            select(UserProject, Project)
+            .join(Project, UserProject.project_id == Project.id)
+            .where(UserProject.user_id == user_id)
+            .order_by(UserProject.started_at.desc())
+        )
+        up_res = await db.execute(up_stmt)
+        user_proj_rows = up_res.all()
+        completed_projects_list = [
+            {
+                "id": p.id,
+                "title": p.title,
+                "difficulty": p.difficulty,
+                "category": p.related_paths[0] if (p.related_paths and len(p.related_paths) > 0) else "Engineering",
+                "tech_stack": p.technologies or [],
+                "status": up.status,
+                "github_url": up.github_url,
+                "completed_at": up.completed_at.strftime("%Y-%m-%d") if up.completed_at else None,
+            }
+            for up, p in user_proj_rows
+        ]
+
+        # Fetch joined rooms
+        rooms_stmt = (
+            select(LearningRoom.name)
+            .join(UserLearningRoom, LearningRoom.id == UserLearningRoom.room_id)
+            .where(UserLearningRoom.user_id == user_id)
+        )
+        rooms_res = await db.execute(rooms_stmt)
+        learning_rooms_list = list(rooms_res.scalars().all())
+
+        total_projects = max(len(completed_projects_list), 1 if total_roadmaps > 0 else 0)
 
         badges = [
             UserBadge(
@@ -695,6 +806,22 @@ class ProgressService:
                 earned=total_roadmaps > 0,
                 earned_at="2026-10-18" if total_roadmaps > 0 else None,
             ),
+            UserBadge(
+                id="project_builder",
+                title="Hands-on Builder",
+                description="Started or completed an active software project.",
+                icon="code",
+                earned=len(completed_projects_list) > 0,
+                earned_at="2026-10-18" if len(completed_projects_list) > 0 else None,
+            ),
+            UserBadge(
+                id="community_pioneer",
+                title="Peer Collaborator",
+                description="Joined a specialized Technea peer learning room.",
+                icon="users",
+                earned=len(learning_rooms_list) > 0,
+                earned_at="2026-10-18" if len(learning_rooms_list) > 0 else None,
+            ),
         ]
 
         full_name = user.full_name or (user.email.split("@")[0] if user and user.email else "Harsh")
@@ -704,16 +831,137 @@ class ProgressService:
             user_id=user_id,
             full_name=full_name,
             email=email,
-            account_level="AI Explorer",
+            account_level=dashboard.developer_level,
             total_milestones=dashboard.total_completed_milestones,
             total_lessons=dashboard.total_completed_lessons,
             total_projects=total_projects,
             streak_count=dashboard.streak_count,
             overall_mastery=dashboard.overall_progress_percent,
+            xp_points=dashboard.xp_points,
+            developer_level=dashboard.developer_level,
+            next_level_xp=dashboard.next_level_xp,
+            level_progress_percent=dashboard.level_progress_percent,
             skills=dashboard.skills_overview,
             badges=badges,
+            completed_projects=completed_projects_list,
+            learning_rooms=learning_rooms_list,
+        )
+
+    async def ai_mentor_chat(
+        self,
+        db: AsyncSession,
+        user_id: uuid.UUID,
+        payload: AIMentorChatRequest,
+    ) -> AIMentorChatResponse:
+        """Personalized context-aware AI mentor answering queries, analyzing prerequisites, and recommending next steps."""
+        user_msg = payload.message.strip().lower()
+
+        # 1. Fetch user's current progress context
+        dashboard = await self.get_dashboard_summary(db, user_id=user_id)
+        completed_milestones_count = dashboard.total_completed_milestones
+        current_path_title = dashboard.current_path.title if dashboard.current_path else "Full Stack Software Engineering"
+        next_milestone_title = (
+            dashboard.current_path.next_step_title
+            if dashboard.current_path and dashboard.current_path.next_step_title
+            else "Component Architecture & Asynchronous Streams"
+        )
+
+        # 2. Prerequisite verification heuristics
+        prereq_warning = None
+        if any(term in user_msg for term in ["react", "vue", "angular", "nextjs", "next.js", "frontend framework"]):
+            if completed_milestones_count < 2:
+                prereq_warning = "⚠️ Prerequisite Check: Building reactive components requires fluent JavaScript event loops, closures, and async/await. We strongly advise completing JavaScript Core Fundamentals first before diving deep into state trees."
+        elif any(term in user_msg for term in ["microservice", "docker", "kubernetes", "k8s", "distributed"]):
+            if completed_milestones_count < 3:
+                prereq_warning = "⚠️ Prerequisite Check: Containerized microservices introduce distributed network partitions and orchestration complexity. Ensure you have built monolithic REST APIs and relational database schemas first."
+        elif any(term in user_msg for term in ["rag", "llm", "deep learning", "machine learning", "ai agent"]):
+            if completed_milestones_count < 2:
+                prereq_warning = "⚠️ Prerequisite Check: Production AI/RAG requires solid data pipelining, vector embeddings math, and Python asynchronous concurrency. Finish core Python & API design before embedding vector databases."
+
+        # 3. Project recommendation
+        proj_stmt = select(Project).order_by(Project.difficulty.asc(), Project.id.asc()).limit(5)
+        proj_res = await db.execute(proj_stmt)
+        available_projects = proj_res.scalars().all()
+
+        recommended_proj = None
+        if completed_milestones_count <= 2:
+            recommended_proj = "Expense Tracker CLI (Python / Node.js) — Master state persistence and data parsing."
+        elif completed_milestones_count <= 5:
+            recommended_proj = "Kanban Board & Task Workflow (React / TypeScript) — Master drag-and-drop state & component lifecycles."
+        else:
+            recommended_proj = "Distributed Microservices Order Processor (FastAPI / Redis / Docker) — Master asynchronous events & queues."
+
+        # 4. Generate structured technical response
+        reply_lines = []
+        action_items = []
+
+        if "prerequisite" in user_msg or "ready" in user_msg:
+            reply_lines.append(f"### 🎯 Readiness & Prerequisite Assessment for **{current_path_title}**\n")
+            reply_lines.append(f"You currently have **{completed_milestones_count} completed milestone(s)** and **{dashboard.xp_points} XP** ({dashboard.developer_level}).")
+            if prereq_warning:
+                reply_lines.append(f"\n{prereq_warning}\n")
+            else:
+                reply_lines.append("\n✅ Your engineering foundation looks solid! You have met the fundamental requirements to tackle your upcoming milestones.")
+            reply_lines.append(f"\n**Next Critical Milestone:** `{next_milestone_title}`")
+            action_items = [
+                f"Review prerequisite fundamentals for {next_milestone_title}",
+                "Write 25 lines of isolated test code before full implementation",
+                "Deploy a working prototype to verify build pipelines",
+            ]
+        elif "pitfall" in user_msg or "mistake" in user_msg or "warning" in user_msg:
+            reply_lines.append(f"### 🛡️ Production Pitfalls to Avoid in `{next_milestone_title}`\n")
+            reply_lines.append("1. **Premature Abstraction**: Avoid creating complex multi-layer abstractions before you have at least 2 concrete implementations.")
+            reply_lines.append("2. **Silent Failure & Missing Error Boundaries**: Always catch errors at asynchronous boundaries with informative log context.")
+            reply_lines.append("3. **State Mutation**: Never mutate shared memory or state slices directly; adhere to pure immutable reducers.")
+            action_items = [
+                "Implement structured try/catch with fallback states",
+                "Verify memory consumption under synthetic 1000-request load",
+                "Document edge cases in your README architecture spec",
+            ]
+        elif "project" in user_msg or "build" in user_msg:
+            reply_lines.append("### 🛠️ Hands-on Project Architecture Strategy\n")
+            reply_lines.append(f"Based on your current level (**{dashboard.developer_level}**), the optimal next build is:")
+            reply_lines.append(f"\n✨ **{recommended_proj}**\n")
+            reply_lines.append("This project bridges conceptual theory into tangible software that hiring managers and engineering leads look for:")
+            reply_lines.append("- Strict type validation and error envelopes")
+            reply_lines.append("- Decoupled repository / data access layer")
+            reply_lines.append("- Automated unit tests and continuous integration")
+            action_items = [
+                "Initialize repository with strict linter & formatting rules",
+                "Create schema diagrams before writing business logic",
+                "Push 3 feature branches with atomic pull requests",
+            ]
+        else:
+            reply_lines.append(f"### 💡 Mentorship Guidance: Accelerating `{current_path_title}`\n")
+            reply_lines.append(f"Great question! As your AI Engineering Mentor, I'm analyzing your journey toward **{dashboard.developer_level}**.\n")
+            reply_lines.append(f"Right now, your highest-leverage focus area is **`{next_milestone_title}`**.")
+            if prereq_warning:
+                reply_lines.append(f"\n{prereq_warning}\n")
+            reply_lines.append("\nTo master this concept deeply, focus on the underlying mental model rather than memorizing API signatures. Write small exploratory scripts in an isolated playground to inspect execution orders.")
+            action_items = [
+                f"Master core concepts of '{next_milestone_title}'",
+                "Build a 100-line prototype without framework dependencies",
+                f"Start hands-on project: '{recommended_proj.split(' — ')[0]}'",
+            ]
+
+        quick_prompts = [
+            "Am I ready for advanced full-stack projects?",
+            "What common production pitfalls should I avoid?",
+            "Recommend a project matching my current skill level",
+            "How do I structure my 60-minute daily practice?",
+        ]
+
+        return AIMentorChatResponse(
+            reply="\n".join(reply_lines),
+            detected_milestone=next_milestone_title,
+            prerequisite_warning=prereq_warning,
+            suggested_next_step=next_milestone_title,
+            recommended_project=recommended_proj,
+            action_items=action_items,
+            quick_prompts=quick_prompts,
         )
 
 
 progress_service = ProgressService()
+
 

@@ -40,7 +40,9 @@ async function request(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`
   const defaultHeaders = {
     Accept: 'application/json',
-    'Content-Type': 'application/json',
+  }
+  if (!(options.body instanceof FormData)) {
+    defaultHeaders['Content-Type'] = 'application/json'
   }
 
   const token = getAuthToken()
@@ -512,6 +514,188 @@ export async function getUserProfileApi() {
   return request('/progress/profile')
 }
 
+/* ==========================================================================
+   Hands-on Projects & Recommendations Endpoints
+   ========================================================================== */
+
+/**
+ * Fetch all available engineering projects
+ * @param {Object} [params] - { category?: string, difficulty?: string, skill?: string }
+ * @returns {Promise<Array>}
+ */
+export async function getProjectsApi(params = {}) {
+  const query = new URLSearchParams()
+  if (params.category) query.append('category', params.category)
+  if (params.difficulty) query.append('difficulty', params.difficulty)
+  if (params.skill) query.append('skill', params.skill)
+  const qs = query.toString() ? `?${query.toString()}` : ''
+  return request(`/projects${qs}`)
+}
+
+/**
+ * Fetch contextually recommended projects for user's active skills & roadmap
+ * @returns {Promise<Array>}
+ */
+export async function getRecommendedProjectsApi() {
+  return request('/projects/recommended')
+}
+
+/**
+ * Fetch user's active and completed projects with github URLs
+ * @returns {Promise<Array>}
+ */
+export async function getMyProjectsApi() {
+  return request('/projects/my')
+}
+
+/**
+ * Fetch details of a single project
+ * @param {number|string} projectId
+ * @returns {Promise<Object>}
+ */
+export async function getProjectByIdApi(projectId) {
+  return request(`/projects/${projectId}`)
+}
+
+/**
+ * Update project status (not_started, in_progress, completed) and optional GitHub URL
+ * @param {number|string} projectId
+ * @param {Object} data - { status: string, github_url?: string }
+ * @returns {Promise<Object>}
+ */
+export async function updateProjectStatusApi(projectId, data) {
+  return request(`/projects/${projectId}/status`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+/* ==========================================================================
+   Learning Community & Peer Rooms Endpoints
+   ========================================================================== */
+
+/**
+ * Fetch all available peer learning rooms
+ * @returns {Promise<Array>}
+ */
+export async function getCommunityRoomsApi() {
+  return request('/community/rooms')
+}
+
+/**
+ * Toggle membership in a peer learning room
+ * @param {number|string} roomId
+ * @returns {Promise<Object>}
+ */
+export async function toggleRoomJoinApi(roomId) {
+  return request(`/community/rooms/${roomId}/join`, {
+    method: 'POST',
+  })
+}
+
+/**
+ * Fetch list of rooms the user has joined
+ * @returns {Promise<Array>}
+ */
+export async function getMyRoomsApi() {
+  return request('/community/rooms/my')
+}
+
+/* ==========================================================================
+   Context-Aware AI Technical Mentor Endpoints
+   ========================================================================== */
+
+/**
+ * Send query to context-aware AI Technical Mentor
+ * @param {Object} data - { message: string, context_skill?: string, context_milestone?: string }
+ * @returns {Promise<Object>}
+ */
+export async function sendAiMentorChatApi(data) {
+  return request('/progress/ai-mentor/chat', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+/* ==========================================================================
+   Public Profile Viewer, Profile Editor, and Follow System Endpoints
+   ========================================================================== */
+
+/**
+ * Fetch public developer portfolio profile by username
+ * @param {string} username
+ * @returns {Promise<Object>}
+ */
+export async function getPublicProfileApi(username) {
+  return request(`/users/profile/${encodeURIComponent(username)}`)
+}
+
+/**
+ * Update authenticated user's profile details
+ * @param {Object} data - { full_name, username, bio?, location?, avatar_url?, github_url?, linkedin_url?, portfolio_url? }
+ * @returns {Promise<Object>}
+ */
+export async function updateMyProfileApi(data) {
+  return request('/users/me/profile', {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  })
+}
+
+/**
+ * Upload profile avatar image
+ * @param {File} file
+ * @returns {Promise<Object>}
+ */
+export async function uploadAvatarApi(file) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request('/users/avatar', {
+    method: 'POST',
+    body: formData,
+  })
+}
+
+/**
+ * Follow a Technea developer
+ * @param {string} username
+ * @returns {Promise<Object>}
+ */
+export async function followUserApi(username) {
+  return request(`/users/${encodeURIComponent(username)}/follow`, {
+    method: 'POST',
+  })
+}
+
+/**
+ * Unfollow a Technea developer
+ * @param {string} username
+ * @returns {Promise<Object>}
+ */
+export async function unfollowUserApi(username) {
+  return request(`/users/${encodeURIComponent(username)}/unfollow`, {
+    method: 'POST',
+  })
+}
+
+/**
+ * Fetch list of followers for a user
+ * @param {string} username
+ * @returns {Promise<Array>}
+ */
+export async function getUserFollowersApi(username) {
+  return request(`/users/${encodeURIComponent(username)}/followers`)
+}
+
+/**
+ * Fetch list of users followed by a user
+ * @param {string} username
+ * @returns {Promise<Array>}
+ */
+export async function getUserFollowingApi(username) {
+  return request(`/users/${encodeURIComponent(username)}/following`)
+}
+
 export default {
   getAuthToken,
   setAuthToken,
@@ -536,6 +720,15 @@ export default {
   toggleDailyTaskApi,
   getAIBuddyApi,
   getUserProfileApi,
+  getProjectsApi,
+  getRecommendedProjectsApi,
+  getMyProjectsApi,
+  getProjectByIdApi,
+  updateProjectStatusApi,
+  getCommunityRoomsApi,
+  toggleRoomJoinApi,
+  getMyRoomsApi,
+  sendAiMentorChatApi,
   getSkills,
   getSkillById,
   getSkillRelationships,
@@ -547,7 +740,18 @@ export default {
   getRelatedCourses,
   searchCatalog,
   analyzeIntent,
+  getPublicProfileApi,
+  updateMyProfileApi,
+  uploadAvatarApi,
+  followUserApi,
+  unfollowUserApi,
+  getUserFollowersApi,
+  getUserFollowingApi,
 }
+
+export { getAvatarUrl } from '../utils/avatar'
+
+
 
 
 

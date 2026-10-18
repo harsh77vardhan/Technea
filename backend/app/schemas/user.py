@@ -9,9 +9,14 @@ class UserBase(BaseModel):
     """Base user properties."""
 
     email: EmailStr
+    username: str | None = Field(default=None, max_length=50)
     full_name: str | None = Field(default=None, max_length=255)
     avatar_url: str | None = Field(default=None, max_length=500)
     bio: str | None = None
+    location: str | None = Field(default=None, max_length=100)
+    github_url: str | None = Field(default=None, max_length=500)
+    linkedin_url: str | None = Field(default=None, max_length=500)
+    portfolio_url: str | None = Field(default=None, max_length=500)
 
 
 class UserCreate(BaseModel):
@@ -20,6 +25,7 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str = Field(..., min_length=8, max_length=128, description="Password must be at least 8 characters")
     full_name: str | None = Field(default=None, max_length=255)
+    username: str | None = Field(default=None, max_length=50)
 
 
 class UserLogin(BaseModel):
@@ -33,8 +39,13 @@ class UserUpdate(BaseModel):
     """Schema for updating user profile."""
 
     full_name: str | None = Field(default=None, max_length=255)
+    username: str | None = Field(default=None, max_length=50)
     avatar_url: str | None = Field(default=None, max_length=500)
     bio: str | None = None
+    location: str | None = Field(default=None, max_length=100)
+    github_url: str | None = Field(default=None, max_length=500)
+    linkedin_url: str | None = Field(default=None, max_length=500)
+    portfolio_url: str | None = Field(default=None, max_length=500)
     password: str | None = Field(default=None, min_length=8, max_length=128)
 
 

@@ -126,6 +126,26 @@ class AIBuddyResponse(BaseModel):
     quick_prompts: list[str] = Field(default_factory=list)
 
 
+class AIMentorChatRequest(BaseModel):
+    """User message sent to AI technical mentor."""
+
+    message: str = Field(..., min_length=1, max_length=2000, description="User's query or prompt")
+    context_skill: str | None = Field(default=None, description="Optional active skill context")
+    context_milestone: str | None = Field(default=None, description="Optional active milestone context")
+
+
+class AIMentorChatResponse(BaseModel):
+    """Personalized context-aware AI mentor reply."""
+
+    reply: str
+    detected_milestone: str | None = None
+    prerequisite_warning: str | None = None
+    suggested_next_step: str | None = None
+    recommended_project: str | None = None
+    action_items: list[str] = Field(default_factory=list)
+    quick_prompts: list[str] = Field(default_factory=list)
+
+
 class UserBadge(BaseModel):
     """Achievement badge earned by the learner."""
 
@@ -149,8 +169,14 @@ class UserProfileResponse(BaseModel):
     total_projects: int
     streak_count: int
     overall_mastery: int
+    xp_points: int = 0
+    developer_level: str = "Junior Developer"
+    next_level_xp: int = 500
+    level_progress_percent: int = 0
     skills: list[SkillProgressBadge] = Field(default_factory=list)
     badges: list[UserBadge] = Field(default_factory=list)
+    completed_projects: list[dict] = Field(default_factory=list)
+    learning_rooms: list[str] = Field(default_factory=list)
 
 
 class DashboardSummaryResponse(BaseModel):
@@ -162,9 +188,17 @@ class DashboardSummaryResponse(BaseModel):
     total_active_paths: int
     overall_progress_percent: int
     streak_count: int = 1
+    xp_points: int = 0
+    developer_level: str = "Junior Developer"
+    next_level_xp: int = 500
+    level_progress_percent: int = 0
+    completed_projects_count: int = 0
+    active_projects_count: int = 0
+    joined_rooms_count: int = 0
     current_path: DashboardEnrolledPath | None = None
     enrolled_paths: list[DashboardEnrolledPath] = Field(default_factory=list)
     skills_overview: list[SkillProgressBadge] = Field(default_factory=list)
     ai_buddy: AIBuddyResponse | None = None
     daily_activity: DailyActivityResponse | None = None
+
 

@@ -185,9 +185,13 @@ export function AuthProvider({ children }) {
 
   // Update profile
   const updateProfile = useCallback(async (data) => {
+    if (data && (data.avatar_url !== undefined || data.full_name !== undefined)) {
+      setUser((prev) => (prev ? { ...prev, ...data } : data))
+      return data
+    }
     const updated = await updateProfileApi(data)
     if (updated) {
-      setUser(updated)
+      setUser((prev) => (prev ? { ...prev, ...updated } : updated))
       return updated
     }
     throw new Error('Profile update failed')
