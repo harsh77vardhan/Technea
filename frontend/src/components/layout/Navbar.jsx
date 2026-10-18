@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Menu, X, ArrowRight, LayoutDashboard, LogOut, ChevronDown } from 'lucide-react'
 import { useAuth } from '../../context/useAuth'
+import TechneaLogo from './TechneaLogo'
 
 export default function Navbar() {
   const { user, openAuthModal, openDashboard, logout } = useAuth()
@@ -62,19 +63,7 @@ export default function Navbar() {
     >
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3.5 sm:px-6 lg:px-8">
         {/* Brand Logo */}
-        <a href="#" className="flex items-center gap-2.5 text-slate-900">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-900 text-white shadow-sm ring-1 ring-slate-900/10">
-            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <path
-                d="M4 5.5C4 4.67157 4.67157 4 5.5 4H18.5C19.3284 4 20 4.67157 20 5.5V6.5C20 7.32843 19.3284 8 18.5 8H13.75V18.5C13.75 19.3284 13.0784 20 12.25 20H11.75C10.9216 20 10.25 19.3284 10.25 18.5V8H5.5C4.67157 8 4 7.32843 4 6.5V5.5Z"
-                fill="currentColor"
-              />
-            </svg>
-          </div>
-          <span className="text-xl font-bold tracking-tight text-slate-900">
-            Technea
-          </span>
-        </a>
+        <TechneaLogo href="#" />
 
         {/* Desktop Navigation */}
         <nav className="hidden items-center gap-8 md:flex">

@@ -1,3 +1,5 @@
+import TechneaLogo from './TechneaLogo'
+
 export default function Footer() {
   return (
     <footer className="bg-white text-neutral-600 pt-16 pb-12 border-t border-neutral-200">
@@ -5,19 +7,10 @@ export default function Footer() {
         <div className="grid grid-cols-1 gap-12 md:grid-cols-4">
           {/* Brand info */}
           <div className="md:col-span-2">
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center border border-neutral-900 bg-neutral-950 text-white">
-                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                  <path
-                    d="M4 5.5C4 4.67157 4.67157 4 5.5 4H18.5C19.3284 4 20 4.67157 20 5.5V6.5C20 7.32843 19.3284 8 18.5 8H13.75V18.5C13.75 19.3284 13.0784 20 12.25 20H11.75C10.9216 20 10.25 19.3284 10.25 18.5V8H5.5C4.67157 8 4 7.32843 4 6.5V5.5Z"
-                    fill="currentColor"
-                  />
-                </svg>
-              </div>
-              <span className="text-lg font-bold tracking-tight text-neutral-950 uppercase">
-                Technea
-              </span>
-            </div>
+            <TechneaLogo
+              size={32}
+              textClassName="text-lg font-bold tracking-tight text-neutral-950 uppercase"
+            />
             <p className="mt-4 max-w-sm text-sm text-neutral-500 leading-relaxed">
               An AI-powered learning platform designed for beginners to build foundational tech skills with guided roadmaps and personalized assistance.
             </p>
