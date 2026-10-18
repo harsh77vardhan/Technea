@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
-import { Menu, X, ArrowRight, LayoutDashboard, LogOut, ChevronDown } from 'lucide-react'
+import { Menu, X, ArrowRight, LayoutDashboard, LogOut, ChevronDown, Sparkles } from 'lucide-react'
 import { useAuth } from '../../context/useAuth'
 import TechneaLogo from './TechneaLogo'
 
 export default function Navbar() {
-  const { user, openAuthModal, openDashboard, logout } = useAuth()
+  const { user, openAuthModal, openDashboard, openRoadmapBuilder, logout } = useAuth()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [isVisible, setIsVisible] = useState(true)
@@ -66,7 +66,7 @@ export default function Navbar() {
         <TechneaLogo href="#" />
 
         {/* Desktop Navigation */}
-        <nav className="hidden items-center gap-8 md:flex">
+        <nav className="hidden items-center gap-7 md:flex">
           <a
             href="#features"
             className="text-sm font-medium text-slate-600 transition-colors hover:text-slate-950"
@@ -85,6 +85,14 @@ export default function Navbar() {
           >
             Roadmaps
           </a>
+          <button
+            type="button"
+            onClick={() => openRoadmapBuilder()}
+            className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-800 hover:text-blue-600 transition-colors cursor-pointer"
+          >
+            <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+            <span>AI Builder</span>
+          </button>
         </nav>
 
         {/* Action Buttons & Auth State */}
@@ -209,6 +217,17 @@ export default function Navbar() {
             >
               Roadmaps
             </a>
+            <button
+              type="button"
+              onClick={() => {
+                setMobileMenuOpen(false)
+                openRoadmapBuilder()
+              }}
+              className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-blue-600 hover:bg-blue-50 text-left"
+            >
+              <Sparkles className="h-4 w-4 text-amber-500" />
+              <span>AI Roadmap Builder</span>
+            </button>
 
             <div className="pt-2 border-t border-slate-100">
               {user ? (

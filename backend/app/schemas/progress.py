@@ -77,6 +77,82 @@ class SkillProgressBadge(BaseModel):
     completed_milestones: int
 
 
+class DailyTaskItem(BaseModel):
+    """An actionable daily learning goal item."""
+
+    id: str
+    label: str
+    completed: bool
+
+
+class WeeklyActivityDay(BaseModel):
+    """Activity state for a single day in the weekly streak view."""
+
+    date: str
+    day_name: str
+    completed_tasks_count: int
+    is_active: bool
+
+
+class DailyActivityResponse(BaseModel):
+    """Comprehensive daily productivity and streak response."""
+
+    activity_date: str
+    streak_count: int
+    completed_tasks: list[str]
+    task_count: int
+    minutes_spent: int
+    today_checklist: list[DailyTaskItem]
+    weekly_history: list[WeeklyActivityDay]
+
+
+class DailyTaskToggleRequest(BaseModel):
+    """Request schema for toggling a daily goal task."""
+
+    task_id: str = Field(..., description="Task identifier, e.g. 'lesson' or 'code'")
+    is_completed: bool = Field(..., description="Target completion status")
+    activity_date: str | None = Field(default=None, description="Optional YYYY-MM-DD date")
+
+
+class AIBuddyResponse(BaseModel):
+    """Personalized AI mentor guidance and pedagogical next steps."""
+
+    current_goal: str
+    last_activity: str
+    next_milestone: str
+    reasoning: str
+    weak_areas: list[str] = Field(default_factory=list)
+    mentor_tip: str
+    quick_prompts: list[str] = Field(default_factory=list)
+
+
+class UserBadge(BaseModel):
+    """Achievement badge earned by the learner."""
+
+    id: str
+    title: str
+    description: str
+    icon: str
+    earned: bool
+    earned_at: str | None = None
+
+
+class UserProfileResponse(BaseModel):
+    """Learner portfolio and skills mastery profile."""
+
+    user_id: uuid.UUID
+    full_name: str
+    email: str
+    account_level: str
+    total_milestones: int
+    total_lessons: int
+    total_projects: int
+    streak_count: int
+    overall_mastery: int
+    skills: list[SkillProgressBadge] = Field(default_factory=list)
+    badges: list[UserBadge] = Field(default_factory=list)
+
+
 class DashboardSummaryResponse(BaseModel):
     """Comprehensive user learning dashboard summary."""
 
@@ -85,6 +161,10 @@ class DashboardSummaryResponse(BaseModel):
     total_completed_lessons: int
     total_active_paths: int
     overall_progress_percent: int
+    streak_count: int = 1
     current_path: DashboardEnrolledPath | None = None
     enrolled_paths: list[DashboardEnrolledPath] = Field(default_factory=list)
     skills_overview: list[SkillProgressBadge] = Field(default_factory=list)
+    ai_buddy: AIBuddyResponse | None = None
+    daily_activity: DailyActivityResponse | None = None
+

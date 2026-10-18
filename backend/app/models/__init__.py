@@ -16,6 +16,10 @@ from app.models.progress import (
     UserRoadmapProgress,
     UserLessonProgress,
 )
+from app.models.user_roadmap import (
+    UserGeneratedRoadmap,
+    DailyLearningActivity,
+)
 
 __all__ = [
     "Base",
@@ -33,6 +37,8 @@ __all__ = [
     "UserLearningPath",
     "UserRoadmapProgress",
     "UserLessonProgress",
+    "UserGeneratedRoadmap",
+    "DailyLearningActivity",
 ]
 
 

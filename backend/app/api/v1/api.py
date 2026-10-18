@@ -8,6 +8,7 @@ from app.routers.skills import router as skills_router
 from app.routers.search import router as search_router
 from app.routers.auth import router as auth_router
 from app.routers.progress import router as progress_router
+from app.routers.roadmap_builder import router as roadmap_builder_router
 
 api_router = APIRouter()
 
@@ -15,6 +16,7 @@ api_router = APIRouter()
 api_router.include_router(health_router, prefix="", tags=["Health"])
 api_router.include_router(auth_router, prefix="/auth", tags=["Authentication"])
 api_router.include_router(progress_router, prefix="/progress", tags=["User Progress"])
+api_router.include_router(roadmap_builder_router, prefix="/roadmaps", tags=["Roadmap Builder"])
 api_router.include_router(search_router, prefix="/search", tags=["Search"])
 api_router.include_router(skills_router, prefix="/skills", tags=["Skills"])
 api_router.include_router(

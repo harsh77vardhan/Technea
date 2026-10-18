@@ -20,6 +20,8 @@ export function AuthProvider({ children }) {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
   const [authModalMode, setAuthModalMode] = useState('login') // 'login' | 'signup'
   const [isDashboardOpen, setIsDashboardOpen] = useState(false)
+  const [isRoadmapBuilderOpen, setIsRoadmapBuilderOpen] = useState(false)
+  const [roadmapBuilderInitialGoal, setRoadmapBuilderInitialGoal] = useState('')
 
   const openAuthModal = useCallback((mode = 'login') => {
     setAuthModalMode(mode)
@@ -36,6 +38,15 @@ export function AuthProvider({ children }) {
 
   const closeDashboard = useCallback(() => {
     setIsDashboardOpen(false)
+  }, [])
+
+  const openRoadmapBuilder = useCallback((initialGoal = '') => {
+    setRoadmapBuilderInitialGoal(initialGoal)
+    setIsRoadmapBuilderOpen(true)
+  }, [])
+
+  const closeRoadmapBuilder = useCallback(() => {
+    setIsRoadmapBuilderOpen(false)
   }, [])
 
   /**
@@ -199,6 +210,10 @@ export function AuthProvider({ children }) {
     isDashboardOpen,
     openDashboard,
     closeDashboard,
+    isRoadmapBuilderOpen,
+    roadmapBuilderInitialGoal,
+    openRoadmapBuilder,
+    closeRoadmapBuilder,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

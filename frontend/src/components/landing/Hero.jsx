@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, Compass } from 'lucide-react'
+import { useAuth } from '../../context/useAuth'
 import SkillExplorer from './SkillExplorer'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -168,6 +169,7 @@ function DecoBottomRight() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function Hero() {
+  const { openRoadmapBuilder } = useAuth()
   const [isExplorerOpen, setIsExplorerOpen] = useState(false)
 
   return (
@@ -205,15 +207,23 @@ export default function Hero() {
           AI-guided learning paths that help beginners know what to learn next.
         </p>
 
-        {/* CTA — sharp-cornered, editorial weight, no rounded pill */}
-        <div className="mt-10">
+        {/* CTA Buttons */}
+        <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
           <button
             type="button"
-            onClick={() => setIsExplorerOpen(true)}
+            onClick={() => openRoadmapBuilder()}
             className="inline-flex items-center gap-3 bg-[#0f172a] px-9 py-4 text-[11px] font-bold uppercase tracking-[0.18em] text-white transition-colors hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0f172a] focus:ring-offset-4 focus:ring-offset-[#f2f3f5] cursor-pointer"
           >
             Build My Roadmap
             <ArrowRight className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsExplorerOpen(true)}
+            className="inline-flex items-center gap-2 border border-slate-300 bg-white/80 backdrop-blur-xs px-6 py-4 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-700 transition-colors hover:bg-white hover:text-slate-900 cursor-pointer"
+          >
+            <Compass className="h-3.5 w-3.5" />
+            <span>Explore Catalog</span>
           </button>
         </div>
 

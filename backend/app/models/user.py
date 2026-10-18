@@ -13,6 +13,7 @@ from app.models.base import TimestampMixin, UUIDIdMixin
 
 if TYPE_CHECKING:
     from app.models.progress import UserLearningPath, UserRoadmapProgress, UserLessonProgress
+    from app.models.user_roadmap import UserGeneratedRoadmap, DailyLearningActivity
 
 
 class User(Base, UUIDIdMixin, TimestampMixin):
@@ -66,6 +67,16 @@ class User(Base, UUIDIdMixin, TimestampMixin):
     )
     lesson_progress: Mapped[list["UserLessonProgress"]] = relationship(
         "UserLessonProgress",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    generated_roadmaps: Mapped[list["UserGeneratedRoadmap"]] = relationship(
+        "UserGeneratedRoadmap",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    daily_activities: Mapped[list["DailyLearningActivity"]] = relationship(
+        "DailyLearningActivity",
         back_populates="user",
         cascade="all, delete-orphan",
     )

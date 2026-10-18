@@ -4,12 +4,16 @@ from fastapi import APIRouter, status
 from app.api.deps import CurrentUserDep, DatabaseDep
 from app.schemas.common import MessageResponse
 from app.schemas.progress import (
+    AIBuddyResponse,
     CourseProgressResponse,
+    DailyActivityResponse,
+    DailyTaskToggleRequest,
     DashboardSummaryResponse,
     GuestProgressSyncRequest,
     LessonToggleRequest,
     PathProgressResponse,
     RoadmapStepToggleRequest,
+    UserProfileResponse,
 )
 from app.services.progress import progress_service
 
@@ -132,3 +136,68 @@ async def get_dashboard_summary(
         db,
         user_id=current_user.id,
     )
+
+
+@router.get(
+    "/daily",
+    response_model=DailyActivityResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Get user's daily activity, checklist, and weekly history",
+)
+async def get_daily_activity(
+    current_user: CurrentUserDep,
+    db: DatabaseDep,
+    date: str | None = None,
+) -> DailyActivityResponse:
+    """Retrieve daily productivity checklist, streak count, and weekly streak graph."""
+    return await progress_service.get_daily_activity(db, user_id=current_user.id, activity_date=date)
+
+
+@router.post(
+    "/daily/toggle",
+    response_model=DailyActivityResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Toggle a daily checklist goal",
+)
+async def toggle_daily_task(
+    payload: DailyTaskToggleRequest,
+    current_user: CurrentUserDep,
+    db: DatabaseDep,
+) -> DailyActivityResponse:
+    """Check off or uncheck a daily productivity goal."""
+    return await progress_service.toggle_daily_task(
+        db,
+        user_id=current_user.id,
+        task_id=payload.task_id,
+        is_completed=payload.is_completed,
+        activity_date=payload.activity_date,
+    )
+
+
+@router.get(
+    "/ai-buddy",
+    response_model=AIBuddyResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Get contextual AI learning buddy guidance",
+)
+async def get_ai_buddy(
+    current_user: CurrentUserDep,
+    db: DatabaseDep,
+) -> AIBuddyResponse:
+    """Retrieve AI pedagogical advice, next milestone recommendation, and weak areas."""
+    return await progress_service.get_ai_buddy_guidance(db, user_id=current_user.id)
+
+
+@router.get(
+    "/profile",
+    response_model=UserProfileResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Get user learning profile and skill mastery breakdown",
+)
+async def get_user_profile(
+    current_user: CurrentUserDep,
+    db: DatabaseDep,
+) -> UserProfileResponse:
+    """Retrieve user skills mastery, badges, and learning milestones profile."""
+    return await progress_service.get_user_profile(db, user_id=current_user.id)
+

@@ -401,6 +401,117 @@ export async function getDashboardSummaryApi() {
   return request('/progress/dashboard')
 }
 
+/* ==========================================================================
+   AI Career Roadmap Builder Endpoints
+   ========================================================================== */
+
+/**
+ * Generate a personalized career roadmap from natural language career goal
+ * @param {Object} data - { goal: string, experience_level: string }
+ * @returns {Promise<Object>} Generated roadmap with phases, milestones, courses, projects
+ */
+export async function generateRoadmapApi(data) {
+  return request('/roadmaps/generate', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+/**
+ * Persist generated roadmap to authenticated user profile
+ * @param {Object} data - { title, goal, target_role, experience_level, estimated_duration, roadmap_data }
+ * @returns {Promise<Object>} Saved roadmap model
+ */
+export async function saveRoadmapApi(data) {
+  return request('/roadmaps/save', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+/**
+ * Fetch all saved roadmaps for the current authenticated user
+ * @returns {Promise<Array>} List of saved roadmaps
+ */
+export async function getMyRoadmapsApi() {
+  return request('/roadmaps/my')
+}
+
+/**
+ * Fetch single saved roadmap by ID
+ * @param {number|string} roadmapId
+ * @returns {Promise<Object>}
+ */
+export async function getRoadmapByIdApi(roadmapId) {
+  return request(`/roadmaps/${roadmapId}`)
+}
+
+/**
+ * Toggle milestone completion inside a saved roadmap
+ * @param {number|string} roadmapId
+ * @param {Object} data - { milestone_id: string, is_completed: boolean }
+ * @returns {Promise<Object>} Updated roadmap model with recalculated progress
+ */
+export async function toggleRoadmapMilestoneApi(roadmapId, data) {
+  return request(`/roadmaps/${roadmapId}/progress`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+/**
+ * Delete a saved roadmap
+ * @param {number|string} roadmapId
+ * @returns {Promise<Object>}
+ */
+export async function deleteRoadmapApi(roadmapId) {
+  return request(`/roadmaps/${roadmapId}`, {
+    method: 'DELETE',
+  })
+}
+
+/* ==========================================================================
+   Daily Productivity & Learning Profile Endpoints
+   ========================================================================== */
+
+/**
+ * Fetch daily checklist, streak, and weekly history
+ * @param {string} [date] - Optional YYYY-MM-DD
+ * @returns {Promise<Object>}
+ */
+export async function getDailyActivityApi(date) {
+  const query = date ? `?date=${encodeURIComponent(date)}` : ''
+  return request(`/progress/daily${query}`)
+}
+
+/**
+ * Toggle a daily productivity checklist item
+ * @param {Object} data - { task_id: string, is_completed: boolean, activity_date?: string }
+ * @returns {Promise<Object>} Updated daily activity
+ */
+export async function toggleDailyTaskApi(data) {
+  return request('/progress/daily/toggle', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+/**
+ * Fetch contextual AI Learning Buddy mentorship guidance
+ * @returns {Promise<Object>}
+ */
+export async function getAIBuddyApi() {
+  return request('/progress/ai-buddy')
+}
+
+/**
+ * Fetch learner profile and skills mastery breakdown
+ * @returns {Promise<Object>}
+ */
+export async function getUserProfileApi() {
+  return request('/progress/profile')
+}
+
 export default {
   getAuthToken,
   setAuthToken,
@@ -415,6 +526,16 @@ export default {
   toggleLessonProgressApi,
   syncGuestProgressApi,
   getDashboardSummaryApi,
+  generateRoadmapApi,
+  saveRoadmapApi,
+  getMyRoadmapsApi,
+  getRoadmapByIdApi,
+  toggleRoadmapMilestoneApi,
+  deleteRoadmapApi,
+  getDailyActivityApi,
+  toggleDailyTaskApi,
+  getAIBuddyApi,
+  getUserProfileApi,
   getSkills,
   getSkillById,
   getSkillRelationships,
@@ -427,5 +548,6 @@ export default {
   searchCatalog,
   analyzeIntent,
 }
+
 
 

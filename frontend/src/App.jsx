@@ -7,9 +7,19 @@ import Footer from './components/layout/Footer'
 import AuthModal from './components/auth/AuthModal'
 import LearningDashboardModal from './components/dashboard/LearningDashboardModal'
 import SkillExplorerModal from './components/explorer/SkillExplorerModal'
+import RoadmapBuilderModal from './components/roadmap/RoadmapBuilderModal'
 
 function AppContent() {
-  const { isAuthModalOpen, closeAuthModal, authModalMode, isDashboardOpen, closeDashboard } = useAuth()
+  const {
+    isAuthModalOpen,
+    closeAuthModal,
+    authModalMode,
+    isDashboardOpen,
+    closeDashboard,
+    isRoadmapBuilderOpen,
+    closeRoadmapBuilder,
+    roadmapBuilderInitialGoal,
+  } = useAuth()
   const [selectedDashboardPath, setSelectedDashboardPath] = useState(null)
   const [isDirectExplorerOpen, setIsDirectExplorerOpen] = useState(false)
 
@@ -55,6 +65,14 @@ function AppContent() {
           }}
         />
       )}
+
+      {/* Global AI Roadmap Builder Modal */}
+      <RoadmapBuilderModal
+        isOpen={isRoadmapBuilderOpen}
+        onClose={closeRoadmapBuilder}
+        initialGoal={roadmapBuilderInitialGoal}
+        onSelectPath={handleSelectPathFromDashboard}
+      />
     </div>
   )
 }
