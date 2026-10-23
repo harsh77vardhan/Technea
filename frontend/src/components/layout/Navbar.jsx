@@ -1,8 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
 import { Menu, X, ArrowRight, LayoutDashboard, LogOut, ChevronDown, Sparkles, User, Edit3 } from 'lucide-react'
+import gsap from 'gsap'
+import { useGSAP } from '@gsap/react'
 import { useAuth } from '../../context/useAuth'
 import TechneaLogo from './TechneaLogo'
 import { getAvatarUrl } from '../../utils/avatar'
+
+gsap.registerPlugin(useGSAP)
 
 export default function Navbar() {
   const { user, openAuthModal, openDashboard, openRoadmapBuilder, logout } = useAuth()
@@ -12,6 +16,17 @@ export default function Navbar() {
   const [avatarError, setAvatarError] = useState(false)
   const [prevUserAvatar, setPrevUserAvatar] = useState(user?.avatar_url)
   const menuRef = useRef(null)
+  const navInnerRef = useRef(null)
+
+  useGSAP(() => {
+    gsap.from(navInnerRef.current, {
+      opacity: 0,
+      y: -18,
+      duration: 0.85,
+      ease: 'power3.out',
+      delay: 0.1,
+    })
+  }, { scope: navInnerRef })
 
   if (user?.avatar_url !== prevUserAvatar) {
     setPrevUserAvatar(user?.avatar_url)
@@ -88,7 +103,10 @@ export default function Navbar() {
         isVisible || mobileMenuOpen ? 'translate-y-0' : '-translate-y-full'
       }`}
     >
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3.5 sm:px-6 lg:px-8">
+      <div
+        ref={navInnerRef}
+        className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3.5 sm:px-6 lg:px-8"
+      >
         {/* Brand Logo */}
         <TechneaLogo href="#" />
 

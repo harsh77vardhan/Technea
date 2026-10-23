@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from 'react'
+import { useEffect, useRef } from 'react'
+import { useLenis } from 'lenis/react'
 import { BookOpen, CheckSquare, TrendingUp, Calendar } from 'lucide-react'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -32,7 +33,23 @@ const FEATURES = [
 
 export default function LearningCompanion() {
   const containerRef = useRef(null)
-  const [parallax, setParallax] = useState({ x: 0, y: 0, t: 0 })
+  const ribbonRef = useRef(null)
+  const cardContainerRef = useRef(null)
+  const scrollOffsetRef = useRef({ ribbonX: 0, ribbonY: 0, cardY: 0 })
+
+  useLenis(() => {
+    if (!containerRef.current) return
+    const rect = containerRef.current.getBoundingClientRect()
+    const windowH = window.innerHeight
+    if (rect.top < windowH + 300 && rect.bottom > -300) {
+      const centerDist = windowH / 2 - (rect.top + rect.height / 2)
+      scrollOffsetRef.current = {
+        ribbonX: centerDist * 0.18,
+        ribbonY: centerDist * 0.06,
+        cardY: centerDist * 0.04,
+      }
+    }
+  })
 
   // ── Physics-damped Mouse Parallax & Gentle Continuous Float ───────────────────
   useEffect(() => {
@@ -63,7 +80,24 @@ export default function LearningCompanion() {
       const elapsed = (currentTime - startTime) * 0.001
       currentX += (targetX - currentX) * 0.035
       currentY += (targetY - currentY) * 0.035
-      setParallax({ x: currentX, y: currentY, t: elapsed })
+
+      const ribbonScrollX = scrollOffsetRef.current?.ribbonX || 0
+      const ribbonScrollY = scrollOffsetRef.current?.ribbonY || 0
+      const cardScrollY = scrollOffsetRef.current?.cardY || 0
+
+      const rx = Math.sin(elapsed * 0.18) * 26 + currentX * 12 + ribbonScrollX
+      const ry = Math.cos(elapsed * 0.14) * 16 + currentY * 8 + ribbonScrollY
+      if (ribbonRef.current) {
+        ribbonRef.current.style.transform = `rotate(-17deg) translate3d(${rx.toFixed(1)}px, ${ry.toFixed(1)}px, 0px)`
+      }
+
+      const dynamicRx = -currentY * 2.2
+      const dynamicRy = currentX * 2.6
+      const floatY = Math.sin(elapsed * 0.4) * 3.5 + cardScrollY
+      if (cardContainerRef.current) {
+        cardContainerRef.current.style.transform = `rotateX(${dynamicRx.toFixed(2)}deg) rotateY(${dynamicRy.toFixed(2)}deg) translateY(${floatY.toFixed(1)}px)`
+      }
+
       rafId = requestAnimationFrame(animate)
     }
 
@@ -78,15 +112,6 @@ export default function LearningCompanion() {
     }
   }, [])
 
-  // Subtle 3D tilt and floating transformation
-  const dynamicRx = -parallax.y * 2.2
-  const dynamicRy = parallax.x * 2.6
-  const floatY = Math.sin(parallax.t * 0.4) * 3.5
-
-  // Subtle floating and drifting for the organic wavy ribbon
-  const ribbonX = Math.sin(parallax.t * 0.18) * 26 + parallax.x * 12
-  const ribbonY = Math.cos(parallax.t * 0.14) * 16 + parallax.y * 8
-
   return (
     <section
       id="learning-companion"
@@ -99,9 +124,10 @@ export default function LearningCompanion() {
         aria-hidden="true"
       >
         <div
+          ref={ribbonRef}
           className="absolute -top-[14%] sm:-top-[8%] -left-[22%] w-[148%] will-change-transform opacity-75 sm:opacity-85"
           style={{
-            transform: `rotate(-17deg) translate3d(${ribbonX.toFixed(1)}px, ${ribbonY.toFixed(1)}px, 0px)`,
+            transform: 'rotate(-17deg) translate3d(0px, 0px, 0px)',
           }}
         >
           <svg
@@ -260,10 +286,8 @@ export default function LearningCompanion() {
           {/* ── Right Column: Large Premium Rectangular Container ────────────── */}
           <div className="lg:col-span-7 [perspective:1400px]">
             <div
-              className="relative rounded-2xl border border-white/[0.08] bg-[#0c0c0e]/90 backdrop-blur-2xl p-5 sm:p-6 lg:p-7 shadow-[0_28px_80px_-20px_rgba(0,0,0,0.85)] will-change-transform transition-transform duration-300 ease-out"
-              style={{
-                transform: `rotateX(${dynamicRx.toFixed(2)}deg) rotateY(${dynamicRy.toFixed(2)}deg) translateY(${floatY.toFixed(1)}px)`,
-              }}
+              ref={cardContainerRef}
+              className="relative rounded-2xl border border-white/[0.08] bg-[#0c0c0e]/90 backdrop-blur-2xl p-5 sm:p-6 lg:p-7 shadow-[0_28px_80px_-20px_rgba(0,0,0,0.85)] will-change-transform"
             >
               {/* Clean 2x2 Feature Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">

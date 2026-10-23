@@ -3,6 +3,9 @@
 // Full-bleed edge-to-edge vertical panels with continuous filmic marquee motion.
 // ─────────────────────────────────────────────────────────────────────────────
 
+import { useRef } from 'react'
+import { useLenis } from 'lenis/react'
+
 const CAREERS = [
   {
     id: 'software-engineer',
@@ -39,9 +42,25 @@ const CAREERS = [
 export default function CareerShowcase() {
   // Render two identical 5-panel sets to create an uninterrupted infinite film loop
   const filmPanels = [...CAREERS, ...CAREERS]
+  const stripRef = useRef(null)
+  const ribbonLeftRef = useRef(null)
+  const ribbonRightRef = useRef(null)
+
+  useLenis(({ velocity, scroll }) => {
+    if (stripRef.current) {
+      // Fluid velocity lean: bends subtly into scroll momentum, relaxes naturally
+      const clampedSkew = Math.max(-2.5, Math.min(2.5, -velocity * 0.035))
+      stripRef.current.style.transform = `skewX(${clampedSkew}deg)`
+    }
+    if (ribbonLeftRef.current && ribbonRightRef.current) {
+      const offset = (scroll * 0.08) % 120
+      ribbonLeftRef.current.style.transform = `translate3d(${-offset}px, 0, 0)`
+      ribbonRightRef.current.style.transform = `translate3d(${offset}px, 0, 0)`
+    }
+  })
 
   return (
-    <section className="relative w-full overflow-hidden bg-[#f2f3f5] pt-16 sm:pt-24 pb-0">
+    <section id="career-showcase" className="relative w-full overflow-hidden bg-[#f2f3f5] pt-16 sm:pt-24 pb-0">
       {/* ── Editorial Header with intentional whitespace ─────────────────── */}
       <div className="mx-auto max-w-4xl px-6 text-center mb-12 sm:mb-14">
         <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-slate-400">
@@ -58,9 +77,10 @@ export default function CareerShowcase() {
 
       {/* ── Top edge Memphis diagonal ribbon accents ──────────────────────── */}
       <div className="relative w-full">
-        {/* Left diagonal ribbon pair */}
+        {/* Left diagonal ribbon pair with scroll drift */}
         <div
-          className="pointer-events-none absolute -top-4 left-6 sm:left-12 z-20 select-none"
+          ref={ribbonLeftRef}
+          className="pointer-events-none absolute -top-4 left-6 sm:left-12 z-20 select-none will-change-transform"
           aria-hidden="true"
         >
           <svg width="84" height="28" viewBox="0 0 84 28" fill="none">
@@ -69,9 +89,10 @@ export default function CareerShowcase() {
           </svg>
         </div>
 
-        {/* Right diagonal ribbon trio: Purple (#8B5CF6), Blue (#2563EB), Cyan (#06B6D4) */}
+        {/* Right diagonal ribbon trio with opposite scroll drift */}
         <div
-          className="pointer-events-none absolute -top-4 right-6 sm:right-12 z-20 select-none"
+          ref={ribbonRightRef}
+          className="pointer-events-none absolute -top-4 right-6 sm:right-12 z-20 select-none will-change-transform"
           aria-hidden="true"
         >
           <svg width="128" height="28" viewBox="0 0 128 28" fill="none">
@@ -82,9 +103,12 @@ export default function CareerShowcase() {
         </div>
 
         {/* ── Full-width, seamless, edge-to-edge cinematic strip ──────────── */}
-        {/* Reduced height by ~1/3; continuous non-stopping marquee */}
+        {/* Reduced height by ~1/3; continuous non-stopping marquee with scroll velocity lean */}
         <div className="marquee-container relative w-full overflow-hidden select-none">
-          <div className="animate-marquee flex gap-0">
+          <div
+            ref={stripRef}
+            className="animate-marquee flex gap-0 will-change-transform transition-transform duration-200 ease-out"
+          >
             {filmPanels.map((panel, idx) => (
               <div
                 key={`${panel.id}-${idx}`}

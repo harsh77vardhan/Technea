@@ -1,3 +1,5 @@
+import { useRef } from 'react'
+import { useLenis } from 'lenis/react'
 import { Compass, Lightbulb, Code2, Trophy } from 'lucide-react'
 
 const STEPS = [
@@ -59,8 +61,25 @@ const LEARNING_PATHS = [
 ]
 
 export default function HowItWorks() {
+  const sectionRef = useRef(null)
+  const progressBarRef = useRef(null)
+
+  useLenis(() => {
+    if (!sectionRef.current || !progressBarRef.current) return
+    const rect = sectionRef.current.getBoundingClientRect()
+    const windowH = window.innerHeight
+    const totalDist = windowH + rect.height
+    const currentDist = windowH - rect.top
+    const progress = Math.max(0, Math.min(1, currentDist / totalDist))
+    progressBarRef.current.style.transform = `scaleX(${progress})`
+  })
+
   return (
-    <section id="how-it-works" className="relative bg-white text-neutral-950 py-24 sm:py-32 border-b border-neutral-200">
+    <section
+      id="how-it-works"
+      ref={sectionRef}
+      className="relative bg-white text-neutral-950 py-24 sm:py-32 border-b border-neutral-200"
+    >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* ── Section Header ─────────────────────────────────────────────── */}
         <div className="mx-auto max-w-3xl text-center">
@@ -74,6 +93,15 @@ export default function HowItWorks() {
           <p className="mt-6 text-base sm:text-lg leading-relaxed text-neutral-600">
             A structured, step-by-step progression engineered to help beginners overcome tutorial paralysis and build genuine momentum.
           </p>
+        </div>
+
+        {/* ── Live Scroll Progression Hairline Indicator ─────────────────── */}
+        <div className="mt-14 -mb-10 relative h-[1.5px] w-full bg-neutral-100 overflow-hidden">
+          <div
+            ref={progressBarRef}
+            className="absolute top-0 left-0 bottom-0 w-full bg-[#0f172a] origin-left will-change-transform"
+            style={{ transform: 'scaleX(0)' }}
+          />
         </div>
 
         {/* ── Step Grid: Thin Light Borders on White ─────────────────────── */}

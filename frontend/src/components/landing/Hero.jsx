@@ -1,7 +1,13 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
+import { motion } from 'framer-motion'
+import { useLenis } from 'lenis/react'
 import { ArrowRight, Compass } from 'lucide-react'
+import gsap from 'gsap'
+import { useGSAP } from '@gsap/react'
 import { useAuth } from '../../context/useAuth'
 import SkillExplorer from './SkillExplorer'
+
+gsap.registerPlugin(useGSAP)
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Memphis decorations: all inline SVG, all anchored to a corner.
@@ -171,28 +177,189 @@ function DecoBottomRight() {
 export default function Hero() {
   const { openRoadmapBuilder } = useAuth()
   const [isExplorerOpen, setIsExplorerOpen] = useState(false)
+  const [scrollFade, setScrollFade] = useState(1)
+  const lenis = useLenis()
+
+  const heroRef = useRef(null)
+  const decoTopLeftRef = useRef(null)
+  const decoTopRightRef = useRef(null)
+  const decoBottomLeftRef = useRef(null)
+  const decoBottomRightRef = useRef(null)
+  const centerContentRef = useRef(null)
+
+  // ── GSAP Cinematic Landing Entrance Timeline ─────────────────────────────
+  useGSAP(
+    () => {
+      const tl = gsap.timeline({ defaults: { ease: 'power3.out' } })
+
+      // 1. Memphis corner accents bloom into position
+      tl.from('.deco-corner', {
+        opacity: 0,
+        scale: 0.84,
+        duration: 1.15,
+        stagger: 0.08,
+        ease: 'power3.out',
+      })
+
+      // 2. Eyebrow badge descends cleanly
+      tl.from(
+        '.hero-eyebrow',
+        {
+          opacity: 0,
+          y: -22,
+          duration: 0.8,
+          ease: 'power3.out',
+        },
+        '-=0.9'
+      )
+
+      // 3. Primary headline reveals with smooth luxury power4 ease
+      tl.from(
+        '.hero-headline',
+        {
+          opacity: 0,
+          y: 45,
+          scale: 0.98,
+          duration: 1.0,
+          ease: 'power4.out',
+        },
+        '-=0.6'
+      )
+
+      // 4. Precision editorial divider unfolds horizontally from center
+      tl.from(
+        '.hero-divider',
+        {
+          scaleX: 0,
+          opacity: 0,
+          duration: 0.65,
+          ease: 'power2.inOut',
+        },
+        '-=0.65'
+      )
+
+      // 5. Subtitle eases upward
+      tl.from(
+        '.hero-subtitle',
+        {
+          opacity: 0,
+          y: 24,
+          duration: 0.8,
+          ease: 'power3.out',
+        },
+        '-=0.45'
+      )
+
+      // 6. Action buttons pop in with confident spring
+      tl.from(
+        '.hero-cta-btn',
+        {
+          opacity: 0,
+          y: 20,
+          scale: 0.94,
+          stagger: 0.12,
+          duration: 0.75,
+          ease: 'back.out(1.6)',
+        },
+        '-=0.45'
+      )
+
+      // 7. Scroll indicator enters smoothly
+      tl.from(
+        '.hero-scroll-prompt',
+        {
+          opacity: 0,
+          y: 16,
+          duration: 0.8,
+          ease: 'power2.out',
+        },
+        '-=0.3'
+      )
+    },
+    { scope: heroRef }
+  )
+
+  useLenis(({ scroll }) => {
+    // Only apply continuous parallax while hero is visible on screen
+    if (scroll < 1000) {
+      if (decoTopLeftRef.current) {
+        decoTopLeftRef.current.style.transform = `translate3d(${-scroll * 0.14}px, ${-scroll * 0.26}px, 0)`
+      }
+      if (decoTopRightRef.current) {
+        decoTopRightRef.current.style.transform = `translate3d(${scroll * 0.16}px, ${-scroll * 0.32}px, 0)`
+      }
+      if (decoBottomLeftRef.current) {
+        decoBottomLeftRef.current.style.transform = `translate3d(${-scroll * 0.12}px, ${scroll * 0.22}px, 0)`
+      }
+      if (decoBottomRightRef.current) {
+        decoBottomRightRef.current.style.transform = `translate3d(${scroll * 0.18}px, ${scroll * 0.28}px, 0)`
+      }
+      if (centerContentRef.current) {
+        const opacity = Math.max(0, 1 - scroll / 520)
+        centerContentRef.current.style.transform = `translate3d(0, ${scroll * 0.18}px, 0)`
+        centerContentRef.current.style.opacity = String(opacity)
+      }
+    }
+    setScrollFade(Math.max(0, 1 - scroll / 220))
+  })
 
   return (
-    <section className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#f2f3f5]">
+    <section
+      ref={heroRef}
+      className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#f2f3f5]"
+    >
+      {/* Four corner decorations — each anchored precisely with continuous scroll parallax */}
+      <div
+        ref={decoTopLeftRef}
+        className="pointer-events-none absolute left-0 top-0 will-change-transform z-0"
+      >
+        <div className="deco-corner">
+          <DecoTopLeft />
+        </div>
+      </div>
+      <div
+        ref={decoTopRightRef}
+        className="pointer-events-none absolute right-0 top-0 will-change-transform z-0"
+      >
+        <div className="deco-corner">
+          <DecoTopRight />
+        </div>
+      </div>
+      <div
+        ref={decoBottomLeftRef}
+        className="pointer-events-none absolute bottom-0 left-0 will-change-transform z-0"
+      >
+        <div className="deco-corner">
+          <DecoBottomLeft />
+        </div>
+      </div>
+      <div
+        ref={decoBottomRightRef}
+        className="pointer-events-none absolute bottom-0 right-0 will-change-transform z-0"
+      >
+        <div className="deco-corner">
+          <DecoBottomRight />
+        </div>
+      </div>
 
-      {/* Four corner decorations — each anchored precisely, never scattered */}
-      <DecoTopLeft />
-      <DecoTopRight />
-      <DecoBottomLeft />
-      <DecoBottomRight />
-
-      {/* ── Center content ───────────────────────────────────────────────── */}
-      <div className="relative z-10 px-6 text-center">
-
+      {/* ── Center content with continuous scroll depth & fade ──────────── */}
+      <div
+        ref={centerContentRef}
+        className="relative z-10 px-6 text-center will-change-transform"
+      >
         {/* Eyebrow label */}
-        <p className="mb-8 text-[11px] font-bold uppercase tracking-[0.3em] text-slate-400">
+        <p className="hero-eyebrow mb-8 text-[11px] font-bold uppercase tracking-[0.3em] text-slate-400">
           Built for beginners starting their tech journey
         </p>
 
         {/* Primary headline — the entire visual weight of the page rests here */}
         <h1
-          style={{ fontSize: 'clamp(2.6rem, 7vw, 5.5rem)', lineHeight: '0.93', letterSpacing: '-0.02em' }}
-          className="font-black uppercase text-[#0f172a]"
+          style={{
+            fontSize: 'clamp(2.6rem, 7vw, 5.5rem)',
+            lineHeight: '0.93',
+            letterSpacing: '-0.02em',
+          }}
+          className="hero-headline font-black uppercase text-[#0f172a]"
         >
           Learn Technology.
           <br />
@@ -200,10 +367,10 @@ export default function Hero() {
         </h1>
 
         {/* Editorial divider */}
-        <div className="mx-auto mt-10 h-px w-10 bg-slate-300" />
+        <div className="hero-divider mx-auto mt-10 h-px w-10 bg-slate-300 origin-center" />
 
         {/* Subtitle — restrained, one line of thought */}
-        <p className="mx-auto mt-7 max-w-sm text-base leading-relaxed text-slate-500">
+        <p className="hero-subtitle mx-auto mt-7 max-w-sm text-base leading-relaxed text-slate-500">
           AI-guided learning paths that help beginners know what to learn next.
         </p>
 
@@ -212,7 +379,7 @@ export default function Hero() {
           <button
             type="button"
             onClick={() => openRoadmapBuilder()}
-            className="inline-flex items-center gap-3 bg-[#0f172a] px-9 py-4 text-[11px] font-bold uppercase tracking-[0.18em] text-white transition-colors hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0f172a] focus:ring-offset-4 focus:ring-offset-[#f2f3f5] cursor-pointer"
+            className="hero-cta-btn inline-flex items-center gap-3 bg-[#0f172a] px-9 py-4 text-[11px] font-bold uppercase tracking-[0.18em] text-white transition-colors hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0f172a] focus:ring-offset-4 focus:ring-offset-[#f2f3f5] cursor-pointer"
           >
             Build My Roadmap
             <ArrowRight className="h-4 w-4" />
@@ -220,13 +387,12 @@ export default function Hero() {
           <button
             type="button"
             onClick={() => setIsExplorerOpen(true)}
-            className="inline-flex items-center gap-2 border border-slate-300 bg-white/80 backdrop-blur-xs px-6 py-4 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-700 transition-colors hover:bg-white hover:text-slate-900 cursor-pointer"
+            className="hero-cta-btn inline-flex items-center gap-2 border border-slate-300 bg-white/80 backdrop-blur-xs px-6 py-4 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-700 transition-colors hover:bg-white hover:text-slate-900 cursor-pointer"
           >
             <Compass className="h-3.5 w-3.5" />
             <span>Explore Catalog</span>
           </button>
         </div>
-
       </div>
 
       {/* Full-Screen Skill Explorer Interface */}
@@ -235,6 +401,30 @@ export default function Hero() {
         onClose={() => setIsExplorerOpen(false)}
       />
 
+      {/* ── Minimal Scroll Indicator (Connected to Lenis) ───────────── */}
+      <motion.button
+        type="button"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: scrollFade }}
+        transition={{ delay: 0.9, duration: 0.8 }}
+        onClick={() =>
+          lenis?.scrollTo('#career-showcase', { offset: -60, duration: 1.2 })
+        }
+        className="hero-scroll-prompt absolute bottom-6 left-1/2 -translate-x-1/2 z-10 hidden sm:flex flex-col items-center gap-1.5 select-none group cursor-pointer"
+        style={{ pointerEvents: scrollFade > 0.05 ? 'auto' : 'none' }}
+        aria-label="Scroll to next section"
+      >
+        <span className="text-[9px] font-mono tracking-[0.25em] uppercase text-slate-400 group-hover:text-slate-700 transition-colors">
+          SCROLL
+        </span>
+        <div className="w-3.5 h-6 rounded-full border border-slate-300 group-hover:border-slate-500 transition-colors flex items-start justify-center p-0.5">
+          <motion.div
+            animate={{ y: [0, 8, 0] }}
+            transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
+            className="w-1 h-1 rounded-full bg-slate-500"
+          />
+        </div>
+      </motion.button>
     </section>
   )
 }

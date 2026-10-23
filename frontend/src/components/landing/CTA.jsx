@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js'
+import { useLenis } from 'lenis/react'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Page 4: Cinematic Immersive Technea Section
@@ -244,6 +245,21 @@ function createChatBubble() {
 // ── Cinematic Three.js Glass Spheres Scene ───────────────────────────────────
 
 function CinematicScene({ containerRef }) {
+  const scrollOffsetRef = useRef({ deltaY: 0, rotSpeed: 0 })
+
+  useLenis(({ velocity }) => {
+    if (!containerRef.current) return
+    const rect = containerRef.current.getBoundingClientRect()
+    const windowH = window.innerHeight
+    if (rect.top < windowH && rect.bottom > 0) {
+      const centerDist = (windowH / 2 - (rect.top + rect.height / 2)) / windowH
+      scrollOffsetRef.current = {
+        deltaY: centerDist * 1.6,
+        rotSpeed: (velocity || 0) * 0.0012,
+      }
+    }
+  })
+
   useEffect(() => {
     const container = containerRef.current
     if (!container) return
@@ -394,6 +410,8 @@ function CinematicScene({ containerRef }) {
 
     // ── Render & Animation Loop ──────────────────────────────────────────────
     let rafId
+    let currentScrollY = 0
+    let currentRotExtra = 0
     const clock = new THREE.Clock()
 
     const animate = () => {
@@ -405,6 +423,10 @@ function CinematicScene({ containerRef }) {
       // Smooth parallax interpolation
       currentMX += (targetMX - currentMX) * 0.04
       currentMY += (targetMY - currentMY) * 0.04
+      currentScrollY +=
+        ((scrollOffsetRef.current?.deltaY || 0) - currentScrollY) * 0.06
+      currentRotExtra +=
+        ((scrollOffsetRef.current?.rotSpeed || 0) - currentRotExtra) * 0.08
 
       // Independent movement of spheres + rotation of inner 3D objects
       sphereObjects.forEach(({ group, innerObj, speed, phase, basePos }) => {
@@ -412,12 +434,17 @@ function CinematicScene({ containerRef }) {
         const floatX = Math.cos(t * speed * 0.65 + phase) * 0.22
 
         group.position.x = basePos[0] + floatX + currentMX * 0.35
-        group.position.y = basePos[1] + floatY + currentMY * 0.25
+        group.position.y =
+          basePos[1] +
+          floatY +
+          currentMY * 0.25 +
+          currentScrollY * (basePos[2] < -3 ? 0.6 : 1.2)
         group.position.z = basePos[2]
 
-        // Continuous slow 3D rotation of inner object
-        innerObj.rotation.y = t * speed * 0.75 + phase
-        innerObj.rotation.x = Math.sin(t * speed * 0.45 + phase) * 0.25
+        // Continuous slow 3D rotation of inner object + live scroll velocity spin
+        innerObj.rotation.y = t * speed * 0.75 + phase + currentRotExtra * 3
+        innerObj.rotation.x =
+          Math.sin(t * speed * 0.45 + phase) * 0.25 + currentRotExtra
       })
 
       renderer.render(scene, camera)

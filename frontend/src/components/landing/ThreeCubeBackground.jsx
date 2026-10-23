@@ -1,8 +1,27 @@
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
+import { useLenis } from 'lenis/react'
 
 export default function ThreeCubeBackground() {
   const containerRef = useRef(null)
+  const scrollTargetRef = useRef({ rotX: 0, rotY: 0, posY: 0 })
+
+  useLenis(({ velocity }) => {
+    if (!containerRef.current) return
+    const rect = containerRef.current.getBoundingClientRect()
+    const windowH = window.innerHeight
+    if (rect.top < windowH && rect.bottom > 0) {
+      // Calculate normalized progress as the section moves across the screen (-1 to 1)
+      const elementCenter = rect.top + rect.height / 2
+      const viewportCenter = windowH / 2
+      const distance = (viewportCenter - elementCenter) / (windowH + rect.height)
+
+      // Continuous 3D rotation driven dynamically by scroll progress & velocity
+      scrollTargetRef.current.rotX = distance * 3.2 + (velocity || 0) * 0.0012
+      scrollTargetRef.current.rotY = distance * 4.2
+      scrollTargetRef.current.posY = -distance * 0.45
+    }
+  })
 
   useEffect(() => {
     const container = containerRef.current
@@ -144,10 +163,13 @@ export default function ThreeCubeBackground() {
     )
     observer.observe(container)
 
-    // ── 7. Animation Loop ─────────────────────────────────────────────────
+    // ── 7. Animation Loop with Live Scroll 3D Synchrony ──────────────────
     let animationFrameId
     let baseRotationX = 0.4
     let baseRotationY = 0.6
+    let currentScrollRotX = 0
+    let currentScrollRotY = 0
+    let currentScrollPosY = 0
     let clock = new THREE.Clock()
 
     const animate = () => {
@@ -157,25 +179,31 @@ export default function ThreeCubeBackground() {
 
       const elapsedTime = clock.getElapsedTime()
 
-      // Slow, cinematic continuous rotation
-      baseRotationX += 0.0016
-      baseRotationY += 0.0026
+      // Slow, cinematic ambient rotation
+      baseRotationX += 0.0014
+      baseRotationY += 0.0022
 
-      // Smooth parallax damping (lerp)
+      // Smooth parallax mouse damping (lerp)
       currentTiltX += (targetTiltX - currentTiltX) * 0.04
       currentTiltY += (targetTiltY - currentTiltY) * 0.04
 
-      // Apply combined rotation
-      cubeGroup.rotation.x = baseRotationX + currentTiltX
-      cubeGroup.rotation.y = baseRotationY + currentTiltY
+      // Smooth scroll-driven 3D physics damping (lerp)
+      currentScrollRotX += (scrollTargetRef.current.rotX - currentScrollRotX) * 0.07
+      currentScrollRotY += (scrollTargetRef.current.rotY - currentScrollRotY) * 0.07
+      currentScrollPosY += (scrollTargetRef.current.posY - currentScrollPosY) * 0.07
 
-      // Counter-rotation on inner core
-      innerCube.rotation.x = -baseRotationX * 1.5
-      innerCube.rotation.y = -baseRotationY * 1.5
+      // Apply combined rotation (ambient + mouse tilt + scroll rotation)
+      cubeGroup.rotation.x = baseRotationX + currentTiltX + currentScrollRotX
+      cubeGroup.rotation.y = baseRotationY + currentTiltY + currentScrollRotY
 
-      // Gentle floating breathing translation around center position
+      // Dynamic counter-rotation on inner metallic core driven by scroll
+      innerCube.rotation.x = -baseRotationX * 1.5 - currentScrollRotX * 1.8
+      innerCube.rotation.y = -baseRotationY * 1.5 - currentScrollRotY * 1.8
+
+      // Gentle floating breathing translation + scroll-driven vertical shift
       cubeGroup.position.x = targetPosX
-      cubeGroup.position.y = targetPosY + Math.sin(elapsedTime * 0.6) * 0.1
+      cubeGroup.position.y =
+        targetPosY + currentScrollPosY + Math.sin(elapsedTime * 0.6) * 0.1
 
       renderer.render(scene, camera)
     }

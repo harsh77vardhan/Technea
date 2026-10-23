@@ -13,6 +13,25 @@ import RoadmapBuilderModal from './components/roadmap/RoadmapBuilderModal'
 import ProfilePage from './pages/ProfilePage'
 import PublicProfilePage from './pages/PublicProfilePage'
 
+function ScrollProgressBar() {
+  const [progress, setProgress] = useState(0)
+
+  useLenis(({ progress }) => {
+    setProgress(progress)
+  })
+
+  return (
+    <div
+      className="fixed top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-blue-600 via-indigo-500 to-[#FF0055] z-[60] origin-left pointer-events-none transition-transform duration-75"
+      style={{
+        transform: `scaleX(${progress})`,
+        willChange: 'transform',
+      }}
+      aria-hidden="true"
+    />
+  )
+}
+
 function AppContent() {
   const {
     user,
@@ -94,6 +113,7 @@ function AppContent() {
         ? 'bg-[#050505] text-[#EDEDED] selection:bg-[#333333] selection:text-white'
         : 'bg-[#f8fafc] text-neutral-900 selection:bg-neutral-900 selection:text-white'
     }`}>
+      <ScrollProgressBar />
       {isProfileRoute ? (
         currentPath.startsWith('/profile/') && profileUsername ? (
           <PublicProfilePage
