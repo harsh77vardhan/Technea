@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react'
+import { ReactLenis, useLenis } from 'lenis/react'
+import 'lenis/dist/lenis.css'
 import AuthProvider from './context/AuthContext'
 import { useAuth } from './context/useAuth'
 import Navbar from './components/layout/Navbar'
@@ -36,6 +38,34 @@ function AppContent() {
     window.addEventListener('popstate', handlePopState)
     return () => window.removeEventListener('popstate', handlePopState)
   }, [])
+
+  const isAnyModalOpen = Boolean(
+    isAuthModalOpen ||
+    isDashboardOpen ||
+    isDirectExplorerOpen ||
+    isRoadmapBuilderOpen
+  )
+
+  const lenis = useLenis()
+
+  // Pause smooth scroll when any modal is open to prevent background scroll bleed
+  useEffect(() => {
+    if (!lenis) return
+    if (isAnyModalOpen) {
+      lenis.stop()
+    } else {
+      lenis.start()
+    }
+  }, [isAnyModalOpen, lenis])
+
+  // Reset scroll to top immediately on route changes
+  useEffect(() => {
+    if (lenis) {
+      lenis.scrollTo(0, { immediate: true })
+    } else {
+      window.scrollTo(0, 0)
+    }
+  }, [currentPath, lenis])
 
   const handleSelectPathFromDashboard = (path) => {
     setSelectedDashboardPath(path)
@@ -137,8 +167,23 @@ function AppContent() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <ReactLenis
+      root
+      options={{
+        lerp: 0.08,
+        duration: 1.2,
+        smoothWheel: true,
+        wheelMultiplier: 1.0,
+        touchMultiplier: 1.5,
+        autoRaf: true,
+        autoResize: true,
+        anchors: { offset: -70 },
+        respectReducedMotion: true,
+      }}
+    >
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </ReactLenis>
   )
 }

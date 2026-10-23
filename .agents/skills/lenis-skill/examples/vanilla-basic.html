@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lenis Smooth Scroll — Vanilla Example</title>
+  <!-- Recommended Lenis CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/lenis@1.3.27/dist/lenis.css">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background: #09090b;
+      color: #fafafa;
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      padding: 1.25rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(9, 9, 11, 0.8);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      z-index: 50;
+      transform: translateZ(0);
+    }
+    nav a {
+      color: #00e5ff;
+      text-decoration: none;
+      margin-left: 1.5rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+    section {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 4rem 2rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    h1 {
+      font-size: clamp(2.5rem, 6vw, 5rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 1rem;
+    }
+    p {
+      color: #a1a1aa;
+      max-width: 600px;
+      text-align: center;
+      line-height: 1.6;
+    }
+    .progress-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #00e5ff, #ff007f);
+      width: 0%;
+      z-index: 100;
+    }
+  </style>
+</head>
+<body>
+  <div class="progress-bar" id="progressBar"></div>
+
+  <nav>
+    <div style="font-weight: 700; letter-spacing: 0.1em;">LENIS // SMOOTH</div>
+    <div>
+      <a href="#section-1">01 / Intro</a>
+      <a href="#section-2">02 / Architecture</a>
+      <a href="#section-3">03 / Experience</a>
+    </div>
+  </nav>
+
+  <section id="section-1">
+    <h1>Lenis Smooth Scroll</h1>
+    <p>A lightweight, robust, performant smooth scroll library by darkroom.engineering running on native browser physics.</p>
+  </section>
+
+  <section id="section-2">
+    <h1>Hardware Alignment</h1>
+    <p>Runs smoothly at 120Hz/60Hz display refresh rates, supporting anchor scrolling, nested containers, and WebGL / GSAP sync.</p>
+  </section>
+
+  <section id="section-3">
+    <h1>Complete Control</h1>
+    <p>Listen to scroll progress, programmatic scrollTo with custom easing curves, and instant lock/release for modal dialogs.</p>
+  </section>
+
+  <!-- Lenis CDN script -->
+  <script src="https://unpkg.com/lenis@1.3.27/dist/lenis.min.js"></script>
+  <script>
+    // Initialize Lenis with Auto-RAF
+    const lenis = new Lenis({
+      autoRaf: true,
+      duration: 1.2,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      anchors: true, // Smooth scroll to anchor links automatically
+    });
+
+    const progressBar = document.getElementById('progressBar');
+
+    // Update progress bar on scroll
+    lenis.on('scroll', ({ progress }) => {
+      progressBar.style.width = `${progress * 100}%`;
+    });
+  </script>
+</body>
+</html>
