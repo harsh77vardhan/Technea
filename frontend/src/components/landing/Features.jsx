@@ -1,5 +1,10 @@
+import { useRef } from 'react'
 import { Brain, Cpu, Layers, Zap } from 'lucide-react'
+import gsap from 'gsap'
+import { useGSAP } from '@gsap/react'
 import ThreeCubeBackground from './ThreeCubeBackground'
+
+gsap.registerPlugin(useGSAP)
 
 const FEATURE_LIST = [
   {
@@ -29,22 +34,59 @@ const FEATURE_LIST = [
 ]
 
 export default function Features() {
+  const sectionRef = useRef(null)
+
+  useGSAP(
+    () => {
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: sectionRef.current,
+          start: 'top 80%',
+          toggleActions: 'play none none reverse',
+        },
+      })
+
+      tl.from('.feat-header-elem', {
+        opacity: 0,
+        y: 30,
+        stagger: 0.1,
+        duration: 0.8,
+        ease: 'power3.out',
+      }).from(
+        '.feat-grid-card',
+        {
+          opacity: 0,
+          y: 40,
+          stagger: 0.12,
+          duration: 0.85,
+          ease: 'power3.out',
+        },
+        '-=0.5'
+      )
+    },
+    { scope: sectionRef }
+  )
+
   return (
-    <section id="features" className="relative overflow-hidden bg-black text-white py-24 sm:py-32 border-b border-neutral-900">
+    <section
+      id="features"
+      ref={sectionRef}
+      className="relative overflow-hidden bg-black text-white py-24 sm:py-32 border-b border-neutral-900"
+    >
       {/* ── 3D Rotating Geometric Cube Background ─────────────────────── */}
       <ThreeCubeBackground />
 
       <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* ── Section Header ─────────────────────────────────────────────── */}
         <div className="mx-auto max-w-3xl text-center">
-          <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-neutral-500">
+          <p className="feat-header-elem text-[11px] font-bold uppercase tracking-[0.3em] text-neutral-500">
             Platform Architecture
           </p>
-          <h2 className="mt-4 text-3xl sm:text-4xl lg:text-5xl font-black uppercase tracking-tight text-white">
+          <h2 className="feat-header-elem mt-4 text-3xl sm:text-4xl lg:text-5xl font-black uppercase tracking-tight text-white">
             From Curiosity to Capability
           </h2>
-          <div className="mx-auto mt-6 h-px w-10 bg-neutral-800" />
-          <p className="mt-6 text-base sm:text-lg leading-relaxed text-neutral-400">
+          <div className="feat-header-elem mx-auto mt-6 h-px w-10 bg-neutral-800 origin-center" />
+          <p className="feat-header-elem mt-6 text-base sm:text-lg leading-relaxed text-neutral-400">
             Engineered to replace passive video tutorials with an active, mentor-supported learning experience designed for complete beginners.
           </p>
         </div>
@@ -56,7 +98,7 @@ export default function Features() {
             return (
               <div
                 key={feat.title}
-                className="group flex flex-col justify-between border-r border-b border-neutral-800 p-8 sm:p-10 transition-colors duration-200 hover:bg-neutral-950"
+                className="feat-grid-card group flex flex-col justify-between border-r border-b border-neutral-800 p-8 sm:p-10 transition-colors duration-200 hover:bg-neutral-950"
               >
                 <div>
                   <div className="flex h-10 w-10 items-center justify-center border border-neutral-700 bg-neutral-900 text-white transition-transform duration-200 group-hover:scale-105">

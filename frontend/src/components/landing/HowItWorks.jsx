@@ -1,6 +1,10 @@
 import { useRef } from 'react'
 import { useLenis } from 'lenis/react'
 import { Compass, Lightbulb, Code2, Trophy } from 'lucide-react'
+import gsap from 'gsap'
+import { useGSAP } from '@gsap/react'
+
+gsap.registerPlugin(useGSAP)
 
 const STEPS = [
   {
@@ -64,6 +68,38 @@ export default function HowItWorks() {
   const sectionRef = useRef(null)
   const progressBarRef = useRef(null)
 
+  // ── GSAP ScrollTrigger Entrance Timeline ─────────────────────────────────
+  useGSAP(
+    () => {
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: sectionRef.current,
+          start: 'top 82%',
+          toggleActions: 'play none none reverse',
+        },
+      })
+
+      tl.from('.methodology-header-elem', {
+        opacity: 0,
+        y: 28,
+        stagger: 0.1,
+        duration: 0.8,
+        ease: 'power3.out',
+      }).from(
+        '.methodology-step-card',
+        {
+          opacity: 0,
+          y: 35,
+          stagger: 0.1,
+          duration: 0.8,
+          ease: 'power3.out',
+        },
+        '-=0.5'
+      )
+    },
+    { scope: sectionRef }
+  )
+
   useLenis(() => {
     if (!sectionRef.current || !progressBarRef.current) return
     const rect = sectionRef.current.getBoundingClientRect()
@@ -72,6 +108,20 @@ export default function HowItWorks() {
     const currentDist = windowH - rect.top
     const progress = Math.max(0, Math.min(1, currentDist / totalDist))
     progressBarRef.current.style.transform = `scaleX(${progress})`
+
+    // Subtle milestone step number lighting as scroll beam advances
+    const stepNumbers =
+      sectionRef.current.querySelectorAll('.step-num-display')
+    stepNumbers.forEach((numEl, idx) => {
+      const stepThreshold = (idx + 0.3) / 4
+      if (progress > stepThreshold) {
+        numEl.style.color = '#0f172a'
+        numEl.style.transform = 'scale(1.05)'
+      } else {
+        numEl.style.color = ''
+        numEl.style.transform = 'scale(1)'
+      }
+    })
   })
 
   return (
@@ -83,14 +133,14 @@ export default function HowItWorks() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* ── Section Header ─────────────────────────────────────────────── */}
         <div className="mx-auto max-w-3xl text-center">
-          <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-neutral-400">
+          <p className="methodology-header-elem text-[11px] font-bold uppercase tracking-[0.3em] text-neutral-400">
             Methodology
           </p>
-          <h2 className="mt-4 text-3xl sm:text-4xl lg:text-5xl font-black uppercase tracking-tight text-neutral-950">
+          <h2 className="methodology-header-elem mt-4 text-3xl sm:text-4xl lg:text-5xl font-black uppercase tracking-tight text-neutral-950">
             Zero to Strong Foundation
           </h2>
-          <div className="mx-auto mt-6 h-px w-10 bg-neutral-300" />
-          <p className="mt-6 text-base sm:text-lg leading-relaxed text-neutral-600">
+          <div className="methodology-header-elem mx-auto mt-6 h-px w-10 bg-neutral-300 origin-center" />
+          <p className="methodology-header-elem mt-6 text-base sm:text-lg leading-relaxed text-neutral-600">
             A structured, step-by-step progression engineered to help beginners overcome tutorial paralysis and build genuine momentum.
           </p>
         </div>
@@ -111,11 +161,11 @@ export default function HowItWorks() {
             return (
               <div
                 key={item.step}
-                className="group flex flex-col justify-between border-r border-b border-neutral-200 p-8 sm:p-10 transition-colors duration-200 hover:bg-neutral-50"
+                className="methodology-step-card group flex flex-col justify-between border-r border-b border-neutral-200 p-8 sm:p-10 transition-colors duration-200 hover:bg-neutral-50"
               >
                 <div>
                   <div className="flex items-center justify-between">
-                    <span className="font-mono text-3xl sm:text-4xl font-black text-neutral-300 group-hover:text-black transition-colors duration-200">
+                    <span className="step-num-display font-mono text-3xl sm:text-4xl font-black text-neutral-300 group-hover:text-black transition-all duration-300 inline-block will-change-transform">
                       {item.step}
                     </span>
                     <span className="flex h-9 w-9 items-center justify-center border border-neutral-200 bg-neutral-100 text-black">

@@ -1,6 +1,10 @@
 import { useEffect, useRef } from 'react'
 import { useLenis } from 'lenis/react'
 import { BookOpen, CheckSquare, TrendingUp, Calendar } from 'lucide-react'
+import gsap from 'gsap'
+import { useGSAP } from '@gsap/react'
+
+gsap.registerPlugin(useGSAP)
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Your Learning Companion
@@ -50,6 +54,69 @@ export default function LearningCompanion() {
       }
     }
   })
+
+  // ── GSAP ScrollTrigger Progress Ticker & Cards Stagger ───────────────────
+  useGSAP(
+    () => {
+      const counterObj = { val: 0 }
+      const numberEl = containerRef.current?.querySelector(
+        '.progress-counter-val'
+      )
+      const barEl = containerRef.current?.querySelector('.progress-bar-fill')
+
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: containerRef.current,
+          start: 'top 75%',
+          toggleActions: 'play none none reverse',
+        },
+      })
+
+      tl.from('.companion-editorial-item', {
+        opacity: 0,
+        y: 28,
+        stagger: 0.12,
+        duration: 0.8,
+        ease: 'power3.out',
+      })
+        .to(
+          counterObj,
+          {
+            val: 68,
+            duration: 1.5,
+            ease: 'power2.out',
+            onUpdate: () => {
+              if (numberEl) {
+                numberEl.textContent = `${Math.round(counterObj.val)}%`
+              }
+            },
+          },
+          '-=0.4'
+        )
+        .to(
+          barEl,
+          {
+            width: '68%',
+            duration: 1.5,
+            ease: 'power2.out',
+          },
+          '<'
+        )
+        .from(
+          '.companion-card',
+          {
+            opacity: 0,
+            y: 24,
+            scale: 0.96,
+            stagger: 0.08,
+            duration: 0.7,
+            ease: 'power3.out',
+          },
+          '-=1.1'
+        )
+    },
+    { scope: containerRef }
+  )
 
   // ── Physics-damped Mouse Parallax & Gentle Continuous Float ───────────────────
   useEffect(() => {
@@ -238,16 +305,16 @@ export default function LearningCompanion() {
 
           {/* ── Left Column: Editorial Text & Simple Learning Journey Preview ── */}
           <div className="lg:col-span-5 flex flex-col justify-center">
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-white leading-[1.12]">
+            <h2 className="companion-editorial-item text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-white leading-[1.12]">
               Your Learning Companion
             </h2>
 
-            <p className="mt-5 text-base sm:text-lg text-neutral-400 leading-relaxed max-w-md">
+            <p className="companion-editorial-item mt-5 text-base sm:text-lg text-neutral-400 leading-relaxed max-w-md">
               Stay consistent, track your progress, and always know what to learn next.
             </p>
 
             {/* Simple Learning Journey Preview */}
-            <div className="mt-10 max-w-sm rounded-xl border border-white/[0.08] bg-white/[0.02] p-6 backdrop-blur-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+            <div className="companion-editorial-item mt-10 max-w-sm rounded-xl border border-white/[0.08] bg-white/[0.02] p-6 backdrop-blur-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
               <div>
                 <span className="text-[11px] font-mono uppercase tracking-widest text-neutral-500">
                   Currently Learning:
@@ -257,16 +324,16 @@ export default function LearningCompanion() {
                 </p>
               </div>
 
-              {/* Progress Bar 68% */}
+              {/* Progress Bar with animated counter */}
               <div className="mt-5">
                 <div className="flex items-center justify-between text-xs font-mono">
                   <span className="text-neutral-400">Progress</span>
-                  <span className="text-white font-medium">68%</span>
+                  <span className="progress-counter-val text-white font-medium">0%</span>
                 </div>
                 <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-neutral-800">
                   <div
-                    className="h-full rounded-full bg-gradient-to-r from-neutral-400 to-white"
-                    style={{ width: '68%' }}
+                    className="progress-bar-fill h-full rounded-full bg-gradient-to-r from-neutral-400 to-white will-change-[width]"
+                    style={{ width: '0%' }}
                   />
                 </div>
               </div>
@@ -296,7 +363,7 @@ export default function LearningCompanion() {
                   return (
                     <div
                       key={feature.title}
-                      className="rounded-lg border border-white/[0.07] bg-[#111115]/75 p-5 sm:p-6 backdrop-blur-md transition-colors duration-200 hover:border-white/[0.14] hover:bg-[#14141a]/85 shadow-[0_4px_16px_rgba(0,0,0,0.3)] flex flex-col justify-start"
+                      className="companion-card rounded-lg border border-white/[0.07] bg-[#111115]/75 p-5 sm:p-6 backdrop-blur-md transition-colors duration-200 hover:border-white/[0.14] hover:bg-[#14141a]/85 shadow-[0_4px_16px_rgba(0,0,0,0.3)] flex flex-col justify-start"
                     >
                       <div className="flex h-9 w-9 items-center justify-center rounded-md border border-white/[0.08] bg-white/[0.03] text-neutral-300">
                         <Icon className="h-4 w-4 stroke-[1.8]" />

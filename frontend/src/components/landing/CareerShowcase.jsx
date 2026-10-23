@@ -5,6 +5,10 @@
 
 import { useRef } from 'react'
 import { useLenis } from 'lenis/react'
+import gsap from 'gsap'
+import { useGSAP } from '@gsap/react'
+
+gsap.registerPlugin(useGSAP)
 
 const CAREERS = [
   {
@@ -42,9 +46,29 @@ const CAREERS = [
 export default function CareerShowcase() {
   // Render two identical 5-panel sets to create an uninterrupted infinite film loop
   const filmPanels = [...CAREERS, ...CAREERS]
+  const sectionRef = useRef(null)
   const stripRef = useRef(null)
   const ribbonLeftRef = useRef(null)
   const ribbonRightRef = useRef(null)
+
+  // ── GSAP ScrollTrigger Header Reveal ─────────────────────────────────────
+  useGSAP(
+    () => {
+      gsap.from('.career-header-elem', {
+        scrollTrigger: {
+          trigger: sectionRef.current,
+          start: 'top 82%',
+          toggleActions: 'play none none reverse',
+        },
+        opacity: 0,
+        y: 35,
+        stagger: 0.12,
+        duration: 0.85,
+        ease: 'power3.out',
+      })
+    },
+    { scope: sectionRef }
+  )
 
   useLenis(({ velocity, scroll }) => {
     if (stripRef.current) {
@@ -57,20 +81,38 @@ export default function CareerShowcase() {
       ribbonLeftRef.current.style.transform = `translate3d(${-offset}px, 0, 0)`
       ribbonRightRef.current.style.transform = `translate3d(${offset}px, 0, 0)`
     }
+    // Subtle internal image window parallax for luxury optical depth
+    if (sectionRef.current) {
+      const rect = sectionRef.current.getBoundingClientRect()
+      const windowH = window.innerHeight
+      if (rect.top < windowH && rect.bottom > 0) {
+        const centerOffset =
+          (windowH / 2 - (rect.top + rect.height / 2)) * 0.08
+        const images =
+          sectionRef.current.querySelectorAll('.career-panel-img')
+        images.forEach((img) => {
+          img.style.transform = `scale(1.12) translate3d(0, ${centerOffset.toFixed(1)}px, 0)`
+        })
+      }
+    }
   })
 
   return (
-    <section id="career-showcase" className="relative w-full overflow-hidden bg-[#f2f3f5] pt-16 sm:pt-24 pb-0">
+    <section
+      id="career-showcase"
+      ref={sectionRef}
+      className="relative w-full overflow-hidden bg-[#f2f3f5] pt-16 sm:pt-24 pb-0"
+    >
       {/* ── Editorial Header with intentional whitespace ─────────────────── */}
       <div className="mx-auto max-w-4xl px-6 text-center mb-12 sm:mb-14">
-        <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-slate-400">
+        <p className="career-header-elem text-[11px] font-bold uppercase tracking-[0.3em] text-slate-400">
           Career Directions
         </p>
-        <h2 className="mt-4 text-3xl sm:text-4xl lg:text-5xl font-black uppercase tracking-tight text-[#0f172a]">
+        <h2 className="career-header-elem mt-4 text-3xl sm:text-4xl lg:text-5xl font-black uppercase tracking-tight text-[#0f172a]">
           Where Technology Takes You
         </h2>
-        <div className="mx-auto mt-6 h-px w-10 bg-slate-300" />
-        <p className="mx-auto mt-5 max-w-lg text-sm sm:text-base leading-relaxed text-slate-500">
+        <div className="career-header-elem mx-auto mt-6 h-px w-10 bg-slate-300 origin-center" />
+        <p className="career-header-elem mx-auto mt-5 max-w-lg text-sm sm:text-base leading-relaxed text-slate-500">
           Curated learning pathways engineered for complete beginners. Move from fundamental concepts to building verified portfolio projects in high-impact domains.
         </p>
       </div>
@@ -114,12 +156,12 @@ export default function CareerShowcase() {
                 key={`${panel.id}-${idx}`}
                 className="group relative h-[350px] sm:h-[400px] lg:h-[450px] w-[240px] sm:w-[280px] lg:w-[20vw] shrink-0 overflow-hidden cursor-pointer"
               >
-                {/* Full-bleed authentic photography */}
+                {/* Full-bleed authentic photography with optical window parallax */}
                 <img
                   src={panel.image}
                   alt={panel.title}
                   loading="lazy"
-                  className="h-full w-full object-cover transition-transform duration-1000 ease-out group-hover:scale-105"
+                  className="career-panel-img h-full w-full object-cover will-change-transform transition-transform duration-700 ease-out group-hover:scale-115"
                 />
 
                 {/* Top-left dark gradient scrim for crystal clear white typography */}

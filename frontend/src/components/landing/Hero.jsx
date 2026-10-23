@@ -283,20 +283,24 @@ export default function Hero() {
     // Only apply continuous parallax while hero is visible on screen
     if (scroll < 1000) {
       if (decoTopLeftRef.current) {
-        decoTopLeftRef.current.style.transform = `translate3d(${-scroll * 0.14}px, ${-scroll * 0.26}px, 0)`
+        decoTopLeftRef.current.style.transform = `translate3d(${-scroll * 0.18}px, ${-scroll * 0.32}px, 0) rotateZ(${-scroll * 0.025}deg)`
       }
       if (decoTopRightRef.current) {
-        decoTopRightRef.current.style.transform = `translate3d(${scroll * 0.16}px, ${-scroll * 0.32}px, 0)`
+        decoTopRightRef.current.style.transform = `translate3d(${scroll * 0.2}px, ${-scroll * 0.38}px, 0) rotateZ(${scroll * 0.03}deg)`
       }
       if (decoBottomLeftRef.current) {
-        decoBottomLeftRef.current.style.transform = `translate3d(${-scroll * 0.12}px, ${scroll * 0.22}px, 0)`
+        decoBottomLeftRef.current.style.transform = `translate3d(${-scroll * 0.16}px, ${scroll * 0.28}px, 0) rotateZ(${scroll * 0.02}deg)`
       }
       if (decoBottomRightRef.current) {
-        decoBottomRightRef.current.style.transform = `translate3d(${scroll * 0.18}px, ${scroll * 0.28}px, 0)`
+        decoBottomRightRef.current.style.transform = `translate3d(${scroll * 0.22}px, ${scroll * 0.34}px, 0) rotateZ(${-scroll * 0.025}deg)`
       }
       if (centerContentRef.current) {
-        const opacity = Math.max(0, 1 - scroll / 520)
-        centerContentRef.current.style.transform = `translate3d(0, ${scroll * 0.18}px, 0)`
+        const progress = Math.min(1, scroll / 540)
+        const opacity = Math.max(0, 1 - progress)
+        const scale = 1 - progress * 0.08
+        const blur = progress * 3.5
+        centerContentRef.current.style.transform = `translate3d(0, ${scroll * 0.22}px, 0) scale(${scale.toFixed(3)})`
+        centerContentRef.current.style.filter = blur > 0.1 ? `blur(${blur.toFixed(1)}px)` : 'none'
         centerContentRef.current.style.opacity = String(opacity)
       }
     }

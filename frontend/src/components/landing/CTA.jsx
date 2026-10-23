@@ -2,6 +2,10 @@ import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js'
 import { useLenis } from 'lenis/react'
+import gsap from 'gsap'
+import { useGSAP } from '@gsap/react'
+
+gsap.registerPlugin(useGSAP)
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Page 4: Cinematic Immersive Technea Section
@@ -522,11 +526,75 @@ function FloatingCard() {
 // ── Main Page 4 Section ──────────────────────────────────────────────────────
 
 export default function CTA() {
+  const sectionRef = useRef(null)
   const canvasRef = useRef(null)
+
+  // ── GSAP ScrollTrigger Entrance Choreography ─────────────────────────────
+  useGSAP(
+    () => {
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: sectionRef.current,
+          start: 'top 75%',
+          toggleActions: 'play none none reverse',
+        },
+      })
+
+      tl.from('.cta-eyebrow', {
+        opacity: 0,
+        y: 24,
+        duration: 0.8,
+        ease: 'power3.out',
+      })
+        .from(
+          '.cta-headline',
+          {
+            opacity: 0,
+            y: 40,
+            duration: 1.0,
+            ease: 'power3.out',
+          },
+          '-=0.6'
+        )
+        .from(
+          '.cta-divider',
+          {
+            scaleX: 0,
+            opacity: 0,
+            duration: 0.8,
+            ease: 'power3.out',
+          },
+          '-=0.6'
+        )
+        .from(
+          '.cta-subtitle',
+          {
+            opacity: 0,
+            y: 24,
+            duration: 0.8,
+            ease: 'power3.out',
+          },
+          '-=0.5'
+        )
+        .from(
+          '.cta-floating-card',
+          {
+            opacity: 0,
+            y: 35,
+            scale: 0.92,
+            duration: 0.9,
+            ease: 'power3.out',
+          },
+          '-=0.5'
+        )
+    },
+    { scope: sectionRef }
+  )
 
   return (
     <section
       id="cta"
+      ref={sectionRef}
       className="relative w-full overflow-hidden bg-[#080808]"
       style={{ minHeight: '100svh' }}
     >
@@ -552,13 +620,13 @@ export default function CTA() {
       {/* Visually Centered Content */}
       <div className="relative z-20 flex min-h-[100svh] flex-col items-center justify-center px-6 text-center select-none">
         {/* Eyebrow Label */}
-        <p className="mb-7 font-mono text-[11px] uppercase tracking-[0.35em] text-white/35">
+        <p className="cta-eyebrow mb-7 font-mono text-[11px] uppercase tracking-[0.35em] text-white/35">
           Begin your journey
         </p>
 
         {/* Headline: Elegant Serif, Bold, White, Exactly 2 lines */}
         <h2
-          className="font-serif font-bold text-white leading-[1.08] tracking-[-0.025em]"
+          className="cta-headline font-serif font-bold text-white leading-[1.08] tracking-[-0.025em]"
           style={{
             fontFamily: "'Newsreader', 'Playfair Display', 'Canela', 'Georgia', serif",
             fontSize: 'clamp(2.8rem, 7.2vw, 5.8rem)',
@@ -570,11 +638,11 @@ export default function CTA() {
         </h2>
 
         {/* Minimal Divider */}
-        <div className="mx-auto mt-9 h-px w-10 bg-white/20" />
+        <div className="cta-divider mx-auto mt-9 h-px w-10 bg-white/20 origin-center will-change-transform" />
 
         {/* Subtitle: Modern Sans, Muted White, Centered, Max 650px */}
         <p
-          className="mx-auto mt-7 font-sans text-base leading-relaxed text-white/55"
+          className="cta-subtitle mx-auto mt-7 font-sans text-base leading-relaxed text-white/55"
           style={{
             maxWidth: '650px',
             fontSize: 'clamp(0.95rem, 1.8vw, 1.1rem)',
@@ -585,12 +653,12 @@ export default function CTA() {
       </div>
 
       {/* Floating Premium White Product Card: Bottom-Right Corner */}
-      <div className="absolute bottom-10 right-10 lg:bottom-14 lg:right-14 z-30 hidden sm:block">
+      <div className="cta-floating-card absolute bottom-10 right-10 lg:bottom-14 lg:right-14 z-30 hidden sm:block will-change-transform">
         <FloatingCard />
       </div>
 
       {/* Responsive Mobile Card Fallback: Bottom-Center */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-30 sm:hidden w-[90%] max-w-xs">
+      <div className="cta-floating-card absolute bottom-8 left-1/2 -translate-x-1/2 z-30 sm:hidden w-[90%] max-w-xs will-change-transform">
         <a
           href="#hero-search"
           className="block w-full border border-white/25 bg-white/10 px-6 py-4 text-center font-mono text-xs uppercase tracking-[0.2em] text-white backdrop-blur-sm transition-colors hover:bg-white/20"

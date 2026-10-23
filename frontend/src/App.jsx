@@ -1,7 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { ReactLenis, useLenis } from 'lenis/react'
 import 'lenis/dist/lenis.css'
+import gsap from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import AuthProvider from './context/AuthContext'
+
+gsap.registerPlugin(ScrollTrigger)
 import { useAuth } from './context/useAuth'
 import Navbar from './components/layout/Navbar'
 import LandingPage from './pages/LandingPage'
@@ -67,6 +71,15 @@ function AppContent() {
 
   const lenis = useLenis()
 
+  // Synchronize Lenis scroll updates directly with GSAP's ScrollTrigger
+  useEffect(() => {
+    if (!lenis) return
+    lenis.on('scroll', ScrollTrigger.update)
+    return () => {
+      lenis.off('scroll', ScrollTrigger.update)
+    }
+  }, [lenis])
+
   // Pause smooth scroll when any modal is open to prevent background scroll bleed
   useEffect(() => {
     if (!lenis) return
@@ -74,6 +87,7 @@ function AppContent() {
       lenis.stop()
     } else {
       lenis.start()
+      ScrollTrigger.refresh()
     }
   }, [isAnyModalOpen, lenis])
 
@@ -84,6 +98,7 @@ function AppContent() {
     } else {
       window.scrollTo(0, 0)
     }
+    ScrollTrigger.refresh()
   }, [currentPath, lenis])
 
   const handleSelectPathFromDashboard = (path) => {
@@ -186,17 +201,34 @@ function AppContent() {
 }
 
 export default function App() {
+  const lenisRef = useRef(null)
+
+  useEffect(() => {
+    function update(time) {
+      lenisRef.current?.lenis?.raf(time * 1000)
+    }
+
+    // Drive Lenis directly off the master GSAP ticker on every animation frame
+    gsap.ticker.add(update)
+    gsap.ticker.lagSmoothing(0)
+
+    return () => {
+      gsap.ticker.remove(update)
+    }
+  }, [])
+
   return (
     <ReactLenis
+      ref={lenisRef}
       root
       options={{
-        lerp: 0.08,
+        autoRaf: false,
+        lerp: 0.1,
         duration: 1.2,
         smoothWheel: true,
         wheelMultiplier: 1.0,
-        touchMultiplier: 1.5,
-        autoRaf: true,
-        autoResize: true,
+        touchMultiplier: 1.2,
+        syncTouch: false,
         anchors: { offset: -70 },
         respectReducedMotion: true,
       }}
