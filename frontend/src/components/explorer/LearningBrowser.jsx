@@ -394,7 +394,7 @@ export default function LearningBrowser({
                 {error}
               </p>
               <p className="text-xs text-neutral-400 max-w-sm mx-auto">
-                Unable to retrieve data from FastAPI backend. Verify the backend server is active at http://127.0.0.1:8000.
+                Unable to retrieve data from the backend service. Verify the backend server is active and accessible.
               </p>
               <div className="pt-2">
                 <button

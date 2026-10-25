@@ -3,10 +3,49 @@
  * Communicates with FastAPI backend endpoints at /api/v1
  */
 
-const API_BASE_URL =
-  import.meta.env?.VITE_API_URL ||
-  import.meta.env?.VITE_API_BASE_URL ||
-  'http://127.0.0.1:8000/api/v1'
+/**
+ * Resolves the FastAPI base URL dynamically:
+ * - Checks VITE_API_URL, VITE_BACKEND_URL, and VITE_API_BASE_URL from environment variables
+ * - Normalizes input by ensuring the /api/v1 prefix is correctly attached without duplicate slashes
+ * - Defaults to http://localhost:8000/api/v1 in local development (dev server or localhost hostname)
+ * - Defaults to https://technea-backend.onrender.com/api/v1 in production builds (e.g. Vercel)
+ *
+ * @returns {string}
+ */
+export function getApiBaseUrl() {
+  const envUrl =
+    import.meta.env?.VITE_API_URL ||
+    import.meta.env?.VITE_BACKEND_URL ||
+    import.meta.env?.VITE_API_BASE_URL
+
+  if (envUrl && typeof envUrl === 'string' && envUrl.trim() !== '') {
+    const trimmed = envUrl.trim().replace(/\/+$/, '')
+    if (trimmed.endsWith('/api/v1')) {
+      return trimmed
+    }
+    if (trimmed.endsWith('/api')) {
+      return `${trimmed}/v1`
+    }
+    return `${trimmed}/api/v1`
+  }
+
+  // Detect local development environment
+  const isDev =
+    import.meta.env?.DEV ||
+    (typeof window !== 'undefined' &&
+      (window.location.hostname === 'localhost' ||
+       window.location.hostname === '127.0.0.1' ||
+       window.location.hostname === '0.0.0.0'))
+
+  if (isDev) {
+    return 'http://localhost:8000/api/v1'
+  }
+
+  // Production fallback for public beta deployment (Vercel, custom domain)
+  return 'https://technea-backend.onrender.com/api/v1'
+}
+
+export const API_BASE_URL = getApiBaseUrl()
 
 const AUTH_TOKEN_KEY = 'technea_auth_token'
 
@@ -37,7 +76,8 @@ export function setAuthToken(token) {
  * @returns {Promise<any>}
  */
 async function request(endpoint, options = {}) {
-  const url = `${API_BASE_URL}${endpoint}`
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
+  const url = `${API_BASE_URL}${cleanEndpoint}`
   const defaultHeaders = {
     Accept: 'application/json',
   }
@@ -813,7 +853,7 @@ export default {
 }
 
 
-export { getAvatarUrl } from '../utils/avatar'
+export { getAvatarUrl, getBackendBaseUrl } from '../utils/avatar'
 
 
 

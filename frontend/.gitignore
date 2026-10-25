@@ -13,9 +13,11 @@ dist-ssr
 *.local
 
 # Environment variables
-.env
-.env.*
+.env.local
+.env.*.local
 !.env.example
+!.env.production
+!.env.development
 
 # Editor directories and files
 .vscode/*
@@ -27,3 +29,4 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+.vercel

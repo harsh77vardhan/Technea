@@ -1,10 +1,18 @@
+import process from 'node:process'
 import tailwindcss from '@tailwindcss/vite'
 import react, { reactCompilerPreset } from '@vitejs/plugin-react'
 import babel from '@rolldown/plugin-babel'
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '')
+  const backendTarget =
+    env.VITE_BACKEND_URL ||
+    (env.VITE_API_URL ? env.VITE_API_URL.replace(/\/api\/v1\/?$/, '').replace(/\/api\/?$/, '') : '') ||
+    'http://127.0.0.1:8000'
+
+  return {
   plugins: [
     tailwindcss(),
     react(),
@@ -43,17 +51,18 @@ export default defineConfig({
   server: {
     proxy: {
       '/uploads': {
-        target: 'http://127.0.0.1:8000',
+        target: backendTarget,
         changeOrigin: true,
       },
       '/static': {
-        target: 'http://127.0.0.1:8000',
+        target: backendTarget,
         changeOrigin: true,
       },
       '/api': {
-        target: 'http://127.0.0.1:8000',
+        target: backendTarget,
         changeOrigin: true,
       },
     },
   },
+  }
 })

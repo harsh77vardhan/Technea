@@ -4,6 +4,18 @@
   "trailingSlash": false,
   "rewrites": [
     {
+      "source": "/api/v1/:path*",
+      "destination": "https://technea-backend.onrender.com/api/v1/:path*"
+    },
+    {
+      "source": "/uploads/:path*",
+      "destination": "https://technea-backend.onrender.com/uploads/:path*"
+    },
+    {
+      "source": "/static/:path*",
+      "destination": "https://technea-backend.onrender.com/static/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

@@ -1,4 +1,43 @@
 /**
+ * Resolves the root backend server URL (without /api/v1) for static uploads and assets:
+ * - Checks VITE_BACKEND_URL, VITE_API_URL, and VITE_API_BASE_URL from environment variables
+ * - Strips any /api/v1 or /api suffix to obtain the root origin
+ * - Defaults to http://localhost:8000 in local development (dev server or localhost hostname)
+ * - Defaults to https://technea-backend.onrender.com in production builds (e.g. Vercel)
+ *
+ * @returns {string}
+ */
+export function getBackendBaseUrl() {
+  const envUrl =
+    import.meta.env?.VITE_BACKEND_URL ||
+    import.meta.env?.VITE_API_URL ||
+    import.meta.env?.VITE_API_BASE_URL
+
+  if (envUrl && typeof envUrl === 'string' && envUrl.trim() !== '') {
+    return envUrl
+      .trim()
+      .replace(/\/api\/v1\/?$/, '')
+      .replace(/\/api\/?$/, '')
+      .replace(/\/+$/, '')
+  }
+
+  // Detect local development environment
+  const isDev =
+    import.meta.env?.DEV ||
+    (typeof window !== 'undefined' &&
+      (window.location.hostname === 'localhost' ||
+       window.location.hostname === '127.0.0.1' ||
+       window.location.hostname === '0.0.0.0'))
+
+  if (isDev) {
+    return 'http://localhost:8000'
+  }
+
+  // Production fallback for public beta deployment (Vercel, custom domain)
+  return 'https://technea-backend.onrender.com'
+}
+
+/**
  * Resolves an avatar URL into a valid accessible URL.
  * Handles:
  * - blob: URLs (used for instant local client-side previews)
@@ -25,12 +64,7 @@ export function getAvatarUrl(avatarUrl) {
   }
 
   // Relative backend path - prepend backend origin
-  const backendBase = (
-    import.meta.env?.VITE_BACKEND_URL ||
-    import.meta.env?.VITE_API_BASE_URL ||
-    'http://127.0.0.1:8000'
-  ).replace(/\/api\/v1\/?$/, '')
-
+  const backendBase = getBackendBaseUrl()
   const cleanPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`
   return `${backendBase}${cleanPath}`
 }
