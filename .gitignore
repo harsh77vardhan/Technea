@@ -1,0 +1,35 @@
+# Root Git Ignore for Technea Repository
+
+# Virtual Environment & Python
+.venv/
+venv/
+ENV/
+env/
+__pycache__/
+*.py[cod]
+*.so
+.pytest_cache/
+.coverage
+.coverage.*
+
+# Node / Frontend
+node_modules/
+dist/
+dist-ssr/
+
+# Environment and Secrets (Never commit credentials)
+.env
+.env.*
+.env.local
+*.env
+!.env.example
+!backend/.env.example
+!frontend/.env.example
+
+# IDEs & System files
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+*~

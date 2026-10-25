@@ -121,9 +121,9 @@ class RuleBasedProvider(BaseAIProvider):
 
         closings = [
             "What would you like to build or learn today? (You can explore a tailored **Roadmap**, plan hands-on **Projects**, or tackle a coding milestone.)",
-            "Where should we focus today? (You can request a tailored **Roadmap**, plan **Projects**, or work through a technical challenge.)",
-            "What technical challenge or topic should we dive into today? (Explore structured **Roadmaps**, plan **Projects**, or review an algorithm.)",
-            "What would you like to master in our session? (You can explore **Roadmaps**, plan **Projects**, or tackle your next step.)",
+            "Where should we focus our attention today? (You can request a tailored **Roadmap**, plan **Projects**, or tackle what you want to build or learn.)",
+            "What technical challenge should we tackle today? (Explore structured **Roadmaps**, plan **Projects**, or build or master an algorithm.)",
+            "What would you like to build or master in our session? (You can explore **Roadmaps**, plan **Projects**, or tackle your next step.)",
         ]
 
         rng = random.Random(seed) if seed is not None else None

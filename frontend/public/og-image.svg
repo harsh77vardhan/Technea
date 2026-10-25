@@ -1,0 +1,163 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <!-- Background Radial Gradients -->
+    <radialGradient id="cyan-glow" cx="15%" cy="16%" r="40%">
+      <stop offset="0%" stop-color="#00EBFF" stop-opacity="0.32"/>
+      <stop offset="100%" stop-color="#00EBFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="magenta-glow" cx="88%" cy="82%" r="42%">
+      <stop offset="0%" stop-color="#FF006E" stop-opacity="0.30"/>
+      <stop offset="100%" stop-color="#FF006E" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="indigo-glow" cx="50%" cy="8%" r="35%">
+      <stop offset="0%" stop-color="#6366F1" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="#6366F1" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Linear Gradients -->
+    <linearGradient id="panel-border" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00EBFF" stop-opacity="0.7"/>
+      <stop offset="50%" stop-color="#6366F1" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#FF006E" stop-opacity="0.7"/>
+    </linearGradient>
+
+    <linearGradient id="catalyst-glow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#818CF8"/>
+      <stop offset="100%" stop-color="#6366F1"/>
+    </linearGradient>
+
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
+      <circle cx="40" cy="40" r="1" fill="rgba(255,255,255,0.07)"/>
+    </pattern>
+
+    <filter id="blur-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="12" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <style>
+    .font-sans { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    .font-mono { font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+  </style>
+
+  <!-- Base Dark Canvas -->
+  <rect width="1200" height="630" fill="#07090F"/>
+
+  <!-- Radial Glow Orbs -->
+  <rect width="1200" height="630" fill="url(#cyan-glow)"/>
+  <rect width="1200" height="630" fill="url(#magenta-glow)"/>
+  <rect width="1200" height="630" fill="url(#indigo-glow)"/>
+
+  <!-- Cyber Matrix Grid -->
+  <rect width="1200" height="630" fill="url(#grid)"/>
+
+  <!-- Outer Glass Panel Frame -->
+  <rect x="42" y="38" width="1116" height="554" rx="24" fill="#0B0E17" fill-opacity="0.82" stroke="url(#panel-border)" stroke-width="1.5"/>
+
+  <!-- Corner Tech Brackets -->
+  <!-- Top-Left Cyan -->
+  <path d="M 50 38 L 82 38 M 42 46 L 42 78" stroke="#00EBFF" stroke-width="2.5" stroke-linecap="round"/>
+  <circle cx="42" cy="38" r="2.5" fill="#00EBFF"/>
+
+  <!-- Top-Right Indigo -->
+  <path d="M 1126 38 L 1150 38 M 1158 46 L 1158 78" stroke="#6366F1" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- Bottom-Right Magenta -->
+  <path d="M 1126 592 L 1150 592 M 1158 552 L 1158 584" stroke="#FF006E" stroke-width="2.5" stroke-linecap="round"/>
+  <circle cx="1158" cy="592" r="2.5" fill="#FF006E"/>
+
+  <!-- Bottom-Left Cyan -->
+  <path d="M 50 592 L 82 592 M 42 552 L 42 584" stroke="#00EBFF" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Top Bar: Logo Squircle & Brand Name -->
+  <g transform="translate(80, 70)">
+    <rect width="52" height="52" rx="14" fill="#0F121E" stroke="#00EBFF" stroke-opacity="0.6" stroke-width="1.5"/>
+    <g transform="translate(10, 10) scale(1)">
+      <!-- T Bar -->
+      <rect x="1" y="1" width="30" height="5" rx="2" fill="#FFFFFF"/>
+      <!-- T Stem -->
+      <rect x="14" y="6" width="4" height="25" rx="1" fill="#FFFFFF"/>
+      <!-- N Pillars -->
+      <rect x="4" y="6" width="4" height="25" rx="1" fill="#FFFFFF"/>
+      <rect x="24" y="6" width="4" height="25" rx="1" fill="#FFFFFF"/>
+      <!-- N Diagonal -->
+      <path d="M 8 6 L 13 6 L 24 31 L 19 31 Z" fill="url(#catalyst-glow)"/>
+    </g>
+
+    <!-- Brand Name -->
+    <text x="68" y="38" fill="#FFFFFF" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="34" font-weight="800" letter-spacing="-0.5">Technea</text>
+
+    <!-- Cyan Pulse Dot -->
+    <circle cx="236" cy="27" r="4" fill="#00EBFF" filter="url(#blur-glow)"/>
+    <circle cx="236" cy="27" r="3" fill="#00EBFF"/>
+  </g>
+
+  <!-- Top-Right Beta Badge -->
+  <g transform="translate(798, 78)">
+    <rect width="330" height="36" rx="18" fill="rgba(0, 235, 255, 0.06)" stroke="rgba(0, 235, 255, 0.4)" stroke-width="1"/>
+    <circle cx="24" cy="18" r="4" fill="#00EBFF"/>
+    <text x="38" y="23" fill="#00EBFF" font-family="'JetBrains Mono', monospace" font-size="12" font-weight="700" letter-spacing="1">AI-POWERED LEARNING // PUBLIC BETA</text>
+  </g>
+
+  <!-- Kicker -->
+  <text x="80" y="174" fill="#38BDF8" font-family="'JetBrains Mono', monospace" font-size="13" font-weight="700" letter-spacing="1.5">THE MODERN ZERO-TO-HERO PLATFORM FOR BUILDERS</text>
+
+  <!-- Main Headline -->
+  <text x="80" y="232" fill="#FFFFFF" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="46" font-weight="800" letter-spacing="-1">Master Programming, AI Engineering</text>
+  <text x="80" y="286" fill="#F1F5F9" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="46" font-weight="800" letter-spacing="-1">&amp; Modern Web Development</text>
+
+  <!-- Subtitle -->
+  <text x="80" y="348" fill="#94A3B8" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="19" font-weight="400">Interactive roadmaps, in-browser code execution, and your personal AI Mentor.</text>
+
+  <!-- 4 Track Cards -->
+  <!-- Track 01 -->
+  <g transform="translate(80, 388)">
+    <rect width="246" height="88" rx="14" fill="#0E1423" stroke="rgba(0, 235, 255, 0.35)" stroke-width="1"/>
+    <rect x="12" y="14" width="3" height="60" rx="1.5" fill="#00EBFF"/>
+    <text x="26" y="26" fill="#00EBFF" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="700">TRACK // 01</text>
+    <text x="26" y="48" fill="#FFFFFF" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="14" font-weight="700">Python Fundamentals</text>
+    <text x="26" y="70" fill="#94A3B8" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12">Syntax, Algorithms &amp; CLI</text>
+  </g>
+
+  <!-- Track 02 -->
+  <g transform="translate(342, 388)">
+    <rect width="246" height="88" rx="14" fill="#161024" stroke="rgba(168, 85, 247, 0.35)" stroke-width="1"/>
+    <rect x="12" y="14" width="3" height="60" rx="1.5" fill="#A855F7"/>
+    <text x="26" y="26" fill="#A855F7" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="700">TRACK // 02</text>
+    <text x="26" y="48" fill="#FFFFFF" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="14" font-weight="700">Prompt Eng &amp; LLMs</text>
+    <text x="26" y="70" fill="#94A3B8" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12">RAG, Agents &amp; Fine-Tuning</text>
+  </g>
+
+  <!-- Track 03 -->
+  <g transform="translate(604, 388)">
+    <rect width="246" height="88" rx="14" fill="#0E1626" stroke="rgba(56, 189, 248, 0.35)" stroke-width="1"/>
+    <rect x="12" y="14" width="3" height="60" rx="1.5" fill="#38BDF8"/>
+    <text x="26" y="26" fill="#38BDF8" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="700">TRACK // 03</text>
+    <text x="26" y="48" fill="#FFFFFF" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="14" font-weight="700">Modern React &amp; Web UI</text>
+    <text x="26" y="70" fill="#94A3B8" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12">React 19, Tailwind &amp; GSAP</text>
+  </g>
+
+  <!-- Track 04 -->
+  <g transform="translate(866, 388)">
+    <rect width="246" height="88" rx="14" fill="#1E0E1A" stroke="rgba(255, 0, 110, 0.35)" stroke-width="1"/>
+    <rect x="12" y="14" width="3" height="60" rx="1.5" fill="#FF006E"/>
+    <text x="26" y="26" fill="#FF006E" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="700">TRACK // 04</text>
+    <text x="26" y="48" fill="#FFFFFF" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="14" font-weight="700">Data Insights &amp; Auto</text>
+    <text x="26" y="70" fill="#94A3B8" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12">Pandas, Pipelines &amp; ETL</text>
+  </g>
+
+  <!-- Bottom Divider Line -->
+  <line x1="80" y1="508" x2="1132" y2="508" stroke="rgba(255, 255, 255, 0.08)" stroke-width="1"/>
+
+  <!-- Bottom Footer Info -->
+  <g transform="translate(80, 526)">
+    <circle cx="5" cy="8" r="5" fill="#34D399"/>
+    <text x="20" y="13" fill="#FFFFFF" font-family="'JetBrains Mono', monospace" font-size="16" font-weight="700">technea.dev</text>
+    <text x="152" y="13" fill="#64748B" font-family="'JetBrains Mono', monospace" font-size="13" font-weight="500">• Free &amp; Open Platform for Beginners</text>
+
+    <!-- Platform Highlights -->
+    <text x="560" y="13" fill="#94A3B8" font-family="'JetBrains Mono', monospace" font-size="13" font-weight="700" letter-spacing="1">STRUCTURED ROADMAPS • HANDS-ON CODE • AI MENTOR</text>
+  </g>
+</svg>

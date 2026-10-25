@@ -56,7 +56,7 @@ class UserUpdate(BaseModel):
 class UserResponse(UserBase):
     """Schema for user public/profile response."""
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, extra="ignore")
 
     id: uuid.UUID
     is_active: bool

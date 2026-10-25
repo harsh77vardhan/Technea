@@ -10,6 +10,7 @@ import {
   AlertCircle,
   BookOpen,
 } from 'lucide-react'
+import ImageWithFallback from '../common/ImageWithFallback'
 
 export default function FeaturedCoursesSection({
   courses = [],
@@ -154,11 +155,16 @@ export default function FeaturedCoursesSection({
                   {/* ── 16:9 THUMBNAIL WITH DURATION & RATING ──────────────── */}
                   <div className="relative aspect-video w-full rounded-xl overflow-hidden bg-black border border-white/10 shadow-inner group/thumb">
                     {thumbnail ? (
-                      <img
+                      <ImageWithFallback
                         src={thumbnail}
                         alt={course.title}
                         className="w-full h-full object-cover group-hover/thumb:scale-105 transition-transform duration-500"
                         loading="lazy"
+                        fallback={
+                          <div className="w-full h-full flex items-center justify-center bg-neutral-900">
+                            <Play className="h-8 w-8 text-neutral-600" />
+                          </div>
+                        }
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-neutral-900">

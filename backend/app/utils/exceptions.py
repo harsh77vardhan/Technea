@@ -4,6 +4,9 @@ from typing import Any
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 
+from app.core.config import settings
+from app.core.logger import logger
+
 
 class AppException(Exception):
     """Base application exception."""
@@ -89,6 +92,31 @@ def setup_exception_handlers(app: FastAPI) -> None:
                     "message": exc.message,
                     "status_code": exc.status_code,
                     "details": exc.details,
-                }
+                },
+                "detail": exc.message,
+            },
+        )
+
+    @app.exception_handler(Exception)
+    async def unhandled_exception_handler(
+        request: Request, exc: Exception
+    ) -> JSONResponse:
+        logger.exception("Unhandled server exception: %s", exc)
+        if settings.ENVIRONMENT == "production" or not settings.DEBUG:
+            message = "An unexpected server error occurred. Please try again later."
+            details = None
+        else:
+            message = str(exc)
+            details = exc.__class__.__name__
+
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={
+                "error": {
+                    "message": message,
+                    "status_code": status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    "details": details,
+                },
+                "detail": message,
             },
         )

@@ -1,0 +1,13 @@
+# Technea Search Engine Crawler Directives
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /profile?edit=true
+Disallow: /profile/*?*edit=true
+Disallow: /profile/edit
+
+# Host specification
+Host: https://technea.dev
+
+# Sitemap location
+Sitemap: https://technea.dev/sitemap.xml

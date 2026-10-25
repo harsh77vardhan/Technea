@@ -107,10 +107,10 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
           <button
             type="button"
             onClick={onClose}
-            className="absolute top-5 right-5 p-1.5 text-neutral-400 hover:text-white transition-colors cursor-pointer rounded-lg hover:bg-white/[0.06]"
+            className="absolute top-4 right-4 min-h-[44px] min-w-[44px] flex items-center justify-center text-neutral-400 hover:text-white transition-colors cursor-pointer rounded-lg hover:bg-white/[0.06]"
             aria-label="Close dialog"
           >
-            <X className="h-4 w-4" />
+            <X className="h-5 w-5" />
           </button>
 
           {/* Header */}
@@ -136,7 +136,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
                 setMode('login')
                 setError(null)
               }}
-              className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+              className={`flex-1 min-h-[40px] flex items-center justify-center py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                 mode === 'login'
                   ? 'bg-white text-black shadow-sm'
                   : 'text-neutral-400 hover:text-white'
@@ -150,7 +150,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
                 setMode('signup')
                 setError(null)
               }}
-              className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+              className={`flex-1 min-h-[40px] flex items-center justify-center py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                 mode === 'signup'
                   ? 'bg-white text-black shadow-sm'
                   : 'text-neutral-400 hover:text-white'
@@ -247,7 +247,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
             <button
               type="submit"
               disabled={loading}
-              className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/20 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-blue-400 transition cursor-pointer disabled:opacity-50 mt-2"
+              className="w-full inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/20 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-blue-400 transition cursor-pointer disabled:opacity-50 mt-2"
             >
               {loading ? (
                 <>

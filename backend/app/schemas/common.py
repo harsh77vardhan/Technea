@@ -19,11 +19,15 @@ class CustomBaseModel(BaseModel):
 class HealthCheckResponse(CustomBaseModel):
     """Schema for health status endpoint."""
 
-    status: str = Field(default="ok", description="Overall service status")
+    status: str = Field(default="healthy", description="Overall service status")
     app_name: str = Field(description="Name of the application")
     version: str = Field(description="Service version")
     environment: str = Field(description="Runtime environment")
-    database_connected: bool = Field(description="Database connectivity status")
+    database: str = Field(default="connected", description="Database connectivity status")
+    database_connected: bool = Field(default=True, description="Database connectivity status flag")
+    ai_status: str = Field(default="configured", description="AI mentor engine status")
+    uptime_seconds: float = Field(default=0.0, description="Process uptime in seconds")
+    uptime: str | None = Field(default=None, description="Formatted uptime")
 
 
 class MessageResponse(CustomBaseModel):

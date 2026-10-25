@@ -100,7 +100,7 @@ async def run_master_qa():
             data = r.json()
             record_test(
                 "GET /api/v1/health",
-                r.status_code == 200 and data.get("status") == "ok" and data.get("database_connected") is True,
+                r.status_code == 200 and data.get("status") in {"ok", "healthy"} and data.get("database_connected") is True,
                 f"Status: {data.get('status')}, DB connected: {data.get('database_connected')}",
             )
         except Exception as e:

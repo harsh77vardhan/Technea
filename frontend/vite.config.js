@@ -10,6 +10,36 @@ export default defineConfig({
     react(),
     babel({ presets: [reactCompilerPreset()] })
   ],
+  build: {
+    chunkSizeWarningLimit: 600,
+    rollupOptions: {
+      treeshake: true,
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('three')) {
+              return 'three-vendor'
+            }
+            if (id.includes('gsap') || id.includes('@gsap/react')) {
+              return 'gsap-vendor'
+            }
+            if (id.includes('lenis')) {
+              return 'lenis-vendor'
+            }
+            if (id.includes('lucide-react')) {
+              return 'lucide-icons'
+            }
+            if (id.includes('framer-motion')) {
+              return 'framer-motion'
+            }
+            if (id.includes('react') || id.includes('react-dom') || id.includes('scheduler')) {
+              return 'framework-vendor'
+            }
+          }
+        },
+      },
+    },
+  },
   server: {
     proxy: {
       '/uploads': {

@@ -16,14 +16,23 @@ from sqlalchemy import select
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
+import pytest
 from app.core.security import create_access_token
-from app.db.session import async_session_maker
+from app.db.session import async_session_maker, engine
 from app.main import app
 from app.models.user import User
 from app.services.ai.context_retriever import context_retriever
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("test_context_retriever")
+
+
+@pytest.fixture(autouse=True)
+async def cleanup_db_engine():
+    """Ensure engine connections are disposed per test event loop."""
+    await engine.dispose()
+    yield
+    await engine.dispose()
 
 
 async def test_catalog_retrieval_queries():

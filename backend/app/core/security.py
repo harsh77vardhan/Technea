@@ -75,6 +75,7 @@ def decode_access_token(token: str) -> dict[str, Any] | None:
             token,
             settings.SECRET_KEY,
             algorithms=[settings.JWT_ALGORITHM],
+            options={"require": ["exp", "sub"]},
         )
         return payload
     except jwt.PyJWTError:

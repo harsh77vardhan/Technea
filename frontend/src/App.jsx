@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, lazy, Suspense } from 'react'
 import { ReactLenis, useLenis } from 'lenis/react'
 import 'lenis/dist/lenis.css'
 import gsap from 'gsap'
@@ -10,12 +10,55 @@ import { useAuth } from './context/useAuth'
 import Navbar from './components/layout/Navbar'
 import LandingPage from './pages/LandingPage'
 import Footer from './components/layout/Footer'
-import AuthModal from './components/auth/AuthModal'
-import LearningDashboardModal from './components/dashboard/LearningDashboardModal'
-import SkillExplorerModal from './components/explorer/SkillExplorerModal'
-import RoadmapBuilderModal from './components/roadmap/RoadmapBuilderModal'
-import ProfilePage from './pages/ProfilePage'
-import PublicProfilePage from './pages/PublicProfilePage'
+import PWAInstallBanner from './components/pwa/PWAInstallBanner'
+
+// Lazy-loaded route pages and heavy modals for maximum performance & bundle code splitting
+const AuthModal = lazy(() => import('./components/auth/AuthModal'))
+const LearningDashboardModal = lazy(() => import('./components/dashboard/LearningDashboardModal'))
+const SkillExplorerModal = lazy(() => import('./components/explorer/SkillExplorerModal'))
+const RoadmapBuilderModal = lazy(() => import('./components/roadmap/RoadmapBuilderModal'))
+const ProfilePage = lazy(() => import('./pages/ProfilePage'))
+const PublicProfilePage = lazy(() => import('./pages/PublicProfilePage'))
+const CoursePlayerPage = lazy(() => import('./pages/CoursePlayerPage'))
+const LearningPathDetailPage = lazy(() => import('./pages/LearningPathDetailPage'))
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
+import ErrorBoundary from './components/common/ErrorBoundary'
+
+function SleekRouteLoadingFallback() {
+  return (
+    <div className="min-h-screen w-full flex items-center justify-center bg-[#050505] text-white">
+      <div className="flex flex-col items-center gap-4">
+        <div className="relative h-12 w-12">
+          <div className="absolute inset-0 rounded-full border-2 border-indigo-500/20 animate-ping" />
+          <div className="h-12 w-12 rounded-full border-2 border-t-indigo-500 border-r-purple-500 border-b-transparent border-l-transparent animate-spin" />
+        </div>
+        <div className="flex items-center gap-2 text-xs font-medium tracking-widest uppercase text-neutral-400">
+          <span className="inline-block h-1.5 w-1.5 rounded-full bg-indigo-500 animate-pulse" />
+          Loading experience
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function SleekModalLoadingFallback() {
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Loading dialog"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md"
+    >
+      <div className="relative flex flex-col items-center gap-3 rounded-2xl border border-white/10 bg-[#0a0c10]/95 px-8 py-6 shadow-2xl backdrop-blur-xl">
+        <div className="relative h-10 w-10">
+          <div className="absolute inset-0 rounded-full border-2 border-blue-500/20 animate-ping" />
+          <div className="h-10 w-10 rounded-full border-2 border-t-blue-500 border-r-indigo-500 border-b-transparent border-l-transparent animate-spin" />
+        </div>
+        <span className="text-xs font-medium text-neutral-400 tracking-wider">Loading...</span>
+      </div>
+    </div>
+  )
+}
 
 function ScrollProgressBar() {
   const [progress, setProgress] = useState(0)
@@ -43,24 +86,41 @@ function AppContent() {
     closeAuthModal,
     authModalMode,
     isDashboardOpen,
+    openDashboard,
     closeDashboard,
     isRoadmapBuilderOpen,
+    openRoadmapBuilder,
     closeRoadmapBuilder,
     roadmapBuilderInitialGoal,
   } = useAuth()
   const [selectedDashboardPath, setSelectedDashboardPath] = useState(null)
-  const [isDirectExplorerOpen, setIsDirectExplorerOpen] = useState(false)
+  const [isDirectExplorerOpen, setIsDirectExplorerOpen] = useState(
+    () => typeof window !== 'undefined' && window.location.pathname === '/explore'
+  )
   const [currentPath, setCurrentPath] = useState(() => window.location.pathname)
   const [currentSearch, setCurrentSearch] = useState(() => window.location.search)
 
   useEffect(() => {
     const handlePopState = () => {
-      setCurrentPath(window.location.pathname)
+      const path = window.location.pathname
+      setCurrentPath(path)
       setCurrentSearch(window.location.search)
+      if (path === '/explore') {
+        setIsDirectExplorerOpen(true)
+      }
     }
     window.addEventListener('popstate', handlePopState)
     return () => window.removeEventListener('popstate', handlePopState)
   }, [])
+
+  // Auto-open context modals if direct route is navigated to
+  useEffect(() => {
+    if (currentPath === '/dashboard') {
+      openDashboard()
+    } else if (currentPath === '/roadmap') {
+      openRoadmapBuilder()
+    }
+  }, [currentPath, openDashboard, openRoadmapBuilder])
 
   const isAnyModalOpen = Boolean(
     isAuthModalOpen ||
@@ -112,6 +172,13 @@ function AppContent() {
   }
 
   const isProfileRoute = currentPath.startsWith('/profile')
+  const isCourseRoute = currentPath.startsWith('/course/') || currentPath.startsWith('/courses/')
+  const isPathRoute =
+    currentPath.startsWith('/path/') ||
+    currentPath.startsWith('/paths/') ||
+    currentPath.startsWith('/learning-path/') ||
+    currentPath.startsWith('/learning-paths/')
+
   const searchParams = new URLSearchParams(currentSearch)
   const isEditRequested = searchParams.get('edit') === 'true'
 
@@ -122,80 +189,179 @@ function AppContent() {
     profileUsername = user?.username || ''
   }
 
+  let courseRouteId = null
+  if (isCourseRoute) {
+    const parts = currentPath.split('/').filter(Boolean)
+    courseRouteId = parts[1] || null
+  }
+
+  let pathRouteId = null
+  if (isPathRoute) {
+    const parts = currentPath.split('/').filter(Boolean)
+    pathRouteId = parts[1] || null
+  }
+
+  const isHomeRoute = currentPath === '/' || currentPath === '' || currentPath === '/home'
+  const isDirectModalRoute =
+    currentPath === '/dashboard' ||
+    currentPath === '/explore' ||
+    currentPath === '/roadmap'
+
+  const isKnownRoute =
+    isHomeRoute || isDirectModalRoute || isProfileRoute || isCourseRoute || isPathRoute
+  const isSpecialRoute = isProfileRoute || isCourseRoute || isPathRoute || !isKnownRoute
+
   return (
-    <div className={`flex min-h-screen flex-col antialiased ${
-      isProfileRoute
+    <div className={`flex min-h-screen flex-col antialiased w-full max-w-full overflow-x-hidden ${
+      isSpecialRoute
         ? 'bg-[#050505] text-[#EDEDED] selection:bg-[#333333] selection:text-white'
         : 'bg-[#f8fafc] text-neutral-900 selection:bg-neutral-900 selection:text-white'
     }`}>
       <ScrollProgressBar />
       {isProfileRoute ? (
-        currentPath.startsWith('/profile/') && profileUsername ? (
-          <PublicProfilePage
-            username={profileUsername}
-            initialEditOpen={isEditRequested}
-            onBackToHome={() => {
-              window.history.pushState({}, '', '/')
-              setCurrentPath('/')
-              setCurrentSearch('')
-              window.dispatchEvent(new PopStateEvent('popstate'))
-            }}
-          />
-        ) : (
-          <ProfilePage
-            username={profileUsername || user?.username}
-            initialEditOpen={isEditRequested}
-            onBackToHome={() => {
-              window.history.pushState({}, '', '/')
-              setCurrentPath('/')
-              setCurrentSearch('')
-              window.dispatchEvent(new PopStateEvent('popstate'))
-            }}
-          />
-        )
-      ) : (
-        <>
+        <ErrorBoundary title="Profile page encountered an error">
+          <Suspense fallback={<SleekRouteLoadingFallback />}>
+            {currentPath.startsWith('/profile/') && profileUsername ? (
+              <PublicProfilePage
+                username={profileUsername}
+                initialEditOpen={isEditRequested}
+                onBackToHome={() => {
+                  window.history.pushState({}, '', '/')
+                  setCurrentPath('/')
+                  setCurrentSearch('')
+                  window.dispatchEvent(new PopStateEvent('popstate'))
+                }}
+              />
+            ) : (
+              <ProfilePage
+                username={profileUsername || user?.username}
+                initialEditOpen={isEditRequested}
+                onBackToHome={() => {
+                  window.history.pushState({}, '', '/')
+                  setCurrentPath('/')
+                  setCurrentSearch('')
+                  window.dispatchEvent(new PopStateEvent('popstate'))
+                }}
+              />
+            )}
+          </Suspense>
+        </ErrorBoundary>
+      ) : isCourseRoute ? (
+        <ErrorBoundary title="Course player encountered an error">
+          <Suspense fallback={<SleekRouteLoadingFallback />}>
+            <CoursePlayerPage
+              course={courseRouteId ? { id: courseRouteId } : null}
+              onBack={() => {
+                window.history.pushState({}, '', '/')
+                setCurrentPath('/')
+                setCurrentSearch('')
+                window.dispatchEvent(new PopStateEvent('popstate'))
+              }}
+            />
+          </Suspense>
+        </ErrorBoundary>
+      ) : isPathRoute ? (
+        <ErrorBoundary title="Learning path encountered an error">
+          <Suspense fallback={<SleekRouteLoadingFallback />}>
+            <LearningPathDetailPage
+              path={pathRouteId ? { id: pathRouteId } : null}
+              onBack={() => {
+                window.history.pushState({}, '', '/')
+                setCurrentPath('/')
+                setCurrentSearch('')
+                window.dispatchEvent(new PopStateEvent('popstate'))
+              }}
+              onStartLearning={(course) => {
+                if (course?.id) {
+                  window.history.pushState({}, '', `/courses/${course.id}`)
+                  setCurrentPath(`/courses/${course.id}`)
+                  window.dispatchEvent(new PopStateEvent('popstate'))
+                }
+              }}
+            />
+          </Suspense>
+        </ErrorBoundary>
+      ) : isHomeRoute || isDirectModalRoute ? (
+        <ErrorBoundary title="Homepage encountered an error">
           <Navbar />
           <LandingPage />
           <Footer />
-        </>
+        </ErrorBoundary>
+      ) : (
+        <ErrorBoundary title="Route navigation error">
+          <Suspense fallback={<SleekRouteLoadingFallback />}>
+            <NotFoundPage
+              onBackToHome={() => {
+                window.history.pushState({}, '', '/')
+                setCurrentPath('/')
+                setCurrentSearch('')
+                window.dispatchEvent(new PopStateEvent('popstate'))
+              }}
+            />
+          </Suspense>
+        </ErrorBoundary>
       )}
 
 
       {/* Global Authentication Modal */}
-      <AuthModal
-        isOpen={isAuthModalOpen}
-        onClose={closeAuthModal}
-        initialMode={authModalMode}
-      />
+      {isAuthModalOpen && (
+        <ErrorBoundary compact title="Authentication temporarily unavailable">
+          <Suspense fallback={<SleekModalLoadingFallback />}>
+            <AuthModal
+              isOpen={isAuthModalOpen}
+              onClose={closeAuthModal}
+              initialMode={authModalMode}
+            />
+          </Suspense>
+        </ErrorBoundary>
+      )}
 
       {/* Global Learning Dashboard Modal */}
-      <LearningDashboardModal
-        isOpen={isDashboardOpen}
-        onClose={closeDashboard}
-        onSelectPath={handleSelectPathFromDashboard}
-        onOpenExplorer={handleOpenExplorerFromDashboard}
-      />
+      {isDashboardOpen && (
+        <ErrorBoundary compact title="Dashboard temporarily unavailable">
+          <Suspense fallback={<SleekModalLoadingFallback />}>
+            <LearningDashboardModal
+              isOpen={isDashboardOpen}
+              onClose={closeDashboard}
+              onSelectPath={handleSelectPathFromDashboard}
+              onOpenExplorer={handleOpenExplorerFromDashboard}
+            />
+          </Suspense>
+        </ErrorBoundary>
+      )}
 
       {/* Direct Explorer / Path Modal launched from Dashboard */}
       {isDirectExplorerOpen && (
-        <SkillExplorerModal
-          isOpen={isDirectExplorerOpen}
-          initialPath={selectedDashboardPath}
-          onClose={() => {
-            setIsDirectExplorerOpen(false)
-            setSelectedDashboardPath(null)
-          }}
-        />
+        <ErrorBoundary compact title="Explorer temporarily unavailable">
+          <Suspense fallback={<SleekModalLoadingFallback />}>
+            <SkillExplorerModal
+              isOpen={isDirectExplorerOpen}
+              initialPath={selectedDashboardPath}
+              onClose={() => {
+                setIsDirectExplorerOpen(false)
+                setSelectedDashboardPath(null)
+              }}
+            />
+          </Suspense>
+        </ErrorBoundary>
       )}
 
       {/* Global AI Roadmap Builder Modal */}
-      <RoadmapBuilderModal
-        isOpen={isRoadmapBuilderOpen}
-        onClose={closeRoadmapBuilder}
-        initialGoal={roadmapBuilderInitialGoal}
-        onSelectPath={handleSelectPathFromDashboard}
-      />
+      {isRoadmapBuilderOpen && (
+        <ErrorBoundary compact title="Roadmap Builder temporarily unavailable">
+          <Suspense fallback={<SleekModalLoadingFallback />}>
+            <RoadmapBuilderModal
+              isOpen={isRoadmapBuilderOpen}
+              onClose={closeRoadmapBuilder}
+              initialGoal={roadmapBuilderInitialGoal}
+              onSelectPath={handleSelectPathFromDashboard}
+            />
+          </Suspense>
+        </ErrorBoundary>
+      )}
+
+      {/* PWA Home Screen Installation Prompt */}
+      <PWAInstallBanner />
     </div>
   )
 }

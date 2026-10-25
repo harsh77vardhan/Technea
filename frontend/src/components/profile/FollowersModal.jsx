@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Search, Users, Loader2 } from 'lucide-react'
-import { getUserFollowersApi, getUserFollowingApi, getAvatarUrl } from '../../services/api'
+import { getUserFollowersApi, getUserFollowingApi } from '../../services/api'
 import FollowButton from './FollowButton'
+import Avatar from '../common/Avatar'
 
 export default function FollowersModal({
   isOpen,
@@ -120,7 +121,7 @@ export default function FollowersModal({
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={onClose}
-              className="p-1.5 rounded-lg text-[#8A8F98] hover:text-[#EDEDED] hover:bg-white/[0.05] transition-colors cursor-pointer"
+              className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-[#8A8F98] hover:text-[#EDEDED] hover:bg-white/[0.05] transition-colors cursor-pointer"
               aria-label="Close"
             >
               <X className="h-4 w-4" />
@@ -215,17 +216,13 @@ export default function FollowersModal({
                       if (onNavigateUser) onNavigateUser(dev.username)
                     }}
                   >
-                    {dev.avatar_url ? (
-                      <img
-                        src={getAvatarUrl(dev.avatar_url)}
-                        alt={dev.full_name || dev.username}
-                        className="h-10 w-10 rounded-full object-cover border border-white/[0.12] ring-2 ring-black shrink-0"
-                      />
-                    ) : (
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/[0.12] bg-[#141416] text-xs font-bold text-[#EDEDED] font-mono ring-2 ring-black shrink-0">
-                        {(dev.full_name || dev.username || 'U').charAt(0).toUpperCase()}
-                      </div>
-                    )}
+                    <Avatar
+                      src={dev.avatar_url}
+                      name={dev.full_name}
+                      username={dev.username}
+                      size="h-10 w-10 text-xs"
+                      className="border border-white/[0.12] ring-2 ring-black shrink-0"
+                    />
 
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5 flex-wrap">

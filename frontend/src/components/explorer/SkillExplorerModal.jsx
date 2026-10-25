@@ -1,13 +1,14 @@
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef, useMemo, lazy, Suspense } from 'react'
 import { X, ArrowLeft } from 'lucide-react'
 import ExplorerSearchBar from './ExplorerSearchBar'
 import FloatingKeywords from './FloatingKeywords'
 import LearningBrowser from './LearningBrowser'
 import ExplorerStickyFooter from './ExplorerStickyFooter'
-import LearningPathDetailPage from '../../pages/LearningPathDetailPage'
-import CoursePlayerPage from '../../pages/CoursePlayerPage'
 import { SKILLS } from '../../data/skills'
 import { getSkills } from '../../services/api'
+
+const LearningPathDetailPage = lazy(() => import('../../pages/LearningPathDetailPage'))
+const CoursePlayerPage = lazy(() => import('../../pages/CoursePlayerPage'))
 
 export default function SkillExplorerModal({ isOpen, onClose, onSelectPath, initialPath = null }) {
   const [stage, setStage] = useState(initialPath ? 'detail' : 'discover') // 'discover' | 'explore' | 'detail' | 'player'
@@ -275,7 +276,7 @@ export default function SkillExplorerModal({ isOpen, onClose, onSelectPath, init
                 <button
                   type="button"
                   onClick={onClose}
-                  className="p-1.5 text-neutral-400 hover:text-white transition-colors cursor-pointer"
+                  className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-neutral-400 hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer"
                   aria-label="Close dialog"
                 >
                   <X className="h-4 w-4 stroke-[1.5]" />
@@ -313,7 +314,7 @@ export default function SkillExplorerModal({ isOpen, onClose, onSelectPath, init
                     setSelectedSkillId(null)
                     setSelectedPathObject(null)
                   }}
-                  className="inline-flex items-center gap-1.5 text-xs font-medium text-neutral-400 hover:text-white transition-colors cursor-pointer shrink-0 py-1.5 px-2.5 rounded-lg hover:bg-white/[0.06] border border-transparent hover:border-white/10"
+                  className="inline-flex min-h-[44px] items-center gap-1.5 text-xs font-medium text-neutral-400 hover:text-white transition-colors cursor-pointer shrink-0 py-1.5 px-2.5 rounded-lg hover:bg-white/[0.06] border border-transparent hover:border-white/10"
                 >
                   <ArrowLeft className="h-3.5 w-3.5" />
                   <span className="hidden sm:inline">Discover</span>
@@ -332,7 +333,7 @@ export default function SkillExplorerModal({ isOpen, onClose, onSelectPath, init
                 <button
                   type="button"
                   onClick={onClose}
-                  className="p-1.5 text-neutral-400 hover:text-white transition-colors cursor-pointer shrink-0"
+                  className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-neutral-400 hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer shrink-0"
                   aria-label="Close dialog"
                 >
                   <X className="h-4 w-4 stroke-[1.5]" />
@@ -384,14 +385,25 @@ export default function SkillExplorerModal({ isOpen, onClose, onSelectPath, init
           aria-label="Learning Path Detail"
           className="fixed inset-0 z-50 overflow-y-auto bg-[#08090d]"
         >
-          <LearningPathDetailPage
-            path={selectedPathObject}
-            onBack={handleBackToResults}
-            onStartLearning={(course) => {
-              setSelectedCourseObject(course)
-              setStage('player')
-            }}
-          />
+          <Suspense
+            fallback={
+              <div className="min-h-screen w-full flex items-center justify-center bg-[#08090d] text-white">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="h-10 w-10 rounded-full border-2 border-t-indigo-500 border-r-purple-500 border-b-transparent border-l-transparent animate-spin" />
+                  <span className="text-xs font-medium text-neutral-400 tracking-wider">Loading path details...</span>
+                </div>
+              </div>
+            }
+          >
+            <LearningPathDetailPage
+              path={selectedPathObject}
+              onBack={handleBackToResults}
+              onStartLearning={(course) => {
+                setSelectedCourseObject(course)
+                setStage('player')
+              }}
+            />
+          </Suspense>
         </div>
       )}
 
@@ -405,12 +417,23 @@ export default function SkillExplorerModal({ isOpen, onClose, onSelectPath, init
           aria-label="Course Player"
           className="fixed inset-0 z-50 overflow-y-auto bg-[#08090d]"
         >
-          <CoursePlayerPage
-            course={selectedCourseObject}
-            path={selectedPathObject}
-            onBack={() => setStage('detail')}
-            onSelectCourse={(newCourse) => setSelectedCourseObject(newCourse)}
-          />
+          <Suspense
+            fallback={
+              <div className="min-h-screen w-full flex items-center justify-center bg-[#08090d] text-white">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="h-10 w-10 rounded-full border-2 border-t-blue-500 border-r-indigo-500 border-b-transparent border-l-transparent animate-spin" />
+                  <span className="text-xs font-medium text-neutral-400 tracking-wider">Loading course player...</span>
+                </div>
+              </div>
+            }
+          >
+            <CoursePlayerPage
+              course={selectedCourseObject}
+              path={selectedPathObject}
+              onBack={() => setStage('detail')}
+              onSelectCourse={(newCourse) => setSelectedCourseObject(newCourse)}
+            />
+          </Suspense>
         </div>
       )}
     </>

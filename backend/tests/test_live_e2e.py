@@ -108,7 +108,7 @@ async def run_live_e2e_tests():
         res = await client.get("/api/v1/health")
         assert res.status_code == 200, f"Health check failed: {res.status_code}"
         data = res.json()
-        assert data.get("status") == "ok" and data.get("database_connected") is True
+        assert data.get("status") in {"ok", "healthy"} and data.get("database_connected") is True
         print(f"  ✓ GET /api/v1/health -> 200 OK (DB Connected: {data.get('database_connected')})")
         passed_tests += 1
 

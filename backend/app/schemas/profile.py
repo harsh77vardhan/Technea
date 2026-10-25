@@ -43,7 +43,7 @@ class ProfileAchievementBadge(BaseModel):
 class UserProfilePublicResponse(BaseModel):
     """Comprehensive public developer portfolio profile response."""
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, extra="ignore")
 
     id: uuid.UUID
     username: str
@@ -119,7 +119,7 @@ class UserStatsResponse(BaseModel):
 class FollowUserItem(BaseModel):
     """User item returned in followers and following lists."""
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, extra="ignore")
 
     id: uuid.UUID
     username: str

@@ -14,6 +14,23 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Prevent horizontal scroll bleed on mobile viewports (320px - 414px) */
+html,
+body,
+#root {
+  max-width: 100%;
+  overflow-x: clip;
+}
+
+/* Mobile tap target usability */
+@media (max-width: 640px) {
+  button,
+  [role="button"],
+  a {
+    touch-action: manipulation;
+  }
+}
+
 /* Memphis dot grid pattern */
 .bg-dot-pattern {
   background-image: radial-gradient(#cbd5e1 1.2px, transparent 1.2px);

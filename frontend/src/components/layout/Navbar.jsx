@@ -283,7 +283,7 @@ export default function Navbar() {
         <button
           type="button"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="rounded-lg p-2 text-slate-600 hover:bg-slate-100 hover:text-slate-900 md:hidden"
+          className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 md:hidden cursor-pointer"
           aria-label="Toggle navigation"
         >
           {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -293,25 +293,25 @@ export default function Navbar() {
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
         <div className="border-b border-slate-200 bg-white px-4 py-4 md:hidden shadow-lg">
-          <nav className="flex flex-col gap-3">
+          <nav className="flex flex-col gap-1.5">
             <a
               href="#features"
               onClick={() => setMobileMenuOpen(false)}
-              className="rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-950"
+              className="min-h-[44px] flex items-center rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-950"
             >
               Features
             </a>
             <a
               href="#how-it-works"
               onClick={() => setMobileMenuOpen(false)}
-              className="rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-950"
+              className="min-h-[44px] flex items-center rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-950"
             >
               How It Works
             </a>
             <a
               href="#curriculum"
               onClick={() => setMobileMenuOpen(false)}
-              className="rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-950"
+              className="min-h-[44px] flex items-center rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-950"
             >
               Roadmaps
             </a>
@@ -321,7 +321,7 @@ export default function Navbar() {
                 setMobileMenuOpen(false)
                 openRoadmapBuilder()
               }}
-              className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-blue-600 hover:bg-blue-50 text-left"
+              className="min-h-[44px] flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-blue-600 hover:bg-blue-50 text-left"
             >
               <Sparkles className="h-4 w-4 text-amber-500" />
               <span>AI Roadmap Builder</span>
@@ -358,7 +358,7 @@ export default function Navbar() {
                     <button
                       type="button"
                       onClick={() => handleNavigate(profileUrl)}
-                      className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-800 hover:bg-slate-50 transition shadow-xs cursor-pointer"
+                      className="w-full min-h-[44px] flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-800 hover:bg-slate-50 transition shadow-xs cursor-pointer"
                     >
                       <User className="h-4 w-4 text-slate-500" />
                       <span>View Profile</span>
@@ -371,7 +371,7 @@ export default function Navbar() {
                         setMobileMenuOpen(false)
                         openDashboard()
                       }}
-                      className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-blue-600 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 transition cursor-pointer"
+                      className="w-full min-h-[44px] flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-blue-600 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 transition cursor-pointer"
                     >
                       <LayoutDashboard className="h-4 w-4 text-white" />
                       <span>Learning Dashboard</span>
@@ -381,7 +381,7 @@ export default function Navbar() {
                     <button
                       type="button"
                       onClick={() => handleNavigate(editProfileUrl)}
-                      className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-800 hover:bg-slate-50 transition shadow-xs cursor-pointer"
+                      className="w-full min-h-[44px] flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-800 hover:bg-slate-50 transition shadow-xs cursor-pointer"
                     >
                       <Edit3 className="h-4 w-4 text-slate-500" />
                       <span>Edit Profile</span>
@@ -394,7 +394,7 @@ export default function Navbar() {
                         setMobileMenuOpen(false)
                         logout()
                       }}
-                      className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border border-red-100 bg-red-50/60 text-xs font-semibold text-red-600 hover:bg-red-50 transition cursor-pointer"
+                      className="w-full min-h-[44px] flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border border-red-100 bg-red-50/60 text-xs font-semibold text-red-600 hover:bg-red-50 transition cursor-pointer"
                     >
                       <LogOut className="h-4 w-4 text-red-500" />
                       <span>Sign Out</span>
@@ -409,7 +409,7 @@ export default function Navbar() {
                       setMobileMenuOpen(false)
                       openAuthModal('login')
                     }}
-                    className="w-full rounded-xl border border-slate-200 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                    className="w-full min-h-[44px] flex items-center justify-center rounded-xl border border-slate-200 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
                   >
                     Sign in
                   </button>
@@ -419,7 +419,7 @@ export default function Navbar() {
                       setMobileMenuOpen(false)
                       openAuthModal('signup')
                     }}
-                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 px-4 py-2.5 text-sm font-semibold text-white"
+                    className="flex w-full min-h-[44px] items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 px-4 py-2.5 text-sm font-semibold text-white cursor-pointer"
                   >
                     <span>Get Started</span>
                     <ArrowRight className="h-4 w-4" />

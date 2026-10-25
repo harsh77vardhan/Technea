@@ -1,32 +1,75 @@
 """Health check and readiness verification endpoints."""
 
+import asyncio
+import time
 from fastapi import APIRouter, Depends, status
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
+from app.core.logger import logger
 from app.db.session import get_db
 from app.schemas.common import HealthCheckResponse
 
 router = APIRouter(tags=["Health"])
+
+START_TIME = time.time()
+
+
+def get_uptime_seconds() -> float:
+    """Calculate process uptime in seconds."""
+    return round(time.time() - START_TIME, 2)
 
 
 @router.get(
     "/health",
     response_model=HealthCheckResponse,
     status_code=status.HTTP_200_OK,
-    summary="Liveness check",
-    description="Returns the status of the service to verify the application process is running.",
+    summary="Health check",
+    description="Returns service health, database connectivity, AI status, and system uptime.",
 )
-async def health_check() -> HealthCheckResponse:
-    """Perform a simple service liveness check."""
-    return HealthCheckResponse(
-        status="ok",
-        app_name=settings.PROJECT_NAME,
-        version=settings.VERSION,
-        environment=settings.ENVIRONMENT,
-        database_connected=True,
+async def health_check(
+    db: AsyncSession = Depends(get_db),
+) -> HealthCheckResponse | JSONResponse:
+    """Perform an asynchronous health check verifying database and AI status."""
+    uptime_sec = get_uptime_seconds()
+    ai_status = "configured" if settings.GEMINI_API_KEY else "rule_based"
+
+    db_connected = False
+    try:
+        await asyncio.wait_for(db.execute(text("SELECT 1")), timeout=3.0)
+        db_connected = True
+    except Exception as exc:
+        logger.warning("Database connectivity check failed during /health check: %s", exc)
+        db_connected = False
+
+    if db_connected:
+        return HealthCheckResponse(
+            status="healthy",
+            app_name=settings.PROJECT_NAME,
+            version=settings.VERSION,
+            environment=settings.ENVIRONMENT,
+            database="connected",
+            database_connected=True,
+            ai_status=ai_status,
+            uptime_seconds=uptime_sec,
+            uptime=f"{uptime_sec}s",
+        )
+
+    return JSONResponse(
+        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        content={
+            "status": "unhealthy",
+            "app_name": settings.PROJECT_NAME,
+            "version": settings.VERSION,
+            "environment": settings.ENVIRONMENT,
+            "database": "disconnected",
+            "database_connected": False,
+            "ai_status": ai_status,
+            "uptime_seconds": uptime_sec,
+            "uptime": f"{uptime_sec}s",
+        },
     )
 
 
@@ -40,16 +83,24 @@ async def readiness_check(
     db: AsyncSession = Depends(get_db),
 ) -> HealthCheckResponse | JSONResponse:
     """Perform a database readiness check."""
+    uptime_sec = get_uptime_seconds()
+    ai_status = "configured" if settings.GEMINI_API_KEY else "rule_based"
+
     try:
-        await db.execute(text("SELECT 1"))
+        await asyncio.wait_for(db.execute(text("SELECT 1")), timeout=3.0)
         return HealthCheckResponse(
-            status="ok",
+            status="healthy",
             app_name=settings.PROJECT_NAME,
             version=settings.VERSION,
             environment=settings.ENVIRONMENT,
+            database="connected",
             database_connected=True,
+            ai_status=ai_status,
+            uptime_seconds=uptime_sec,
+            uptime=f"{uptime_sec}s",
         )
     except Exception as exc:
+        logger.error("Readiness check failed: %s", exc)
         return JSONResponse(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             content={
@@ -57,7 +108,11 @@ async def readiness_check(
                 "app_name": settings.PROJECT_NAME,
                 "version": settings.VERSION,
                 "environment": settings.ENVIRONMENT,
+                "database": "disconnected",
                 "database_connected": False,
-                "detail": str(exc),
+                "ai_status": ai_status,
+                "uptime_seconds": uptime_sec,
+                "uptime": f"{uptime_sec}s",
+                "detail": str(exc) if (settings.DEBUG and settings.ENVIRONMENT != "production") else "Database connection unavailable",
             },
         )

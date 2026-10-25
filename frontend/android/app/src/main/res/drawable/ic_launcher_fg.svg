@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108" width="108" height="108">
+  <defs>
+    <linearGradient id="afg-catalyst" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8"/>
+      <stop offset="40%" stop-color="#818CF8"/>
+      <stop offset="100%" stop-color="#6366F1"/>
+    </linearGradient>
+    <filter id="afg-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#00EBFF" flood-opacity="0.3"/>
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#6366F1" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+  <g transform="translate(54, 54) scale(2.6) translate(-16, -16)" filter="url(#afg-glow)">
+    <path
+      d="M6.5 7.5C6.5 6.94772 6.94772 6.5 7.5 6.5H24.5C25.0523 6.5 25.5 6.94772 25.5 7.5V8.5C25.5 9.05228 25.0523 9.5 24.5 9.5H22V24.5C22 25.0523 21.5523 25.5 21 25.5H19V9.5H12.5V24.5C12.5 25.0523 12.0523 25.5 11.5 25.5H9.5C8.94772 25.5 8.5 25.0523 8.5 24.5V9.5H7.5C6.94772 9.5 6.5 9.05228 6.5 8.5V7.5Z"
+      fill="#FFFFFF"
+    />
+    <path
+      d="M12.5 9.5H15.5L19 16.5V24.5H16L12.5 17.5V9.5Z"
+      fill="url(#afg-catalyst)"
+    />
+  </g>
+</svg>

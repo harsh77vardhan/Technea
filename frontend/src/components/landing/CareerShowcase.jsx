@@ -7,6 +7,7 @@ import { useRef } from 'react'
 import { useLenis } from 'lenis/react'
 import gsap from 'gsap'
 import { useGSAP } from '@gsap/react'
+import ImageWithFallback from '../common/ImageWithFallback'
 
 gsap.registerPlugin(useGSAP)
 
@@ -157,11 +158,16 @@ export default function CareerShowcase() {
                 className="group relative h-[350px] sm:h-[400px] lg:h-[450px] w-[240px] sm:w-[280px] lg:w-[20vw] shrink-0 overflow-hidden cursor-pointer"
               >
                 {/* Full-bleed authentic photography with optical window parallax */}
-                <img
+                <ImageWithFallback
                   src={panel.image}
                   alt={panel.title}
                   loading="lazy"
                   className="career-panel-img h-full w-full object-cover will-change-transform transition-transform duration-700 ease-out group-hover:scale-115"
+                  fallback={
+                    <div className="h-full w-full bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-950 flex flex-col items-center justify-center p-4 text-center">
+                      <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-widest">{panel.title}</span>
+                    </div>
+                  }
                 />
 
                 {/* Top-left dark gradient scrim for crystal clear white typography */}

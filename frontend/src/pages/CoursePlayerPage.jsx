@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 import { getCourseById, getCourseLessons, getRelatedCourses, getCourses, getCourseProgressApi, toggleLessonProgressApi } from '../services/api'
 import { useAuth } from '../context/useAuth'
+import ImageWithFallback from '../components/common/ImageWithFallback'
 
 /**
  * Validates whether an ID is a valid database numeric ID
@@ -635,11 +636,16 @@ export default function CoursePlayerPage({
                   >
                     {/* Thumbnail Preview with Play Overlay */}
                     <div className="relative h-12 w-20 sm:h-14 sm:w-24 rounded-lg overflow-hidden bg-black shrink-0 border border-white/10">
-                      <img
+                      <ImageWithFallback
                         src={thumb}
                         alt={lesson.title}
                         className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
                         loading="lazy"
+                        fallback={
+                          <div className="h-full w-full flex items-center justify-center bg-neutral-900">
+                            <Play className="h-4 w-4 text-neutral-600" />
+                          </div>
+                        }
                       />
                       <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                         <Play className="h-4 w-4 fill-white text-white" />
@@ -743,11 +749,16 @@ export default function CoursePlayerPage({
                     <div className="space-y-3">
                       {relThumb && (
                         <div className="aspect-video w-full rounded-lg overflow-hidden bg-black border border-white/10 relative">
-                          <img
+                          <ImageWithFallback
                             src={relThumb}
                             alt={rel.title}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                             loading="lazy"
+                            fallback={
+                              <div className="w-full h-full flex items-center justify-center bg-neutral-900">
+                                <Play className="h-6 w-6 text-neutral-600" />
+                              </div>
+                            }
                           />
                           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                             <Play className="h-6 w-6 fill-white text-white" />

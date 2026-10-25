@@ -331,7 +331,7 @@ export default function PublicProfilePage({
           <button
             type="button"
             onClick={handleBack}
-            className="inline-flex items-center gap-2 rounded-[6px] border border-white/[0.08] bg-[#0E0E0E] px-3 py-1.5 text-xs font-mono text-[#A1A1A1] hover:text-[#EDEDED] hover:border-white/[0.18] transition-colors cursor-pointer"
+            className="inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-white/[0.08] bg-[#0E0E0E] px-3.5 py-2 text-xs font-mono text-[#A1A1A1] hover:text-[#EDEDED] hover:border-white/[0.18] transition-colors cursor-pointer"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
             <span>Return to Technea</span>

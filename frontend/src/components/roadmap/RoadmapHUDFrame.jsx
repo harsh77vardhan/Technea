@@ -1,4 +1,6 @@
 import { X } from 'lucide-react'
+import ImageWithFallback from '../common/ImageWithFallback'
+import { TechneaIcon } from '../layout/TechneaLogo'
 
 /**
  * RoadmapHUDFrame Component
@@ -17,10 +19,11 @@ export default function RoadmapHUDFrame({ onClose }) {
         {/* Top-Left: Technea Brand & Precision Icon */}
         <div className="flex items-center gap-3">
           <div className="w-[26px] h-[22px] shrink-0 flex items-center justify-center">
-            <img
+            <ImageWithFallback
               src="/images/technea-neon-icon.png"
               alt="Technea Icon"
               className="w-full h-full object-contain filter drop-shadow-[0_0_8px_rgba(0,163,255,0.45)]"
+              fallback={<TechneaIcon size={22} />}
             />
           </div>
           <span
@@ -55,10 +58,10 @@ export default function RoadmapHUDFrame({ onClose }) {
           <button
             type="button"
             onClick={onClose}
-            className="pointer-events-auto flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/[0.02] backdrop-blur-md text-white/50 hover:text-white hover:border-[#0084FF]/60 hover:bg-white/[0.06] hover:shadow-[0_0_15px_rgba(0,132,255,0.3)] transition-all cursor-pointer"
+            className="pointer-events-auto flex min-h-[44px] min-w-[44px] sm:h-8 sm:w-8 items-center justify-center rounded-full border border-white/10 bg-white/[0.02] backdrop-blur-md text-white/50 hover:text-white hover:border-[#0084FF]/60 hover:bg-white/[0.06] hover:shadow-[0_0_15px_rgba(0,132,255,0.3)] transition-all cursor-pointer"
             aria-label="Close roadmap builder"
           >
-            <X className="h-3.5 w-3.5 stroke-[2]" />
+            <X className="h-4 w-4 sm:h-3.5 sm:w-3.5 stroke-[2]" />
           </button>
         </div>
 

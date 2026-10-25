@@ -871,7 +871,7 @@ export default function LearningDashboardModal({
               <button
                 type="button"
                 onClick={logout}
-                className="flex items-center gap-1.5 rounded-[6px] border border-[#222222] bg-[#111111] px-2.5 py-1 text-xs font-medium text-[#737373] hover:text-[#EDEDED] hover:bg-[#171717] hover:border-[#333333] transition-colors cursor-pointer"
+                className="flex min-h-[44px] sm:min-h-0 items-center gap-1.5 rounded-[6px] border border-[#222222] bg-[#111111] px-2.5 py-1 text-xs font-medium text-[#737373] hover:text-[#EDEDED] hover:bg-[#171717] hover:border-[#333333] transition-colors cursor-pointer"
                 title="Sign out of account"
               >
                 <LogOut className="h-3 w-3" />
@@ -881,10 +881,10 @@ export default function LearningDashboardModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="flex h-7 w-7 items-center justify-center rounded-[6px] border border-[#222222] bg-[#111111] text-[#737373] hover:text-[#EDEDED] hover:bg-[#171717] hover:border-[#333333] transition-colors cursor-pointer"
+                className="flex min-h-[44px] min-w-[44px] sm:h-7 sm:w-7 sm:min-h-0 sm:min-w-0 items-center justify-center rounded-[6px] border border-[#222222] bg-[#111111] text-[#737373] hover:text-[#EDEDED] hover:bg-[#171717] hover:border-[#333333] transition-colors cursor-pointer"
                 aria-label="Close dashboard"
               >
-                <X className="h-3.5 w-3.5" />
+                <X className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
               </button>
             </div>
           </header>
