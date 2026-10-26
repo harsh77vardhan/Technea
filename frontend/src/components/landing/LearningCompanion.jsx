@@ -192,7 +192,7 @@ export default function LearningCompanion() {
       >
         <div
           ref={ribbonRef}
-          className="absolute -top-[14%] sm:-top-[8%] -left-[22%] w-[148%] will-change-transform opacity-75 sm:opacity-85"
+          className="absolute -top-[14%] sm:-top-[8%] -left-[22%] w-[148%] will-change-transform opacity-25 sm:opacity-35 pointer-events-none"
           style={{
             transform: 'rotate(-17deg) translate3d(0px, 0px, 0px)',
           }}
@@ -204,30 +204,28 @@ export default function LearningCompanion() {
             preserveAspectRatio="none"
           >
             <defs>
-              {/* Rich Multi-Stop Vibrant Gradient */}
+              {/* Refined Titanium / Slate Architectural Gradient */}
               <linearGradient id="rich-ribbon-grad" x1="0%" y1="20%" x2="100%" y2="80%">
-                <stop offset="0%" stopColor="#4c1d95" stopOpacity="0.9" />
-                <stop offset="18%" stopColor="#6d28d9" stopOpacity="0.95" />
-                <stop offset="36%" stopColor="#7c3aed" stopOpacity="0.95" />
-                <stop offset="52%" stopColor="#2563eb" stopOpacity="0.95" />
-                <stop offset="68%" stopColor="#0284c7" stopOpacity="0.9" />
-                <stop offset="84%" stopColor="#db2777" stopOpacity="0.95" />
-                <stop offset="100%" stopColor="#be185d" stopOpacity="0.9" />
+                <stop offset="0%" stopColor="#1e293b" stopOpacity="0.8" />
+                <stop offset="25%" stopColor="#334155" stopOpacity="0.85" />
+                <stop offset="50%" stopColor="#475569" stopOpacity="0.9" />
+                <stop offset="75%" stopColor="#334155" stopOpacity="0.85" />
+                <stop offset="100%" stopColor="#1e293b" stopOpacity="0.8" />
               </linearGradient>
 
               {/* Deep Underfold Shadow Gradient for 3D Separation */}
               <linearGradient id="ribbon-depth-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#2e1065" stopOpacity="0.75" />
-                <stop offset="50%" stopColor="#1e3a8a" stopOpacity="0.7" />
-                <stop offset="100%" stopColor="#831843" stopOpacity="0.7" />
+                <stop offset="0%" stopColor="#090d16" stopOpacity="0.85" />
+                <stop offset="50%" stopColor="#0f172a" stopOpacity="0.8" />
+                <stop offset="100%" stopColor="#020617" stopOpacity="0.85" />
               </linearGradient>
 
               {/* Razor-sharp Specular Crest Highlight Gradient */}
               <linearGradient id="ribbon-specular-grad" x1="0%" y1="0%" x2="100%" y2="100%">
                 <stop offset="0%" stopColor="#ffffff" stopOpacity="0" />
-                <stop offset="25%" stopColor="#ffffff" stopOpacity="0.55" />
-                <stop offset="55%" stopColor="#93c5fd" stopOpacity="0.75" />
-                <stop offset="80%" stopColor="#f472b6" stopOpacity="0.6" />
+                <stop offset="35%" stopColor="#cbd5e1" stopOpacity="0.4" />
+                <stop offset="55%" stopColor="#f8fafc" stopOpacity="0.6" />
+                <stop offset="75%" stopColor="#94a3b8" stopOpacity="0.4" />
                 <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
               </linearGradient>
 

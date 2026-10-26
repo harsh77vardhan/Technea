@@ -5,11 +5,11 @@
 export const TIER_CONFIGS = {
   'Staff Platform Engineer': {
     name: 'Staff Platform Engineer',
-    gradient: 'from-purple-500 via-pink-500 to-indigo-500',
-    ring: 'shadow-[0_0_30px_rgba(168,85,247,0.45)] ring-2 ring-purple-500/60',
-    pill: 'border-purple-500/30 bg-purple-950/40 text-purple-300 shadow-[0_0_12px_rgba(168,85,247,0.2)]',
-    accentText: 'text-purple-400',
-    badgeBg: 'bg-purple-900/30 text-purple-300 border-purple-500/30',
+    gradient: 'from-slate-100 via-slate-300 to-indigo-300',
+    ring: 'shadow-[0_0_24px_rgba(203,213,225,0.4)] ring-2 ring-slate-300/60',
+    pill: 'border-slate-300/30 bg-slate-900/60 text-slate-200 shadow-[0_0_12px_rgba(203,213,225,0.15)]',
+    accentText: 'text-slate-200',
+    badgeBg: 'bg-slate-800/40 text-slate-200 border-slate-400/30',
   },
   'Full Stack Architect': {
     name: 'Full Stack Architect',

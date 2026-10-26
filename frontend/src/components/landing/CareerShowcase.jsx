@@ -49,8 +49,6 @@ export default function CareerShowcase() {
   const filmPanels = [...CAREERS, ...CAREERS]
   const sectionRef = useRef(null)
   const stripRef = useRef(null)
-  const ribbonLeftRef = useRef(null)
-  const ribbonRightRef = useRef(null)
 
   // ── GSAP ScrollTrigger Header Reveal ─────────────────────────────────────
   useGSAP(
@@ -73,16 +71,11 @@ export default function CareerShowcase() {
 
   const imagesRef = useRef(null)
 
-  useLenis(({ velocity, scroll }) => {
+  useLenis(({ velocity }) => {
     if (stripRef.current) {
       // Fluid velocity lean: bends subtly into scroll momentum, relaxes naturally
       const clampedSkew = Math.max(-2.5, Math.min(2.5, -velocity * 0.035))
       stripRef.current.style.transform = `skewX(${clampedSkew}deg)`
-    }
-    if (ribbonLeftRef.current && ribbonRightRef.current) {
-      const offset = (scroll * 0.08) % 120
-      ribbonLeftRef.current.style.transform = `translate3d(${-offset}px, 0, 0)`
-      ribbonRightRef.current.style.transform = `translate3d(${offset}px, 0, 0)`
     }
     // Subtle internal image window parallax for luxury optical depth
     if (sectionRef.current) {
@@ -121,34 +114,7 @@ export default function CareerShowcase() {
         </p>
       </div>
 
-      {/* ── Top edge Memphis diagonal ribbon accents ──────────────────────── */}
-      <div className="relative w-full">
-        {/* Left diagonal ribbon pair with scroll drift */}
-        <div
-          ref={ribbonLeftRef}
-          className="pointer-events-none absolute -top-4 left-6 sm:left-12 z-20 select-none will-change-transform"
-          aria-hidden="true"
-        >
-          <svg width="84" height="28" viewBox="0 0 84 28" fill="none">
-            <polygon points="10,28 22,0 36,0 24,28" fill="#8B5CF6" />
-            <polygon points="40,28 52,0 66,0 54,28" fill="#2563EB" />
-          </svg>
-        </div>
-
-        {/* Right diagonal ribbon trio with opposite scroll drift */}
-        <div
-          ref={ribbonRightRef}
-          className="pointer-events-none absolute -top-4 right-6 sm:right-12 z-20 select-none will-change-transform"
-          aria-hidden="true"
-        >
-          <svg width="128" height="28" viewBox="0 0 128 28" fill="none">
-            <polygon points="10,28 22,0 36,0 24,28" fill="#8B5CF6" />
-            <polygon points="42,28 54,0 68,0 56,28" fill="#2563EB" />
-            <polygon points="74,28 86,0 100,0 88,28" fill="#06B6D4" />
-          </svg>
-        </div>
-
-        {/* ── Full-width, seamless, edge-to-edge cinematic strip ──────────── */}
+      {/* ── Full-width, seamless, edge-to-edge cinematic strip ──────────── */}
         {/* Reduced height by ~1/3; continuous non-stopping marquee with scroll velocity lean */}
         <div className="marquee-container relative w-full overflow-hidden select-none">
           <div
@@ -195,7 +161,6 @@ export default function CareerShowcase() {
             ))}
           </div>
         </div>
-      </div>
     </section>
   )
 }

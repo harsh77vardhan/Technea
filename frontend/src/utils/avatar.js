@@ -114,14 +114,14 @@ export function getInitials(input, fallback = 'U') {
  */
 export function getAvatarGradient(seed = '') {
   const GRADIENTS = [
-    'from-blue-600 to-indigo-600',
-    'from-purple-600 to-pink-600',
-    'from-emerald-600 to-teal-600',
-    'from-amber-600 to-orange-600',
-    'from-cyan-600 to-blue-600',
-    'from-rose-600 to-red-600',
-    'from-violet-600 to-purple-700',
-    'from-teal-600 to-cyan-700',
+    'from-slate-700 to-slate-900',
+    'from-zinc-700 to-zinc-900',
+    'from-neutral-700 to-stone-900',
+    'from-sky-800 to-slate-900',
+    'from-emerald-800 to-zinc-900',
+    'from-amber-800 to-stone-900',
+    'from-teal-800 to-slate-900',
+    'from-blue-800 to-slate-950',
   ]
 
   if (!seed || typeof seed !== 'string') return GRADIENTS[0]

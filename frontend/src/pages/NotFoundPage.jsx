@@ -34,11 +34,7 @@ export default function NotFoundPage({ onBackToHome }) {
     <div className="min-h-screen bg-[#050505] text-[#EDEDED] antialiased selection:bg-[#333333] selection:text-white relative overflow-x-clip flex flex-col justify-between">
       {/* Ambient Lighting & Technical Grid Background */}
       <div
-        className="fixed inset-0 pointer-events-none bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(99,102,241,0.14),transparent)]"
-        aria-hidden="true"
-      />
-      <div
-        className="fixed inset-0 pointer-events-none bg-[radial-gradient(ellipse_60%_40%_at_50%_100%,rgba(255,0,85,0.08),transparent)]"
+        className="fixed inset-0 pointer-events-none bg-[radial-gradient(ellipse_70%_60%_at_50%_0%,rgba(255,255,255,0.04),transparent)]"
         aria-hidden="true"
       />
       <div
@@ -70,9 +66,9 @@ export default function NotFoundPage({ onBackToHome }) {
           transition={{ duration: 0.35, ease: 'easeOut' }}
           className="w-full rounded-2xl border border-white/[0.08] bg-[#0D0D0D]/90 backdrop-blur-xl p-8 sm:p-12 text-center space-y-7 shadow-2xl relative overflow-hidden"
         >
-          {/* Subtle Ambient Glow */}
+          {/* Subtle Ambient Studio Lighting */}
           <div
-            className="absolute -top-24 left-1/2 -translate-x-1/2 h-52 w-52 rounded-full bg-gradient-to-r from-blue-500/20 via-indigo-500/20 to-pink-500/20 blur-3xl pointer-events-none"
+            className="absolute -top-24 left-1/2 -translate-x-1/2 h-52 w-52 rounded-full bg-white/[0.04] blur-3xl pointer-events-none"
             aria-hidden="true"
           />
 

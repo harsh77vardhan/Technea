@@ -98,9 +98,9 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
           transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
           className="relative z-10 w-full max-w-md overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0a0c10]/95 p-6 sm:p-8 backdrop-blur-2xl shadow-[0_25px_80px_-15px_rgba(0,0,0,0.9),0_0_0_1px_rgba(255,255,255,0.06)]"
         >
-          {/* Faint Radial Glow */}
+          {/* Subtle Ambient Studio Lighting */}
           <div
-            className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-10%,rgba(59,130,246,0.15),transparent_70%)]"
+            className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-10%,rgba(255,255,255,0.06),transparent_70%)]"
             aria-hidden="true"
           />
 
@@ -116,8 +116,8 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
 
           {/* Header */}
           <div className="relative text-center mb-6">
-            <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-tr from-blue-600 to-purple-600 text-white shadow-lg shadow-blue-500/20 ring-1 ring-white/20">
-              <Lock className="h-5 w-5" />
+            <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl border border-white/[0.12] bg-[#14151a] text-white shadow-sm">
+              <Lock className="h-5 w-5 text-neutral-200" />
             </div>
             <h2 className="text-xl font-bold tracking-tight text-white">
               {mode === 'login' ? 'Welcome Back' : 'Create Your Account'}

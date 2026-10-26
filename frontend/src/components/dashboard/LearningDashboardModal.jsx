@@ -1582,10 +1582,10 @@ export default function LearningDashboardModal({
                             <Bot className="h-4 w-4 animate-pulse" />
                           </div>
                           <div className="flex items-center gap-2.5 text-xs text-[#8A8F98] pt-1.5">
-                            <div className="flex items-center gap-1 py-1 px-2 rounded-full bg-[#12131A] border border-white/[0.06]">
-                              <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#EDEDED] animate-bounce [animation-delay:-0.3s]" />
-                              <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#EDEDED] animate-bounce [animation-delay:-0.15s]" />
-                              <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#EDEDED] animate-bounce" />
+                            <div className="flex items-center gap-1.5 py-1 px-2.5 rounded-full bg-[#12131A] border border-white/[0.06]">
+                              <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#EDEDED] animate-pulse [animation-duration:900ms]" />
+                              <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#EDEDED] animate-pulse [animation-duration:900ms] [animation-delay:200ms]" />
+                              <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#EDEDED] animate-pulse [animation-duration:900ms] [animation-delay:400ms]" />
                             </div>
                             <span className="text-xs text-[#8A8F98] font-sans">Technea AI is thinking…</span>
                           </div>
