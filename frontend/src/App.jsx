@@ -22,6 +22,9 @@ const PublicProfilePage = lazy(() => import('./pages/PublicProfilePage'))
 const CoursePlayerPage = lazy(() => import('./pages/CoursePlayerPage'))
 const LearningPathDetailPage = lazy(() => import('./pages/LearningPathDetailPage'))
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
+const VerifyEmailPage = lazy(() => import('./pages/auth/VerifyEmailPage'))
+const ResetPasswordPage = lazy(() => import('./pages/auth/ResetPasswordPage'))
+const AuthCallbackPage = lazy(() => import('./pages/auth/AuthCallbackPage'))
 import ErrorBoundary from './components/common/ErrorBoundary'
 
 function SleekRouteLoadingFallback() {
@@ -175,6 +178,10 @@ function AppContent() {
     setIsDirectExplorerOpen(true)
   }
 
+  const isVerifyEmailRoute = currentPath === '/verify-email'
+  const isResetPasswordRoute = currentPath === '/reset-password'
+  const isAuthCallbackRoute = currentPath === '/auth/callback'
+
   const isProfileRoute = currentPath.startsWith('/profile')
   const isCourseRoute = currentPath.startsWith('/course/') || currentPath.startsWith('/courses/')
   const isPathRoute =
@@ -212,8 +219,22 @@ function AppContent() {
     currentPath === '/roadmap'
 
   const isKnownRoute =
-    isHomeRoute || isDirectModalRoute || isProfileRoute || isCourseRoute || isPathRoute
-  const isSpecialRoute = isProfileRoute || isCourseRoute || isPathRoute || !isKnownRoute
+    isHomeRoute ||
+    isDirectModalRoute ||
+    isProfileRoute ||
+    isCourseRoute ||
+    isPathRoute ||
+    isVerifyEmailRoute ||
+    isResetPasswordRoute ||
+    isAuthCallbackRoute
+  const isSpecialRoute =
+    isProfileRoute ||
+    isCourseRoute ||
+    isPathRoute ||
+    isVerifyEmailRoute ||
+    isResetPasswordRoute ||
+    isAuthCallbackRoute ||
+    !isKnownRoute
 
   return (
     <div className={`flex min-h-screen flex-col antialiased w-full max-w-full overflow-x-clip ${
@@ -222,7 +243,25 @@ function AppContent() {
         : 'bg-[#f8fafc] text-neutral-900 selection:bg-neutral-900 selection:text-white'
     }`}>
       <ScrollProgressBar />
-      {isProfileRoute ? (
+      {isVerifyEmailRoute ? (
+        <ErrorBoundary title="Verification encountered an error">
+          <Suspense fallback={<SleekRouteLoadingFallback />}>
+            <VerifyEmailPage />
+          </Suspense>
+        </ErrorBoundary>
+      ) : isResetPasswordRoute ? (
+        <ErrorBoundary title="Password reset encountered an error">
+          <Suspense fallback={<SleekRouteLoadingFallback />}>
+            <ResetPasswordPage />
+          </Suspense>
+        </ErrorBoundary>
+      ) : isAuthCallbackRoute ? (
+        <ErrorBoundary title="Authentication callback encountered an error">
+          <Suspense fallback={<SleekRouteLoadingFallback />}>
+            <AuthCallbackPage />
+          </Suspense>
+        </ErrorBoundary>
+      ) : isProfileRoute ? (
         <ErrorBoundary title="Profile page encountered an error">
           <Suspense fallback={<SleekRouteLoadingFallback />}>
             {currentPath.startsWith('/profile/') && profileUsername ? (

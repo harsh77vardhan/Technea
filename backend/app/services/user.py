@@ -1,10 +1,13 @@
 """User service providing database operations for users."""
 
+from datetime import datetime, timedelta, timezone
+import secrets
 import uuid
 from fastapi import HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.logger import logger
 from app.core.security import get_password_hash, verify_password
 from app.models.user import User
 from app.schemas.user import UserCreate, UserUpdate
@@ -32,19 +35,39 @@ class UserService:
         return result.scalar_one_or_none()
 
     async def create(self, db: AsyncSession, obj_in: UserCreate) -> User:
-        """Register a new user with hashed password."""
+        """Register a new user with hashed password and verification token."""
         normalized_email = obj_in.email.strip().lower()
         hashed_password = get_password_hash(obj_in.password)
+        verification_token = secrets.token_urlsafe(32)
+        verification_expires = datetime.now(timezone.utc) + timedelta(hours=24)
+
         db_user = User(
             email=normalized_email,
             hashed_password=hashed_password,
             full_name=obj_in.full_name.strip() if obj_in.full_name else None,
+            username=obj_in.username.strip().lower() if obj_in.username else None,
             is_active=True,
             is_superuser=False,
+            auth_provider="email",
+            is_email_verified=False,
+            email_verification_token=verification_token,
+            email_verification_expires=verification_expires,
         )
         db.add(db_user)
         await db.commit()
         await db.refresh(db_user)
+
+        # Non-blocking verification email dispatch
+        try:
+            from app.services.email import email_service
+            await email_service.send_verification_email(
+                to_email=db_user.email,
+                full_name=db_user.full_name or "",
+                token=verification_token,
+            )
+        except Exception as exc:
+            logger.warning("Failed to send verification email for %s: %s", db_user.email, exc)
+
         return db_user
 
     async def authenticate(self, db: AsyncSession, email: str, password: str) -> User | None:
@@ -98,6 +121,53 @@ class UserService:
         await db.commit()
         await db.refresh(db_obj)
         return db_obj
+
+    async def create_google_user(
+        self,
+        db: AsyncSession,
+        email: str,
+        full_name: str | None,
+        google_id: str,
+        avatar_url: str | None = None,
+    ) -> User:
+        """Create a new user authenticated via Google OAuth."""
+        normalized_email = email.strip().lower()
+        random_password = secrets.token_urlsafe(32)
+        hashed_password = get_password_hash(random_password)
+
+        db_user = User(
+            email=normalized_email,
+            hashed_password=hashed_password,
+            full_name=full_name.strip() if full_name else None,
+            avatar_url=avatar_url.strip() if avatar_url else None,
+            google_id=google_id,
+            auth_provider="google",
+            is_email_verified=True,
+            is_active=True,
+            is_superuser=False,
+        )
+        db.add(db_user)
+        await db.commit()
+        await db.refresh(db_user)
+        return db_user
+
+    async def get_by_google_id(self, db: AsyncSession, google_id: str) -> User | None:
+        """Retrieve user by Google OAuth identifier."""
+        stmt = select(User).where(User.google_id == google_id)
+        result = await db.execute(stmt)
+        return result.scalar_one_or_none()
+
+    async def get_by_reset_token(self, db: AsyncSession, token: str) -> User | None:
+        """Retrieve user by password reset token."""
+        stmt = select(User).where(User.password_reset_token == token)
+        result = await db.execute(stmt)
+        return result.scalar_one_or_none()
+
+    async def get_by_verification_token(self, db: AsyncSession, token: str) -> User | None:
+        """Retrieve user by email verification token."""
+        stmt = select(User).where(User.email_verification_token == token)
+        result = await db.execute(stmt)
+        return result.scalar_one_or_none()
 
 
 user_service = UserService()

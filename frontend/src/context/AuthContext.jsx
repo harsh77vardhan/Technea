@@ -9,6 +9,10 @@ import {
   logoutApi,
   updateProfileApi,
   syncGuestProgressApi,
+  getGoogleAuthUrlApi,
+  resendVerificationApi,
+  forgotPasswordApi,
+  resetPasswordApi,
 } from '../services/api'
 
 export function AuthProvider({ children }) {
@@ -220,6 +224,31 @@ export function AuthProvider({ children }) {
     throw new Error('Profile update failed')
   }, [])
 
+  // Initiate Google OAuth — redirects browser to Google
+  const loginWithGoogle = useCallback(async () => {
+    try {
+      const data = await getGoogleAuthUrlApi()
+      if (data?.auth_url) {
+        window.location.href = data.auth_url
+      }
+    } catch (err) {
+      console.error('Google OAuth init failed:', err)
+      throw err
+    }
+  }, [])
+
+  const sendVerificationEmail = useCallback(async () => {
+    return resendVerificationApi()
+  }, [])
+
+  const forgotPassword = useCallback(async (email) => {
+    return forgotPasswordApi(email)
+  }, [])
+
+  const resetPassword = useCallback(async (token, newPassword) => {
+    return resetPasswordApi(token, newPassword)
+  }, [])
+
   const value = {
     user,
     token,
@@ -228,6 +257,10 @@ export function AuthProvider({ children }) {
     login,
     signup,
     logout,
+    loginWithGoogle,
+    sendVerificationEmail,
+    forgotPassword,
+    resetPassword,
     updateProfile,
     refreshUser,
     syncLocalGuestProgress,

@@ -9,7 +9,7 @@ Ensures that:
 
 import asyncio
 from pathlib import Path
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 
 from app.core.logger import logger
 from app.db.base import Base
@@ -62,6 +62,48 @@ async def migrate_database() -> None:
             raise
 
 
+async def run_auth_migrations(engine) -> None:
+    """Run non-destructive startup migrations for auth columns on the users table.
+
+    Checks information_schema.columns and executes ALTER TABLE if any column is missing.
+    Gracefully catches and logs any errors without halting application startup.
+    """
+    auth_columns = [
+        ("google_id", "ALTER TABLE users ADD COLUMN google_id VARCHAR(255) UNIQUE"),
+        ("auth_provider", "ALTER TABLE users ADD COLUMN auth_provider VARCHAR(20) DEFAULT 'email' NOT NULL"),
+        ("is_email_verified", "ALTER TABLE users ADD COLUMN is_email_verified BOOLEAN DEFAULT FALSE NOT NULL"),
+        ("email_verification_token", "ALTER TABLE users ADD COLUMN email_verification_token VARCHAR(255)"),
+        ("email_verification_expires", "ALTER TABLE users ADD COLUMN email_verification_expires TIMESTAMP WITH TIME ZONE"),
+        ("password_reset_token", "ALTER TABLE users ADD COLUMN password_reset_token VARCHAR(255)"),
+        ("password_reset_expires", "ALTER TABLE users ADD COLUMN password_reset_expires TIMESTAMP WITH TIME ZONE"),
+    ]
+
+    try:
+        async with engine.begin() as conn:
+            # Check if users table exists in the database
+            table_check = await conn.execute(
+                text("SELECT 1 FROM information_schema.tables WHERE table_name = 'users'")
+            )
+            if not table_check.fetchone():
+                logger.info("Users table not present yet. Skipping auth migrations (handled by metadata.create_all).")
+                return
+
+            for col_name, alter_query in auth_columns:
+                result = await conn.execute(
+                    text("""
+                        SELECT column_name FROM information_schema.columns
+                        WHERE table_name='users' AND column_name=:col
+                    """),
+                    {"col": col_name},
+                )
+                if not result.fetchone():
+                    logger.info("Auth migration: adding missing column '%s' to users table...", col_name)
+                    await conn.execute(text(alter_query))
+                    logger.info("Auth migration: column '%s' successfully added.", col_name)
+    except Exception as exc:
+        logger.warning("Auth startup migration warning (continuing startup): %s", exc)
+
+
 async def seed_initial_catalog_if_needed() -> None:
     """Check if skills table has records; if empty, seed the initial catalog idempotently."""
     try:
@@ -91,6 +133,7 @@ async def init_db() -> None:
     """
     logger.info("Starting database initialization check...")
     await migrate_database()
+    await run_auth_migrations(engine)
     await seed_initial_catalog_if_needed()
     logger.info("Database initialization completed successfully.")
 

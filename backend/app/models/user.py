@@ -89,6 +89,40 @@ class User(Base, UUIDIdMixin, TimestampMixin):
         nullable=False,
     )
 
+    # Authentication & OAuth extensions
+    google_id: Mapped[str | None] = mapped_column(
+        String(255),
+        unique=True,
+        index=True,
+        nullable=True,
+    )
+    auth_provider: Mapped[str] = mapped_column(
+        String(20),
+        default="email",
+        nullable=False,
+    )
+    is_email_verified: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False,
+    )
+    email_verification_token: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
+    )
+    email_verification_expires: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    password_reset_token: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
+    )
+    password_reset_expires: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
     # Relationships to user progress
     learning_paths: Mapped[list["UserLearningPath"]] = relationship(
         "UserLearningPath",

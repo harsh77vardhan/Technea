@@ -367,6 +367,35 @@ export async function logoutApi() {
   }
 }
 
+// Google OAuth
+export async function getGoogleAuthUrlApi() {
+  return request('/auth/google')
+}
+
+// Email verification
+export async function verifyEmailApi(token) {
+  return request(`/auth/verify-email?token=${encodeURIComponent(token)}`)
+}
+
+export async function resendVerificationApi() {
+  return request('/auth/resend-verification', { method: 'POST' })
+}
+
+// Password reset
+export async function forgotPasswordApi(email) {
+  return request('/auth/forgot-password', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  })
+}
+
+export async function resetPasswordApi(token, new_password) {
+  return request('/auth/reset-password', {
+    method: 'POST',
+    body: JSON.stringify({ token, new_password }),
+  })
+}
+
 /* ==========================================================================
    User Progress & Dashboard API Endpoints
    ========================================================================== */
@@ -805,6 +834,11 @@ export default {
   getCurrentUserApi,
   updateProfileApi,
   logoutApi,
+  getGoogleAuthUrlApi,
+  verifyEmailApi,
+  resendVerificationApi,
+  forgotPasswordApi,
+  resetPasswordApi,
   getPathProgressApi,
   toggleStepProgressApi,
   getCourseProgressApi,

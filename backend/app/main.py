@@ -11,6 +11,7 @@ from app.api.v1.api import api_router
 from app.core.config import settings
 from app.core.logger import logger, setup_logging
 from app.db.session import engine
+from app.routers.auth import router as auth_router
 from app.routers.health import router as health_router
 from app.utils.exceptions import setup_exception_handlers
 
@@ -42,9 +43,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
                 "SECURITY WARNING: Default or weak database password is configured in production environment!"
             )
 
-    # Initialize database schema and ensure seed data exists
+    # Initialize database schema, apply auth migrations, and ensure seed data exists
     try:
-        from app.db.init_db import init_db
+        from app.db.init_db import init_db, run_auth_migrations
+        await run_auth_migrations(engine)
         await init_db()
     except Exception as exc:
         logger.error("Database initialization failed during application startup: %s", exc)
@@ -164,6 +166,9 @@ def create_application() -> FastAPI:
 
     # Mount API v1 router
     app.include_router(api_router, prefix=settings.API_V1_STR)
+
+    # Mount auth router at root /auth for direct OAuth callback compatibility
+    app.include_router(auth_router, prefix="/auth", tags=["Authentication Direct"], include_in_schema=False)
 
     # User uploads directory for avatars
     uploads_dir = os.path.join(os.path.dirname(__file__), "..", "uploads")

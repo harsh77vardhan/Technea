@@ -32,6 +32,15 @@ class Settings(BaseSettings):
     GEMINI_MODEL: str = "gemini-1.5-flash"
     AI_TIMEOUT_SECONDS: int = 30
 
+    # Email / Resend API Configuration
+    RESEND_API_KEY: str | None = None
+    EMAIL_FROM: str = "noreply@technea.dev"
+
+    # Google OAuth 2.0 Configuration
+    GOOGLE_CLIENT_ID: str | None = None
+    GOOGLE_CLIENT_SECRET: str | None = None
+    GOOGLE_REDIRECT_URI: str = "https://technea-backend.onrender.com/auth/google/callback"
+
     # API Routing Configuration
     API_V1_STR: str = "/api/v1"
 
