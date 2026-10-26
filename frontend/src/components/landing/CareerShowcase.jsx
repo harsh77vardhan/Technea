@@ -71,6 +71,8 @@ export default function CareerShowcase() {
     { scope: sectionRef }
   )
 
+  const imagesRef = useRef(null)
+
   useLenis(({ velocity, scroll }) => {
     if (stripRef.current) {
       // Fluid velocity lean: bends subtly into scroll momentum, relaxes naturally
@@ -89,9 +91,10 @@ export default function CareerShowcase() {
       if (rect.top < windowH && rect.bottom > 0) {
         const centerOffset =
           (windowH / 2 - (rect.top + rect.height / 2)) * 0.08
-        const images =
-          sectionRef.current.querySelectorAll('.career-panel-img')
-        images.forEach((img) => {
+        if (!imagesRef.current || imagesRef.current.length === 0) {
+          imagesRef.current = sectionRef.current.querySelectorAll('.career-panel-img')
+        }
+        imagesRef.current.forEach((img) => {
           img.style.transform = `scale(1.12) translate3d(0, ${centerOffset.toFixed(1)}px, 0)`
         })
       }

@@ -177,10 +177,10 @@ function DecoBottomRight() {
 export default function Hero() {
   const { openRoadmapBuilder } = useAuth()
   const [isExplorerOpen, setIsExplorerOpen] = useState(false)
-  const [scrollFade, setScrollFade] = useState(1)
   const lenis = useLenis()
 
   const heroRef = useRef(null)
+  const scrollPromptRef = useRef(null)
   const decoTopLeftRef = useRef(null)
   const decoTopRightRef = useRef(null)
   const decoBottomLeftRef = useRef(null)
@@ -304,13 +304,17 @@ export default function Hero() {
         centerContentRef.current.style.opacity = String(opacity)
       }
     }
-    setScrollFade(Math.max(0, 1 - scroll / 220))
+    if (scrollPromptRef.current) {
+      const promptOpacity = Math.max(0, 1 - scroll / 220)
+      scrollPromptRef.current.style.opacity = String(promptOpacity)
+      scrollPromptRef.current.style.pointerEvents = promptOpacity > 0.05 ? 'auto' : 'none'
+    }
   })
 
   return (
     <section
       ref={heroRef}
-      className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#f2f3f5]"
+      className="relative flex min-h-screen items-center justify-center overflow-x-clip bg-[#f2f3f5]"
     >
       {/* Four corner decorations — each anchored precisely with continuous scroll parallax */}
       <div
@@ -407,15 +411,15 @@ export default function Hero() {
 
       {/* ── Minimal Scroll Indicator (Connected to Lenis) ───────────── */}
       <motion.button
+        ref={scrollPromptRef}
         type="button"
         initial={{ opacity: 0 }}
-        animate={{ opacity: scrollFade }}
+        animate={{ opacity: 1 }}
         transition={{ delay: 0.9, duration: 0.8 }}
         onClick={() =>
           lenis?.scrollTo('#career-showcase', { offset: -60, duration: 1.2 })
         }
-        className="hero-scroll-prompt absolute bottom-6 left-1/2 -translate-x-1/2 z-10 hidden sm:flex flex-col items-center gap-1.5 select-none group cursor-pointer"
-        style={{ pointerEvents: scrollFade > 0.05 ? 'auto' : 'none' }}
+        className="hero-scroll-prompt absolute bottom-6 left-1/2 -translate-x-1/2 z-10 hidden sm:flex flex-col items-center gap-1.5 select-none group cursor-pointer transition-opacity duration-150"
         aria-label="Scroll to next section"
       >
         <span className="text-[9px] font-mono tracking-[0.25em] uppercase text-slate-400 group-hover:text-slate-700 transition-colors">

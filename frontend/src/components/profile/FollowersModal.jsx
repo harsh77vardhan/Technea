@@ -94,6 +94,7 @@ export default function FollowersModal({
           exit={{ opacity: 0, scale: 0.95, y: 15 }}
           transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
           onClick={(e) => e.stopPropagation()}
+          data-lenis-prevent
           className="relative w-full max-w-lg rounded-2xl border border-white/[0.08] bg-[#0A0A0E]/95 backdrop-blur-2xl shadow-[0_25px_80px_rgba(0,0,0,0.95)] overflow-hidden flex flex-col max-h-[85vh]"
         >
           {/* Ambient Glow */}

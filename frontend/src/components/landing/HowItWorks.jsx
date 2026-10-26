@@ -100,6 +100,8 @@ export default function HowItWorks() {
     { scope: sectionRef }
   )
 
+  const stepNumbersRef = useRef(null)
+
   useLenis(() => {
     if (!sectionRef.current || !progressBarRef.current) return
     const rect = sectionRef.current.getBoundingClientRect()
@@ -110,9 +112,10 @@ export default function HowItWorks() {
     progressBarRef.current.style.transform = `scaleX(${progress})`
 
     // Subtle milestone step number lighting as scroll beam advances
-    const stepNumbers =
-      sectionRef.current.querySelectorAll('.step-num-display')
-    stepNumbers.forEach((numEl, idx) => {
+    if (!stepNumbersRef.current || stepNumbersRef.current.length === 0) {
+      stepNumbersRef.current = sectionRef.current.querySelectorAll('.step-num-display')
+    }
+    stepNumbersRef.current.forEach((numEl, idx) => {
       const stepThreshold = (idx + 0.3) / 4
       if (progress > stepThreshold) {
         numEl.style.color = '#0f172a'

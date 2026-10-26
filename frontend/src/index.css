@@ -14,13 +14,22 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Prevent horizontal scroll bleed on mobile viewports (320px - 414px) */
-html,
-body,
-#root {
+/* Prevent horizontal scroll bleed without hijacking root or blocking viewport scroll */
+html {
   max-width: 100%;
-  overflow-x: clip;
 }
+
+body {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
+#root {
+  min-height: 100vh;
+  width: 100%;
+  max-width: 100%;
+}
+
 
 /* Mobile tap target usability */
 @media (max-width: 640px) {

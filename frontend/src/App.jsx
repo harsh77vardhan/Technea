@@ -61,17 +61,20 @@ function SleekModalLoadingFallback() {
 }
 
 function ScrollProgressBar() {
-  const [progress, setProgress] = useState(0)
+  const barRef = useRef(null)
 
   useLenis(({ progress }) => {
-    setProgress(progress)
+    if (barRef.current) {
+      barRef.current.style.transform = `scaleX(${progress})`
+    }
   })
 
   return (
     <div
-      className="fixed top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-blue-600 via-indigo-500 to-[#FF0055] z-[60] origin-left pointer-events-none transition-transform duration-75"
+      ref={barRef}
+      className="fixed top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-blue-600 via-indigo-500 to-[#FF0055] z-[60] origin-left pointer-events-none"
       style={{
-        transform: `scaleX(${progress})`,
+        transform: 'scaleX(0)',
         willChange: 'transform',
       }}
       aria-hidden="true"
@@ -151,9 +154,10 @@ function AppContent() {
     }
   }, [isAnyModalOpen, lenis])
 
-  // Reset scroll to top immediately on route changes
+  // Reset scroll to top immediately on route changes and ensure Lenis is started
   useEffect(() => {
     if (lenis) {
+      lenis.start()
       lenis.scrollTo(0, { immediate: true })
     } else {
       window.scrollTo(0, 0)
@@ -212,7 +216,7 @@ function AppContent() {
   const isSpecialRoute = isProfileRoute || isCourseRoute || isPathRoute || !isKnownRoute
 
   return (
-    <div className={`flex min-h-screen flex-col antialiased w-full max-w-full overflow-x-hidden ${
+    <div className={`flex min-h-screen flex-col antialiased w-full max-w-full overflow-x-clip ${
       isSpecialRoute
         ? 'bg-[#050505] text-[#EDEDED] selection:bg-[#333333] selection:text-white'
         : 'bg-[#f8fafc] text-neutral-900 selection:bg-neutral-900 selection:text-white'
@@ -367,33 +371,16 @@ function AppContent() {
 }
 
 export default function App() {
-  const lenisRef = useRef(null)
-
-  useEffect(() => {
-    function update(time) {
-      lenisRef.current?.lenis?.raf(time * 1000)
-    }
-
-    // Drive Lenis directly off the master GSAP ticker on every animation frame
-    gsap.ticker.add(update)
-    gsap.ticker.lagSmoothing(0)
-
-    return () => {
-      gsap.ticker.remove(update)
-    }
-  }, [])
-
   return (
     <ReactLenis
-      ref={lenisRef}
       root
       options={{
-        autoRaf: false,
+        autoRaf: true,
         lerp: 0.1,
         duration: 1.2,
         smoothWheel: true,
         wheelMultiplier: 1.0,
-        touchMultiplier: 1.2,
+        touchMultiplier: 1.5,
         syncTouch: false,
         anchors: { offset: -70 },
         respectReducedMotion: true,

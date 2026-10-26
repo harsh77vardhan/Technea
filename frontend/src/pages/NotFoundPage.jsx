@@ -31,7 +31,7 @@ export default function NotFoundPage({ onBackToHome }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#050505] text-[#EDEDED] antialiased selection:bg-[#333333] selection:text-white relative overflow-hidden flex flex-col justify-between">
+    <div className="min-h-screen bg-[#050505] text-[#EDEDED] antialiased selection:bg-[#333333] selection:text-white relative overflow-x-clip flex flex-col justify-between">
       {/* Ambient Lighting & Technical Grid Background */}
       <div
         className="fixed inset-0 pointer-events-none bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(99,102,241,0.14),transparent)]"

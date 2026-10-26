@@ -110,8 +110,6 @@ export default function SkillExplorerModal({ isOpen, onClose, onSelectPath, init
       }
     }
 
-    const originalOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
     window.addEventListener('keydown', handleKeyDown)
 
     const focusTimer = setTimeout(() => {
@@ -122,7 +120,6 @@ export default function SkillExplorerModal({ isOpen, onClose, onSelectPath, init
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
-      document.body.style.overflow = originalOverflow
       clearTimeout(focusTimer)
     }
   }, [isOpen, stage, onClose])
@@ -213,6 +210,7 @@ export default function SkillExplorerModal({ isOpen, onClose, onSelectPath, init
         role="dialog"
         aria-modal="true"
         aria-label="Build Your Roadmap"
+        data-lenis-prevent
         className={`fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 md:p-6 lg:p-8 ${
           stage === 'detail' || stage === 'player' ? 'hidden' : ''
         }`}
@@ -383,6 +381,7 @@ export default function SkillExplorerModal({ isOpen, onClose, onSelectPath, init
           role="dialog"
           aria-modal="true"
           aria-label="Learning Path Detail"
+          data-lenis-prevent
           className="fixed inset-0 z-50 overflow-y-auto bg-[#08090d]"
         >
           <Suspense
@@ -415,6 +414,7 @@ export default function SkillExplorerModal({ isOpen, onClose, onSelectPath, init
           role="dialog"
           aria-modal="true"
           aria-label="Course Player"
+          data-lenis-prevent
           className="fixed inset-0 z-50 overflow-y-auto bg-[#08090d]"
         >
           <Suspense

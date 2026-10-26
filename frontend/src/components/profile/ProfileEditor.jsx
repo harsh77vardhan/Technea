@@ -322,6 +322,7 @@ export default function ProfileEditor({
         role="dialog"
         aria-modal="true"
         aria-labelledby="profile-editor-title"
+        data-lenis-prevent
         className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 overflow-y-auto"
       >
         {/* Backdrop Fade Animation */}

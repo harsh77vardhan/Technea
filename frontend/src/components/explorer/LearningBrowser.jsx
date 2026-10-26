@@ -298,7 +298,7 @@ export default function LearningBrowser({
         </aside>
 
         {/* RIGHT RESULTS SECTION (Own separate vertical scroll) */}
-        <main className="flex-1 h-full overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 pr-1 space-y-3 pb-6">
+        <main data-lenis-prevent className="flex-1 h-full overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 pr-1 space-y-3 pb-6">
           {/* ── AI Intent Blueprint Card ──────────────────────────────── */}
           {!loading && aiIntent && (
             <div className="rounded-xl border border-white/15 bg-gradient-to-b from-white/[0.05] to-white/[0.02] p-5 sm:p-6 mb-4 space-y-4 shadow-lg animate-in fade-in duration-300">

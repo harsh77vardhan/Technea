@@ -616,7 +616,7 @@ export default function CoursePlayerPage({
             </div>
 
             {/* Scrollable Lesson Items */}
-            <div className="space-y-2 max-h-[600px] overflow-y-auto pr-1">
+            <div data-lenis-prevent className="space-y-2 max-h-[600px] overflow-y-auto pr-1">
               {lessons.map((lesson, idx) => {
                 const isActive = idx === activeLessonIndex
                 const isCompleted = completedLessonIds.includes(lesson.id)

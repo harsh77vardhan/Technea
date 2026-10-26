@@ -179,7 +179,7 @@ export default class ErrorBoundary extends Component {
 
     // Full-screen Technea dark branded recovery UI
     return (
-      <div className="min-h-screen w-full bg-[#050505] text-[#EDEDED] antialiased flex flex-col items-center justify-center px-4 sm:px-6 py-12 relative overflow-hidden selection:bg-[#333333] selection:text-white">
+      <div className="min-h-screen w-full bg-[#050505] text-[#EDEDED] antialiased flex flex-col items-center justify-center px-4 sm:px-6 py-12 relative overflow-x-clip selection:bg-[#333333] selection:text-white">
         {/* Futuristic Technea Ambient Lighting */}
         <div
           className="fixed inset-0 pointer-events-none bg-[radial-gradient(ellipse_70%_50%_at_50%_0%,rgba(99,102,241,0.14),transparent_70%)]"

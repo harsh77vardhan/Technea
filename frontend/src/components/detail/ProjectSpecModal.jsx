@@ -27,6 +27,7 @@ export default function ProjectSpecModal({ project, isOpen, onClose }) {
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 15 }}
           transition={{ duration: 0.25, ease: 'easeOut' }}
+          data-lenis-prevent
           className="relative z-10 w-full max-w-2xl rounded-3xl border border-white/15 bg-[#0b0d13] p-6 sm:p-8 text-white shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto"
         >
           {/* Header */}
