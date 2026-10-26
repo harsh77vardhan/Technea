@@ -1,1 +1,1 @@
-web: uvicorn --app-dir backend app.main:app --host 0.0.0.0 --port $PORT --workers 2
+web: cd backend && alembic upgrade head && python -m app.db.init_db && exec uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 2

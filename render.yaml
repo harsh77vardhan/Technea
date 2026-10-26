@@ -15,7 +15,7 @@ services:
     region: oregon
     buildCommand: pip install --upgrade pip && pip install -r requirements.txt
     preDeployCommand: alembic upgrade head
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 2
+    startCommand: alembic upgrade head && python -m app.db.init_db && exec uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 2
     healthCheckPath: /health
     autoDeploy: true
     envVars:

@@ -42,6 +42,15 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
                 "SECURITY WARNING: Default or weak database password is configured in production environment!"
             )
 
+    # Initialize database schema and ensure seed data exists
+    try:
+        from app.db.init_db import init_db
+        await init_db()
+    except Exception as exc:
+        logger.error("Database initialization failed during application startup: %s", exc)
+        if settings.ENVIRONMENT == "production":
+            raise
+
     yield
 
     # Shutdown actions

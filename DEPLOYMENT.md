@@ -92,8 +92,9 @@ alembic current
 
 ## 3. Backend Deployment
 
-### Option 1: Render (1-Click Blueprint)
+### Option 1: Render (1-Click Blueprint or Manual Web Service)
 
+#### A. 1-Click Blueprint (Automated)
 The repository includes a ready-to-use Render Blueprint (`render.yaml`) that spins up both the FastAPI web service and a managed PostgreSQL database.
 
 1. Push your repository to GitHub or GitLab.
@@ -105,8 +106,28 @@ The repository includes a ready-to-use Render Blueprint (`render.yaml`) that spi
    - `CORS_ORIGINS`: `["https://technea.vercel.app"]` (or your domain).
 6. Click **Apply**.
    - Render provisions `technea-postgres`.
-   - Runs `alembic upgrade head` automatically in the `preDeployCommand` hook.
+   - Runs `alembic upgrade head && python -m app.db.init_db` automatically before booting `uvicorn`.
    - Deploys the web service with healthchecks enabled at `/health`.
+
+#### B. Manual Web Service Configuration (Render Free Tier or Existing Service)
+If configuring a Web Service manually in Render Dashboard:
+- **Root Directory**: `backend`
+- **Environment**: `Python 3`
+- **Build Command**:
+  ```bash
+  pip install --upgrade pip && pip install -r requirements.txt
+  ```
+- **Start Command**:
+  ```bash
+  alembic upgrade head && python -m app.db.init_db && exec uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 2
+  ```
+- **Environment Variables**:
+  - `DATABASE_URL`: Your PostgreSQL connection string (from Render PostgreSQL, Neon, or Supabase).
+  - `ENVIRONMENT`: `production`
+  - `DEBUG`: `false`
+  - `SECRET_KEY`: A secure random secret key (min 32 characters).
+  - `CORS_ORIGINS`: `["https://technea.vercel.app"]`
+  - `GEMINI_API_KEY`: Your Google Gemini API key.
 
 ### Option 2: Railway
 
