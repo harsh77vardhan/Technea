@@ -184,9 +184,10 @@ The frontend is a modern React/Vite single-page application configured with `fro
 3. Configure project settings:
    - **Framework Preset**: `Vite`
    - **Root Directory**: `frontend` *(Click Edit and choose `frontend`)*
-   - **Build Command**: `npm run build`
+   - **Build Command**: `vite build` (or `npm run build`)
    - **Output Directory**: `dist`
-   - **Install Command**: `npm install`
+   - **Install Command**: `npm install --include=dev` (configured automatically via `vercel.json`)
+   *(Note: The repository also includes a root `vercel.json` fallback, so builds will succeed even if Root Directory was left as root `./`)*
 
 ### Step 2: Configure Production Environment Variables
 In Vercel **Settings > Environment Variables**, add:
