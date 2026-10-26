@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Sparkles, Terminal } from 'lucide-react'
 import { useAuth } from '../../context/useAuth'
 import {
   generateRoadmapApi,
@@ -21,7 +20,7 @@ export default function RoadmapBuilderModal({
 }) {
   const { user } = useAuth()
 
-  // Stages: 'entry' (Hero & Configuration Deck) | 'generating' (Neural Synthesis) | 'view' (Interactive Roadmap Timeline)
+  // Stages: 'entry' | 'generating' | 'view'
   const [stage, setStage] = useState('entry')
   const [goal, setGoal] = useState(() => initialGoal || '')
   const [prevGoalProp, setPrevGoalProp] = useState(initialGoal)
@@ -91,12 +90,14 @@ export default function RoadmapBuilderModal({
       setCompletedMilestones([])
     } catch (err) {
       console.error('Failed to generate roadmap:', err)
-      setError(err.message || 'Unable to generate roadmap. Please check backend connection and try again.')
+      setError(
+        err.message || 'Unable to generate roadmap. Please check backend connection and try again.'
+      )
       setStage('entry')
     }
   }
 
-  // Called when RoadmapGenerationScreen finishes its 5-step sequence
+  // Called when RoadmapGenerationScreen finishes its sequence
   const handleGenerationAnimationComplete = () => {
     setStage('view')
   }
@@ -189,149 +190,114 @@ export default function RoadmapBuilderModal({
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Technea AI Career Roadmap Builder"
-        className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-5 lg:p-6 overflow-hidden select-none"
+        aria-label="Roadmap Builder"
+        className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 lg:p-6 overflow-hidden"
       >
-        {/* ── Studio Backdrop Blur ── */}
+        {/* Backdrop */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.3 }}
+          transition={{ duration: 0.25 }}
           onClick={onClose}
-          className="fixed inset-0 bg-black/85 backdrop-blur-2xl cursor-pointer"
+          className="fixed inset-0 bg-black/80 cursor-pointer"
           aria-hidden="true"
         />
 
-        {/* ── Futuristic AI Command Center Modal Container ── */}
+        {/* Modal */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.98, y: 10 }}
+          initial={{ opacity: 0, scale: 0.98, y: 8 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.98, y: 10 }}
-          transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-          className="relative z-10 w-full max-w-[1240px] h-[92vh] max-h-[920px] rounded-3xl bg-[#060709] border border-white/[0.08] shadow-[0_30px_100px_rgba(0,0,0,0.95),0_0_60px_rgba(0,163,255,0.06)] overflow-hidden flex flex-col"
+          exit={{ opacity: 0, scale: 0.98, y: 8 }}
+          transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+          className="relative z-10 w-full max-w-[1200px] h-[92vh] max-h-[900px] rounded-3xl bg-black border border-[#1a1a1a] shadow-[0_32px_80px_rgba(0,0,0,0.9)] overflow-hidden flex flex-col"
           data-lenis-prevent
-          style={{
-            boxShadow:
-              '0 30px 100px rgba(0, 0, 0, 0.95), inset 0 1px 0 rgba(255, 255, 255, 0.08)',
-          }}
         >
-          {/* ── Engineering Canvas & Grid Lighting ── */}
           <CinematicBackground />
+          <RoadmapHUDFrame onClose={onClose} />
 
-          {/* ── Telemetry Hardware Frame (Top & Bottom Bars) ── */}
-          <RoadmapHUDFrame onClose={onClose} stage={stage} />
-
-          {/* ── Subtle Toast Notification Pill ── */}
+          {/* Toast */}
           <AnimatePresence>
             {toastMessage && (
               <motion.div
-                initial={{ opacity: 0, y: -16 }}
+                initial={{ opacity: 0, y: -12 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -16 }}
-                className="absolute top-16 left-1/2 -translate-x-1/2 z-50 rounded-full border border-[#00A3FF]/30 bg-[#0c0d14]/95 backdrop-blur-xl px-5 py-2 text-xs font-mono text-white shadow-2xl flex items-center gap-2.5"
-                style={{
-                  boxShadow: '0 10px 30px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 163, 255, 0.2)',
-                }}
+                exit={{ opacity: 0, y: -12 }}
+                className="absolute top-14 left-1/2 -translate-x-1/2 z-50 bg-[#111] border border-[#222] text-white text-xs font-mono px-4 py-2 rounded-lg"
               >
-                <Sparkles className="h-3.5 w-3.5 text-[#00A3FF]" />
-                <span className="tracking-wide text-neutral-200">{toastMessage}</span>
+                {toastMessage}
               </motion.div>
             )}
           </AnimatePresence>
 
-          {/* ── Main Viewport Content ── */}
+          {/* Content area */}
           <div
             data-lenis-prevent
-            className="relative z-20 w-full h-full flex flex-col items-center justify-start overflow-y-auto px-4 sm:px-8 lg:px-12 pt-16 sm:pt-20 pb-12 sm:pb-16"
+            className="relative z-20 flex-1 overflow-y-auto px-5 sm:px-8 lg:px-12 pt-16 sm:pt-20 pb-14 sm:pb-16"
           >
-            {/* ──── STAGE 1: CENTERED HERO & BUILDER CONFIGURATION DECK ──── */}
-            {stage === 'entry' && (
-              <motion.div
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -12 }}
-                transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                className="w-full max-w-3xl mx-auto space-y-7 my-auto text-center"
-              >
-                {/* Error Banner */}
-                {error && (
-                  <div className="rounded-xl border border-red-500/30 bg-red-950/30 p-3 text-xs font-mono text-red-400">
-                    {error}
-                  </div>
-                )}
+            <div className="mx-auto max-h-full">
+              {/* ENTRY STAGE */}
+              {stage === 'entry' && (
+                <motion.div
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.25 }}
+                  className="max-w-2xl mx-auto"
+                >
+                  {error && (
+                    <div className="mb-6 p-3 rounded-lg bg-[#110000] border border-[#330000] text-red-400 text-xs font-mono">
+                      {error}
+                    </div>
+                  )}
+                  <AIArchitectConversation
+                    initialGoal={goal}
+                    onStartSynthesis={handleStartSynthesis}
+                    onResetGoal={() => setGoal('')}
+                    onUserInteracting={() => {}}
+                  />
+                </motion.div>
+              )}
 
-                {/* ── Centered High-Impact Entry Hero ── */}
-                <div className="space-y-3">
-                  <div className="inline-flex items-center gap-2 rounded-full border border-[#00A3FF]/30 bg-[#00A3FF]/[0.06] px-3.5 py-1 text-[11px] font-mono tracking-[0.22em] uppercase text-[#00A3FF]">
-                    <Terminal className="h-3.5 w-3.5" />
-                    <span>AUTONOMOUS ROADMAP SYNTHESIZER</span>
-                  </div>
+              {/* GENERATING STAGE */}
+              {stage === 'generating' && (
+                <motion.div
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.25 }}
+                  className="max-w-lg mx-auto"
+                >
+                  <RoadmapGenerationScreen
+                    goal={goal}
+                    onCompleteAnimation={handleGenerationAnimationComplete}
+                  />
+                </motion.div>
+              )}
 
-                  <h1
-                    className="text-3xl sm:text-4xl md:text-5xl font-black uppercase tracking-[0.04em] text-white"
-                    style={{
-                      fontFamily: "'Orbitron', system-ui, sans-serif",
-                      textShadow: '0 0 24px rgba(0, 163, 255, 0.35)',
+              {/* VIEW STAGE */}
+              {stage === 'view' && generatedData && (
+                <motion.div
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.25 }}
+                  className="max-w-3xl mx-auto"
+                >
+                  <RoadmapTimelineView
+                    generatedData={generatedData}
+                    completedMilestones={completedMilestones}
+                    onToggleMilestone={handleToggleMilestone}
+                    onSaveRoadmap={handleSaveRoadmap}
+                    onShareRoadmap={handleShare}
+                    onResetGoal={() => {
+                      setStage('entry')
+                      setGeneratedData(null)
                     }}
-                  >
-                    Build Your Learning Path
-                  </h1>
-
-                  <p className="text-xs sm:text-sm text-neutral-400 max-w-xl mx-auto leading-relaxed">
-                    Personalized AI-guided sequences engineered for complete beginners. Select your target domain, baseline knowledge, and weekly availability to generate a structured milestone roadmap.
-                  </p>
-                </div>
-
-                {/* ── Integrated Command Center Configurator ── */}
-                <AIArchitectConversation
-                  initialGoal={goal}
-                  onStartSynthesis={handleStartSynthesis}
-                  onResetGoal={() => setGoal('')}
-                />
-              </motion.div>
-            )}
-
-            {/* ──── STAGE 2: NEURAL SYNTHESIS TERMINAL ──── */}
-            {stage === 'generating' && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.98 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 1.02 }}
-                transition={{ duration: 0.35 }}
-                className="w-full max-w-xl my-auto"
-              >
-                <RoadmapGenerationScreen
-                  goal={goal}
-                  onCompleteAnimation={handleGenerationAnimationComplete}
-                />
-              </motion.div>
-            )}
-
-            {/* ──── STAGE 3: INTERACTIVE HOLOGRAPHIC ROADMAP TIMELINE ──── */}
-            {stage === 'view' && generatedData && (
-              <motion.div
-                initial={{ opacity: 0, y: 14 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-                className="w-full max-w-4xl"
-              >
-                <RoadmapTimelineView
-                  generatedData={generatedData}
-                  completedMilestones={completedMilestones}
-                  onToggleMilestone={handleToggleMilestone}
-                  onSaveRoadmap={handleSaveRoadmap}
-                  onShareRoadmap={handleShare}
-                  onResetGoal={() => {
-                    setStage('entry')
-                    setGeneratedData(null)
-                  }}
-                  isSaving={isSaving}
-                  savedRoadmapId={savedRoadmapId}
-                  onSelectPath={onSelectPath}
-                />
-              </motion.div>
-            )}
+                    isSaving={isSaving}
+                    savedRoadmapId={savedRoadmapId}
+                    onSelectPath={onSelectPath}
+                  />
+                </motion.div>
+              )}
+            </div>
           </div>
         </motion.div>
       </div>
