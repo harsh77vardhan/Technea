@@ -396,6 +396,21 @@ export async function resetPasswordApi(token, new_password) {
   })
 }
 
+// Passwordless OTP Authentication
+export async function sendOtpApi(email) {
+  return request('/auth/send-otp', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  })
+}
+
+export async function verifyOtpApi(email, otp) {
+  return request('/auth/verify-otp', {
+    method: 'POST',
+    body: JSON.stringify({ email, otp }),
+  })
+}
+
 /* ==========================================================================
    User Progress & Dashboard API Endpoints
    ========================================================================== */
@@ -839,6 +854,8 @@ export default {
   resendVerificationApi,
   forgotPasswordApi,
   resetPasswordApi,
+  sendOtpApi,
+  verifyOtpApi,
   getPathProgressApi,
   toggleStepProgressApi,
   getCourseProgressApi,

@@ -13,6 +13,8 @@ import {
   resendVerificationApi,
   forgotPasswordApi,
   resetPasswordApi,
+  sendOtpApi,
+  verifyOtpApi,
 } from '../services/api'
 
 export function AuthProvider({ children }) {
@@ -249,6 +251,26 @@ export function AuthProvider({ children }) {
     return resetPasswordApi(token, newPassword)
   }, [])
 
+  // Passwordless OTP Authentication handlers
+  const sendOtp = useCallback(async (email) => {
+    return sendOtpApi(email)
+  }, [])
+
+  const verifyOtp = useCallback(async (email, otp) => {
+    const res = await verifyOtpApi(email, otp)
+    if (res?.access_token) {
+      setAuthToken(res.access_token)
+      setTokenState(res.access_token)
+      setUser(res.user)
+      closeAuthModal()
+
+      // Automatically migrate guest progress in background
+      syncLocalGuestProgress()
+      return res.user
+    }
+    return res?.user || res
+  }, [closeAuthModal, syncLocalGuestProgress])
+
   const value = {
     user,
     token,
@@ -257,6 +279,8 @@ export function AuthProvider({ children }) {
     login,
     signup,
     logout,
+    sendOtp,
+    verifyOtp,
     loginWithGoogle,
     sendVerificationEmail,
     forgotPassword,

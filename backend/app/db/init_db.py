@@ -84,22 +84,41 @@ async def run_auth_migrations(engine) -> None:
             table_check = await conn.execute(
                 text("SELECT 1 FROM information_schema.tables WHERE table_name = 'users'")
             )
-            if not table_check.fetchone():
-                logger.info("Users table not present yet. Skipping auth migrations (handled by metadata.create_all).")
-                return
+            if table_check.fetchone():
+                for col_name, alter_query in auth_columns:
+                    result = await conn.execute(
+                        text("""
+                            SELECT column_name FROM information_schema.columns
+                            WHERE table_name='users' AND column_name=:col
+                        """),
+                        {"col": col_name},
+                    )
+                    if not result.fetchone():
+                        logger.info("Auth migration: adding missing column '%s' to users table...", col_name)
+                        await conn.execute(text(alter_query))
+                        logger.info("Auth migration: column '%s' successfully added.", col_name)
+            else:
+                logger.info("Users table not present yet. Skipping auth columns migration.")
 
-            for col_name, alter_query in auth_columns:
-                result = await conn.execute(
-                    text("""
-                        SELECT column_name FROM information_schema.columns
-                        WHERE table_name='users' AND column_name=:col
-                    """),
-                    {"col": col_name},
-                )
-                if not result.fetchone():
-                    logger.info("Auth migration: adding missing column '%s' to users table...", col_name)
-                    await conn.execute(text(alter_query))
-                    logger.info("Auth migration: column '%s' successfully added.", col_name)
+            # Ensure email_otps table and index exist
+            logger.info("Auth migration: ensuring 'email_otps' table and index exist...")
+            await conn.execute(
+                text("""
+                    CREATE TABLE IF NOT EXISTS email_otps (
+                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                        email VARCHAR(255) NOT NULL,
+                        hashed_otp VARCHAR(255) NOT NULL,
+                        expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+                        attempts INTEGER NOT NULL DEFAULT 0,
+                        is_used BOOLEAN NOT NULL DEFAULT FALSE,
+                        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+                    );
+                """)
+            )
+            await conn.execute(
+                text("CREATE INDEX IF NOT EXISTS ix_email_otps_email ON email_otps(email);")
+            )
+            logger.info("Auth migration: 'email_otps' table and index verified/created.")
     except Exception as exc:
         logger.warning("Auth startup migration warning (continuing startup): %s", exc)
 

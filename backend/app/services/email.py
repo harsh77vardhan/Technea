@@ -1,5 +1,6 @@
 """Email delivery service using Resend API over HTTPX."""
 
+import re
 import httpx
 from app.core.config import settings
 from app.core.logger import logger
@@ -44,7 +45,8 @@ class EmailService:
                     json=payload,
                 )
                 if response.is_success:
-                    logger.info("Email '%s' successfully sent to %s via Resend.", subject, to_email)
+                    sanitized_subject = re.sub(r"\b\d{6}\b", "******", subject)
+                    logger.info("Email '%s' successfully sent to %s via Resend.", sanitized_subject, to_email)
                     return True
                 else:
                     logger.error(
@@ -192,5 +194,83 @@ class EmailService:
 </html>"""
         return await self._send_resend_email(to_email=to_email, subject=subject, html_body=html_body)
 
+    async def send_otp_email(
+        self,
+        to_email: str,
+        otp: str,
+        expires_minutes: int = 5,
+    ) -> bool:
+        """Send a one-time password (OTP) email for passwordless authentication.
+
+        If RESEND_API_KEY is not configured, logs the OTP for development use and returns True.
+        """
+        if not settings.RESEND_API_KEY:
+            logger.info(
+                "[DEV EMAIL] Technea OTP code for <%s>: %s (expires in %d min)",
+                to_email,
+                otp,
+                expires_minutes,
+            )
+            return True
+
+        subject = f"{otp} is your Technea verification code"
+        html_body = f"""<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{subject}</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #09090b; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #f4f4f5;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #09090b; padding: 48px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" style="max-width: 480px; background-color: #121216; border-radius: 12px; border: 1px solid #27272a; padding: 36px 32px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);">
+          <tr>
+            <td>
+              <!-- Branding Header -->
+              <div style="margin-bottom: 28px; text-align: left;">
+                <span style="font-size: 20px; font-weight: 700; color: #ffffff; letter-spacing: -0.5px; text-transform: uppercase;">TECHNEA</span>
+              </div>
+              
+              <h2 style="margin: 0 0 12px; font-size: 20px; font-weight: 600; color: #ffffff;">Verification Code</h2>
+              <p style="margin: 0 0 28px; font-size: 14px; line-height: 22px; color: #a1a1aa;">
+                Use the one-time code below to authenticate your Technea account. This code is valid for <strong>{expires_minutes} minutes</strong>.
+              </p>
+              
+              <!-- Large Legible 6-Digit Monospace OTP Code -->
+              <div style="margin: 28px 0; text-align: center;">
+                <div style="display: inline-block; background-color: #18181b; border: 1px solid #3f3f46; border-radius: 10px; padding: 18px 28px; font-family: 'SF Mono', Consolas, 'Liberation Mono', Menlo, Monaco, monospace; font-size: 34px; font-weight: 700; letter-spacing: 10px; color: #ffffff; text-align: center;">
+                  {otp}
+                </div>
+              </div>
+
+              <!-- Expiry Notice -->
+              <p style="margin: 0 0 24px; font-size: 13px; line-height: 20px; color: #71717a; text-align: center;">
+                This code expires in {expires_minutes} minutes.
+              </p>
+
+              <!-- Security Advisory -->
+              <div style="margin: 24px 0 0; padding: 16px; background-color: #18181b; border-radius: 8px; border-left: 3px solid #71717a;">
+                <p style="margin: 0; font-size: 12px; line-height: 18px; color: #a1a1aa;">
+                  <strong>Security Advisory:</strong> Never share this code with anyone. Technea staff will never ask for your code.
+                </p>
+              </div>
+
+              <hr style="border: none; border-top: 1px solid #27272a; margin: 28px 0 20px;" />
+              <p style="margin: 0; font-size: 12px; line-height: 18px; color: #52525b; text-align: center;">
+                If you did not request this verification code, please ignore this email or contact support.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>"""
+        return await self._send_resend_email(to_email=to_email, subject=subject, html_body=html_body)
+
 
 email_service = EmailService()
+

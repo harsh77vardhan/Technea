@@ -121,3 +121,25 @@ class UserStatsResponse(BaseModel):
     completed_lessons_count: int
     completed_projects_count: int
 
+
+class SendOTPRequest(BaseModel):
+    """Schema for requesting an email OTP."""
+
+    email: EmailStr
+
+
+class VerifyOTPRequest(BaseModel):
+    """Schema for verifying an email OTP."""
+
+    email: EmailStr
+    otp: str = Field(..., min_length=6, max_length=6)
+
+
+class OTPSentResponse(BaseModel):
+    """Schema for OTP dispatch confirmation response."""
+
+    message: str
+    expires_in_seconds: int = 300
+    cooldown_seconds: int = 60
+
+

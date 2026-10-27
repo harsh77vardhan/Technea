@@ -1,26 +1,32 @@
-"""Authentication and user account router."""
-
-from datetime import datetime, timedelta, timezone
+import hashlib
+import hmac
 import secrets
+from datetime import datetime, timedelta, timezone
 from typing import Annotated
 from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile, status
 from fastapi.responses import RedirectResponse
+from sqlalchemy import select, update
 from app.api.deps import CurrentUserDep, DatabaseDep
 from app.core.config import settings
 from app.core.security import create_access_token, get_password_hash
+from app.models.email_otp import EmailOTP
+from app.models.user import User
 from app.schemas.common import MessageResponse
 from app.schemas.profile import AvatarUploadResponse
 from app.schemas.user import (
     ForgotPasswordRequest,
     GoogleAuthUrlResponse,
     GoogleCallbackResponse,
+    OTPSentResponse,
     ResetPasswordRequest,
+    SendOTPRequest,
     TokenResponse,
     UserCreate,
     UserLogin,
     UserResponse,
     UserUpdate,
     VerifyEmailResponse,
+    VerifyOTPRequest,
 )
 from app.services.email import email_service
 from app.services.google_auth import exchange_code_for_user_info, get_google_auth_url
@@ -29,7 +35,28 @@ from app.services.storage import get_storage_service
 from app.services.user import user_service
 
 
+def _generate_otp() -> str:
+    """Generate secure 6-digit numeric OTP string using secrets."""
+    return str(secrets.randbelow(900000) + 100000)
+
+
+def _hash_otp(otp: str) -> str:
+    """Compute HMAC-SHA256 hex digest of the OTP code using settings.SECRET_KEY."""
+    return hmac.new(
+        key=settings.SECRET_KEY.encode("utf-8"),
+        msg=otp.encode("utf-8"),
+        digestmod=hashlib.sha256,
+    ).hexdigest()
+
+
+def _verify_otp_hash(otp: str, hashed: str) -> bool:
+    """Verify OTP against hashed digest using constant-time comparison."""
+    expected_hash = _hash_otp(otp)
+    return hmac.compare_digest(expected_hash, hashed)
+
+
 router = APIRouter(tags=["Authentication"])
+
 
 
 @router.post(
@@ -393,4 +420,170 @@ async def google_auth_callback(
     frontend_url = (settings.FRONTEND_URL or "http://localhost:3000").rstrip("/")
     redirect_target = f"{frontend_url}/auth/callback?token={access_token}"
     return RedirectResponse(url=redirect_target, status_code=status.HTTP_302_FOUND)
+
+
+@router.post(
+    "/send-otp",
+    response_model=OTPSentResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Send OTP verification code to email",
+)
+async def send_otp(
+    data: SendOTPRequest,
+    db: DatabaseDep,
+) -> OTPSentResponse:
+    """Send a secure 6-digit one-time password to the user's email."""
+    email = data.email.strip().lower()
+    now = datetime.now(timezone.utc)
+
+    # Cooldown check: Check if an unexpired, unused OTP was created for this email within cooldown window
+    stmt = (
+        select(EmailOTP)
+        .where(
+            EmailOTP.email == email,
+            EmailOTP.is_used.is_(False),
+            EmailOTP.expires_at > now,
+        )
+        .order_by(EmailOTP.created_at.desc())
+    )
+    result = await db.execute(stmt)
+    latest_otp = result.scalars().first()
+
+    if latest_otp and latest_otp.created_at:
+        created_at = latest_otp.created_at
+        if created_at.tzinfo is None:
+            created_at = created_at.replace(tzinfo=timezone.utc)
+        elapsed = (now - created_at).total_seconds()
+        if elapsed < settings.OTP_RESEND_COOLDOWN_SECONDS:
+            wait_seconds = max(1, int(settings.OTP_RESEND_COOLDOWN_SECONDS - elapsed))
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=f"Please wait {wait_seconds} seconds before requesting a new code.",
+            )
+
+    # Invalidate previous unused OTP records for this email
+    await db.execute(
+        update(EmailOTP)
+        .where(
+            EmailOTP.email == email,
+            EmailOTP.is_used.is_(False),
+        )
+        .values(is_used=True)
+    )
+
+    otp = _generate_otp()
+    hashed_otp = _hash_otp(otp)
+    expires_at = now + timedelta(minutes=settings.OTP_EXPIRE_MINUTES)
+
+    otp_record = EmailOTP(
+        email=email,
+        hashed_otp=hashed_otp,
+        expires_at=expires_at,
+        attempts=0,
+        is_used=False,
+    )
+    db.add(otp_record)
+    await db.commit()
+
+    await email_service.send_otp_email(
+        to_email=email,
+        otp=otp,
+        expires_minutes=settings.OTP_EXPIRE_MINUTES,
+    )
+
+    return OTPSentResponse(
+        message="Verification code sent to your email.",
+        expires_in_seconds=settings.OTP_EXPIRE_MINUTES * 60,
+        cooldown_seconds=settings.OTP_RESEND_COOLDOWN_SECONDS,
+    )
+
+
+@router.post(
+    "/verify-otp",
+    response_model=TokenResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Verify email OTP code and authenticate user",
+)
+async def verify_otp(
+    data: VerifyOTPRequest,
+    db: DatabaseDep,
+) -> TokenResponse:
+    """Verify one-time password code, auto-register or authenticate user, and return JWT."""
+    email = data.email.strip().lower()
+    otp = data.otp.strip()
+    now = datetime.now(timezone.utc)
+
+    # Fetch latest unexpired, unused EmailOTP record for this email
+    stmt = (
+        select(EmailOTP)
+        .where(
+            EmailOTP.email == email,
+            EmailOTP.is_used.is_(False),
+            EmailOTP.expires_at > now,
+        )
+        .order_by(EmailOTP.created_at.desc())
+        .with_for_update()
+    )
+    result = await db.execute(stmt)
+    otp_record = result.scalars().first()
+
+    if not otp_record:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired verification code. Please request a new one.",
+        )
+
+    if otp_record.attempts >= settings.OTP_MAX_ATTEMPTS:
+        otp_record.is_used = True
+        await db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Too many incorrect attempts. Please request a new code.",
+        )
+
+    if not _verify_otp_hash(otp, otp_record.hashed_otp):
+        otp_record.attempts += 1
+        remaining = max(0, settings.OTP_MAX_ATTEMPTS - otp_record.attempts)
+        await db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Incorrect code. {remaining} attempt(s) remaining.",
+        )
+
+    # Valid OTP verified: mark used
+    otp_record.is_used = True
+
+    # Look up user by email
+    user = await user_service.get_by_email(db, email=email)
+    if user:
+        if not user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="This account has been deactivated.",
+            )
+        if not user.is_email_verified:
+            user.is_email_verified = True
+        await db.commit()
+        await db.refresh(user)
+    else:
+        random_password = secrets.token_urlsafe(32)
+        user = User(
+            email=email,
+            hashed_password=get_password_hash(random_password),
+            auth_provider="otp",
+            is_email_verified=True,
+            is_active=True,
+            is_superuser=False,
+        )
+        db.add(user)
+        await db.commit()
+        await db.refresh(user)
+
+    access_token = create_access_token(subject=user.id)
+    return TokenResponse(
+        access_token=access_token,
+        token_type="bearer",
+        user=UserResponse.model_validate(user),
+    )
+
 

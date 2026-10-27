@@ -1,21 +1,27 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Lock, Mail, User, AlertCircle, ArrowRight, Loader2, CheckCircle2 } from 'lucide-react'
+import { X, Lock, Mail, User, AlertCircle, ArrowRight, ArrowLeft, Loader2, CheckCircle2, Shield } from 'lucide-react'
 import { useAuth } from '../../context/useAuth'
 
 export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
-  const { login, signup, forgotPassword, loginWithGoogle } = useAuth()
-  const [mode, setMode] = useState(initialMode || 'login') // 'login' | 'signup' | 'forgot'
+  const { login, signup, forgotPassword, loginWithGoogle, sendOtp, verifyOtp } = useAuth()
+  const [mode, setMode] = useState(initialMode || 'login') // 'otp' | 'otp-verify' | 'login' | 'signup' | 'forgot'
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [fullName, setFullName] = useState('')
+  const [otp, setOtp] = useState('')
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
   const [successMsg, setSuccessMsg] = useState(null)
+  const [resendCooldown, setResendCooldown] = useState(0)
+  const [resendLoading, setResendLoading] = useState(false)
 
   const emailInputRef = useRef(null)
+  const otpInputRef = useRef(null)
+  const submittingRef = useRef(false)
 
+  // Initialize or reset state when modal opens
   useEffect(() => {
     if (isOpen) {
       // Defer setState to avoid react-hooks/set-state-in-effect lint rule
@@ -23,9 +29,14 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
         setMode(initialMode || 'login')
         setError(null)
         setSuccessMsg(null)
+        setOtp('')
       })
       const timer = setTimeout(() => {
-        emailInputRef.current?.focus()
+        if (initialMode === 'otp-verify') {
+          otpInputRef.current?.focus()
+        } else {
+          emailInputRef.current?.focus()
+        }
       }, 100)
       return () => clearTimeout(timer)
     }
@@ -41,6 +52,133 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isOpen, onClose])
 
+  // Resend cooldown countdown timer (60s)
+  useEffect(() => {
+    if (resendCooldown <= 0) return
+    const timer = setInterval(() => {
+      setResendCooldown((prev) => (prev <= 1 ? 0 : prev - 1))
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [resendCooldown])
+
+  // Auto-focus OTP input when entering 'otp-verify' mode
+  useEffect(() => {
+    if (isOpen && mode === 'otp-verify') {
+      const timer = setTimeout(() => {
+        otpInputRef.current?.focus()
+      }, 120)
+      return () => clearTimeout(timer)
+    }
+  }, [isOpen, mode])
+
+  // Screen 1: Send OTP handler
+  const handleSendOtp = async (e) => {
+    if (e) e.preventDefault()
+    setError(null)
+    setSuccessMsg(null)
+
+    const cleanEmail = email.trim()
+    if (!cleanEmail) {
+      setError('Please provide a valid email address.')
+      return
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      setError('Please enter a valid email address.')
+      return
+    }
+
+    setLoading(true)
+    try {
+      await sendOtp(cleanEmail)
+      setResendCooldown(60)
+      setMode('otp-verify')
+      setSuccessMsg(`We sent a 6-digit code to ${cleanEmail}`)
+      setOtp('')
+    } catch (err) {
+      console.error('Send OTP error:', err)
+      setError(err.message || 'Failed to send verification code. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Screen 2: Verify OTP handler
+  const handleVerifyOtp = useCallback(async (e) => {
+    if (e) e.preventDefault()
+    if (loading || submittingRef.current) return
+    const cleanOtp = otp.trim()
+    if (cleanOtp.length !== 6) {
+      setError('Please enter the complete 6-digit verification code.')
+      return
+    }
+
+    submittingRef.current = true
+    setLoading(true)
+    setError(null)
+    setSuccessMsg(null)
+    try {
+      await verifyOtp(email.trim(), cleanOtp)
+      setSuccessMsg('Signed in successfully!')
+      setTimeout(() => {
+        onClose()
+      }, 400)
+    } catch (err) {
+      console.error('OTP verification error:', err)
+      setError(err.message || 'Invalid or expired verification code. Please try again.')
+    } finally {
+      setLoading(false)
+      submittingRef.current = false
+    }
+  }, [email, otp, loading, verifyOtp, onClose])
+
+  // Auto-submit OTP on 6th digit after slight delay (300ms)
+  useEffect(() => {
+    if (mode === 'otp-verify' && otp.length === 6 && !loading) {
+      const timer = setTimeout(() => {
+        handleVerifyOtp()
+      }, 300)
+      return () => clearTimeout(timer)
+    }
+  }, [otp, mode, loading, handleVerifyOtp])
+
+  // Filter non-numeric characters for OTP
+  const handleOtpChange = (e) => {
+    const val = e.target.value.replace(/\D/g, '').slice(0, 6)
+    setOtp(val)
+    if (error) setError(null)
+  }
+
+  // Resend OTP handler in Screen 2
+  const handleResendOtp = async () => {
+    if (resendCooldown > 0 || resendLoading) return
+    setResendLoading(true)
+    setError(null)
+    setSuccessMsg(null)
+    try {
+      await sendOtp(email.trim())
+      setResendCooldown(60)
+      setSuccessMsg('A new verification code has been sent.')
+    } catch (err) {
+      console.error('Resend OTP error:', err)
+      setError(err.message || 'Failed to resend code. Please try again.')
+    } finally {
+      setResendLoading(false)
+    }
+  }
+
+  // Switch back to Screen 1 ('otp') with email preserved
+  const handleChangeEmail = () => {
+    setMode('otp')
+    setError(null)
+    setSuccessMsg(null)
+    setOtp('')
+    setTimeout(() => {
+      emailInputRef.current?.focus()
+    }, 100)
+  }
+
+  // Password Login / Signup handler
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError(null)
@@ -76,6 +214,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
     }
   }
 
+  // Google OAuth handler
   const handleGoogleLogin = async () => {
     setLoading(true)
     setError(null)
@@ -87,6 +226,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
     }
   }
 
+  // Forgot password handler
   const handleForgotPassword = async (e) => {
     e.preventDefault()
     setLoading(true)
@@ -146,47 +286,123 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
             <X className="h-5 w-5" />
           </button>
 
+          {/* Back Navigation for 'forgot' and 'otp-verify' */}
+          {mode === 'forgot' && (
+            <button
+              type="button"
+              onClick={() => {
+                setMode('login')
+                setError(null)
+                setSuccessMsg(null)
+              }}
+              className="relative inline-flex items-center gap-1.5 text-xs text-neutral-400 hover:text-white transition-colors cursor-pointer mb-2"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              <span>Back to sign in</span>
+            </button>
+          )}
+
+          {mode === 'otp-verify' && (
+            <button
+              type="button"
+              onClick={handleChangeEmail}
+              className="relative inline-flex items-center gap-1.5 text-xs text-neutral-400 hover:text-white transition-colors cursor-pointer mb-2"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              <span>Back to email</span>
+            </button>
+          )}
+
           {/* Header */}
           <div className="relative text-center mb-6">
             <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl border border-white/[0.12] bg-[#14151a] text-white shadow-sm">
-              <Lock className="h-5 w-5 text-neutral-200" />
+              {mode === 'otp-verify' ? (
+                <Shield className="h-5 w-5 text-neutral-200" />
+              ) : mode === 'signup' ? (
+                <User className="h-5 w-5 text-neutral-200" />
+              ) : (
+                <Lock className="h-5 w-5 text-neutral-200" />
+              )}
             </div>
             <h2 className="text-xl font-bold tracking-tight text-white">
-              {mode === 'forgot' ? 'Reset Password' : mode === 'login' ? 'Welcome Back' : 'Create Your Account'}
-            </h2>
-            <p className="mt-1 text-xs text-neutral-400">
-              {mode === 'forgot'
-                ? 'Enter your email to receive a reset link'
+              {mode === 'otp'
+                ? 'Welcome to Technea'
+                : mode === 'otp-verify'
+                ? 'Enter verification code'
+                : mode === 'forgot'
+                ? 'Reset Password'
                 : mode === 'login'
-                ? 'Sign in to access your saved roadmaps and progress'
-                : 'Join Technea to track your skill milestones and courses'}
-            </p>
+                ? 'Welcome Back'
+                : 'Create Your Account'}
+            </h2>
+            <div className="mt-1 text-xs text-neutral-400">
+              {mode === 'otp' ? (
+                <p>Enter your email for instant passwordless sign-in</p>
+              ) : mode === 'otp-verify' ? (
+                <div className="space-y-1">
+                  <p>
+                    We sent a 6-digit code to{' '}
+                    <span className="font-medium text-neutral-200">{email}</span>
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleChangeEmail}
+                    className="inline-flex items-center gap-1 text-[11px] text-neutral-400 hover:text-white underline underline-offset-2 transition-colors cursor-pointer"
+                  >
+                    Change email
+                  </button>
+                </div>
+              ) : mode === 'forgot' ? (
+                <p>Enter your email to receive a reset link</p>
+              ) : mode === 'login' ? (
+                <p>Sign in to access your saved roadmaps and progress</p>
+              ) : (
+                <p>Join Technea to track your skill milestones and courses</p>
+              )}
+            </div>
           </div>
 
-          {/* Mode Switcher Tabs */}
-          {mode !== 'forgot' && (
+          {/* Mode Switcher Tabs: [Email Code] | [Password] | [Create Account] */}
+          {mode !== 'forgot' && mode !== 'otp-verify' && (
             <div className="relative flex rounded-xl bg-white/[0.04] p-1 border border-white/[0.06] mb-6">
+              <button
+                type="button"
+                onClick={() => {
+                  setMode('otp')
+                  setError(null)
+                  setSuccessMsg(null)
+                }}
+                className={`flex-1 min-h-[40px] flex items-center justify-center px-2 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                  mode === 'otp'
+                    ? 'bg-white text-black shadow-sm'
+                    : 'text-neutral-400 hover:text-white'
+                }`}
+              >
+                Email Code
+              </button>
               <button
                 type="button"
                 onClick={() => {
                   setMode('login')
                   setError(null)
+                  setSuccessMsg(null)
                 }}
-                className={`flex-1 min-h-[40px] flex items-center justify-center py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                className={`flex-1 min-h-[40px] flex items-center justify-center px-2 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                   mode === 'login'
                     ? 'bg-white text-black shadow-sm'
                     : 'text-neutral-400 hover:text-white'
                 }`}
               >
-                Sign In
+                Password
               </button>
               <button
                 type="button"
                 onClick={() => {
                   setMode('signup')
                   setError(null)
+                  setSuccessMsg(null)
                 }}
-                className={`flex-1 min-h-[40px] flex items-center justify-center py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                className={`flex-1 min-h-[40px] flex items-center justify-center px-2 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                   mode === 'signup'
                     ? 'bg-white text-black shadow-sm'
                     : 'text-neutral-400 hover:text-white'
@@ -221,7 +437,168 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
             </motion.div>
           )}
 
-          {/* Forgot Password Form */}
+          {/* Screen 1: 'otp' Mode Form */}
+          {mode === 'otp' && (
+            <form onSubmit={handleSendOtp} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="block text-xs font-medium text-neutral-300">
+                  Email Address
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500" />
+                  <input
+                    ref={emailInputRef}
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="name@example.com"
+                    className="w-full rounded-xl border border-white/[0.08] bg-white/[0.04] py-2.5 pl-10 pr-4 text-sm text-white placeholder-neutral-500 focus:border-white/20 focus:outline-none transition"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-black hover:bg-neutral-100 focus:outline-none transition cursor-pointer disabled:opacity-50"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Sending code...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Continue with Email</span>
+                    <ArrowRight className="h-4 w-4" />
+                  </>
+                )}
+              </button>
+
+              {/* Divider */}
+              <div className="flex items-center gap-3 pt-1">
+                <div className="flex-1 h-px bg-[#1a1a1a]" />
+                <span className="text-[11px] text-[#555] font-mono">or</span>
+                <div className="flex-1 h-px bg-[#1a1a1a]" />
+              </div>
+
+              {/* Google OAuth Button */}
+              <button
+                type="button"
+                onClick={handleGoogleLogin}
+                disabled={loading}
+                className="w-full inline-flex min-h-[44px] items-center justify-center gap-2.5 rounded-xl border border-[#2a2a2a] bg-[#0d0d0d] px-4 py-2.5 text-sm font-medium text-neutral-200 hover:border-[#444] hover:bg-[#141414] transition-all cursor-pointer disabled:opacity-50"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                </svg>
+                <span>Continue with Google</span>
+              </button>
+
+              {/* Bottom link: Prefer password */}
+              <div className="pt-2 text-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('login')
+                    setError(null)
+                    setSuccessMsg(null)
+                  }}
+                  className="text-xs text-neutral-400 hover:text-white transition-colors cursor-pointer"
+                >
+                  Prefer password? <span className="underline underline-offset-2 text-neutral-300">Sign in with password</span>
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* Screen 2: 'otp-verify' Mode Form */}
+          {mode === 'otp-verify' && (
+            <form onSubmit={handleVerifyOtp} className="space-y-4">
+              <div className="space-y-2">
+                <label className="block text-xs font-medium text-neutral-300 text-center">
+                  6-Digit Verification Code
+                </label>
+                <div className="relative">
+                  <input
+                    ref={otpInputRef}
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={6}
+                    autoComplete="one-time-code"
+                    value={otp}
+                    onChange={handleOtpChange}
+                    placeholder="000000"
+                    className="w-full text-center font-mono text-2xl sm:text-3xl font-bold tracking-[0.4em] sm:tracking-[0.55em] py-3.5 px-4 rounded-xl border border-white/[0.12] bg-white/[0.04] text-white placeholder-neutral-600 focus:border-white/30 focus:bg-white/[0.06] focus:outline-none transition-all select-none"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading || otp.length !== 6}
+                className="w-full inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-black hover:bg-neutral-100 focus:outline-none transition cursor-pointer disabled:opacity-50"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Verifying code...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Verify OTP</span>
+                    <ArrowRight className="h-4 w-4" />
+                  </>
+                )}
+              </button>
+
+              {/* Resend Cooldown Countdown / Action */}
+              <div className="flex flex-col items-center gap-3 pt-2">
+                <div className="text-xs text-neutral-400">
+                  {resendCooldown > 0 ? (
+                    <span className="text-neutral-400 font-mono">
+                      Resend code in <span className="font-semibold text-neutral-200">{resendCooldown}s</span>
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={resendLoading}
+                      onClick={handleResendOtp}
+                      className="font-medium text-neutral-300 hover:text-white transition-colors cursor-pointer inline-flex items-center gap-1.5 underline underline-offset-4 disabled:opacity-50"
+                    >
+                      {resendLoading ? (
+                        <>
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          <span>Sending...</span>
+                        </>
+                      ) : (
+                        <span>Resend code</span>
+                      )}
+                    </button>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('login')
+                    setError(null)
+                    setSuccessMsg(null)
+                  }}
+                  className="text-xs text-neutral-500 hover:text-neutral-300 transition-colors cursor-pointer"
+                >
+                  Prefer password? <span className="underline underline-offset-2 text-neutral-400 hover:text-white">Sign in with password</span>
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* Forgot Password Mode Form */}
           {mode === 'forgot' && (
             <form onSubmit={handleForgotPassword} className="space-y-4">
               <div className="space-y-1.5">
@@ -243,11 +620,22 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
                 disabled={loading}
                 className="w-full inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-black hover:bg-neutral-100 transition cursor-pointer disabled:opacity-50"
               >
-                {loading ? <><Loader2 className="h-4 w-4 animate-spin" /><span>Sending...</span></> : 'Send Reset Link'}
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Sending...</span>
+                  </>
+                ) : (
+                  'Send Reset Link'
+                )}
               </button>
               <button
                 type="button"
-                onClick={() => { setMode('login'); setError(null); setSuccessMsg(null) }}
+                onClick={() => {
+                  setMode('login')
+                  setError(null)
+                  setSuccessMsg(null)
+                }}
                 className="w-full text-center text-xs text-neutral-500 hover:text-neutral-300 transition cursor-pointer"
               >
                 ← Back to sign in
@@ -255,8 +643,8 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
             </form>
           )}
 
-          {/* Form */}
-          {mode !== 'forgot' && (
+          {/* Password Login & Signup Forms */}
+          {(mode === 'login' || mode === 'signup') && (
             <form onSubmit={handleSubmit} className="space-y-4">
               {mode === 'signup' && (
                 <div className="space-y-1.5">
@@ -305,7 +693,11 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
                   {mode === 'login' && (
                     <button
                       type="button"
-                      onClick={() => { setMode('forgot'); setError(null) }}
+                      onClick={() => {
+                        setMode('forgot')
+                        setError(null)
+                        setSuccessMsg(null)
+                      }}
                       className="text-[11px] text-neutral-500 hover:text-neutral-300 transition-colors cursor-pointer"
                     >
                       Forgot password?
@@ -325,7 +717,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
                 </div>
               </div>
 
-              {/* Google OAuth Button */}
+              {/* Google OAuth Button & Divider */}
               <div className="space-y-3 mb-4">
                 <button
                   type="button"
@@ -333,8 +725,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
                   disabled={loading}
                   className="w-full inline-flex min-h-[44px] items-center justify-center gap-2.5 rounded-xl border border-[#2a2a2a] bg-[#0d0d0d] px-4 py-2.5 text-sm font-medium text-neutral-200 hover:border-[#444] hover:bg-[#141414] transition-all cursor-pointer disabled:opacity-50"
                 >
-                  {/* Google SVG icon */}
-                  <svg width="16" height="16" viewBox="0 0 24 24">
+                  <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
                     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                     <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
                     <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
@@ -343,7 +734,6 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
                   <span>Continue with Google</span>
                 </button>
                 
-                {/* Divider */}
                 <div className="flex items-center gap-3">
                   <div className="flex-1 h-px bg-[#1a1a1a]" />
                   <span className="text-[11px] text-[#444] font-mono">or</span>
@@ -372,22 +762,38 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
           )}
 
           {/* Footer note */}
-          {mode !== 'forgot' && (
-            <div className="mt-5 text-center text-xs text-neutral-500">
+          {(mode === 'login' || mode === 'signup') && (
+            <div className="mt-5 text-center text-xs text-neutral-500 space-y-2">
               {mode === 'login' ? (
-                <p>
-                  Don&apos;t have an account?{' '}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMode('signup')
-                      setError(null)
-                    }}
-                    className="font-semibold text-neutral-300 hover:text-white hover:underline cursor-pointer"
-                  >
-                    Create one now
-                  </button>
-                </p>
+                <>
+                  <p>
+                    Don&apos;t have an account?{' '}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMode('signup')
+                        setError(null)
+                        setSuccessMsg(null)
+                      }}
+                      className="font-semibold text-neutral-300 hover:text-white hover:underline cursor-pointer"
+                    >
+                      Create one now
+                    </button>
+                  </p>
+                  <p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMode('otp')
+                        setError(null)
+                        setSuccessMsg(null)
+                      }}
+                      className="text-neutral-400 hover:text-white underline underline-offset-2 cursor-pointer transition-colors"
+                    >
+                      Prefer passwordless? Continue with Email Code
+                    </button>
+                  </p>
+                </>
               ) : (
                 <p>
                   Already have an account?{' '}
@@ -396,6 +802,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
                     onClick={() => {
                       setMode('login')
                       setError(null)
+                      setSuccessMsg(null)
                     }}
                     className="font-semibold text-neutral-300 hover:text-white hover:underline cursor-pointer"
                   >

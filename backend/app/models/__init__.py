@@ -34,6 +34,7 @@ from app.models.achievement import (
     UserAchievement,
 )
 from app.models.follow import Follow
+from app.models.email_otp import EmailOTP
 
 __all__ = [
     "Base",
@@ -61,6 +62,7 @@ __all__ = [
     "UserLearningRoom",
     "UserAchievement",
     "Follow",
+    "EmailOTP",
 ]
 
 

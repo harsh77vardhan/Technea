@@ -37,6 +37,9 @@ from app.schemas.user import (
     UserResponse,
     UserUpdate,
     TokenResponse,
+    SendOTPRequest,
+    VerifyOTPRequest,
+    OTPSentResponse,
 )
 from app.schemas.ai import (
     AIChatRequest,
@@ -81,6 +84,9 @@ __all__ = [
     "UserResponse",
     "UserUpdate",
     "TokenResponse",
+    "SendOTPRequest",
+    "VerifyOTPRequest",
+    "OTPSentResponse",
     "RoadmapStepToggleRequest",
     "LessonToggleRequest",
     "PathProgressResponse",
