@@ -35,19 +35,21 @@ async def test_auth_migrations_idempotent():
 @pytest.mark.asyncio
 async def test_email_service_dev_mode():
     """Verify EmailService succeeds and logs in development mode when RESEND_API_KEY is not set."""
-    success_verify = await email_service.send_verification_email(
+    success_verify, err_verify = await email_service.send_verification_email(
         to_email="test_dev@technea.dev",
         full_name="Dev Tester",
         token="sample-verification-token",
     )
     assert success_verify is True
+    assert err_verify is None
 
-    success_reset = await email_service.send_password_reset_email(
+    success_reset, err_reset = await email_service.send_password_reset_email(
         to_email="test_dev@technea.dev",
         full_name="Dev Tester",
         token="sample-reset-token",
     )
     assert success_reset is True
+    assert err_reset is None
 
 
 @pytest.mark.asyncio

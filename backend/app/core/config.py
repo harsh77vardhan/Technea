@@ -34,7 +34,15 @@ class Settings(BaseSettings):
 
     # Email / Resend API Configuration
     RESEND_API_KEY: str | None = None
-    EMAIL_FROM: str = "noreply@technea.dev"
+    EMAIL_FROM: str = "Technea <onboarding@resend.dev>"
+
+    # SMTP Configuration
+    SMTP_HOST: str | None = None
+    SMTP_PORT: int = 587
+    SMTP_USER: str | None = None
+    SMTP_PASSWORD: str | None = None
+    SMTP_TLS: bool = True
+    SMTP_SSL: bool = False
 
     # Email OTP Configuration
     OTP_EXPIRE_MINUTES: int = 5

@@ -3,6 +3,27 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { X, Lock, Mail, User, AlertCircle, ArrowRight, ArrowLeft, Loader2, CheckCircle2, Shield } from 'lucide-react'
 import { useAuth } from '../../context/useAuth'
 
+function formatAuthError(err, fallbackMessage) {
+  if (!err) return fallbackMessage
+  const candidate =
+    err?.response?.data?.detail ??
+    err?.detail ??
+    err?.response?.data?.message ??
+    err?.message
+  if (typeof candidate === 'string' && candidate.trim()) {
+    return candidate
+  }
+  if (Array.isArray(candidate)) {
+    return candidate
+      .map((item) => (typeof item === 'string' ? item : item?.msg || JSON.stringify(item)))
+      .join(', ')
+  }
+  if (candidate && typeof candidate === 'object') {
+    return candidate.message || JSON.stringify(candidate)
+  }
+  return fallbackMessage
+}
+
 export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
   const { login, signup, forgotPassword, loginWithGoogle, sendOtp, verifyOtp } = useAuth()
   const [mode, setMode] = useState(initialMode || 'login') // 'otp' | 'otp-verify' | 'login' | 'signup' | 'forgot'
@@ -20,6 +41,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
   const emailInputRef = useRef(null)
   const otpInputRef = useRef(null)
   const submittingRef = useRef(false)
+  const lastAttemptedOtpRef = useRef('')
 
   // Initialize or reset state when modal opens
   useEffect(() => {
@@ -30,6 +52,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
         setError(null)
         setSuccessMsg(null)
         setOtp('')
+        lastAttemptedOtpRef.current = ''
       })
       const timer = setTimeout(() => {
         if (initialMode === 'otp-verify') {
@@ -95,9 +118,10 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
       setMode('otp-verify')
       setSuccessMsg(`We sent a 6-digit code to ${cleanEmail}`)
       setOtp('')
+      lastAttemptedOtpRef.current = ''
     } catch (err) {
       console.error('Send OTP error:', err)
-      setError(err.message || 'Failed to send verification code. Please try again.')
+      setError(formatAuthError(err, 'Failed to send verification code. Please try again.'))
     } finally {
       setLoading(false)
     }
@@ -113,6 +137,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
       return
     }
 
+    lastAttemptedOtpRef.current = cleanOtp
     submittingRef.current = true
     setLoading(true)
     setError(null)
@@ -125,7 +150,8 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
       }, 400)
     } catch (err) {
       console.error('OTP verification error:', err)
-      setError(err.message || 'Invalid or expired verification code. Please try again.')
+      setError(formatAuthError(err, 'Invalid or expired verification code. Please try again.'))
+      otpInputRef.current?.select()
     } finally {
       setLoading(false)
       submittingRef.current = false
@@ -134,7 +160,12 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
 
   // Auto-submit OTP on 6th digit after slight delay (300ms)
   useEffect(() => {
-    if (mode === 'otp-verify' && otp.length === 6 && !loading) {
+    if (
+      mode === 'otp-verify' &&
+      otp.length === 6 &&
+      !loading &&
+      lastAttemptedOtpRef.current !== otp
+    ) {
       const timer = setTimeout(() => {
         handleVerifyOtp()
       }, 300)
@@ -147,11 +178,14 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
     const val = e.target.value.replace(/\D/g, '').slice(0, 6)
     setOtp(val)
     if (error) setError(null)
+    if (val !== lastAttemptedOtpRef.current) {
+      lastAttemptedOtpRef.current = ''
+    }
   }
 
   // Resend OTP handler in Screen 2
   const handleResendOtp = async () => {
-    if (resendCooldown > 0 || resendLoading) return
+    if (resendCooldown > 0 || resendLoading || loading) return
     setResendLoading(true)
     setError(null)
     setSuccessMsg(null)
@@ -161,7 +195,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
       setSuccessMsg('A new verification code has been sent.')
     } catch (err) {
       console.error('Resend OTP error:', err)
-      setError(err.message || 'Failed to resend code. Please try again.')
+      setError(formatAuthError(err, 'Failed to resend code. Please try again.'))
     } finally {
       setResendLoading(false)
     }
@@ -173,6 +207,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
     setError(null)
     setSuccessMsg(null)
     setOtp('')
+    lastAttemptedOtpRef.current = ''
     setTimeout(() => {
       emailInputRef.current?.focus()
     }, 100)
@@ -208,7 +243,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
       }, 400)
     } catch (err) {
       console.error('Auth error:', err)
-      setError(err.message || 'Authentication failed. Please check your credentials.')
+      setError(formatAuthError(err, 'Authentication failed. Please check your credentials.'))
     } finally {
       setLoading(false)
     }
@@ -220,8 +255,9 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
     setError(null)
     try {
       await loginWithGoogle()
-    } catch {
-      setError('Google sign-in unavailable. Try email instead.')
+    } catch (err) {
+      console.error('Google sign-in error:', err)
+      setError(formatAuthError(err, 'Google sign-in unavailable. Try email instead.'))
       setLoading(false)
     }
   }
@@ -235,8 +271,9 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
     try {
       await forgotPassword(email)
       setSuccessMsg("If that email exists, you'll receive a reset link shortly.")
-    } catch {
-      setError('Something went wrong. Please try again.')
+    } catch (err) {
+      console.error('Forgot password error:', err)
+      setError(formatAuthError(err, 'Something went wrong. Please try again.'))
     } finally {
       setLoading(false)
     }
@@ -418,10 +455,12 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
             <motion.div
               initial={{ opacity: 0, y: -6 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mb-4 flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-xs text-red-400 font-medium"
+              role="alert"
+              aria-live="polite"
+              className="mb-4 flex items-start gap-2.5 rounded-xl border border-red-500/25 bg-red-500/10 p-3 text-xs text-red-400 font-medium leading-relaxed break-words"
             >
-              <AlertCircle className="h-4 w-4 shrink-0 text-red-400" />
-              <span>{error}</span>
+              <AlertCircle className="h-4 w-4 shrink-0 text-red-400 mt-0.5" />
+              <div className="flex-1 min-w-0 break-words">{error}</div>
             </motion.div>
           )}
 
@@ -430,10 +469,12 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
             <motion.div
               initial={{ opacity: 0, y: -6 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mb-4 flex items-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3 text-xs text-emerald-400 font-medium"
+              role="status"
+              aria-live="polite"
+              className="mb-4 flex items-start gap-2.5 rounded-xl border border-emerald-500/25 bg-emerald-500/10 p-3 text-xs text-emerald-400 font-medium leading-relaxed break-words"
             >
-              <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
-              <span>{successMsg}</span>
+              <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400 mt-0.5" />
+              <div className="flex-1 min-w-0 break-words">{successMsg}</div>
             </motion.div>
           )}
 
@@ -531,10 +572,11 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
                     pattern="[0-9]*"
                     maxLength={6}
                     autoComplete="one-time-code"
+                    disabled={loading}
                     value={otp}
                     onChange={handleOtpChange}
                     placeholder="000000"
-                    className="w-full text-center font-mono text-2xl sm:text-3xl font-bold tracking-[0.4em] sm:tracking-[0.55em] py-3.5 px-4 rounded-xl border border-white/[0.12] bg-white/[0.04] text-white placeholder-neutral-600 focus:border-white/30 focus:bg-white/[0.06] focus:outline-none transition-all select-none"
+                    className="w-full text-center font-mono text-2xl sm:text-3xl font-bold tracking-[0.4em] sm:tracking-[0.55em] py-3.5 px-4 rounded-xl border border-white/[0.12] bg-white/[0.04] text-white placeholder-neutral-600 focus:border-white/30 focus:bg-white/[0.06] focus:outline-none transition-all select-none disabled:opacity-60"
                   />
                 </div>
               </div>
@@ -567,7 +609,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
                   ) : (
                     <button
                       type="button"
-                      disabled={resendLoading}
+                      disabled={resendLoading || loading}
                       onClick={handleResendOtp}
                       className="font-medium text-neutral-300 hover:text-white transition-colors cursor-pointer inline-flex items-center gap-1.5 underline underline-offset-4 disabled:opacity-50"
                     >

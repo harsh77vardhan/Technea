@@ -76,12 +76,13 @@ async def test_email_service_send_otp_dev_mode():
     original_key = settings.RESEND_API_KEY
     try:
         settings.RESEND_API_KEY = None
-        result = await email_service.send_otp_email(
+        success, error_msg = await email_service.send_otp_email(
             to_email="dev_otp_test@technea.dev",
             otp="654321",
             expires_minutes=5,
         )
-        assert result is True
+        assert success is True
+        assert error_msg is None
     finally:
         settings.RESEND_API_KEY = original_key
 
@@ -94,12 +95,13 @@ async def test_email_service_send_otp_with_resend_mock():
         settings.RESEND_API_KEY = "re_test_dummy_key_12345"
         with patch("httpx.AsyncClient.post") as mock_post:
             mock_post.return_value = AsyncMock(status_code=200, is_success=True, text="ok")
-            result = await email_service.send_otp_email(
+            success, error_msg = await email_service.send_otp_email(
                 to_email="branded@technea.dev",
                 otp="839201",
                 expires_minutes=5,
             )
-            assert result is True
+            assert success is True
+            assert error_msg is None
             assert mock_post.called
             call_kwargs = mock_post.call_args.kwargs
             payload = call_kwargs["json"]

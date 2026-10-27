@@ -39,7 +39,7 @@ flowchart LR
 | Component | Target Platform | Build Command | Output / Start Command | Required Env Vars |
 |---|---|---|---|---|
 | **Frontend** | [Vercel](https://vercel.com) | `npm run build` | `dist` | `VITE_API_URL`, `VITE_BACKEND_URL` |
-| **Backend** | [Render](https://render.com) | `pip install -r requirements.txt` | `uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 2` | `DATABASE_URL`, `SECRET_KEY`, `CORS_ORIGINS`, `GEMINI_API_KEY` |
+| **Backend** | [Render](https://render.com) | `pip install -r requirements.txt` | `uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 2` | `DATABASE_URL`, `SECRET_KEY`, `CORS_ORIGINS`, `GEMINI_API_KEY`, `RESEND_API_KEY`, `FRONTEND_URL`, `EMAIL_FROM` |
 | **Backend (Alt)** | [Railway](https://railway.app) | Dockerfile / Nixpacks | Managed via `backend/railway.json` | Same as above |
 | **Database** | Neon / Supabase / Render | Managed | PostgreSQL 15+ / 16 | Connection string with SSL |
 
@@ -104,6 +104,7 @@ The repository includes a ready-to-use Render Blueprint (`render.yaml`) that spi
 5. Enter required secrets when prompted:
    - `GEMINI_API_KEY`: Your Google Gemini API Key.
    - `CORS_ORIGINS`: `["https://technea.vercel.app"]` (or your domain).
+   - `RESEND_API_KEY`: Your Resend API key (e.g. `re_123456...`).
 6. Click **Apply**.
    - Render provisions `technea-postgres`.
    - Runs `alembic upgrade head && python -m app.db.init_db` automatically before booting `uvicorn`.
@@ -127,7 +128,39 @@ If configuring a Web Service manually in Render Dashboard:
   - `DEBUG`: `false`
   - `SECRET_KEY`: A secure random secret key (min 32 characters).
   - `CORS_ORIGINS`: `["https://technea.vercel.app"]`
+  - `FRONTEND_URL`: `https://technea.vercel.app`
   - `GEMINI_API_KEY`: Your Google Gemini API key.
+  - `RESEND_API_KEY`: Your Resend API key (`re_...`).
+  - `EMAIL_FROM`: `Technea <onboarding@resend.dev>`
+
+#### C. Configuring Email & Resend in Render Dashboard
+Technea provides production transactional emails for email verification, password reset, and passwordless 6-digit OTP codes via **Resend**:
+
+1. **Obtain API Key**:
+   - Register or sign in at [Resend](https://resend.com).
+   - In the sidebar, navigate to **API Keys** and click **Create API Key**.
+   - Assign the key full sending access and copy the generated token (starts with `re_`).
+
+2. **Configure in Render**:
+   - Open your backend service on [Render Dashboard](https://dashboard.render.com).
+   - Select **Environment** from the left navigation panel.
+   - Under **Environment Variables**, locate or click **Add Environment Variable**:
+     - Key: `RESEND_API_KEY`
+     - Value: `re_your_api_key_here`
+   - Also confirm or add:
+     - `EMAIL_FROM`: `Technea <onboarding@resend.dev>`
+     - `FRONTEND_URL`: `https://technea.vercel.app`
+   - Click **Save Changes**. Render will automatically trigger a rolling redeployment.
+
+3. **Why `onboarding@resend.dev` Works Instantly**:
+   - Resend provisions a shared, pre-authenticated test domain (`resend.dev`).
+   - Using `Technea <onboarding@resend.dev>` requires **no DNS configuration**, so emails deliver instantly without waiting for DNS propagation.
+   - *Limitation during testing*: Resend allows sending to the email address registered with your Resend account.
+   - *Production Custom Domain Transition*: When ready for public users, navigate to **Domains > Add Domain** in Resend, add the SPF/DKIM TXT DNS records to your domain registrar, and then update `EMAIL_FROM` to `Technea <noreply@yourdomain.com>`.
+
+4. **Optional SMTP Fallback**:
+   - Technea also supports standard SMTP (e.g. Gmail SMTP, AWS SES, Mailgun).
+   - Set `SMTP_HOST` (e.g. `smtp.gmail.com`), `SMTP_PORT` (`587`), `SMTP_USER`, `SMTP_PASSWORD`, and `SMTP_TLS` (`true`) in Render Environment if utilizing an SMTP relay.
 
 ### Option 2: Railway
 

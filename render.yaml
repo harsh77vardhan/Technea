@@ -39,6 +39,22 @@ services:
         value: gemini-1.5-flash
       - key: AI_TIMEOUT_SECONDS
         value: "30"
+      - key: FRONTEND_URL
+        value: "https://technea.vercel.app"
+      - key: RESEND_API_KEY
+        sync: false # Set your Resend API Key (re_...) in Render Dashboard
+      - key: EMAIL_FROM
+        value: "Technea <onboarding@resend.dev>"
+      - key: SMTP_HOST
+        sync: false # Optional SMTP host (e.g. smtp.gmail.com)
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: SMTP_TLS
+        value: "true"
       - key: DB_POOL_SIZE
         value: "10"
       - key: DB_MAX_OVERFLOW

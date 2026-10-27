@@ -103,17 +103,41 @@ async function request(endpoint, options = {}) {
 
     if (!response.ok) {
       let errorMessage = `API request failed with status ${response.status} (${response.statusText})`
+      let errorData = null
       try {
-        const errorData = await response.json()
+        errorData = await response.json()
         if (errorData?.detail) {
-          errorMessage = typeof errorData.detail === 'string'
-            ? errorData.detail
-            : JSON.stringify(errorData.detail)
+          if (typeof errorData.detail === 'string') {
+            errorMessage = errorData.detail
+          } else if (Array.isArray(errorData.detail)) {
+            errorMessage = errorData.detail
+              .map((d) => (typeof d === 'string' ? d : d.msg || JSON.stringify(d)))
+              .join(', ')
+          } else if (typeof errorData.detail === 'object') {
+            errorMessage = errorData.detail.message || JSON.stringify(errorData.detail)
+          }
+        } else if (errorData?.message && typeof errorData.message === 'string') {
+          errorMessage = errorData.message
+        } else if (errorData?.error && typeof errorData.error === 'string') {
+          errorMessage = errorData.error
         }
       } catch {
         // Fallback to HTTP status text if response is not JSON
       }
-      throw new Error(errorMessage)
+
+      const error = new Error(errorMessage)
+      error.status = response.status
+      error.response = {
+        status: response.status,
+        statusText: response.statusText,
+        data: errorData,
+      }
+      error.detail = errorData?.detail
+      throw error
+    }
+
+    if (response.status === 204) {
+      return null
     }
 
     return await response.json()

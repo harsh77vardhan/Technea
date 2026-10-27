@@ -8,6 +8,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import select, update
 from app.api.deps import CurrentUserDep, DatabaseDep
 from app.core.config import settings
+from app.core.logger import logger
 from app.core.security import create_access_token, get_password_hash
 from app.models.email_otp import EmailOTP
 from app.models.user import User
@@ -485,11 +486,20 @@ async def send_otp(
     db.add(otp_record)
     await db.commit()
 
-    await email_service.send_otp_email(
+    success, error_msg = await email_service.send_otp_email(
         to_email=email,
         otp=otp,
         expires_minutes=settings.OTP_EXPIRE_MINUTES,
     )
+    if not success:
+        # Remove the undelivered OTP record so cooldown doesn't block retry
+        await db.delete(otp_record)
+        await db.commit()
+        logger.error("[AUTH] Failed to dispatch OTP to %s: %s", email, error_msg)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Failed to deliver verification email: {error_msg}. Please check email settings or contact support.",
+        )
 
     return OTPSentResponse(
         message="Verification code sent to your email.",

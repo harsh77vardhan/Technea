@@ -1,7 +1,15 @@
-"""Email delivery service using Resend API over HTTPX."""
+"""Email delivery service using Resend API over HTTPX with SMTP fallback."""
 
+import asyncio
 import re
+import smtplib
+import ssl
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.utils import parseaddr
+
 import httpx
+
 from app.core.config import settings
 from app.core.logger import logger
 
@@ -9,7 +17,7 @@ RESEND_API_URL = "https://api.resend.com/emails"
 
 
 class EmailService:
-    """Service handling transactional emails via Resend API."""
+    """Service handling transactional emails via Resend API with SMTP fallback."""
 
     def _get_frontend_url(self) -> str:
         """Resolve frontend base URL with fallback to local development."""
@@ -17,16 +25,108 @@ class EmailService:
             return settings.FRONTEND_URL.strip().rstrip("/")
         return "http://localhost:3000"
 
+    def _is_smtp_configured(self) -> bool:
+        """Check if SMTP settings are configured."""
+        return bool(settings.SMTP_HOST and settings.SMTP_HOST.strip())
+
+    async def _send_smtp_email(
+        self,
+        to_email: str,
+        subject: str,
+        html_body: str,
+    ) -> tuple[bool, str | None]:
+        """Send an email using SMTP inside asyncio.to_thread.
+        
+        Supports TLS (port 587) and SSL (port 465).
+        Returns (True, None) on success, (False, error_str) on failure.
+        """
+        if not self._is_smtp_configured():
+            return (False, "SMTP is not configured (missing SMTP_HOST).")
+
+        host = (settings.SMTP_HOST or "").strip()
+        port = settings.SMTP_PORT
+        user = settings.SMTP_USER.strip() if settings.SMTP_USER else None
+        password = settings.SMTP_PASSWORD if settings.SMTP_PASSWORD else None
+        use_tls = settings.SMTP_TLS
+        use_ssl = settings.SMTP_SSL
+
+        logger.info(
+            "[EMAIL] Attempting to send OTP email to %s via SMTP (%s:%d)",
+            to_email,
+            host,
+            port,
+        )
+
+        def _smtp_worker() -> None:
+            msg = MIMEMultipart("alternative")
+            msg["Subject"] = subject
+            msg["From"] = settings.EMAIL_FROM
+            msg["To"] = to_email
+
+            plain_text = re.sub(r"<[^>]+>", "", html_body).strip()
+            msg.attach(MIMEText(plain_text, "plain", "utf-8"))
+            msg.attach(MIMEText(html_body, "html", "utf-8"))
+
+            sender_addr = parseaddr(settings.EMAIL_FROM)[1] or settings.EMAIL_FROM
+
+            if use_ssl:
+                context = ssl.create_default_context()
+                with smtplib.SMTP_SSL(host, port, context=context, timeout=15) as server:
+                    if user and password:
+                        server.login(user, password)
+                    server.sendmail(sender_addr, [to_email], msg.as_string())
+            else:
+                with smtplib.SMTP(host, port, timeout=15) as server:
+                    server.ehlo()
+                    if use_tls:
+                        context = ssl.create_default_context()
+                        server.starttls(context=context)
+                        server.ehlo()
+                    if user and password:
+                        server.login(user, password)
+                    server.sendmail(sender_addr, [to_email], msg.as_string())
+
+        try:
+            await asyncio.to_thread(_smtp_worker)
+            logger.info("[EMAIL] Email successfully delivered to %s via SMTP.", to_email)
+            return (True, None)
+        except Exception as exc:
+            error_msg = f"SMTP delivery failed to {to_email}: {exc}"
+            logger.error("[EMAIL] %s", error_msg)
+            return (False, error_msg)
+
     async def _send_resend_email(
         self,
         to_email: str,
         subject: str,
         html_body: str,
-    ) -> bool:
-        """Send an email via the Resend HTTP API.
+    ) -> tuple[bool, str | None]:
+        """Send an email via the Resend HTTP API with SMTP fallback.
         
-        Returns True on success, False on failure. Never raises exceptions.
+        Returns (True, None) on success, (False, error_message) on failure.
         """
+        if not settings.RESEND_API_KEY:
+            if self._is_smtp_configured():
+                logger.info("[EMAIL] RESEND_API_KEY not configured, falling back to SMTP.")
+                return await self._send_smtp_email(to_email=to_email, subject=subject, html_body=html_body)
+            if settings.ENVIRONMENT != "production":
+                sanitized_subj = re.sub(r"\b\d{6}\b", "******", subject) if settings.ENVIRONMENT == "production" else subject
+                logger.info("[DEV EMAIL] Email for <%s> (Subject: %s)", to_email, sanitized_subj)
+                return (True, None)
+            logger.critical(
+                "[EMAIL] No email provider configured! Set RESEND_API_KEY or SMTP_HOST in production environment variables."
+            )
+            return (
+                False,
+                "Email delivery service is not configured in production (missing RESEND_API_KEY or SMTP credentials).",
+            )
+
+        logger.info(
+            "[EMAIL] Attempting to send OTP email to %s via Resend (from: %s)",
+            to_email,
+            settings.EMAIL_FROM,
+        )
+
         payload = {
             "from": settings.EMAIL_FROM,
             "to": [to_email],
@@ -45,44 +145,58 @@ class EmailService:
                     json=payload,
                 )
                 if response.is_success:
-                    sanitized_subject = re.sub(r"\b\d{6}\b", "******", subject)
-                    logger.info("Email '%s' successfully sent to %s via Resend.", sanitized_subject, to_email)
-                    return True
+                    logger.info("[EMAIL] Email successfully delivered to %s via Resend.", to_email)
+                    return (True, None)
                 else:
-                    logger.error(
-                        "Resend API returned error status %d for %s: %s",
-                        response.status_code,
-                        to_email,
-                        response.text,
-                    )
-                    return False
+                    error_msg = f"Resend API error {response.status_code}: {response.text}"
+                    logger.error("[EMAIL] %s", error_msg)
+                    if self._is_smtp_configured():
+                        logger.info("[EMAIL] Falling back to SMTP delivery for %s", to_email)
+                        return await self._send_smtp_email(to_email=to_email, subject=subject, html_body=html_body)
+
+                    detail_msg = response.text
+                    try:
+                        content_type = response.headers.get("content-type", "")
+                        if "application/json" in content_type:
+                            detail_msg = response.json().get("message", response.text)
+                    except Exception:
+                        pass
+                    return (False, f"Email provider error ({response.status_code}): {detail_msg}")
         except Exception as exc:
-            logger.error("Exception occurred while contacting Resend API for %s: %s", to_email, exc)
-            return False
+            logger.error("[EMAIL] Exception occurred while contacting Resend API for %s: %s", to_email, exc)
+            if self._is_smtp_configured():
+                logger.info("[EMAIL] Resend exception occurred, falling back to SMTP delivery for %s", to_email)
+                return await self._send_smtp_email(to_email=to_email, subject=subject, html_body=html_body)
+            return (False, f"Failed to contact email provider: {exc}")
 
     async def send_verification_email(
         self,
         to_email: str,
         full_name: str,
         token: str,
-    ) -> bool:
-        """Send an account verification email containing a one-time link.
-        
-        If RESEND_API_KEY is not configured, logs the link for development use and returns True.
-        """
+    ) -> tuple[bool, str | None]:
+        """Send an account verification email containing a one-time link."""
         frontend_url = self._get_frontend_url()
         verification_link = f"{frontend_url}/verify-email?token={token}"
         display_name = full_name.strip() if full_name and full_name.strip() else "there"
 
-        # Development / fallback mode when Resend is unconfigured
-        if not settings.RESEND_API_KEY:
-            logger.info(
-                "[DEV EMAIL] Verification email for <%s> (%s):\nVerification Link: %s",
-                to_email,
-                display_name,
-                verification_link,
-            )
-            return True
+        if not settings.RESEND_API_KEY and not self._is_smtp_configured():
+            if settings.ENVIRONMENT != "production":
+                logger.info(
+                    "[DEV EMAIL] Verification email for <%s> (%s):\nVerification Link: %s",
+                    to_email,
+                    display_name,
+                    verification_link,
+                )
+                return (True, None)
+            else:
+                logger.critical(
+                    "[EMAIL] No email provider configured! Set RESEND_API_KEY or SMTP_HOST in production environment variables."
+                )
+                return (
+                    False,
+                    "Email delivery service is not configured in production (missing RESEND_API_KEY or SMTP credentials).",
+                )
 
         subject = "Verify your Technea account"
         html_body = f"""<!DOCTYPE html>
@@ -132,24 +246,29 @@ class EmailService:
         to_email: str,
         full_name: str,
         token: str,
-    ) -> bool:
-        """Send a password reset email containing a one-time reset link.
-        
-        If RESEND_API_KEY is not configured, logs the link for development use and returns True.
-        """
+    ) -> tuple[bool, str | None]:
+        """Send a password reset email containing a one-time reset link."""
         frontend_url = self._get_frontend_url()
         reset_link = f"{frontend_url}/reset-password?token={token}"
         display_name = full_name.strip() if full_name and full_name.strip() else "there"
 
-        # Development / fallback mode when Resend is unconfigured
-        if not settings.RESEND_API_KEY:
-            logger.info(
-                "[DEV EMAIL] Password reset email for <%s> (%s):\nReset Link: %s",
-                to_email,
-                display_name,
-                reset_link,
-            )
-            return True
+        if not settings.RESEND_API_KEY and not self._is_smtp_configured():
+            if settings.ENVIRONMENT != "production":
+                logger.info(
+                    "[DEV EMAIL] Password reset email for <%s> (%s):\nReset Link: %s",
+                    to_email,
+                    display_name,
+                    reset_link,
+                )
+                return (True, None)
+            else:
+                logger.critical(
+                    "[EMAIL] No email provider configured! Set RESEND_API_KEY or SMTP_HOST in production environment variables."
+                )
+                return (
+                    False,
+                    "Email delivery service is not configured in production (missing RESEND_API_KEY or SMTP credentials).",
+                )
 
         subject = "Reset your Technea password"
         html_body = f"""<!DOCTYPE html>
@@ -199,19 +318,30 @@ class EmailService:
         to_email: str,
         otp: str,
         expires_minutes: int = 5,
-    ) -> bool:
+    ) -> tuple[bool, str | None]:
         """Send a one-time password (OTP) email for passwordless authentication.
 
-        If RESEND_API_KEY is not configured, logs the OTP for development use and returns True.
+        If no email provider is configured:
+        - In non-production environments: logs OTP to stdout and returns (True, None).
+        - In production environment: logs critical error and returns (False, descriptive_error).
         """
-        if not settings.RESEND_API_KEY:
-            logger.info(
-                "[DEV EMAIL] Technea OTP code for <%s>: %s (expires in %d min)",
-                to_email,
-                otp,
-                expires_minutes,
-            )
-            return True
+        if not settings.RESEND_API_KEY and not self._is_smtp_configured():
+            if settings.ENVIRONMENT != "production":
+                logger.info(
+                    "[DEV EMAIL] Technea OTP code for <%s>: %s (expires in %d min)",
+                    to_email,
+                    otp,
+                    expires_minutes,
+                )
+                return (True, None)
+            else:
+                logger.critical(
+                    "[EMAIL] No email provider configured! Set RESEND_API_KEY or SMTP_HOST in production environment variables."
+                )
+                return (
+                    False,
+                    "Email delivery service is not configured in production (missing RESEND_API_KEY or SMTP credentials).",
+                )
 
         subject = f"{otp} is your Technea verification code"
         html_body = f"""<!DOCTYPE html>
@@ -273,4 +403,3 @@ class EmailService:
 
 
 email_service = EmailService()
-

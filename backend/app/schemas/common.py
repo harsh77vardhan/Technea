@@ -26,6 +26,9 @@ class HealthCheckResponse(CustomBaseModel):
     database: str = Field(default="connected", description="Database connectivity status")
     database_connected: bool = Field(default=True, description="Database connectivity status flag")
     ai_status: str = Field(default="configured", description="AI mentor engine status")
+    email_service: str = Field(default="unconfigured", description="Email provider status")
+    email_configured: bool = Field(default=False, description="Email service configured flag")
+    email_sender: str = Field(default="", description="Configured sender email address")
     uptime_seconds: float = Field(default=0.0, description="Process uptime in seconds")
     uptime: str | None = Field(default=None, description="Formatted uptime")
 

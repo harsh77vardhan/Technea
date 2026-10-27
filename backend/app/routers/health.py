@@ -22,6 +22,20 @@ def get_uptime_seconds() -> float:
     return round(time.time() - START_TIME, 2)
 
 
+def get_email_status() -> tuple[str, bool, str]:
+    """Determine email service provider, configuration flag, and sender address."""
+    if settings.RESEND_API_KEY:
+        service = "resend"
+        configured = True
+    elif settings.SMTP_HOST:
+        service = "smtp"
+        configured = True
+    else:
+        service = "unconfigured"
+        configured = False
+    return service, configured, settings.EMAIL_FROM or ""
+
+
 @router.get(
     "/health",
     response_model=HealthCheckResponse,
@@ -35,6 +49,7 @@ async def health_check(
     """Perform an asynchronous health check verifying database and AI status."""
     uptime_sec = get_uptime_seconds()
     ai_status = "configured" if settings.GEMINI_API_KEY else "rule_based"
+    email_service, email_configured, email_sender = get_email_status()
 
     db_connected = False
     try:
@@ -53,6 +68,9 @@ async def health_check(
             database="connected",
             database_connected=True,
             ai_status=ai_status,
+            email_service=email_service,
+            email_configured=email_configured,
+            email_sender=email_sender,
             uptime_seconds=uptime_sec,
             uptime=f"{uptime_sec}s",
         )
@@ -67,6 +85,9 @@ async def health_check(
             "database": "disconnected",
             "database_connected": False,
             "ai_status": ai_status,
+            "email_service": email_service,
+            "email_configured": email_configured,
+            "email_sender": email_sender,
             "uptime_seconds": uptime_sec,
             "uptime": f"{uptime_sec}s",
         },
@@ -85,6 +106,7 @@ async def readiness_check(
     """Perform a database readiness check."""
     uptime_sec = get_uptime_seconds()
     ai_status = "configured" if settings.GEMINI_API_KEY else "rule_based"
+    email_service, email_configured, email_sender = get_email_status()
 
     try:
         await asyncio.wait_for(db.execute(text("SELECT 1")), timeout=3.0)
@@ -96,6 +118,9 @@ async def readiness_check(
             database="connected",
             database_connected=True,
             ai_status=ai_status,
+            email_service=email_service,
+            email_configured=email_configured,
+            email_sender=email_sender,
             uptime_seconds=uptime_sec,
             uptime=f"{uptime_sec}s",
         )
@@ -111,6 +136,9 @@ async def readiness_check(
                 "database": "disconnected",
                 "database_connected": False,
                 "ai_status": ai_status,
+                "email_service": email_service,
+                "email_configured": email_configured,
+                "email_sender": email_sender,
                 "uptime_seconds": uptime_sec,
                 "uptime": f"{uptime_sec}s",
                 "detail": str(exc) if (settings.DEBUG and settings.ENVIRONMENT != "production") else "Database connection unavailable",
