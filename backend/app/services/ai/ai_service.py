@@ -4,6 +4,7 @@ Manages primary (Gemini) and resilient fallback (Rule-Based / Mock) AI providers
 ensuring consistent, safe, high-quality responses for learners across all platform features.
 """
 
+from datetime import datetime, timezone
 import logging
 import random
 import re
@@ -26,6 +27,7 @@ from app.services.ai.prompts import (
     INTENT_REVISION,
     INTENT_ROADMAP_REQUEST,
     INTENT_SIMPLE_QUESTION,
+    INTENT_TIME_DATE,
     INTENT_WEEKLY_PLAN,
     INTENT_CODING_ARCHITECTURE,
     build_system_prompt,
@@ -1321,6 +1323,54 @@ class RuleBasedProvider(BaseAIProvider):
             "- **Milestone**: Deploy a containerized Python service to production with automated tests running on every pull request."
         )
 
+    def _generate_time_date_response(
+        self,
+        prompt: str,
+        context: dict[str, Any] | None = None,
+        seed: Any = None,
+    ) -> str:
+        """Generate accurate, non-hallucinated response for current date, weekday, year, or time queries."""
+        now = datetime.now().astimezone()
+        weekday = now.strftime("%A")
+        date_str = now.strftime("%B %d, %Y")
+        year_str = now.strftime("%Y")
+        time_str = now.strftime("%I:%M %p").lstrip("0")
+        tz_name = now.tzname() or "UTC"
+
+        p = prompt.strip().lower()
+
+        # Day of week queries
+        if any(pat in p for pat in ["what day is today", "what's the day today", "whats the day today", "what is the day today", "which day is today", "what day of the week", "what day is it", "what is today", "day today"]) or ("day" in p and "today" in p):
+            return f"Today is {weekday}."
+
+        # Time queries
+        if any(pat in p for pat in ["what time is it", "what's the time", "whats the time", "what is the time", "current time", "what time is it right now", "time right now", "server time", "what time"]):
+            return f"The current server time is {time_str} {tz_name}."
+
+        # Date queries
+        if any(pat in p for pat in ["what is today's date", "what's today's date", "whats todays date", "today's date", "todays date", "current date", "what is the date", "what date is it", "what date is today", "what date", "date today"]):
+            return f"Today is {weekday}, {date_str}."
+
+        # Year queries
+        if any(pat in p for pat in ["what year is this", "what year is it", "current year", "what year"]):
+            return f"The current year is {year_str}."
+
+        return f"Today is {weekday}, {date_str}, and the current server time is {time_str} {tz_name}."
+
+    def _generate_code_review_response(self, seed: Any = None) -> str:
+        """Generate senior developer code review guidance."""
+        return (
+            "### Senior Code Review Guidance\n\n"
+            "I would be glad to review your code! Please share your code snippet or function below.\n\n"
+            "**To provide the most thorough review, I will evaluate:**\n"
+            "1. **Correctness & Edge Cases**: Logical flow, boundary handling, and null/empty checks.\n"
+            "2. **Time & Space Complexity**: Big-O analysis and identifying unnecessary loops or allocations.\n"
+            "3. **Clean Architecture & Readability**: Descriptive naming, single responsibility principle, and PEP 8 / idiomatic patterns.\n"
+            "4. **Security & Defensive Design**: Input validation, safe error handling, and resource leak prevention.\n"
+            "5. **Testability**: How to write clean unit tests with `pytest` or your framework.\n\n"
+            "Paste your code snippet whenever you're ready, and feel free to mention what it does or any specific concerns!"
+        )
+
     async def generate_chat_response(
         self,
         prompt: str,
@@ -1376,6 +1426,43 @@ class RuleBasedProvider(BaseAIProvider):
         intent = context.get("classified_intent") if context else None
         if not intent:
             intent = classify_intent(prompt)
+
+        # Time & Date queries (Category: Time/Date questions)
+        is_time_date = intent == INTENT_TIME_DATE or any(
+            pat in clean_p
+            for pat in [
+                "what day is today",
+                "whats the day today",
+                "what day is it",
+                "which day is today",
+                "what day of the week",
+                "what time is it",
+                "whats the time",
+                "current time",
+                "what is todays date",
+                "whats todays date",
+                "current date",
+                "what year is it",
+                "what year is this",
+            ]
+        )
+        if is_time_date:
+            return self._generate_time_date_response(prompt, context=context, seed=seed)
+
+        # Code review inquiries
+        is_code_review = any(
+            pat in clean_p
+            for pat in [
+                "review my code",
+                "code review",
+                "can you review my code",
+                "review code",
+                "audit my code",
+                "check my code",
+            ]
+        )
+        if is_code_review:
+            return self._generate_code_review_response(seed=seed)
 
         # 5. Simple Questions handling (INTENT_SIMPLE_QUESTION)
         is_simple_q = intent == INTENT_SIMPLE_QUESTION or (
@@ -1454,7 +1541,12 @@ class RuleBasedProvider(BaseAIProvider):
             res = self._generate_conceptual_response(prompt, domain, level, seed=seed)
 
         # Detect repeated question in conversation history and avoid identical repeating
-        if conversation_history:
+        if (
+            conversation_history
+            and intent not in {INTENT_TIME_DATE, INTENT_GREETING, INTENT_CASUAL, INTENT_SIMPLE_QUESTION}
+            and not is_time_date
+            and not is_code_review
+        ):
             prior_user_msgs = [
                 m.get("content", "").strip().lower()
                 for m in conversation_history
@@ -1484,11 +1576,13 @@ class RuleBasedProvider(BaseAIProvider):
                 INTENT_INTERVIEW_PREP,
                 INTENT_CODING_ARCHITECTURE,
             }
-            and intent not in {INTENT_CASUAL, INTENT_GREETING, INTENT_SIMPLE_QUESTION}
+            and intent not in {INTENT_CASUAL, INTENT_GREETING, INTENT_SIMPLE_QUESTION, INTENT_TIME_DATE}
             and not (
                 is_directive
                 or is_short_hey
                 or is_thanks
+                or is_time_date
+                or is_code_review
                 or has_react_hooks
                 or has_recursion
                 or has_async

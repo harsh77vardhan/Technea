@@ -4,6 +4,7 @@ Defines the Technea AI Mentor identity, core pedagogical characteristics,
 enforced behavioral rules, domain context guides, and contextual prompt construction.
 """
 
+from datetime import datetime, timezone
 import re
 from typing import Any
 
@@ -59,6 +60,7 @@ INTENT_REVISION = "revision"
 INTENT_INTERVIEW_PREP = "interview_prep"
 INTENT_DAILY_GOAL = "daily_goal"
 INTENT_WEEKLY_PLAN = "weekly_plan"
+INTENT_TIME_DATE = "time_date"
 
 # Core Categories and Sub-intents
 INTENT_SIMPLE_QUESTION = "simple_question"
@@ -95,6 +97,52 @@ def classify_intent(message: str) -> str:
     if not m:
         return INTENT_CASUAL
 
+    # Repeatedly strip leading conversational fillers (e.g. "okay", "ok", "so", "well", "alright", "hey", "hi", "tell me", "can you tell me", "please")
+    candidate = m
+    prev_candidate = None
+    while candidate != prev_candidate:
+        prev_candidate = candidate
+        candidate = re.sub(
+            r"^(okay|ok|so|well|alright|hey|hi|hello|yo|tell me|can you tell me|please tell me|please)\b[\s,]*",
+            "",
+            candidate,
+            flags=re.IGNORECASE,
+        ).strip()
+    stripped_m = candidate
+    stripped_clean_words = re.sub(r"[^\w\s]", " ", stripped_m).split()
+
+    # Time & Date Intent (Check before generic greetings or casual classifications)
+    time_date_phrases = [
+        "what day is today", "what's the day today", "whats the day today", "what is the day today",
+        "what day is it", "what day is it today", "which day is today", "which day is it",
+        "what day of the week is it", "what day of the week is today", "what day of the week",
+        "what is today", "what's today's day", "whats todays day", "what is the current day",
+        "day today", "what day", "which day",
+        "what time is it", "what's the time", "whats the time", "what is the time",
+        "what is the current time", "what time is it right now", "current time",
+        "time right now", "server time", "current server time", "what time",
+        "what is today's date", "what's today's date", "whats todays date",
+        "what is the date today", "what's the date today", "what is the date",
+        "what's the date", "whats the date", "current date", "what date is it",
+        "what date is today", "what date", "date today", "today's date", "todays date",
+        "what year is it", "what year is this", "current year", "what year",
+        "current timezone", "what is the timezone", "what timezone",
+    ]
+    is_goal_or_study = any(w in clean_words for w in ["goal", "goals", "plan", "schedule", "tasks", "focus", "study", "milestone", "roadmap"])
+    if not is_goal_or_study:
+        if (
+            any(pat in m for pat in time_date_phrases)
+            or any(pat in stripped_m for pat in time_date_phrases)
+            or re.search(r"\b(what|which)\s+day\b", m)
+            or re.search(r"\b(what|which)\s+day\b", stripped_m)
+            or re.search(r"\bwhat\s+time\b", m)
+            or re.search(r"\bwhat\s+time\b", stripped_m)
+            or re.search(r"\bwhat\s+date\b", m)
+            or re.search(r"\bwhat\s+date\b", stripped_m)
+            or (("date" in clean_words or "day" in clean_words or "time" in clean_words) and "today" in clean_words and "goal" not in clean_words)
+        ):
+            return INTENT_TIME_DATE
+
     # 1. Greeting & greeting constraints (Category 1: Casual conversation)
     greeting_constraints = [
         "dont say anything",
@@ -110,7 +158,7 @@ def classify_intent(message: str) -> str:
         "say hello back",
         "say hi back",
     ]
-    if any(pat in m for pat in greeting_constraints):
+    if any(pat in m for pat in greeting_constraints) and not any(w in clean_words for w in ["what", "how", "day", "time", "date"]):
         return INTENT_GREETING
 
     exact_greetings = {
@@ -122,12 +170,19 @@ def classify_intent(message: str) -> str:
         return INTENT_GREETING
 
     if clean_words and clean_words[0] in {"hi", "hello", "hey", "yo", "sup", "howdy", "greetings"}:
-        if not any(w in clean_words for w in TECHNICAL_KEYWORDS):
+        has_question_or_substance = any(
+            w in clean_words[1:]
+            for w in [
+                "what", "whats", "how", "why", "when", "which", "where", "can", "could", "is", "are", "do", "does",
+                "day", "date", "time", "year", "teach", "explain", "review", "help", "guide", "learn", "study",
+                "goal", "plan", "roadmap", "project", "code", "debug", "test", "quiz", "tell",
+            ]
+        ) or any(w in clean_words for w in TECHNICAL_KEYWORDS)
+        if not has_question_or_substance and len(clean_words) <= 3:
             return INTENT_GREETING
 
-    if any(m.startswith(g) for g in ["good morning", "good evening", "good afternoon"]):
-        if not any(w in clean_words for w in TECHNICAL_KEYWORDS):
-            return INTENT_GREETING
+    if any(m == g or m == f"{g}!" for g in ["good morning", "good evening", "good afternoon"]):
+        return INTENT_GREETING
 
     # 2. Politeness & small talk (Category 1) checked before definitional questions so "what's up" is casual
     small_talk_patterns = [
@@ -135,7 +190,7 @@ def classify_intent(message: str) -> str:
         "who are you", "what can you do", "are you an ai", "are you a bot",
         "are you real", "nice to meet you", "pleased to meet you",
     ]
-    if any(pat in m for pat in small_talk_patterns) and not any(w in clean_words for w in ["roadmap", "project", "code", "debug"]):
+    if (any(pat in m for pat in small_talk_patterns) or any(pat in stripped_m for pat in small_talk_patterns)) and not any(w in clean_words for w in ["roadmap", "project", "code", "debug"]):
         return INTENT_CASUAL
 
     # 3. Daily goal (Category 3: Learning questions)
@@ -385,9 +440,25 @@ def classify_intent(message: str) -> str:
         "jwt",
         "hooks",
         "react hooks",
+        "teach me react hooks",
+        "review my code",
+        "review code",
+        "code review",
+        "can you review my code",
+        "check my code",
+        "audit my code",
     ]
-    if any(pat in m for pat in code_help_phrases) or (
-        m.startswith("explain ") and not any(w in m for w in ["career", "roadmap", "path", "how to become"])
+    if (
+        any(pat in m for pat in code_help_phrases)
+        or any(pat in stripped_m for pat in code_help_phrases)
+        or (
+            (m.startswith("explain ") or stripped_m.startswith("explain "))
+            and not any(w in m for w in ["career", "roadmap", "path", "how to become"])
+        )
+        or (
+            (m.startswith("teach me ") or stripped_m.startswith("teach me "))
+            and any(w in clean_words for w in TECHNICAL_KEYWORDS | {"hook", "hooks", "component", "state", "props"})
+        )
     ):
         return INTENT_CODE_HELP
 
@@ -426,8 +497,12 @@ def classify_intent(message: str) -> str:
         "perfect", "nice", "sounds good", "will do", "sure", "no problem",
         "cheers",
     ]
-    if any(m == pat or m.startswith(f"{pat} ") or m.endswith(f" {pat}") for pat in acknowledgment_patterns):
+    if any(m == pat or m == f"{pat} thanks" or m == f"{pat} thank you" or m == f"{pat} got it" for pat in acknowledgment_patterns):
         return INTENT_CASUAL
+
+    if any(m.startswith(f"{pat} ") or m.endswith(f" {pat}") for pat in acknowledgment_patterns):
+        if "?" not in message and not any(w in clean_words for w in ["what", "whats", "how", "why", "when", "which", "where", "can", "day", "time", "date", "year", "explain", "teach", "review", "code"]):
+            return INTENT_CASUAL
 
     # Keyword fallbacks
     if "project" in m:
@@ -709,6 +784,37 @@ def build_system_prompt(
     selected_persona = PERSONA_PROFILES.get(persona or "mentor", TECHNEA_MENTOR_SYSTEM_PROMPT)
     parts.append(selected_persona.strip())
 
+    # Real-time Server Date & Time Injection
+    now = datetime.now().astimezone()
+    current_weekday = now.strftime("%A")
+    current_date = now.strftime("%B %d, %Y")
+    current_year = now.strftime("%Y")
+    current_time_str = now.strftime("%I:%M %p %Z").strip()
+    current_tz = now.tzname() or "UTC"
+
+    server_time_block = (
+        "CURRENT SERVER DATE & TIME:\n"
+        f"- Current Weekday: {current_weekday}\n"
+        f"- Current Date: {current_date}\n"
+        f"- Current Year: {current_year}\n"
+        f"- Current Time: {current_time_str}\n"
+        f"- Timezone: {current_tz}\n\n"
+        "DATE & TIME INSTRUCTIONS:\n"
+        "- The mentor must ALWAYS know the current date, weekday, year, and server time.\n"
+        "- When asked about the day of the week, date, time, or year (e.g. 'what day is today?', 'what\'s the day today?', 'what time is it?'), answer directly and accurately using the injected CURRENT SERVER DATE & TIME without hallucinating.\n"
+        "- Never make up or hallucinate date or time."
+    )
+    parts.append(server_time_block)
+
+    # Conversation Context & Flow Rules
+    flow_rules = (
+        "CONVERSATION CONTEXT & FLOW RULES:\n"
+        "- You must ALWAYS answer the latest user message directly. Never let previous turns override or deflect from the latest prompt.\n"
+        "- Never continue the previous assistant response or previous casual directives (e.g. 'just say hey back') unless explicitly requested by the user.\n"
+        "- If the user previously had a casual exchange or greeting constraint, and now asks a new question, answer the new question completely and directly."
+    )
+    parts.append(flow_rules)
+
     # 2. Learner Profile & Name Calibration
     resolved_name = user_name or (context.get("user_name") if context else None)
     if resolved_name:
@@ -826,6 +932,10 @@ def build_system_prompt(
             INTENT_CODING_ARCHITECTURE: (
                 "CURRENT INTENT: coding architecture / system design. "
                 "For technical questions: Provide Concept, Explanation, Examples, Resources, Projects. Discuss architectural trade-offs, system components, and clean design patterns clearly."
+            ),
+            INTENT_TIME_DATE: (
+                "CURRENT INTENT: time / date question. "
+                "Answer directly and concisely with the exact current server date, weekday, year, or time using the CURRENT SERVER DATE & TIME block above. Never hallucinate date or time, and do not append catalog courses or roadmap items."
             ),
         }
         parts.append(intent_guidelines.get(classified_intent, f"CURRENT INTENT: {classified_intent}"))

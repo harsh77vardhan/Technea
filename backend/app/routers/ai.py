@@ -31,6 +31,7 @@ from app.services.ai.prompts import (
     INTENT_REVISION,
     INTENT_ROADMAP_REQUEST,
     INTENT_SIMPLE_QUESTION,
+    INTENT_TIME_DATE,
     INTENT_WEEKLY_PLAN,
     INTENT_CODING_ARCHITECTURE,
     classify_intent,
@@ -154,6 +155,12 @@ def _build_suggestions(
             "Can you show a code example?",
             "How is this used in production?",
             "What should I learn next?",
+        ]
+    elif intent == INTENT_TIME_DATE:
+        return [
+            "What should I focus on today?",
+            "Show me my weekly plan",
+            "Teach me React hooks",
         ]
     elif intent == INTENT_CODING_ARCHITECTURE:
         return [
@@ -514,8 +521,14 @@ async def chat_with_ai(
     # Infer domain context and classify user intent
     intent = classify_intent(payload.message)
     domain = _infer_domain(payload.message, context)
+    now_server = datetime.now().astimezone()
     context["classified_intent"] = intent
     context["domain"] = domain
+    context["current_date"] = now_server.strftime("%B %d, %Y")
+    context["current_weekday"] = now_server.strftime("%A")
+    context["current_year"] = now_server.strftime("%Y")
+    context["current_time"] = now_server.strftime("%I:%M %p %Z").strip()
+    context["current_timezone"] = now_server.tzname() or "UTC"
 
     # Call AI service orchestrator
     generated_text, provider_used = await ai_service.generate_chat_response(
@@ -527,7 +540,7 @@ async def chat_with_ai(
 
     # Resource visibility rules:
     # Only show resources when: user asks roadmap, what next, project, learning advice, daily goal, weekly plan, revision, interview prep, or code/architecture.
-    # Strictly False for INTENT_CASUAL, INTENT_GREETING, INTENT_SIMPLE_QUESTION.
+    # Strictly False for INTENT_CASUAL, INTENT_GREETING, INTENT_SIMPLE_QUESTION, INTENT_TIME_DATE.
     allow_resources = (
         intent in {
             INTENT_ROADMAP_REQUEST,
@@ -546,6 +559,7 @@ async def chat_with_ai(
             INTENT_CASUAL,
             INTENT_GREETING,
             INTENT_SIMPLE_QUESTION,
+            INTENT_TIME_DATE,
         }
     )
 
@@ -564,9 +578,9 @@ async def chat_with_ai(
     else:
         related_actions = []
 
-    # Calculate suggested_next_step (Strictly None for casual/greeting/simple questions)
+    # Calculate suggested_next_step (Strictly None for casual/greeting/simple/time questions)
     suggested_next_step: str | None = None
-    if intent not in {INTENT_CASUAL, INTENT_GREETING, INTENT_SIMPLE_QUESTION}:
+    if intent not in {INTENT_CASUAL, INTENT_GREETING, INTENT_SIMPLE_QUESTION, INTENT_TIME_DATE}:
         user_prog = retrieved.get("user_progress") or {}
         if user_prog:
             suggested_next_step = (
@@ -580,6 +594,7 @@ async def chat_with_ai(
     if not suggestions or len(suggestions) < 3 or intent in {
         INTENT_GREETING,
         INTENT_CASUAL,
+        INTENT_TIME_DATE,
         INTENT_DAILY_GOAL,
         INTENT_WEEKLY_PLAN,
         INTENT_REVISION,
