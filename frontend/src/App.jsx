@@ -25,6 +25,7 @@ const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
 const VerifyEmailPage = lazy(() => import('./pages/auth/VerifyEmailPage'))
 const ResetPasswordPage = lazy(() => import('./pages/auth/ResetPasswordPage'))
 const AuthCallbackPage = lazy(() => import('./pages/auth/AuthCallbackPage'))
+const ProfileSetupPage = lazy(() => import('./pages/auth/ProfileSetupPage'))
 import ErrorBoundary from './components/common/ErrorBoundary'
 
 function SleekRouteLoadingFallback() {
@@ -203,6 +204,7 @@ function AppContent() {
   const isVerifyEmailRoute = currentPath === '/verify-email'
   const isResetPasswordRoute = currentPath === '/reset-password'
   const isAuthCallbackRoute = currentPath === '/auth/callback'
+  const isSetupProfileRoute = currentPath === '/setup-profile'
 
   const isProfileRoute = currentPath.startsWith('/profile')
   const isCourseRoute = currentPath.startsWith('/course/') || currentPath.startsWith('/courses/')
@@ -248,7 +250,8 @@ function AppContent() {
     isPathRoute ||
     isVerifyEmailRoute ||
     isResetPasswordRoute ||
-    isAuthCallbackRoute
+    isAuthCallbackRoute ||
+    isSetupProfileRoute
   const isSpecialRoute =
     isProfileRoute ||
     isCourseRoute ||
@@ -256,6 +259,7 @@ function AppContent() {
     isVerifyEmailRoute ||
     isResetPasswordRoute ||
     isAuthCallbackRoute ||
+    isSetupProfileRoute ||
     !isKnownRoute
 
   return (
@@ -265,7 +269,13 @@ function AppContent() {
         : 'bg-[#f8fafc] text-neutral-900 selection:bg-neutral-900 selection:text-white'
     }`}>
       <ScrollProgressBar />
-      {isVerifyEmailRoute ? (
+      {isSetupProfileRoute ? (
+        <ErrorBoundary title="Profile setup encountered an error">
+          <Suspense fallback={<SleekRouteLoadingFallback />}>
+            <ProfileSetupPage />
+          </Suspense>
+        </ErrorBoundary>
+      ) : isVerifyEmailRoute ? (
         <ErrorBoundary title="Verification encountered an error">
           <Suspense fallback={<SleekRouteLoadingFallback />}>
             <VerifyEmailPage />

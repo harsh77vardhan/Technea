@@ -435,6 +435,28 @@ export async function verifyOtpApi(email, otp) {
   })
 }
 
+/**
+ * Check if a username is available
+ * @param {string} username
+ * @returns {Promise<{ available: boolean, username: string, message?: string }>}
+ */
+export async function checkUsernameApi(username) {
+  const cleanUsername = String(username || '').replace(/^@/, '').trim()
+  return request(`/auth/check-username?username=${encodeURIComponent(cleanUsername)}`)
+}
+
+/**
+ * First-time profile setup onboarding completion
+ * @param {Object} payload - { full_name, username, avatar_url, learning_goal, experience_level, primary_focus }
+ * @returns {Promise<{ message: string, user: Object }>}
+ */
+export async function setupProfileApi(payload) {
+  return request('/auth/profile-setup', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
 /* ==========================================================================
    User Progress & Dashboard API Endpoints
    ========================================================================== */
@@ -880,6 +902,8 @@ export default {
   resetPasswordApi,
   sendOtpApi,
   verifyOtpApi,
+  checkUsernameApi,
+  setupProfileApi,
   getPathProgressApi,
   toggleStepProgressApi,
   getCourseProgressApi,

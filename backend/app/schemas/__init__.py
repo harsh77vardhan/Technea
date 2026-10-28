@@ -40,6 +40,9 @@ from app.schemas.user import (
     SendOTPRequest,
     VerifyOTPRequest,
     OTPSentResponse,
+    CheckUsernameResponse,
+    ProfileSetupRequest,
+    ProfileSetupResponse,
 )
 from app.schemas.ai import (
     AIChatRequest,
@@ -87,6 +90,9 @@ __all__ = [
     "SendOTPRequest",
     "VerifyOTPRequest",
     "OTPSentResponse",
+    "CheckUsernameResponse",
+    "ProfileSetupRequest",
+    "ProfileSetupResponse",
     "RoadmapStepToggleRequest",
     "LessonToggleRequest",
     "PathProgressResponse",

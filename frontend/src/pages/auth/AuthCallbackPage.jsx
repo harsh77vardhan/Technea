@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { setAuthToken } from '../../services/api'
+import { setAuthToken, getCurrentUserApi } from '../../services/api'
 import { AlertCircle, HelpCircle, ArrowRight, ArrowLeft } from 'lucide-react'
 
 export default function AuthCallbackPage() {
@@ -16,12 +16,32 @@ export default function AuthCallbackPage() {
   })
 
   useEffect(() => {
-    if (authData.token) {
+    let isCancelled = false
+
+    const handleCallback = async () => {
+      if (!authData.token) return
       setAuthToken(authData.token)
-      const timer = setTimeout(() => {
-        window.location.replace('/dashboard')
-      }, 700)
-      return () => clearTimeout(timer)
+
+      try {
+        const user = await getCurrentUserApi()
+        if (isCancelled) return
+        if (user && user.profile_completed === false) {
+          window.location.replace('/setup-profile')
+        } else {
+          window.location.replace('/dashboard')
+        }
+      } catch (err) {
+        console.warn('Failed to verify user profile completion status:', err)
+        if (!isCancelled) {
+          window.location.replace('/dashboard')
+        }
+      }
+    }
+
+    handleCallback()
+
+    return () => {
+      isCancelled = true
     }
   }, [authData.token])
 

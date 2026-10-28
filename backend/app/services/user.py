@@ -1,6 +1,7 @@
 """User service providing database operations for users."""
 
 from datetime import datetime, timedelta, timezone
+import json
 import secrets
 import uuid
 from fastapi import HTTPException, status
@@ -50,6 +51,7 @@ class UserService:
             is_superuser=False,
             auth_provider="email",
             is_email_verified=False,
+            profile_completed=False,
             email_verification_token=verification_token,
             email_verification_expires=verification_expires,
         )
@@ -114,6 +116,15 @@ class UserService:
             db_obj.website_url = obj_in.website_url.strip() if obj_in.website_url else None
         if "profile_visibility" in obj_in.model_fields_set and obj_in.profile_visibility is not None:
             db_obj.profile_visibility = obj_in.profile_visibility.strip().lower()
+        if "learning_goal" in obj_in.model_fields_set:
+            db_obj.learning_goal = obj_in.learning_goal.strip() if obj_in.learning_goal else None
+        if "current_skill_level" in obj_in.model_fields_set:
+            db_obj.current_skill_level = obj_in.current_skill_level.strip() if obj_in.current_skill_level else None
+        if "interests" in obj_in.model_fields_set:
+            if obj_in.interests is not None:
+                db_obj.interests = json.dumps([str(item).strip() for item in obj_in.interests if str(item).strip()])
+            else:
+                db_obj.interests = None
         if obj_in.password is not None and len(obj_in.password) >= 8:
             db_obj.hashed_password = get_password_hash(obj_in.password)
 
@@ -145,6 +156,7 @@ class UserService:
             is_email_verified=True,
             is_active=True,
             is_superuser=False,
+            profile_completed=False,
         )
         db.add(db_user)
         await db.commit()

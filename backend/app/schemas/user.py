@@ -1,8 +1,10 @@
 """Pydantic v2 schemas for User management and authentication."""
 
 from datetime import datetime
+import json
+from typing import Any
 import uuid
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 
 class UserBase(BaseModel):
@@ -50,6 +52,9 @@ class UserUpdate(BaseModel):
     portfolio_url: str | None = Field(default=None, max_length=500)
     website_url: str | None = Field(default=None, max_length=500)
     profile_visibility: str = Field(default="public", max_length=20)
+    learning_goal: str | None = Field(default=None, max_length=255)
+    current_skill_level: str | None = Field(default=None, max_length=50)
+    interests: list[str] | None = None
     password: str | None = Field(default=None, min_length=8, max_length=128)
 
 
@@ -65,6 +70,33 @@ class UserResponse(UserBase):
     profile_visibility: str = Field(default="public", max_length=20)
     is_email_verified: bool = False
     auth_provider: str = "email"
+    profile_completed: bool = False
+    learning_goal: str | None = None
+    current_skill_level: str | None = None
+    interests: list[str] | None = None
+
+    @field_validator("interests", mode="before")
+    @classmethod
+    def parse_interests(cls, v: Any) -> list[str] | None:
+        """Parse interests from JSON string, comma-separated string, or list."""
+        if v is None:
+            return None
+        if isinstance(v, list):
+            return [str(item).strip() for item in v if str(item).strip()]
+        if isinstance(v, str):
+            stripped = v.strip()
+            if not stripped:
+                return []
+            if stripped.startswith("[") and stripped.endswith("]"):
+                try:
+                    parsed = json.loads(stripped)
+                    if isinstance(parsed, list):
+                        return [str(item).strip() for item in parsed if str(item).strip()]
+                except Exception:
+                    pass
+            # Fallback: comma-separated
+            return [item.strip() for item in stripped.split(",") if item.strip()]
+        return None
 
 
 class TokenResponse(BaseModel):
@@ -73,6 +105,7 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserResponse
+    profile_completed: bool = False
 
 
 class ForgotPasswordRequest(BaseModel):
@@ -95,6 +128,35 @@ class GoogleCallbackResponse(BaseModel):
     token_type: str = "bearer"
     user: UserResponse
     is_new_user: bool
+    profile_completed: bool = False
+
+
+class CheckUsernameResponse(BaseModel):
+    """Schema for username availability check response."""
+
+    username: str
+    available: bool
+    message: str
+
+
+class ProfileSetupRequest(BaseModel):
+    """Schema for initial profile setup during onboarding."""
+
+    full_name: str = Field(..., min_length=1, max_length=255)
+    username: str = Field(..., min_length=3, max_length=30, pattern=r"^[a-zA-Z0-9_]+$")
+    avatar_url: str | None = Field(default=None, max_length=500)
+    bio: str | None = Field(default=None, max_length=500)
+    learning_goal: str | None = Field(default=None, max_length=255)
+    current_skill_level: str | None = Field(default=None, max_length=50)
+    interests: list[str] | None = None
+
+
+class ProfileSetupResponse(BaseModel):
+    """Schema for profile setup response."""
+
+    user: UserResponse
+    profile_completed: bool = True
+    message: str
 
 
 class VerifyEmailResponse(BaseModel):

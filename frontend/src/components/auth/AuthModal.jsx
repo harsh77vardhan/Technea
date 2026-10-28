@@ -145,10 +145,14 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
     setError(null)
     setSuccessMsg(null)
     try {
-      await verifyOtp(email.trim(), cleanOtp)
+      const resUser = await verifyOtp(email.trim(), cleanOtp)
       setSuccessMsg('Signed in successfully!')
       setTimeout(() => {
         onClose()
+        if (resUser?.profile_completed === false) {
+          window.history.pushState({}, '', '/setup-profile')
+          window.dispatchEvent(new PopStateEvent('popstate'))
+        }
       }, 400)
     } catch (err) {
       console.error('OTP verification error:', err)
@@ -233,15 +237,20 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
 
     setLoading(true)
     try {
+      let resUser = null
       if (mode === 'signup') {
-        await signup(email.trim(), password, fullName.trim())
+        resUser = await signup(email.trim(), password, fullName.trim())
         setSuccessMsg('Account created successfully!')
       } else {
-        await login(email.trim(), password)
+        resUser = await login(email.trim(), password)
         setSuccessMsg('Welcome back!')
       }
       setTimeout(() => {
         onClose()
+        if (resUser?.profile_completed === false) {
+          window.history.pushState({}, '', '/setup-profile')
+          window.dispatchEvent(new PopStateEvent('popstate'))
+        }
       }, 400)
     } catch (err) {
       console.error('Auth error:', err)

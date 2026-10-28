@@ -76,6 +76,10 @@ async def run_auth_migrations(engine) -> None:
         ("email_verification_expires", "ALTER TABLE users ADD COLUMN email_verification_expires TIMESTAMP WITH TIME ZONE"),
         ("password_reset_token", "ALTER TABLE users ADD COLUMN password_reset_token VARCHAR(255)"),
         ("password_reset_expires", "ALTER TABLE users ADD COLUMN password_reset_expires TIMESTAMP WITH TIME ZONE"),
+        ("profile_completed", "ALTER TABLE users ADD COLUMN profile_completed BOOLEAN DEFAULT FALSE NOT NULL"),
+        ("learning_goal", "ALTER TABLE users ADD COLUMN learning_goal VARCHAR(255)"),
+        ("current_skill_level", "ALTER TABLE users ADD COLUMN current_skill_level VARCHAR(50)"),
+        ("interests", "ALTER TABLE users ADD COLUMN interests TEXT"),
     ]
 
     try:
@@ -97,6 +101,17 @@ async def run_auth_migrations(engine) -> None:
                         logger.info("Auth migration: adding missing column '%s' to users table...", col_name)
                         await conn.execute(text(alter_query))
                         logger.info("Auth migration: column '%s' successfully added.", col_name)
+
+                # Crucial for existing users: backfill profile_completed for users who already have active profiles
+                try:
+                    await conn.execute(
+                        text(
+                            "UPDATE users SET profile_completed = TRUE WHERE (username IS NOT NULL AND username != '') OR (full_name IS NOT NULL AND full_name != '')"
+                        )
+                    )
+                    logger.info("Auth migration: successfully backfilled profile_completed for active user profiles.")
+                except Exception as backfill_exc:
+                    logger.warning("Auth migration backfill warning: %s", backfill_exc)
             else:
                 logger.info("Users table not present yet. Skipping auth columns migration.")
 

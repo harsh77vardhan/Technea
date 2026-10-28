@@ -15,6 +15,8 @@ import {
   resetPasswordApi,
   sendOtpApi,
   verifyOtpApi,
+  setupProfileApi,
+  checkUsernameApi,
 } from '../services/api'
 
 export function AuthProvider({ children }) {
@@ -145,12 +147,21 @@ export function AuthProvider({ children }) {
     if (res?.access_token) {
       setAuthToken(res.access_token)
       setTokenState(res.access_token)
-      setUser(res.user)
+      const userObj = res.user
+        ? {
+            ...res.user,
+            profile_completed:
+              res.user.profile_completed !== undefined
+                ? res.user.profile_completed
+                : res.profile_completed,
+          }
+        : res.user
+      setUser(userObj)
       closeAuthModal()
 
       // Automatically migrate guest progress in background
       syncLocalGuestProgress()
-      return res.user
+      return userObj || res
     }
     throw new Error('Login failed: No access token received.')
   }, [closeAuthModal, syncLocalGuestProgress])
@@ -165,12 +176,21 @@ export function AuthProvider({ children }) {
     if (res?.access_token) {
       setAuthToken(res.access_token)
       setTokenState(res.access_token)
-      setUser(res.user)
+      const userObj = res.user
+        ? {
+            ...res.user,
+            profile_completed:
+              res.user.profile_completed !== undefined
+                ? res.user.profile_completed
+                : res.profile_completed,
+          }
+        : res.user
+      setUser(userObj)
       closeAuthModal()
 
       // Automatically migrate guest progress in background
       syncLocalGuestProgress()
-      return res.user
+      return userObj || res
     }
     throw new Error('Signup failed: No access token received.')
   }, [closeAuthModal, syncLocalGuestProgress])
@@ -261,15 +281,35 @@ export function AuthProvider({ children }) {
     if (res?.access_token) {
       setAuthToken(res.access_token)
       setTokenState(res.access_token)
-      setUser(res.user)
+      const userObj = res.user
+        ? {
+            ...res.user,
+            profile_completed:
+              res.user.profile_completed !== undefined
+                ? res.user.profile_completed
+                : res.profile_completed,
+          }
+        : res.user
+      setUser(userObj)
       closeAuthModal()
 
       // Automatically migrate guest progress in background
       syncLocalGuestProgress()
-      return res.user
+      return userObj || res
     }
     return res?.user || res
   }, [closeAuthModal, syncLocalGuestProgress])
+
+  // First-time profile setup onboarding handler
+  const setupProfile = useCallback(async (payload) => {
+    const res = await setupProfileApi(payload)
+    const userObj = res?.user || res
+    if (userObj) {
+      setUser(userObj)
+      return userObj
+    }
+    return res
+  }, [])
 
   const value = {
     user,
@@ -281,6 +321,8 @@ export function AuthProvider({ children }) {
     logout,
     sendOtp,
     verifyOtp,
+    setupProfile,
+    checkUsernameApi,
     loginWithGoogle,
     sendVerificationEmail,
     forgotPassword,

@@ -78,6 +78,23 @@ class User(Base, UUIDIdMixin, TimestampMixin):
         default="public",
         nullable=False,
     )
+    profile_completed: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False,
+    )
+    learning_goal: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
+    )
+    current_skill_level: Mapped[str | None] = mapped_column(
+        String(50),
+        nullable=True,
+    )
+    interests: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
     is_active: Mapped[bool] = mapped_column(
         Boolean,
         default=True,

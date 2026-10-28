@@ -1,5 +1,6 @@
 import hashlib
 import hmac
+import json
 import re
 import secrets
 import urllib.parse
@@ -7,8 +8,8 @@ from datetime import datetime, timedelta, timezone
 from typing import Annotated
 from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile, status
 from fastapi.responses import RedirectResponse
-from sqlalchemy import select, update
-from app.api.deps import CurrentUserDep, DatabaseDep
+from sqlalchemy import func, select, update
+from app.api.deps import CurrentUserDep, DatabaseDep, OptionalUserDep
 from app.core.config import settings
 from app.core.logger import logger
 from app.core.security import create_access_token, get_password_hash
@@ -17,10 +18,13 @@ from app.models.user import User
 from app.schemas.common import MessageResponse
 from app.schemas.profile import AvatarUploadResponse
 from app.schemas.user import (
+    CheckUsernameResponse,
     ForgotPasswordRequest,
     GoogleAuthUrlResponse,
     GoogleCallbackResponse,
     OTPSentResponse,
+    ProfileSetupRequest,
+    ProfileSetupResponse,
     ResetPasswordRequest,
     SendOTPRequest,
     TokenResponse,
@@ -86,6 +90,7 @@ async def signup(
         access_token=access_token,
         token_type="bearer",
         user=UserResponse.model_validate(user),
+        profile_completed=user.profile_completed,
     )
 
 
@@ -122,6 +127,7 @@ async def login(
         access_token=access_token,
         token_type="bearer",
         user=UserResponse.model_validate(user),
+        profile_completed=user.profile_completed,
     )
 
 
@@ -495,10 +501,12 @@ async def google_auth_callback(
             token_type="bearer",
             user=UserResponse.model_validate(user),
             is_new_user=is_new_user,
+            profile_completed=user.profile_completed,
         )
 
     # Standard browser flow redirects to frontend callback page
-    redirect_target = f"{frontend_url}/auth/callback?token={access_token}"
+    completed_val = 1 if user.profile_completed else 0
+    redirect_target = f"{frontend_url}/auth/callback?token={access_token}&profile_completed={completed_val}"
     return _safe_frontend_redirect(redirect_target)
 
 
@@ -682,6 +690,7 @@ async def verify_otp(
             is_email_verified=True,
             is_active=True,
             is_superuser=False,
+            profile_completed=False,
         )
         db.add(user)
         await db.commit()
@@ -692,6 +701,108 @@ async def verify_otp(
         access_token=access_token,
         token_type="bearer",
         user=UserResponse.model_validate(user),
+        profile_completed=user.profile_completed,
+    )
+
+
+USERNAME_REGEX = re.compile(r"^[a-zA-Z0-9_]+$")
+
+
+@router.get(
+    "/check-username",
+    response_model=CheckUsernameResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Check username availability",
+)
+async def check_username(
+    db: DatabaseDep,
+    username: Annotated[str, Query(..., min_length=3, max_length=30, description="Username to check")],
+    current_user: OptionalUserDep = None,
+) -> CheckUsernameResponse:
+    """Check if a username is available (case-insensitive) excluding current user if authenticated."""
+    if not USERNAME_REGEX.match(username):
+        return CheckUsernameResponse(
+            username=username,
+            available=False,
+            message="Username may only contain letters, numbers, and underscores.",
+        )
+
+    clean_username = username.strip().lower()
+    stmt = select(User.id).where(func.lower(User.username) == clean_username)
+    if current_user is not None:
+        stmt = stmt.where(User.id != current_user.id)
+
+    result = await db.execute(stmt)
+    existing_user_id = result.scalar_one_or_none()
+
+    if existing_user_id:
+        return CheckUsernameResponse(
+            username=username,
+            available=False,
+            message=f"Username '{username}' is already taken.",
+        )
+
+    return CheckUsernameResponse(
+        username=username,
+        available=True,
+        message=f"Username '{username}' is available.",
+    )
+
+
+@router.post(
+    "/profile-setup",
+    response_model=ProfileSetupResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Complete user onboarding and profile setup",
+)
+async def setup_profile(
+    data: ProfileSetupRequest,
+    current_user: CurrentUserDep,
+    db: DatabaseDep,
+) -> ProfileSetupResponse:
+    """Complete initial profile setup during onboarding."""
+    clean_username = data.username.strip().lower()
+
+    # Validate username uniqueness against other users
+    conflict_stmt = select(User.id).where(
+        func.lower(User.username) == clean_username,
+        User.id != current_user.id,
+    )
+    conflict_res = await db.execute(conflict_stmt)
+    if conflict_res.scalar_one_or_none():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"The username '{data.username}' is already taken.",
+        )
+
+    # Update profile fields
+    current_user.full_name = data.full_name.strip()
+    current_user.username = clean_username
+    if data.avatar_url is not None:
+        current_user.avatar_url = data.avatar_url.strip() if data.avatar_url else None
+    if data.bio is not None:
+        current_user.bio = data.bio.strip() if data.bio else None
+    if data.learning_goal is not None:
+        current_user.learning_goal = data.learning_goal.strip() if data.learning_goal else None
+    if data.current_skill_level is not None:
+        current_user.current_skill_level = data.current_skill_level.strip() if data.current_skill_level else None
+
+    # Serialize interests
+    if data.interests is not None:
+        cleaned_interests = [str(item).strip() for item in data.interests if str(item).strip()]
+        current_user.interests = json.dumps(cleaned_interests)
+
+    # Mark profile completed
+    current_user.profile_completed = True
+
+    db.add(current_user)
+    await db.commit()
+    await db.refresh(current_user)
+
+    return ProfileSetupResponse(
+        user=UserResponse.model_validate(current_user),
+        profile_completed=True,
+        message="Profile setup completed successfully.",
     )
 
 
