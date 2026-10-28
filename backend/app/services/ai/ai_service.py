@@ -15,24 +15,35 @@ from app.services.ai.base_provider import BaseAIProvider
 from app.services.ai.gemini_client import GeminiProvider, sanitize_text
 from app.services.ai.prompts import (
     INTENT_CAREER_ADVICE,
+    INTENT_CAREER_GUIDANCE,
     INTENT_CASUAL,
     INTENT_CODE_HELP,
+    INTENT_CODE_REVIEW,
+    INTENT_CODING_ARCHITECTURE,
     INTENT_CODING_HELP,
     INTENT_DAILY_GOAL,
+    INTENT_DEBUGGING,
     INTENT_GREETING,
     INTENT_INTERVIEW_PREP,
     INTENT_LEARNING_ADVICE,
+    INTENT_LEARNING_QUESTION,
     INTENT_NEXT_STEP,
+    INTENT_PROJECT_RECOMMENDATION,
     INTENT_PROJECT_SUGGESTION,
+    INTENT_QUIZ,
+    INTENT_RESOURCE_SEARCH,
     INTENT_REVISION,
+    INTENT_ROADMAP_PLANNING,
     INTENT_ROADMAP_REQUEST,
     INTENT_SIMPLE_QUESTION,
     INTENT_TIME_DATE,
     INTENT_WEEKLY_PLAN,
-    INTENT_CODING_ARCHITECTURE,
     build_system_prompt,
     classify_intent,
 )
+from app.services.ai.quiz_engine import QuizEngine, quiz_engine
+from app.services.ai.special_router import SpecialRouter, special_router
+from app.services.ai.memory_engine import MemoryEngine, memory_engine
 
 logger = logging.getLogger("technea.ai.service")
 
@@ -44,6 +55,15 @@ class RuleBasedProvider(BaseAIProvider):
     domain-aware curriculums, debugging guidance, project recommendations,
     and mentor coaching strictly adhering to Technea's AI Mentor personality.
     """
+
+    def __init__(
+        self,
+        special_router_inst: SpecialRouter | None = None,
+        memory_engine_inst: MemoryEngine | None = None,
+    ) -> None:
+        self.special_router: SpecialRouter = special_router_inst or special_router
+        self.memory_engine: MemoryEngine = memory_engine_inst or memory_engine
+        self._last_greeting: str | None = None
 
     @property
     def provider_name(self) -> str:
@@ -702,6 +722,7 @@ class RuleBasedProvider(BaseAIProvider):
         self,
         domain: str,
         level: str,
+        context: dict[str, Any] | None = None,
         seed: Any = None,
     ) -> str:
         intros = [
@@ -947,8 +968,36 @@ class RuleBasedProvider(BaseAIProvider):
         pref_lang = "Python"
 
         if context:
-            cur_m = context.get("current_milestone_title") or cur_m
+            cur_m = (
+                context.get("active_topic")
+                or context.get("current_milestone_title")
+                or context.get("topic")
+                or cur_m
+            )
             pref_lang = context.get("preferred_language") or pref_lang
+
+        t_lower = cur_m.lower()
+        if "design pattern" in t_lower or "object-oriented" in t_lower or "oop" in t_lower:
+            return (
+                f"### 🧠 Spaced Repetition Revision: {cur_m}\n\n"
+                f"Let's test and reinforce your active recall on **{cur_m}**:\n\n"
+                f"#### 1. Conceptual Diagnostic Question\n"
+                f"- In **{pref_lang}**, what is the primary architectural trade-off between Inheritance and Composition (such as in the Strategy Pattern)?\n"
+                f"- How does the Factory Pattern decouple business logic from concrete class instantiations?\n\n"
+                f"#### 2. Code Review & Anti-Pattern Diagnosis\n"
+                f"```python\n"
+                f"# Identify the design pattern anti-pattern or tight coupling in this class:\n"
+                f"class PaymentProcessor:\n"
+                f"    def process(self, method: str, amount: float):\n"
+                f"        if method == 'stripe':\n"
+                f"            return StripeGateway().charge(amount)\n"
+                f"        elif method == 'paypal':\n"
+                f"            return PayPalGateway().pay(amount)\n"
+                f"```\n"
+                f"- *Question*: Why does this violate the Open/Closed Principle (OCP), and how would you refactor it using Dependency Injection and the Strategy Pattern?\n\n"
+                f"#### 3. Active Implementation Challenge\n"
+                f"- Write a clean, typed Singleton or Strategy interface in {pref_lang} demonstrating runtime extensibility."
+            )
 
         return (
             f"### 🧠 Spaced Repetition Revision: {cur_m}\n\n"
@@ -1048,43 +1097,49 @@ class RuleBasedProvider(BaseAIProvider):
         prompt: str,
         domain: str,
         level: str = "Beginner",
+        context: dict[str, Any] | None = None,
         seed: Any = None,
     ) -> str:
         rng = random.Random(seed) if seed is not None else None
-        intros = [
-            f"### Mentor Insight on: {prompt[:80]}\n\n"
-            "Here is the foundational breakdown to build an accurate mental model and production intuition:",
-            f"### Architecture & Implementation: {prompt[:80]}\n\n"
-            "Let's deconstruct the core concepts, modern patterns, and practical implementation for this topic:",
-        ]
+        p_clean = prompt.strip().rstrip("?")
+        topic = (context and context.get("active_topic")) or p_clean
+        pref_lang = (context and context.get("preferred_language")) or "Python"
 
-        tips = [
-            "*Mentor Note: Implement a small prototype and write unit tests to solidify this concept in your memory.*",
-            "*Mentor Note: Consider how this concept scales under high concurrency or large data volumes.*",
-        ]
+        # Specialized learning habits / study routine guidance
+        if any(w in prompt.lower() for w in ["study", "routine", "consistently", "how to learn", "habit"]):
+            return (
+                f"### 🎯 Learning Strategy & Study Habits: {topic[:60]}\n\n"
+                "To build deep technical competence without burnout, follow these three evidence-based engineering study principles:\n\n"
+                "#### 1. Daily Deliberate Practice (45–60 min blocks)\n"
+                "- Consistency beats marathon weekend sessions. Commit to 45–60 minutes of uninterrupted daily coding.\n"
+                "- Prioritize writing code from scratch over passively reading documentation or watching videos.\n\n"
+                "#### 2. The Feynman Technique & Active Recall\n"
+                "- After learning a concept, explain it out loud or write a 3-bullet summary in your own words.\n"
+                "- Build micro-projects that intentionally test edge cases and force error handling.\n\n"
+                "#### 3. Milestone-Driven Progress\n"
+                "- Track your progress on the Technea roadmap dashboard. Complete one lesson and one hands-on exercise per session."
+            )
 
+        # Focused, pedagogical explanation tailored to the requested concept
         return (
-            f"{self._choose(intros, rng=rng)}\n\n"
-            "#### 1. Core Concept & Architectural Mental Model\n"
-            f"When approaching **{prompt[:50]}**, keep these foundational principles in mind:\n"
-            "- **Separation of Concerns**: Keep business logic, data persistence, and interface rendering strictly isolated.\n"
-            "- **Idempotency & Predictability**: Aim for pure functions, predictable data contracts, and immutability where possible.\n"
-            "- **Defensive Engineering**: Always handle timeouts, missing values, and upstream failures gracefully.\n\n"
-            "#### 2. Modern Implementation Pattern\n"
+            f"### Mentor Insight on: {topic[:80]}\n\n"
+            f"Here is the foundational breakdown to build an accurate mental model and production intuition for **{topic[:50]}**:\n\n"
+            "#### 1. Core Intuition & Mental Model\n"
+            f"- **What it solves**: **{topic[:40]}** provides a clean, maintainable abstraction to solve recurring architectural and algorithmic problems.\n"
+            "- **Key Trade-off**: Always balance abstraction complexity with operational readability—prefer explicit, readable code over premature optimization.\n"
+            f"- **Production Hygiene**: Enforce defensive boundaries, strict type safety, and clear contracts in **{pref_lang}**.\n\n"
+            "#### 2. Practical Idiomatic Pattern\n"
             "```python\n"
-            "# Production-ready, typed implementation pattern\n"
-            "from typing import Any\n"
-            "\n"
-            "def handle_service_operation(data: dict[str, Any]) -> dict[str, Any]:\n"
-            '    """Process request with strict input sanitation and validation."""\n'
-            "    sanitized = {k: v for k, v in data.items() if v is not None}\n"
-            '    return {"status": "success", "payload": sanitized}\n'
+            f"# Clean, idiomatic pattern for {topic[:30]}\n"
+            "def execute_task(payload: dict) -> dict:\n"
+            '    """Validate input data and process safely with clear error bounds."""\n'
+            "    if not payload:\n"
+            '        raise ValueError("Payload cannot be empty")\n'
+            '    return {"status": "ok", "result": payload}\n'
             "```\n\n"
-            "#### 3. Recommended Next Steps:\n"
-            "- Test this implementation with unit tests covering boundary conditions and edge cases.\n"
-            "- Check Technea's related course modules for interactive guided exercises.\n"
-            "- Let me know if you would like me to deep-dive into any specific aspect!\n\n"
-            f"{self._choose(tips, rng=rng)}"
+            "#### 3. Recommended Next Actions\n"
+            "- Try implementing a test case verifying boundary inputs for this pattern.\n"
+            "- Explore the relevant milestone in your Technea curriculum or ask me for a hands-on coding challenge!"
         )
 
     def _generate_casual_response(self, prompt: str, seed: Any = None) -> str:
@@ -1323,6 +1378,68 @@ class RuleBasedProvider(BaseAIProvider):
             "- **Milestone**: Deploy a containerized Python service to production with automated tests running on every pull request."
         )
 
+    def _generate_playlist_recommendation_response(
+        self,
+        prompt: str,
+        domain: str,
+        level: str,
+        context: dict[str, Any] | None = None,
+        seed: Any = None,
+    ) -> str:
+        """Recommend authentic learning resources and playlists (Technea first, trusted public second)."""
+        p = prompt.lower()
+        topic = "python"
+        if "react" in p or "frontend" in p:
+            topic = "react"
+        elif any(w in p for w in ["fastapi", "backend", "node", "api"]):
+            topic = "backend"
+        elif any(w in p for w in ["dsa", "algorithm", "data structure", "leetcode"]):
+            topic = "dsa"
+        elif any(w in p for w in ["docker", "devops", "kubernetes", "cloud"]):
+            topic = "devops"
+        elif domain in ["python", "web_development", "cloud_devops", "dsa", "ai_ml"]:
+            topic = "python" if domain == "python" else ("react" if domain == "web_development" else ("devops" if domain == "cloud_devops" else "python"))
+
+        wants_hindi = "hindi" in p or (context and "hindi" in str(context.get("preferred_language", "")).lower())
+        pref_lang = "Hindi" if wants_hindi else (context.get("preferred_language") if context else "English")
+
+        from app.services.ai.trusted_resources import get_trusted_resources_for_topic
+        trusted = get_trusted_resources_for_topic(topic=topic, language=pref_lang)
+
+        matched_courses = (context.get("matched_courses", []) if context else [])
+
+        lines = [
+            f"### Curated {topic.title()} Learning Playlists & Trusted Resources",
+            f"\nHere are the highest-quality, authentic learning resources and video playlists to master **{topic.title()}**:\n",
+        ]
+
+        # Technea resources first
+        if matched_courses:
+            lines.append("#### 1. Technea Platform Interactive Courses")
+            for c in matched_courses[:2]:
+                inst = c.get("instructor") or "Technea Instructor"
+                dur = c.get("duration") or "Self-paced"
+                lines.append(f"- **{c['title']}** ({inst} | {dur})")
+                if c.get("description"):
+                    lines.append(f"  *{c['description'][:140]}*")
+            lines.append("\n#### 2. Trusted Public Video Playlists & Official Docs")
+        else:
+            lines.append("#### 1. Trusted Public Video Playlists & Official Docs")
+
+        for r in trusted[:6]:
+            lines.append(f"- **{r['title']}** — *{r['provider']}* [{r['type']}]")
+            lines.append(f"  - **Link/Channel**: `{r['url_or_channel']}`")
+            lines.append(f"  - **Focus**: {r['description']}")
+
+        lines.append(
+            "\n#### 💡 Actionable Learning Strategy:\n"
+            "- **Code Along**: Keep your IDE open and write every line of code by hand rather than passively watching.\n"
+            "- **Read Official Docs**: Cross-reference video explanations with the authoritative documentation for deeper understanding.\n"
+            "- **Build Mini-Projects**: Reinforce each milestone by building small, tangible applications immediately after completing tutorial sections."
+        )
+
+        return "\n".join(lines)
+
     def _generate_time_date_response(
         self,
         prompt: str,
@@ -1331,28 +1448,39 @@ class RuleBasedProvider(BaseAIProvider):
     ) -> str:
         """Generate accurate, non-hallucinated response for current date, weekday, year, or time queries."""
         now = datetime.now().astimezone()
-        weekday = now.strftime("%A")
-        date_str = now.strftime("%B %d, %Y")
-        year_str = now.strftime("%Y")
+        weekday = (context and context.get("current_weekday")) or now.strftime("%A")
+        date_str = (context and context.get("current_date")) or now.strftime("%B %d, %Y")
+        year_str = (context and context.get("current_year")) or now.strftime("%Y")
         time_str = now.strftime("%I:%M %p").lstrip("0")
-        tz_name = now.tzname() or "UTC"
+        tz_name = (context and context.get("current_timezone")) or now.tzname() or "UTC"
 
         p = prompt.strip().lower()
+        clean_p = re.sub(r"[^\w\s]", "", p).strip()
 
         # Day of week queries
-        if any(pat in p for pat in ["what day is today", "what's the day today", "whats the day today", "what is the day today", "which day is today", "what day of the week", "what day is it", "what is today", "day today"]) or ("day" in p and "today" in p):
+        if (
+            clean_p in {"what day is today", "whats the day today", "what is the day today", "which day is today", "what day of the week", "what day is it", "what is today", "day today", "whats the day", "what is the day", "what's the day", "what day", "which day"}
+            or any(pat in clean_p for pat in ["what day is today", "whats the day today", "what is the day today", "which day is today", "what day of the week", "what day is it", "day today", "whats the day", "what is the day", "what day", "which day"])
+            or ("day" in clean_p and "today" in clean_p)
+        ):
             return f"Today is {weekday}."
 
         # Time queries
-        if any(pat in p for pat in ["what time is it", "what's the time", "whats the time", "what is the time", "current time", "what time is it right now", "time right now", "server time", "what time"]):
+        if (
+            clean_p in {"time", "current time", "what time is it", "whats the time", "what is the time", "server time", "current server time", "time right now"}
+            or any(pat in clean_p for pat in ["what time is it", "whats the time", "what is the time", "current time", "what time is it right now", "time right now", "server time", "what time"])
+        ):
             return f"The current server time is {time_str} {tz_name}."
 
         # Date queries
-        if any(pat in p for pat in ["what is today's date", "what's today's date", "whats todays date", "today's date", "todays date", "current date", "what is the date", "what date is it", "what date is today", "what date", "date today"]):
+        if (
+            clean_p in {"date", "todays date", "today date", "what is todays date", "whats todays date", "current date", "what is the date", "whats the date", "what date is it", "what date is today", "what date", "date today"}
+            or any(pat in clean_p for pat in ["what is todays date", "whats todays date", "today date", "current date", "what is the date", "whats the date", "what date is it", "what date is today", "what date", "date today"])
+        ):
             return f"Today is {weekday}, {date_str}."
 
         # Year queries
-        if any(pat in p for pat in ["what year is this", "what year is it", "current year", "what year"]):
+        if clean_p in {"what year is this", "what year is it", "current year", "what year"} or any(pat in clean_p for pat in ["what year is this", "what year is it", "current year", "what year"]):
             return f"The current year is {year_str}."
 
         return f"Today is {weekday}, {date_str}, and the current server time is {time_str} {tz_name}."
@@ -1371,6 +1499,94 @@ class RuleBasedProvider(BaseAIProvider):
             "Paste your code snippet whenever you're ready, and feel free to mention what it does or any specific concerns!"
         )
 
+    def _generate_resource_search_response(
+        self,
+        prompt: str,
+        domain: str = "web_development",
+        context: dict[str, Any] | None = None,
+        seed: Any = None,
+    ) -> str:
+        """Provide direct, curated learning resources, playlists, and documentation (Technea first, trusted public second)."""
+        p = prompt.strip().lower()
+
+        # Identify target topic
+        topic = "python"
+        if "react" in p or "frontend" in p:
+            topic = "react"
+        elif any(w in p for w in ["fastapi", "backend", "node", "api"]):
+            topic = "backend"
+        elif any(w in p for w in ["dsa", "algorithm", "data structure", "leetcode", "neetcode"]):
+            topic = "dsa"
+        elif any(w in p for w in ["docker", "devops", "kubernetes", "cloud"]):
+            topic = "devops"
+        elif "python" in p or domain == "python":
+            topic = "python"
+        else:
+            topic = domain if domain in ["python", "react", "backend", "dsa", "devops"] else "python"
+
+        wants_hindi = "hindi" in p or (context and "hindi" in str(context.get("preferred_language", "")).lower())
+        pref_lang = "Hindi" if wants_hindi else (context.get("preferred_language") if context else "English")
+
+        from app.services.ai.trusted_resources import get_trusted_resources_for_topic
+        trusted = get_trusted_resources_for_topic(topic=topic, language=pref_lang)
+
+        matched_courses = (context.get("matched_courses", []) if context else [])
+
+        lines = [
+            f"### 📚 Recommended Learning Resources & Playlists: {topic.title()}\n",
+            f"Here are the highest-quality authentic learning resources and structured playlists to master **{topic.title()}**:\n",
+        ]
+
+        # 1. Technea Resources First
+        if matched_courses:
+            lines.append("#### 1. Technea Platform Interactive Courses")
+            for c in matched_courses[:2]:
+                inst = c.get("instructor") or "Technea Instructor"
+                dur = c.get("duration") or "Self-paced"
+                lines.append(f"- **{c['title']}** ({inst} | {dur})")
+                if c.get("description"):
+                    lines.append(f"  *{c['description'][:140]}*")
+            lines.append("\n#### 2. Trusted Public Video Playlists & Official Docs")
+        else:
+            lines.append("#### 1. Trusted Public Video Playlists & Official Docs")
+
+        # 2. Trusted Public Resources Second
+        for r in trusted:
+            lines.append(f"- **{r['title']}** — *{r['provider']}* [{r['type']}]:")
+            lines.append(f"  - **Link / Channel**: `{r['url_or_channel']}`")
+            lines.append(f"  - **Focus**: {r['description']}")
+
+        lines.append(
+            "\n*Mentor Tip: Combine structured video tutorials with active coding—keep your IDE open, code along with every lesson, and build small projects immediately after.*"
+        )
+        return "\n".join(lines)
+
+    def _generate_quiz_response(
+        self,
+        domain: str,
+        level: str,
+        context: dict[str, Any] | None = None,
+        prompt: str = "",
+        seed: int | None = None,
+    ) -> str:
+        """Synthesize scenario-based milestone quiz using QuizEngine."""
+        milestone = None
+        p = prompt.strip().lower()
+        if "oop" in p or "object" in p or "pattern" in p or "solid" in p:
+            milestone = "Object-Oriented Design Patterns"
+        elif "api" in p or "rest" in p or "fastapi" in p:
+            milestone = "Full-Stack API Design"
+        elif "docker" in p or "kubernetes" in p or "devops" in p or "cloud" in p:
+            milestone = "Container Orchestration with Docker & Kubernetes"
+
+        quiz = quiz_engine.generate_quiz(
+            milestone=milestone,
+            level=level,
+            context=context,
+            seed=seed,
+        )
+        return quiz.to_markdown()
+
     async def generate_chat_response(
         self,
         prompt: str,
@@ -1380,12 +1596,44 @@ class RuleBasedProvider(BaseAIProvider):
         **kwargs: Any,
     ) -> str:
         """Synthesize a high-quality mentor response adhering strictly to Technea AI personality."""
-        p = prompt.strip().lower()
+        ctx = context if context is not None else {}
+
+        # 1. Multi-turn conversation memory analysis & ellipsis resolution
+        memory_state = self.memory_engine.analyze(conversation_history, prompt, ctx)
+        effective_prompt = memory_state.resolved_message or prompt
+        p = effective_prompt.strip().lower()
         clean_p = re.sub(r"[^\w\s]", "", p).strip()
-        domain = self._detect_domain(p, context)
-        level = self._detect_level(p, context)
-        user_name = context.get("user_name") if context else None
+
+        intent = (
+            memory_state.resolved_intent
+            or ctx.get("classified_intent")
+            or classify_intent(effective_prompt)
+        )
+        ctx["classified_intent"] = intent
+        if memory_state.active_topic and not ctx.get("active_topic"):
+            ctx["active_topic"] = memory_state.active_topic
+        if memory_state.user_corrections:
+            ctx.setdefault("user_corrections", {}).update(memory_state.user_corrections)
+            if "preferred_language" in memory_state.user_corrections and not ctx.get("preferred_language"):
+                ctx["preferred_language"] = memory_state.user_corrections["preferred_language"]
+            if "level" in memory_state.user_corrections and not ctx.get("level"):
+                ctx["level"] = memory_state.user_corrections["level"]
+            if "framework" in memory_state.user_corrections and not ctx.get("framework"):
+                ctx["framework"] = memory_state.user_corrections["framework"]
+
+        domain = self._detect_domain(p, ctx)
+        level = self._detect_level(p, ctx)
         seed = kwargs.get("seed")
+        if seed is not None:
+            ctx["seed"] = seed
+
+        # Zero-Token Fast Path via Special Router
+        if seed is not None and "seed" not in ctx:
+            ctx["seed"] = seed
+        if self.special_router.can_handle(intent, effective_prompt, ctx):
+            fast_res = await self.special_router.route(intent, effective_prompt, ctx, seed=seed)
+            if fast_res is not None:
+                return fast_res
 
         # 1. Conversational directives (e.g. "hey dont say anything just say hey back", "just say hey back", "say hey")
         is_directive = (
@@ -1495,17 +1743,27 @@ class RuleBasedProvider(BaseAIProvider):
         # Check for completed prerequisite (e.g. HTML/CSS)
         has_html_css_completed = ("html" in p and "css" in p) and any(w in p for w in ["completed", "finished", "done"])
 
+        has_playlist_request = any(phrase in p for phrase in [
+            "playlist", "playlists", "video tutorials", "video tutorial",
+            "video series", "youtube series", "video course", "videos to learn",
+            "youtube playlist", "courses to watch", "recommend playlist", "recommend a playlist",
+        ])
+
         # Intent-driven dispatch
-        if has_react_hooks:
+        if intent == INTENT_RESOURCE_SEARCH or has_playlist_request:
+            res = self._generate_resource_search_response(prompt, domain=domain, context=context, seed=seed)
+        elif intent == INTENT_QUIZ:
+            res = self._generate_quiz_response(domain, level, context=context, prompt=prompt, seed=seed)
+        elif has_react_hooks:
             res = self._generate_react_hooks_response(seed=seed)
         elif has_backend_arch:
             res = self._generate_backend_architecture_response(seed=seed)
         elif has_python_learning:
             res = self._generate_python_learning_roadmap(seed=seed)
-        elif has_debugging:
-            res = self._generate_debugging_response(prompt, seed=seed)
         elif has_recursion or has_async:
             res = self._generate_coding_response(prompt, domain, level, seed=seed)
+        elif has_debugging or str(intent) == "debugging":
+            res = self._generate_debugging_response(prompt, seed=seed)
         elif has_milestone_deep_dive:
             res = self._generate_milestone_deep_dive_response(prompt, domain, level, context=context, seed=seed)
         elif has_html_css_completed or intent == INTENT_NEXT_STEP:
@@ -1524,21 +1782,21 @@ class RuleBasedProvider(BaseAIProvider):
             res = self._generate_revision_response(domain, level, context=context, seed=seed)
         elif intent == INTENT_INTERVIEW_PREP:
             res = self._generate_interview_prep_response(domain, level, context=context, seed=seed)
-        elif intent in {INTENT_CODE_HELP, INTENT_CODING_HELP}:
+        elif intent in {INTENT_CODE_HELP, INTENT_CODING_HELP, INTENT_CODE_REVIEW}:
             res = self._generate_coding_response(prompt, domain, level, seed=seed)
-        elif intent == INTENT_PROJECT_SUGGESTION:
-            res = self._generate_project_response(domain, level, seed=seed)
-        elif intent == INTENT_ROADMAP_REQUEST:
+        elif intent in {INTENT_PROJECT_SUGGESTION, INTENT_PROJECT_RECOMMENDATION}:
+            res = self._generate_project_response(domain, level, context=ctx, seed=seed)
+        elif intent in {INTENT_ROADMAP_REQUEST, INTENT_ROADMAP_PLANNING}:
             res = self._generate_roadmap_response(domain, level, topic=p, seed=seed)
-        elif intent == INTENT_CAREER_ADVICE:
+        elif intent in {INTENT_CAREER_ADVICE, INTENT_CAREER_GUIDANCE}:
             res = self._generate_career_response(level, domain, seed=seed)
         elif intent == INTENT_LEARNING_ADVICE:
             if any(w in p for w in ["next", "start", "begin", "where do i", "what should i"]):
-                res = self._generate_next_step_response(domain, level, prompt=prompt, context=context, seed=seed)
+                res = self._generate_next_step_response(domain, level, prompt=prompt, context=ctx, seed=seed)
             else:
-                res = self._generate_conceptual_response(prompt, domain, level, seed=seed)
+                res = self._generate_conceptual_response(prompt, domain, level, context=ctx, seed=seed)
         else:
-            res = self._generate_conceptual_response(prompt, domain, level, seed=seed)
+            res = self._generate_conceptual_response(prompt, domain, level, context=ctx, seed=seed)
 
         # Detect repeated question in conversation history and avoid identical repeating
         if (
@@ -1567,16 +1825,19 @@ class RuleBasedProvider(BaseAIProvider):
         allow_catalog_resources = (
             intent in {
                 INTENT_ROADMAP_REQUEST,
+                INTENT_ROADMAP_PLANNING,
                 INTENT_NEXT_STEP,
                 INTENT_PROJECT_SUGGESTION,
+                INTENT_PROJECT_RECOMMENDATION,
                 INTENT_LEARNING_ADVICE,
                 INTENT_DAILY_GOAL,
                 INTENT_WEEKLY_PLAN,
                 INTENT_REVISION,
                 INTENT_INTERVIEW_PREP,
                 INTENT_CODING_ARCHITECTURE,
+                INTENT_RESOURCE_SEARCH,
             }
-            and intent not in {INTENT_CASUAL, INTENT_GREETING, INTENT_SIMPLE_QUESTION, INTENT_TIME_DATE}
+            and intent not in {INTENT_CASUAL, INTENT_GREETING, INTENT_SIMPLE_QUESTION, INTENT_TIME_DATE, INTENT_QUIZ}
             and not (
                 is_directive
                 or is_short_hey
@@ -1655,13 +1916,17 @@ class AIService:
         self,
         primary_provider: BaseAIProvider | None = None,
         fallback_provider: BaseAIProvider | None = None,
+        special_router_inst: SpecialRouter | None = None,
+        memory_engine_inst: MemoryEngine | None = None,
     ) -> None:
-        """Initialize AIService with primary and fallback providers.
+        """Initialize AIService with primary, fallback, and zero-token special router.
 
         Defaults to GeminiProvider as primary and RuleBasedProvider as fallback.
         """
         self.fallback_provider: BaseAIProvider = fallback_provider or RuleBasedProvider()
         self.primary_provider: BaseAIProvider = primary_provider or GeminiProvider()
+        self.special_router: SpecialRouter = special_router_inst or special_router
+        self.memory_engine: MemoryEngine = memory_engine_inst or memory_engine
         self.last_provider_used: str = (
             self.primary_provider.provider_name
             if self.primary_provider.is_configured
@@ -1710,19 +1975,51 @@ class AIService:
         if not prompt or not prompt.strip():
             return "Please provide a question or topic so I can assist you on your learning journey!"
 
+        ctx = context if context is not None else {}
+
+        # 1. Multi-turn conversation memory analysis & ellipsis resolution
+        memory_state = self.memory_engine.analyze(conversation_history, prompt, ctx)
+        effective_prompt = memory_state.resolved_message or prompt
+        effective_intent = (
+            memory_state.resolved_intent
+            or ctx.get("classified_intent")
+            or classify_intent(effective_prompt)
+        )
+        ctx["classified_intent"] = effective_intent
+        if memory_state.active_topic and not ctx.get("active_topic"):
+            ctx["active_topic"] = memory_state.active_topic
+        if memory_state.user_corrections:
+            ctx.setdefault("user_corrections", {}).update(memory_state.user_corrections)
+            if "preferred_language" in memory_state.user_corrections and not ctx.get("preferred_language"):
+                ctx["preferred_language"] = memory_state.user_corrections["preferred_language"]
+            if "level" in memory_state.user_corrections and not ctx.get("level"):
+                ctx["level"] = memory_state.user_corrections["level"]
+            if "framework" in memory_state.user_corrections and not ctx.get("framework"):
+                ctx["framework"] = memory_state.user_corrections["framework"]
+
+        # 2. Zero-Token Fast Path via Special Router (<5ms response time, 0 LLM tokens)
+        seed = kwargs.get("seed")
+        if seed is not None and "seed" not in ctx:
+            ctx["seed"] = seed
+        if self.special_router.can_handle(effective_intent, effective_prompt, ctx):
+            fast_response = await self.special_router.route(effective_intent, effective_prompt, ctx, seed=seed)
+            if fast_response is not None:
+                self.last_provider_used = "special_router"
+                return fast_response
+
         # Synthesize system instruction if not explicitly provided
         effective_system_prompt = system_instruction
         if not effective_system_prompt:
             learner_level = None
             domain = None
-            if context:
-                learner_level = context.get("level") or context.get("learner_level")
-                domain = context.get("domain")
+            if ctx:
+                learner_level = ctx.get("level") or ctx.get("learner_level")
+                domain = ctx.get("domain")
 
             effective_system_prompt = build_system_prompt(
                 learner_level=learner_level,
                 domain=domain,
-                context=context,
+                context=ctx,
                 persona=persona,
             )
 
@@ -1734,10 +2031,10 @@ class AIService:
                     self.primary_provider.provider_name,
                 )
                 response = await self.primary_provider.generate_chat_response(
-                    prompt=prompt.strip(),
+                    prompt=effective_prompt.strip(),
                     system_instruction=effective_system_prompt,
                     conversation_history=conversation_history,
-                    context=context,
+                    context=ctx,
                     **kwargs,
                 )
                 if response and response.strip():
@@ -1766,10 +2063,10 @@ class AIService:
         # Execute fallback provider
         try:
             fallback_response = await self.fallback_provider.generate_chat_response(
-                prompt=prompt.strip(),
+                prompt=effective_prompt.strip(),
                 system_instruction=effective_system_prompt,
                 conversation_history=conversation_history,
-                context=context,
+                context=ctx,
                 **kwargs,
             )
             self.last_provider_used = self.fallback_provider.provider_name

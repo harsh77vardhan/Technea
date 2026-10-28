@@ -24,7 +24,9 @@ from app.models.roadmap_step import RoadmapStep
 from app.models.skill import Skill
 from app.models.user import User
 from app.models.user_roadmap import DailyLearningActivity, UserGeneratedRoadmap, UserRoadmap
+from app.services.ai.recommendation_engine import recommendation_engine
 from app.services.ai.roadmap_context_extractor import roadmap_context_extractor
+from app.services.ai.trusted_resources import get_trusted_resources_for_topic
 from app.services.progress import progress_service
 
 logger = logging.getLogger("technea.ai.context_retriever")
@@ -193,36 +195,126 @@ class ContextRetriever:
 
         return extracted
 
-    async def search_skills(self, db: AsyncSession, keywords: list[str], limit: int = 4) -> list[dict[str, Any]]:
-        """Query matching skills from Technea database catalog."""
-        if not keywords:
-            stmt = select(Skill).limit(limit)
-            res = await db.execute(stmt)
-            skills = res.scalars().all()
-        else:
-            filters = []
+    def _extract_anchor_keywords(
+        self,
+        keywords: list[str] | None = None,
+        user_progress: dict[str, Any] | None = None,
+        current_track: str | None = None,
+        domain: str | None = None,
+    ) -> list[str]:
+        """Extract prioritized anchor keywords to prevent random catalog lookups when query keywords are empty."""
+        anchors: list[str] = []
+
+        # 1. Existing valid keywords passed in
+        if keywords:
             for kw in keywords:
-                pat = f"%{kw}%"
-                filters.append(Skill.name.ilike(pat))
-                filters.append(Skill.category.ilike(pat))
-                filters.append(Skill.description.ilike(pat))
-                filters.append(cast(Skill.keywords, String).ilike(pat))
-                filters.append(cast(Skill.tags, String).ilike(pat))
+                if kw and kw.strip() and kw.strip().lower() not in anchors:
+                    anchors.append(kw.strip().lower())
 
-            name_exact = or_(*[Skill.name.ilike(kw) for kw in keywords])
-            name_like = or_(*[Skill.name.ilike(f"%{kw}%") for kw in keywords])
+        if anchors:
+            return anchors
 
-            stmt = (
-                select(Skill)
-                .where(or_(*filters))
-                .order_by(
-                    case((name_exact, 0), (name_like, 1), else_=2),
-                    Skill.name,
-                )
-                .limit(limit)
+        # 2. Extract from user progress / active roadmaps
+        if user_progress:
+            active_rms = user_progress.get("active_roadmaps") or []
+            if active_rms:
+                top_rm = active_rms[0]
+                if isinstance(top_rm, dict):
+                    # Current milestone skills and title
+                    cur_skills = top_rm.get("current_key_skills") or []
+                    for s in cur_skills:
+                        if str(s).lower() not in anchors:
+                            anchors.append(str(s).lower())
+
+                    cur_m_title = top_rm.get("current_milestone_title")
+                    if cur_m_title:
+                        words = self.extract_keywords(cur_m_title)
+                        for w in words:
+                            if w not in anchors:
+                                anchors.append(w)
+
+                    rm_title = top_rm.get("title", "")
+                    for w in self.extract_keywords(rm_title):
+                        if w not in anchors:
+                            anchors.append(w)
+
+            pref_lang = user_progress.get("preferred_language")
+            if pref_lang and pref_lang.lower() not in anchors:
+                anchors.append(pref_lang.lower())
+
+            goal = user_progress.get("learning_goal")
+            if goal:
+                for w in self.extract_keywords(goal):
+                    if w not in anchors:
+                        anchors.append(w)
+
+        # 3. Explicit current_track
+        if current_track:
+            for w in self.extract_keywords(current_track):
+                if w not in anchors:
+                    anchors.append(w)
+
+        # 4. Domain context
+        if domain:
+            for w in self.extract_keywords(domain.replace("_", " ")):
+                if w not in anchors:
+                    anchors.append(w)
+
+        # 5. Core foundational fallback (NEVER Blender or Business Analytics!)
+        if not anchors:
+            anchors = ["python", "web development", "programming fundamentals", "data structures"]
+
+        return anchors
+
+    async def search_skills(
+        self,
+        db: AsyncSession,
+        keywords: list[str],
+        limit: int = 4,
+        user_progress: dict[str, Any] | None = None,
+        current_track: str | None = None,
+        domain: str | None = None,
+    ) -> list[dict[str, Any]]:
+        """Query matching skills from Technea database catalog with domain anchoring & relevance scoring."""
+        effective_kws = self._extract_anchor_keywords(
+            keywords=keywords,
+            user_progress=user_progress,
+            current_track=current_track,
+            domain=domain,
+        )
+
+        filters = []
+        for kw in effective_kws:
+            pat = f"%{kw}%"
+            filters.append(Skill.name.ilike(pat))
+            filters.append(Skill.category.ilike(pat))
+            filters.append(Skill.description.ilike(pat))
+            filters.append(cast(Skill.keywords, String).ilike(pat))
+            filters.append(cast(Skill.tags, String).ilike(pat))
+
+        # Domain blacklist filtering to prevent random/unrelated recommendations
+        exclusion_filters = []
+        for bl in ["%blender%", "%3d design%", "%3d modeling%", "%business analytics%", "%accounting%", "%financial analysis%"]:
+            if not any(bl.strip("%") in kw for kw in effective_kws):
+                exclusion_filters.append(func.coalesce(Skill.name, "").notilike(bl))
+                exclusion_filters.append(func.coalesce(Skill.category, "").notilike(bl))
+
+        name_exact = or_(*[Skill.name.ilike(kw) for kw in effective_kws])
+        name_like = or_(*[Skill.name.ilike(f"%{kw}%") for kw in effective_kws])
+        category_like = or_(*[Skill.category.ilike(f"%{kw}%") for kw in effective_kws])
+
+        stmt = (
+            select(Skill)
+            .where(or_(*filters))
+            .where(*exclusion_filters)
+            .order_by(
+                case((name_exact, 0), (name_like, 1), (category_like, 2), else_=3),
+                Skill.name,
             )
-            res = await db.execute(stmt)
-            skills = res.scalars().all()
+            .limit(limit)
+        )
+        res = await db.execute(stmt)
+        skills = res.scalars().all()
 
         results: list[dict[str, Any]] = []
         for s in skills:
@@ -242,44 +334,52 @@ class ContextRetriever:
         db: AsyncSession,
         keywords: list[str],
         limit: int = 4,
+        user_progress: dict[str, Any] | None = None,
+        current_track: str | None = None,
+        domain: str | None = None,
     ) -> list[dict[str, Any]]:
-        """Query matching learning paths and step counts from database catalog."""
-        if not keywords:
-            stmt = (
-                select(LearningPath, func.count(RoadmapStep.id).label("step_count"))
-                .outerjoin(RoadmapStep, RoadmapStep.learning_path_id == LearningPath.id)
-                .group_by(LearningPath.id)
-                .limit(limit)
-            )
-            res = await db.execute(stmt)
-            rows = res.all()
-        else:
-            filters = []
-            for kw in keywords:
-                pat = f"%{kw}%"
-                filters.append(LearningPath.title.ilike(pat))
-                filters.append(LearningPath.category.ilike(pat))
-                filters.append(LearningPath.level.ilike(pat))
-                filters.append(LearningPath.description.ilike(pat))
-                filters.append(cast(LearningPath.search_terms, String).ilike(pat))
-                filters.append(cast(LearningPath.related_concepts, String).ilike(pat))
+        """Query matching learning paths and step counts from database catalog with strict relevance."""
+        effective_kws = self._extract_anchor_keywords(
+            keywords=keywords,
+            user_progress=user_progress,
+            current_track=current_track,
+            domain=domain,
+        )
 
-            title_exact = or_(*[LearningPath.title.ilike(kw) for kw in keywords])
-            title_like = or_(*[LearningPath.title.ilike(f"%{kw}%") for kw in keywords])
+        filters = []
+        for kw in effective_kws:
+            pat = f"%{kw}%"
+            filters.append(LearningPath.title.ilike(pat))
+            filters.append(LearningPath.category.ilike(pat))
+            filters.append(LearningPath.level.ilike(pat))
+            filters.append(LearningPath.description.ilike(pat))
+            filters.append(cast(LearningPath.search_terms, String).ilike(pat))
+            filters.append(cast(LearningPath.related_concepts, String).ilike(pat))
 
-            stmt = (
-                select(LearningPath, func.count(RoadmapStep.id).label("step_count"))
-                .outerjoin(RoadmapStep, RoadmapStep.learning_path_id == LearningPath.id)
-                .where(or_(*filters))
-                .group_by(LearningPath.id)
-                .order_by(
-                    case((title_exact, 0), (title_like, 1), else_=2),
-                    LearningPath.title,
-                )
-                .limit(limit)
+        exclusion_filters = []
+        for bl in ["%blender%", "%3d design%", "%3d modeling%", "%business analytics%", "%accounting%", "%financial analysis%"]:
+            if not any(bl.strip("%") in kw for kw in effective_kws):
+                exclusion_filters.append(func.coalesce(LearningPath.title, "").notilike(bl))
+                exclusion_filters.append(func.coalesce(LearningPath.category, "").notilike(bl))
+
+        title_exact = or_(*[LearningPath.title.ilike(kw) for kw in effective_kws])
+        title_like = or_(*[LearningPath.title.ilike(f"%{kw}%") for kw in effective_kws])
+        category_like = or_(*[LearningPath.category.ilike(f"%{kw}%") for kw in effective_kws])
+
+        stmt = (
+            select(LearningPath, func.count(RoadmapStep.id).label("step_count"))
+            .outerjoin(RoadmapStep, RoadmapStep.learning_path_id == LearningPath.id)
+            .where(or_(*filters))
+            .where(*exclusion_filters)
+            .group_by(LearningPath.id)
+            .order_by(
+                case((title_exact, 0), (title_like, 1), (category_like, 2), else_=3),
+                LearningPath.title,
             )
-            res = await db.execute(stmt)
-            rows = res.all()
+            .limit(limit)
+        )
+        res = await db.execute(stmt)
+        rows = res.all()
 
         results: list[dict[str, Any]] = []
         for lp, step_count in rows:
@@ -302,34 +402,45 @@ class ContextRetriever:
         db: AsyncSession,
         keywords: list[str],
         limit: int = 4,
+        user_progress: dict[str, Any] | None = None,
+        current_track: str | None = None,
+        domain: str | None = None,
     ) -> list[dict[str, Any]]:
-        """Query matching courses from database catalog."""
-        if not keywords:
-            stmt = select(Course).limit(limit)
-            res = await db.execute(stmt)
-            courses = res.scalars().all()
-        else:
-            filters = []
-            for kw in keywords:
-                pat = f"%{kw}%"
-                filters.append(Course.title.ilike(pat))
-                filters.append(Course.description.ilike(pat))
-                filters.append(Course.difficulty.ilike(pat))
-                filters.append(cast(Course.tags, String).ilike(pat))
+        """Query matching courses from database catalog with domain anchoring & relevance."""
+        effective_kws = self._extract_anchor_keywords(
+            keywords=keywords,
+            user_progress=user_progress,
+            current_track=current_track,
+            domain=domain,
+        )
 
-            title_like = or_(*[Course.title.ilike(f"%{kw}%") for kw in keywords])
+        filters = []
+        for kw in effective_kws:
+            pat = f"%{kw}%"
+            filters.append(Course.title.ilike(pat))
+            filters.append(Course.description.ilike(pat))
+            filters.append(Course.difficulty.ilike(pat))
+            filters.append(cast(Course.tags, String).ilike(pat))
 
-            stmt = (
-                select(Course)
-                .where(or_(*filters))
-                .order_by(
-                    case((title_like, 0), else_=1),
-                    Course.title,
-                )
-                .limit(limit)
+        exclusion_filters = []
+        for bl in ["%blender%", "%3d design%", "%3d modeling%", "%business analytics%", "%accounting%", "%financial analysis%"]:
+            if not any(bl.strip("%") in kw for kw in effective_kws):
+                exclusion_filters.append(func.coalesce(Course.title, "").notilike(bl))
+
+        title_like = or_(*[Course.title.ilike(f"%{kw}%") for kw in effective_kws])
+
+        stmt = (
+            select(Course)
+            .where(or_(*filters))
+            .where(*exclusion_filters)
+            .order_by(
+                case((title_like, 0), else_=1),
+                Course.title,
             )
-            res = await db.execute(stmt)
-            courses = res.scalars().all()
+            .limit(limit)
+        )
+        res = await db.execute(stmt)
+        courses = res.scalars().all()
 
         results: list[dict[str, Any]] = []
         for c in courses:
@@ -351,36 +462,47 @@ class ContextRetriever:
         db: AsyncSession,
         keywords: list[str],
         limit: int = 4,
+        user_progress: dict[str, Any] | None = None,
+        current_track: str | None = None,
+        domain: str | None = None,
     ) -> list[dict[str, Any]]:
-        """Query matching hands-on practice projects from database catalog."""
-        if not keywords:
-            stmt = select(Project).limit(limit)
-            res = await db.execute(stmt)
-            projects = res.scalars().all()
-        else:
-            filters = []
-            for kw in keywords:
-                pat = f"%{kw}%"
-                filters.append(Project.title.ilike(pat))
-                filters.append(Project.description.ilike(pat))
-                filters.append(Project.difficulty.ilike(pat))
-                filters.append(cast(Project.technologies, String).ilike(pat))
-                filters.append(cast(Project.required_skills, String).ilike(pat))
-                filters.append(cast(Project.related_paths, String).ilike(pat))
+        """Query matching hands-on practice projects with strict tech stack relevance."""
+        effective_kws = self._extract_anchor_keywords(
+            keywords=keywords,
+            user_progress=user_progress,
+            current_track=current_track,
+            domain=domain,
+        )
 
-            title_like = or_(*[Project.title.ilike(f"%{kw}%") for kw in keywords])
+        filters = []
+        for kw in effective_kws:
+            pat = f"%{kw}%"
+            filters.append(Project.title.ilike(pat))
+            filters.append(Project.description.ilike(pat))
+            filters.append(Project.difficulty.ilike(pat))
+            filters.append(cast(Project.technologies, String).ilike(pat))
+            filters.append(cast(Project.required_skills, String).ilike(pat))
+            filters.append(cast(Project.related_paths, String).ilike(pat))
 
-            stmt = (
-                select(Project)
-                .where(or_(*filters))
-                .order_by(
-                    case((title_like, 0), else_=1),
-                    Project.title,
-                )
-                .limit(limit)
+        exclusion_filters = []
+        for bl in ["%blender%", "%3d design%", "%3d modeling%", "%business analytics%", "%accounting%", "%financial analysis%"]:
+            if not any(bl.strip("%") in kw for kw in effective_kws):
+                exclusion_filters.append(func.coalesce(Project.title, "").notilike(bl))
+
+        title_like = or_(*[Project.title.ilike(f"%{kw}%") for kw in effective_kws])
+
+        stmt = (
+            select(Project)
+            .where(or_(*filters))
+            .where(*exclusion_filters)
+            .order_by(
+                case((title_like, 0), else_=1),
+                Project.title,
             )
-            res = await db.execute(stmt)
-            projects = res.scalars().all()
+            .limit(limit)
+        )
+        res = await db.execute(stmt)
+        projects = res.scalars().all()
 
         results: list[dict[str, Any]] = []
         for p in projects:
@@ -944,10 +1066,14 @@ class ContextRetriever:
                 },
             })
 
-        # 2. Surface top matched learning paths
+        # 2. Surface top matched learning paths strictly relevant to active domain
         for lp in learning_paths[:2]:
             if len(actions) >= max_actions:
                 break
+            if user_progress and user_progress.get("active_roadmaps"):
+                active_domain = recommendation_engine._infer_active_domain({"user_progress": user_progress})
+                if not recommendation_engine.is_item_relevant(lp, active_domain, set()):
+                    continue
             actions.append({
                 "action_type": "view_roadmap",
                 "title": f"Explore Roadmap: {lp['title']}",
@@ -959,10 +1085,14 @@ class ContextRetriever:
                 },
             })
 
-        # 3. Surface top matched projects
-        for p in projects[:1]:
+        # 3. Surface top matched projects strictly relevant to active domain
+        for p in projects[:2]:
             if len(actions) >= max_actions:
                 break
+            if user_progress and user_progress.get("active_roadmaps"):
+                active_domain = recommendation_engine._infer_active_domain({"user_progress": user_progress})
+                if not recommendation_engine.is_item_relevant(p, active_domain, set()):
+                    continue
             actions.append({
                 "action_type": "view_project",
                 "title": f"Build Project: {p['title']}",
@@ -973,10 +1103,14 @@ class ContextRetriever:
                 },
             })
 
-        # 4. Surface top matched skills
+        # 4. Surface top matched skills strictly relevant to active domain
         for s in skills[:1]:
             if len(actions) >= max_actions:
                 break
+            if user_progress and user_progress.get("active_roadmaps"):
+                active_domain = recommendation_engine._infer_active_domain({"user_progress": user_progress})
+                if not recommendation_engine.is_item_relevant(s, active_domain, set()):
+                    continue
             actions.append({
                 "action_type": "explore_skill",
                 "title": f"Skill: {s['name']}",
@@ -1176,11 +1310,11 @@ class ContextRetriever:
                 tier3_skills = await self.search_skills(db, prereqs, limit=2)
                 tier3_paths = await self.search_learning_paths(db, prereqs, limit=2)
 
-        # 5. Tier 4 & 5: Catalog database searches with query keywords
-        raw_skills = await self.search_skills(db, keywords, limit=6)
-        raw_paths = await self.search_learning_paths(db, keywords, limit=6)
-        raw_courses = await self.search_courses(db, keywords, limit=6)
-        raw_projects = await self.search_projects(db, keywords, limit=6)
+        # 5. Tier 4 & 5: Catalog database searches with query keywords anchored by user progress
+        raw_skills = await self.search_skills(db, keywords, limit=6, user_progress=user_progress)
+        raw_paths = await self.search_learning_paths(db, keywords, limit=6, user_progress=user_progress)
+        raw_courses = await self.search_courses(db, keywords, limit=6, user_progress=user_progress)
+        raw_projects = await self.search_projects(db, keywords, limit=6, user_progress=user_progress)
 
         # Apply recommendation filtering: remove forbidden advanced topics for beginners
         filtered_raw_skills = [s for s in raw_skills if not is_item_forbidden(s)]
@@ -1260,6 +1394,18 @@ class ContextRetriever:
             user_progress=user_progress,
         )
 
+        # 10. Formulate recommendations with Strict Relevance
+        rec_context = {
+            "user_progress": user_progress,
+            "active_roadmaps": user_progress.get("active_roadmaps", []) if user_progress else [],
+            "matched_paths": learning_paths,
+            "matched_skills": skills,
+            "matched_projects": projects,
+            "matched_courses": courses,
+            "preferred_language": user_progress.get("preferred_language") if user_progress else "Python",
+        }
+        recs = recommendation_engine.get_recommendations(context=rec_context, query=query)
+
         return {
             "keywords": keywords,
             "skills": skills,
@@ -1270,6 +1416,8 @@ class ContextRetriever:
             "catalog_context": catalog_context,
             "related_actions": related_actions,
             "suggestions": suggestions,
+            "recommended_projects": recs.get("recommended_projects", []),
+            "recommended_resources": recs.get("recommended_resources", []),
         }
 
 

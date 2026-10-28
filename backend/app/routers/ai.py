@@ -542,19 +542,22 @@ async def chat_with_ai(
     # Only show resources when: user asks roadmap, what next, project, learning advice, daily goal, weekly plan, revision, interview prep, or code/architecture.
     # Strictly False for INTENT_CASUAL, INTENT_GREETING, INTENT_SIMPLE_QUESTION, INTENT_TIME_DATE.
     allow_resources = (
-        intent in {
-            INTENT_ROADMAP_REQUEST,
-            INTENT_NEXT_STEP,
-            INTENT_PROJECT_SUGGESTION,
-            INTENT_LEARNING_ADVICE,
-            INTENT_DAILY_GOAL,
-            INTENT_WEEKLY_PLAN,
-            INTENT_REVISION,
-            INTENT_INTERVIEW_PREP,
-            INTENT_CODE_HELP,
-            INTENT_CODING_HELP,
-            INTENT_CODING_ARCHITECTURE,
-        }
+        (
+            intent in {
+                INTENT_ROADMAP_REQUEST,
+                INTENT_NEXT_STEP,
+                INTENT_PROJECT_SUGGESTION,
+                INTENT_LEARNING_ADVICE,
+                INTENT_DAILY_GOAL,
+                INTENT_WEEKLY_PLAN,
+                INTENT_REVISION,
+                INTENT_INTERVIEW_PREP,
+                INTENT_CODE_HELP,
+                INTENT_CODING_HELP,
+                INTENT_CODING_ARCHITECTURE,
+            }
+            or any(w in payload.message.lower() for w in ["playlist", "playlists", "tutorial", "tutorials", "resource", "resources", "course", "courses"])
+        )
         and intent not in {
             INTENT_CASUAL,
             INTENT_GREETING,
