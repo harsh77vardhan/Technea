@@ -25,7 +25,9 @@ from app.services.ai.prompts import (
     INTENT_PROJECT_SUGGESTION,
     INTENT_REVISION,
     INTENT_ROADMAP_REQUEST,
+    INTENT_SIMPLE_QUESTION,
     INTENT_WEEKLY_PLAN,
+    INTENT_CODING_ARCHITECTURE,
     build_system_prompt,
     classify_intent,
 )
@@ -1086,12 +1088,10 @@ class RuleBasedProvider(BaseAIProvider):
     def _generate_casual_response(self, prompt: str, seed: Any = None) -> str:
         """Handle casual chit-chat, gratitude, and acknowledgments warmly without unsolicited resources."""
         p = prompt.lower()
-        if any(w in p for w in ["thank", "thx", "appreciate"]):
-            return (
-                "You're very welcome! Keep up the great practice. "
-                "Whenever you're ready to tackle your next milestone, plan a project, or review code, just let me know."
-            )
-        elif any(w in p for w in ["bye", "goodbye", "see you", "later"]):
+        clean_p = re.sub(r"[^\w\s]", "", p).strip()
+        if any(w in clean_p for w in ["thank", "thx", "appreciate"]):
+            return "You're welcome! Let me know if you need any help while coding."
+        elif any(w in clean_p for w in ["bye", "goodbye", "see you", "later"]):
             return (
                 "Catch you later! Keep your coding streak going, and feel free to reach out whenever you're back in the editor."
             )
@@ -1099,6 +1099,227 @@ class RuleBasedProvider(BaseAIProvider):
             return (
                 "Glad to help! Let me know where you'd like to focus next—whether exploring a roadmap, choosing a project, or working through code."
             )
+
+    def _generate_simple_question_response(self, prompt: str, seed: Any = None) -> str:
+        """Provide concise, 2-3 sentence answers explaining technical concepts cleanly and directly."""
+        p = prompt.strip().lower()
+        clean_p = re.sub(r"[^\w\s]", "", p).strip()
+
+        if any(w in clean_p for w in ["api", "apis"]):
+            return (
+                "An API (Application Programming Interface) is a standardized set of rules and protocols that allows different software applications to communicate and exchange data with each other. "
+                "It defines the types of requests that can be made, how to make them, and the data formats expected in return. "
+                "In web and cloud engineering, REST and GraphQL APIs enable client interfaces to fetch and update data reliably across distributed backend services."
+            )
+        elif "python" in clean_p:
+            return (
+                "Python is a high-level, interpreted programming language known for its clear, readable syntax and versatile ecosystem. "
+                "It emphasizes developer productivity and code readability, making it ideal for beginners while powerful enough for complex enterprise systems. "
+                "Python is widely used across backend web engineering, artificial intelligence, data analytics, and automation."
+            )
+        elif "react" in clean_p:
+            return (
+                "React is an open-source JavaScript library developed by Meta for building dynamic, component-based user interfaces. "
+                "It utilizes a declarative programming model and an in-memory Virtual DOM to efficiently update and render the right components when application state changes. "
+                "React powers modern single-page applications and interactive web experiences."
+            )
+        elif "docker" in clean_p:
+            return (
+                "Docker is an open-source platform that enables developers to build, package, and execute applications inside lightweight, isolated containers. "
+                "Containers bundle the application code together with all its dependencies and system libraries, ensuring consistent behavior across development, staging, and production environments. "
+                "It forms the cornerstone of modern containerization, microservice architectures, and CI/CD pipelines."
+            )
+        elif "variable" in clean_p:
+            return (
+                "A variable is a symbolic name bound to a specific memory location used to store and manipulate data in a program. "
+                "It allows developers to reference, update, and pass dynamic values throughout application execution using meaningful identifiers. "
+                "Variables are defined with specific data types—such as integers, strings, or booleans—that determine the operations that can be performed on them."
+            )
+        elif "sql" in clean_p:
+            return (
+                "SQL (Structured Query Language) is the standard programming language designed for managing and querying data in relational database management systems. "
+                "It allows developers to create schemas, insert, update, and delete records, and perform complex queries using joins and aggregations. "
+                "Databases like PostgreSQL, MySQL, and SQLite all use SQL as their primary interface."
+            )
+        elif "git" in clean_p:
+            return (
+                "Git is a distributed version control system that tracks modifications in source code files over time. "
+                "It enables teams of developers to collaborate seamlessly through branching, merging, and cryptographic commit history without overwriting each other's work. "
+                "Git is the industry standard for code versioning and collaborative software engineering."
+            )
+        elif "kubernetes" in clean_p or "k8s" in clean_p:
+            return (
+                "Kubernetes is an open-source orchestration system that automates the deployment, scaling, and management of containerized applications across compute clusters. "
+                "It groups application containers into logical units called pods and provides automated failover, load balancing, and rolling zero-downtime updates. "
+                "It is the industry standard for operating production microservices at cloud scale."
+            )
+        elif "html" in clean_p:
+            return (
+                "HTML (HyperText Markup Language) is the standard markup language used to structure content on the web. "
+                "It uses semantic tags to define elements like headings, paragraphs, navigation menus, links, and forms. "
+                "HTML establishes the foundational document hierarchy that CSS styles and JavaScript makes interactive."
+            )
+        elif "css" in clean_p:
+            return (
+                "CSS (Cascading Style Sheets) is a stylesheet language used to specify the visual presentation and layout of HTML documents. "
+                "It controls colors, typography, responsive grid and flexbox layouts, and animations across varying screen dimensions. "
+                "CSS separates content from styling, making modern web interfaces adaptable, accessible, and maintainable."
+            )
+        else:
+            topic = re.sub(r"^(what\s+is\s+an?|what\s+is|what\s+are|define)\s+", "", clean_p).strip()
+            topic_title = topic.title() if topic else "This concept"
+            return (
+                f"**{topic_title}** is a core concept in software engineering and computer science. "
+                "It provides a structured way to solve specific programming challenges, organize application logic, or facilitate system communication. "
+                "Mastering its fundamental principles is key to building maintainable and scalable software."
+            )
+
+    def _generate_react_hooks_response(self, seed: Any = None) -> str:
+        """Provide Concept, Explanation, Working code example, and concise key takeaways for React hooks."""
+        return (
+            "### React Hooks: State and Lifecycle in Functional Components\n\n"
+            "#### 1. Concept: State and Lifecycle in Functional Components\n"
+            "React Hooks are specialized functions that allow functional components to manage local state and hook into React lifecycle events without writing class components. "
+            "They simplify component hierarchy, eliminate complex `this` binding, and enable the reuse of stateful logic across components.\n\n"
+            "#### 2. Core Explanation\n"
+            "- **`useState`**: Declares a piece of reactive state inside a functional component. It returns a tuple with the current state value and a state updater function that triggers re-renders upon modification.\n"
+            "- **`useEffect`**: Coordinates side effects such as data fetching, event subscriptions, timers, and DOM mutations. It runs after render and can optionally return a cleanup function to prevent memory leaks.\n"
+            "- **Custom Hooks**: Reusable JavaScript functions starting with `use` that encapsulate stateful logic by combining built-in hooks, allowing clean separation of business logic from UI rendering.\n\n"
+            "#### 3. Working Code Example\n"
+            "```jsx\n"
+            "import React, { useState, useEffect } from 'react';\n"
+            "\n"
+            "// Custom hook for managing window resize state\n"
+            "function useWindowWidth() {\n"
+            "  const [width, setWidth] = useState(window.innerWidth);\n"
+            "\n"
+            "  useEffect(() => {\n"
+            "    const handleResize = () => setWidth(window.innerWidth);\n"
+            "    window.addEventListener('resize', handleResize);\n"
+            "    return () => window.removeEventListener('resize', handleResize);\n"
+            "  }, []); // Empty array ensures listener is registered only on mount\n"
+            "\n"
+            "  return width;\n"
+            "}\n"
+            "\n"
+            "export function UserProfileCard({ userId }) {\n"
+            "  const [userData, setUserData] = useState(null);\n"
+            "  const [loading, setLoading] = useState(true);\n"
+            "  const width = useWindowWidth();\n"
+            "\n"
+            "  useEffect(() => {\n"
+            "    let active = true;\n"
+            "    setLoading(true);\n"
+            "    fetch(`/api/users/${userId}`)\n"
+            "      .then(res => res.json())\n"
+            "      .then(data => {\n"
+            "        if (active) {\n"
+            "          setUserData(data);\n"
+            "          setLoading(false);\n"
+            "        }\n"
+            "      });\n"
+            "    return () => { active = false; };\n"
+            "  }, [userId]);\n"
+            "\n"
+            "  if (loading) return <div>Loading profile...</div>;\n"
+            "\n"
+            "  return (\n"
+            "    <div className='profile-card'>\n"
+            "      <h3>{userData?.name}</h3>\n"
+            "      <p>Role: {userData?.role}</p>\n"
+            "      <small>Viewport: {width}px</small>\n"
+            "    </div>\n"
+            "  );\n"
+            "}\n"
+            "```\n\n"
+            "#### 4. Concise Key Takeaways\n"
+            "- **Rules of Hooks**: Only call hooks at the top level of React function components or custom hooks—never inside loops, conditions, or nested functions.\n"
+            "- **Dependency Array Discipline**: Always declare all reactive variables used inside `useEffect` in its dependency array to prevent stale closures and unintended infinite re-renders.\n"
+            "- **Logic Extraction**: Use custom hooks to decouple complex data fetching or event subscriptions from UI rendering."
+        )
+
+    def _generate_backend_architecture_response(self, seed: Any = None) -> str:
+        """Provide deep technical architecture response (API Gateway, FastAPI service, PostgreSQL, Redis cache, Celery worker, async queue, security, deployment diagram)."""
+        return (
+            "### Production Backend Architecture Blueprint\n\n"
+            "Here is a comprehensive, production-grade backend architecture designed for high throughput, data integrity, and horizontal scalability.\n\n"
+            "#### 1. Core Architecture & Component Responsibilities\n\n"
+            "- **API Gateway (Nginx / Envoy / AWS API Gateway)**:\n"
+            "  - Serves as the single public entry point for web and mobile clients over HTTPS/WSS.\n"
+            "  - Enforces SSL/TLS termination, centralized rate limiting, DDoS mitigation, and reverse proxy routing.\n\n"
+            "- **FastAPI Service (Application & REST Core)**:\n"
+            "  - High-performance asynchronous microservice running on Python 3.12+ and Uvicorn workers.\n"
+            "  - Enforces strict data contracts via Pydantic v2 schemas and manages dependency-injected database sessions.\n\n"
+            "- **PostgreSQL (Primary Relational Database)**:\n"
+            "  - ACID-compliant relational persistence for user profiles, relational data, and financial transactions.\n"
+            "  - Configured with connection pooling (PgBouncer/asyncpg) and declarative schema migrations via Alembic.\n\n"
+            "- **Redis Cache (In-Memory Data Store)**:\n"
+            "  - Sub-millisecond distributed cache for query results, user session tokens, and sliding-window rate limiters.\n\n"
+            "- **Celery Worker & Async Queue**:\n"
+            "  - Asynchronous background worker fleet powered by Celery with Redis or RabbitMQ as the message broker.\n"
+            "  - Offloads long-running and I/O-heavy workloads: transactional email dispatch, webhook retries, and report generation.\n\n"
+            "- **Security & Defense-in-Depth**:\n"
+            "  - Stateless JWT authentication with short-lived access tokens and secure HttpOnly refresh cookies.\n"
+            "  - Parameterized ORM queries to eliminate SQL injection, CORS policy validation, and least-privilege DB roles.\n\n"
+            "#### 2. System Deployment Diagram\n\n"
+            "```text\n"
+            "┌────────────────────────────────┐\n"
+            "│   Web & Mobile Clients         │\n"
+            "└──────────────┬─────────────────┘\n"
+            "               │ (HTTPS / WSS)\n"
+            "               ▼\n"
+            "┌────────────────────────────────┐\n"
+            "│   API Gateway (Nginx / Envoy)  │ ── (SSL Termination, Rate Limiting)\n"
+            "└──────────────┬─────────────────┘\n"
+            "               │ (Private VPC Network)\n"
+            "               ▼\n"
+            "┌────────────────────────────────┐\n"
+            "│   FastAPI Service Layer        │ ◄──────► ┌─────────────────────────┐\n"
+            "└───────┬────────────────┬───────┘          │   Redis In-Memory Cache │\n"
+            "        │                │                  └─────────────────────────┘\n"
+            "        │ (Async SQL)    │ (Enqueue Tasks)\n"
+            "        ▼                ▼\n"
+            "┌───────────────┐ ┌──────────────────────────────────────────────────┐\n"
+            "│  PostgreSQL   │ │  Celery Async Queue (Redis Broker)               │\n"
+            "│  Database     │ │  └─► Background Worker Nodes (Email, Reports)   │\n"
+            "└───────────────┘ └──────────────────────────────────────────────────┘\n"
+            "```\n\n"
+            "#### 3. Reliability & Scaling Best Practices\n"
+            "- **Stateless Scaling**: Horizontally scale containerized FastAPI instances behind the API Gateway without relying on local server state.\n"
+            "- **Async Task Isolation**: Configure dedicated Celery queues with dead-letter queue (DLQ) support to isolate failing tasks without blocking core workloads.\n"
+            "- **Observability**: Instrument distributed tracing and export Prometheus metrics to track p99 latency, request throughput, and error rates."
+        )
+
+    def _generate_python_learning_roadmap(self, seed: Any = None) -> str:
+        """Provide structured learning roadmap response (Foundations -> Data Structures -> Hands-on Projects -> Web/Data -> Production testing)."""
+        return (
+            "### Learning Roadmap: How to Master Python\n\n"
+            "Here is the structured 5-phase engineering roadmap to progress from fundamental syntax to production-ready software development:\n\n"
+            "#### 1. Foundations (Weeks 1–3)\n"
+            "- **Core Syntax & Primitives**: Variables, dynamic typing, primitive data types (integers, floats, strings, booleans), and operators.\n"
+            "- **Control Flow**: Conditionals (`if`/`elif`/`else`), loops (`for`/`while`), and iteration fundamentals.\n"
+            "- **Modular Functions**: Defining functions, parameters, return statements, variable scope (`LEGB`), and exception handling with `try`/`except`.\n"
+            "- **Milestone**: Build an interactive CLI personal expense tracker with robust input validation.\n\n"
+            "#### 2. Data Structures & OOP (Weeks 4–6)\n"
+            "- **Built-in Collections**: Lists, dictionaries, tuples, sets, list comprehensions, and generator expressions.\n"
+            "- **Object-Oriented Programming**: Classes, instances, inheritance, dunder methods (`__init__`, `__str__`), and encapsulation.\n"
+            "- **Pythonic Idioms**: Decorators, context managers (`with` statements), type hints, and PEP 8 guidelines.\n"
+            "- **Milestone**: Build a modular, file-based task management engine using OOP and JSON persistence.\n\n"
+            "#### 3. Hands-on Projects (Weeks 7–9)\n"
+            "- **Applied Problem Solving**: Build functional multi-module command-line tools.\n"
+            "- **HTTP & APIs**: Consuming REST APIs with `httpx` or `requests`, parsing JSON, and handling network timeouts gracefully.\n"
+            "- **CLI Interfaces**: Building interactive terminal tools with `Typer` or `Click`.\n"
+            "- **Milestone Deliverable**: Build an automated GitHub repository analyzer that inspects repositories and outputs summary metrics.\n\n"
+            "#### 4. Web & Data Ecosystem (Weeks 10–13)\n"
+            "- **Web Track Path**: Modern asynchronous web APIs with FastAPI, Pydantic data validation, and PostgreSQL with SQLAlchemy 2.0.\n"
+            "- **Data Track Path**: Data wrangling and numerical analysis with NumPy, Pandas, and exploratory visualization tools.\n"
+            "- **Milestone**: Ship an authenticated REST API microservice or automated exploratory data analysis pipeline.\n\n"
+            "#### 5. Production & Testing (Weeks 14–16)\n"
+            "- **Automated Testing**: Writing comprehensive unit and integration test suites using `pytest`, fixtures, and mocks.\n"
+            "- **Packaging & Tooling**: Virtual environments (`uv` / `venv`), dependency locking, linters (`ruff`), and static type checking (`mypy`).\n"
+            "- **Deployment & CI/CD**: Packaging with multi-stage `Dockerfile` and configuring GitHub Actions automated CI pipelines.\n"
+            "- **Milestone**: Deploy a containerized Python service to production with automated tests running on every pull request."
+        )
 
     async def generate_chat_response(
         self,
@@ -1110,17 +1331,65 @@ class RuleBasedProvider(BaseAIProvider):
     ) -> str:
         """Synthesize a high-quality mentor response adhering strictly to Technea AI personality."""
         p = prompt.strip().lower()
+        clean_p = re.sub(r"[^\w\s]", "", p).strip()
         domain = self._detect_domain(p, context)
         level = self._detect_level(p, context)
         user_name = context.get("user_name") if context else None
         seed = kwargs.get("seed")
+
+        # 1. Conversational directives (e.g. "hey dont say anything just say hey back", "just say hey back", "say hey")
+        is_directive = (
+            any(clean_p == d for d in ["say hey", "say hey back", "just say hey back", "just say hey", "say hi", "say hi back", "just say hi back", "just say hi", "say hello", "say hello back"])
+            or ("dont say anything" in clean_p and any(w in clean_p for w in ["hey", "hi", "hello"]))
+            or ("just say" in clean_p and any(w in clean_p for w in ["hey", "hi", "hello"]))
+        )
+        if is_directive:
+            if "back" in clean_p:
+                return "Hey back! 👋"
+            return "Hey! 👋"
+
+        # 2. Short greetings (e.g. "hey", "hi", "yo")
+        is_short_hey = clean_p in {"hey", "hi", "yo", "hey there", "yo hey", "heyy", "heyyy", "hi there"}
+        if is_short_hey:
+            if user_name:
+                return f"Hey {user_name}! 👋"
+            return "Hey 👋"
+
+        # 3. Time-of-day greetings
+        if clean_p in {"good morning", "goodmorning"}:
+            return "Good morning! 👋 Hope you have a great day."
+        if clean_p in {"good afternoon"}:
+            return "Good afternoon! 👋 Hope you have a great day."
+        if clean_p in {"good evening"}:
+            return "Good evening! 👋 Hope you have a great day."
+
+        # 4. Gratitude
+        is_thanks = (
+            any(clean_p == t for t in ["thanks", "thank you", "thx", "thank you very much", "many thanks"])
+            or clean_p.startswith("thanks")
+            or clean_p.startswith("thank you")
+        )
+        if is_thanks:
+            return "You're welcome! Let me know if you need any help while coding."
 
         # Intent classification
         intent = context.get("classified_intent") if context else None
         if not intent:
             intent = classify_intent(prompt)
 
-        # Check for specific coding queries
+        # 5. Simple Questions handling (INTENT_SIMPLE_QUESTION)
+        is_simple_q = intent == INTENT_SIMPLE_QUESTION or (
+            re.match(r"^(what\s+is\s+an?|what\s+is|what\s+are|define)\s+[a-z0-9_\-\.\s]+$", clean_p)
+            and not any(pat in p for pat in ["what is my next", "what is next", "what is today", "what is this week", "what is my roadmap", "what should i", "what to do", "what project", "what are the prerequisites", "what are my"])
+        )
+        if is_simple_q:
+            return self._generate_simple_question_response(prompt, seed=seed)
+
+        # 6. Specific technical queries
+        has_react_hooks = ("react" in p and "hook" in p) or "react hooks" in p
+        has_backend_arch = any(phrase in p for phrase in ["backend architecture", "build me a backend architecture", "software architecture", "system architecture", "microservice architecture"]) or intent == INTENT_CODING_ARCHITECTURE
+        has_python_learning = ("how do i learn python" in p or "how to learn python" in p or "how can i learn python" in p or (("learn python" in p or "learning python" in p) and any(w in p for w in ["how", "start", "guide", "roadmap", "where"])))
+
         has_recursion = any(w in p for w in ["recursion", "recursive"])
         has_async = any(w in p for w in ["async", "asyncio", "await", "concurrency"])
         has_debugging = any(w in p for w in ["error", "bug", "traceback", "exception", "failed", "fix", "why is this", "broken", "debugging"])
@@ -1140,7 +1409,13 @@ class RuleBasedProvider(BaseAIProvider):
         has_html_css_completed = ("html" in p and "css" in p) and any(w in p for w in ["completed", "finished", "done"])
 
         # Intent-driven dispatch
-        if has_debugging:
+        if has_react_hooks:
+            res = self._generate_react_hooks_response(seed=seed)
+        elif has_backend_arch:
+            res = self._generate_backend_architecture_response(seed=seed)
+        elif has_python_learning:
+            res = self._generate_python_learning_roadmap(seed=seed)
+        elif has_debugging:
             res = self._generate_debugging_response(prompt, seed=seed)
         elif has_recursion or has_async:
             res = self._generate_coding_response(prompt, domain, level, seed=seed)
@@ -1148,7 +1423,7 @@ class RuleBasedProvider(BaseAIProvider):
             res = self._generate_milestone_deep_dive_response(prompt, domain, level, context=context, seed=seed)
         elif has_html_css_completed or intent == INTENT_NEXT_STEP:
             res = self._generate_next_step_response(domain, level, prompt=prompt, context=context, seed=seed)
-        elif intent == INTENT_GREETING:
+        elif intent == INTENT_GREETING or "hello" in clean_p:
             res = self._generate_greeting_response(user_name, level, seed=seed)
             return res  # Return short greeting directly without appending catalog block!
         elif intent == INTENT_CASUAL:
@@ -1207,8 +1482,18 @@ class RuleBasedProvider(BaseAIProvider):
                 INTENT_WEEKLY_PLAN,
                 INTENT_REVISION,
                 INTENT_INTERVIEW_PREP,
+                INTENT_CODING_ARCHITECTURE,
             }
-            and not (has_recursion or has_async or has_debugging or intent == INTENT_GREETING)
+            and intent not in {INTENT_CASUAL, INTENT_GREETING, INTENT_SIMPLE_QUESTION}
+            and not (
+                is_directive
+                or is_short_hey
+                or is_thanks
+                or has_react_hooks
+                or has_recursion
+                or has_async
+                or has_debugging
+            )
         )
         if context and allow_catalog_resources:
             cat_block = self._build_catalog_references_block(context)

@@ -57,5 +57,9 @@ class AIChatResponse(BaseModel):
         default=None,
         description="AI provider that fulfilled the request (e.g. 'gemini', 'rule_based')",
     )
+    suggested_next_step: str | None = Field(
+        default=None,
+        description="Optional recommended next step for learner progression",
+    )
 
     model_config = ConfigDict(from_attributes=True)

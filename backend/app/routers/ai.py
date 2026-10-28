@@ -30,7 +30,9 @@ from app.services.ai.prompts import (
     INTENT_PROJECT_SUGGESTION,
     INTENT_REVISION,
     INTENT_ROADMAP_REQUEST,
+    INTENT_SIMPLE_QUESTION,
     INTENT_WEEKLY_PLAN,
+    INTENT_CODING_ARCHITECTURE,
     classify_intent,
 )
 from app.services.progress import progress_service
@@ -134,12 +136,31 @@ def _build_suggestions(
             "What is the best way to document this project on GitHub?",
             "What should I do next after completing this project?",
         ]
-    elif intent in {INTENT_GREETING, INTENT_CASUAL}:
+    elif intent == INTENT_CASUAL:
+        return [
+            "What should I learn next?",
+            "Can you give me a roadmap?",
+            "Recommend a project to build",
+        ]
+    elif intent == INTENT_GREETING:
         return [
             "What should I do next on my learning path?",
             "Can you give me a structured roadmap?",
             "Recommend a hands-on project for my level",
             "Explain recursion with a practical example",
+        ]
+    elif intent == INTENT_SIMPLE_QUESTION:
+        return [
+            "Can you show a code example?",
+            "How is this used in production?",
+            "What should I learn next?",
+        ]
+    elif intent == INTENT_CODING_ARCHITECTURE:
+        return [
+            "What database indexing strategy should I use?",
+            "How do I handle connection pooling at scale?",
+            "What monitoring metrics are most critical?",
+            "How should I structure the CI/CD pipeline?",
         ]
 
     domain_suggestions = {
@@ -505,20 +526,28 @@ async def chat_with_ai(
     )
 
     # Resource visibility rules:
-    # Only show resources when: user asks roadmap, what next, project, learning advice, daily goal, weekly plan, revision, or interview prep.
-    # For casual messages or greetings, hide resources.
-    allow_resources = intent in {
-        INTENT_ROADMAP_REQUEST,
-        INTENT_NEXT_STEP,
-        INTENT_PROJECT_SUGGESTION,
-        INTENT_LEARNING_ADVICE,
-        INTENT_DAILY_GOAL,
-        INTENT_WEEKLY_PLAN,
-        INTENT_REVISION,
-        INTENT_INTERVIEW_PREP,
-        INTENT_CODE_HELP,
-        INTENT_CODING_HELP,
-    }
+    # Only show resources when: user asks roadmap, what next, project, learning advice, daily goal, weekly plan, revision, interview prep, or code/architecture.
+    # Strictly False for INTENT_CASUAL, INTENT_GREETING, INTENT_SIMPLE_QUESTION.
+    allow_resources = (
+        intent in {
+            INTENT_ROADMAP_REQUEST,
+            INTENT_NEXT_STEP,
+            INTENT_PROJECT_SUGGESTION,
+            INTENT_LEARNING_ADVICE,
+            INTENT_DAILY_GOAL,
+            INTENT_WEEKLY_PLAN,
+            INTENT_REVISION,
+            INTENT_INTERVIEW_PREP,
+            INTENT_CODE_HELP,
+            INTENT_CODING_HELP,
+            INTENT_CODING_ARCHITECTURE,
+        }
+        and intent not in {
+            INTENT_CASUAL,
+            INTENT_GREETING,
+            INTENT_SIMPLE_QUESTION,
+        }
+    )
 
     if allow_resources:
         db_actions: list[RelatedAction] = []
@@ -535,6 +564,18 @@ async def chat_with_ai(
     else:
         related_actions = []
 
+    # Calculate suggested_next_step (Strictly None for casual/greeting/simple questions)
+    suggested_next_step: str | None = None
+    if intent not in {INTENT_CASUAL, INTENT_GREETING, INTENT_SIMPLE_QUESTION}:
+        user_prog = retrieved.get("user_progress") or {}
+        if user_prog:
+            suggested_next_step = (
+                user_prog.get("current_milestone_title")
+                or user_prog.get("upcoming_milestone")
+            )
+        elif active_roadmaps:
+            suggested_next_step = f"Continue {active_roadmaps[0]}"
+
     suggestions = retrieved.get("suggestions", [])
     if not suggestions or len(suggestions) < 3 or intent in {
         INTENT_GREETING,
@@ -544,6 +585,8 @@ async def chat_with_ai(
         INTENT_REVISION,
         INTENT_INTERVIEW_PREP,
         INTENT_CODE_HELP,
+        INTENT_SIMPLE_QUESTION,
+        INTENT_CODING_ARCHITECTURE,
     }:
         suggestions = _build_suggestions(payload.message, domain, is_guest=is_guest, intent=intent)
 
@@ -552,6 +595,7 @@ async def chat_with_ai(
         suggestions=suggestions,
         related_actions=related_actions,
         provider_used=provider_used,
+        suggested_next_step=suggested_next_step,
     )
 
 
