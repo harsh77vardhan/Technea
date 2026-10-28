@@ -1,9 +1,10 @@
 """User learning progress and dashboard analytics router."""
 
 from fastapi import APIRouter, status
-from app.api.deps import CurrentUserDep, DatabaseDep
+from app.api.deps import CurrentUserDep, DatabaseDep, OptionalUserDep
 from app.schemas.common import MessageResponse
 from app.schemas.progress import (
+    AchievementItemResponse,
     AIBuddyResponse,
     AIMentorChatRequest,
     AIMentorChatResponse,
@@ -221,5 +222,23 @@ async def ai_mentor_chat(
         user_id=current_user.id,
         payload=payload,
     )
+
+
+@router.get(
+    "/achievements",
+    response_model=list[AchievementItemResponse],
+    status_code=status.HTTP_200_OK,
+    summary="Get developer achievements showcase",
+)
+async def get_achievements(
+    db: DatabaseDep,
+    current_user: OptionalUserDep,
+) -> list[AchievementItemResponse]:
+    """Retrieve platform achievements and current user's unlocked status."""
+    return await progress_service.get_achievements(
+        db,
+        user_id=current_user.id if current_user else None,
+    )
+
 
 

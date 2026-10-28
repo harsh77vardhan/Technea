@@ -66,3 +66,52 @@ class UserAchievement(Base, IntIdMixin):
 
     def __repr__(self) -> str:
         return f"<UserAchievement(user_id={self.user_id}, achievement='{self.achievement_id}')>"
+
+
+class Achievement(Base, IntIdMixin):
+    """Developer achievement catalog item."""
+
+    __tablename__ = "achievements"
+
+    achievement_id: Mapped[str] = mapped_column(
+        String(100),
+        unique=True,
+        nullable=False,
+        index=True,
+    )
+    title: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+    )
+    description: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+    )
+    icon: Mapped[str] = mapped_column(
+        String(50),
+        default="award",
+        nullable=False,
+    )
+    category: Mapped[str] = mapped_column(
+        String(100),
+        default="General",
+        nullable=False,
+    )
+    xp_reward: Mapped[int] = mapped_column(
+        Integer,
+        default=50,
+        nullable=False,
+    )
+    criteria: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+
+    def __repr__(self) -> str:
+        return f"<Achievement(id={self.id}, achievement_id='{self.achievement_id}', title='{self.title}')>"
+

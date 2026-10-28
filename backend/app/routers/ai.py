@@ -4,6 +4,7 @@ Provides context-aware technical mentorship, pedagogical guidance,
 interactive follow-ups, and ecosystem deep links for authenticated learners and guests.
 """
 
+from datetime import datetime, timezone
 import logging
 import re
 from typing import Any
@@ -19,12 +20,17 @@ from app.services.ai import ai_service, context_retriever
 from app.services.ai.prompts import (
     INTENT_CAREER_ADVICE,
     INTENT_CASUAL,
+    INTENT_CODE_HELP,
     INTENT_CODING_HELP,
+    INTENT_DAILY_GOAL,
     INTENT_GREETING,
+    INTENT_INTERVIEW_PREP,
     INTENT_LEARNING_ADVICE,
     INTENT_NEXT_STEP,
     INTENT_PROJECT_SUGGESTION,
+    INTENT_REVISION,
     INTENT_ROADMAP_REQUEST,
+    INTENT_WEEKLY_PLAN,
     classify_intent,
 )
 from app.services.progress import progress_service
@@ -72,7 +78,42 @@ def _build_suggestions(
         ]
 
     # Intent-calibrated suggestions
-    if intent == INTENT_NEXT_STEP:
+    if intent == INTENT_DAILY_GOAL:
+        return [
+            "Break my active milestone into today's 45-minute deep-work blocks",
+            "What is the single most critical code exercise I should complete today?",
+            "Can you give me a 5-minute diagnostic quiz to finish today's session?",
+            "What common mistake should I avoid while working on today's tasks?",
+        ]
+    elif intent == INTENT_WEEKLY_PLAN:
+        return [
+            "Give me a tactical Monday-to-Sunday study plan for this milestone",
+            "What hands-on deliverable should I complete by the end of this week?",
+            "How many hours should I dedicate to coding vs reading this week?",
+            "What concepts must I master this week before advancing to the next step?",
+        ]
+    elif intent == INTENT_REVISION:
+        return [
+            "Quiz me on the core concepts from my recent completed lessons",
+            "Can we do a spaced repetition check on my active milestone?",
+            "Test my knowledge with 3 real-world technical scenario questions",
+            "Give me a quick code challenge to review what I've learned",
+        ]
+    elif intent == INTENT_INTERVIEW_PREP:
+        return [
+            "Give me a mock technical interview question tailored to my target role",
+            "What system design trade-offs are most asked for this milestone?",
+            "How should I explain my active project architecture to a hiring manager?",
+            "Can we practice an algorithmic coding problem step-by-step?",
+        ]
+    elif intent in {INTENT_CODE_HELP, INTENT_CODING_HELP}:
+        return [
+            "Can you review this code for performance and edge cases?",
+            "What unit tests should I write to prevent regressions?",
+            "How can I refactor this to follow idiomatic production patterns?",
+            "Explain the time and space complexity of this approach",
+        ]
+    elif intent == INTENT_NEXT_STEP:
         return [
             "What are the prerequisites for this next milestone?",
             "Can you provide a code example for this milestone?",
@@ -398,6 +439,15 @@ async def chat_with_ai(
             "active_roadmaps": active_roadmaps,
             "completed_milestones": completed_milestones,
             "is_guest": False,
+            "learning_goal": user_prog.get("learning_goal", "Software Engineering Mastery"),
+            "current_skill_level": user_prog.get("current_skill_level") or level,
+            "interests": user_prog.get("interests", "Full Stack Development, Web APIs"),
+            "preferred_language": user_prog.get("preferred_language") or "Python",
+            "time_available": user_prog.get("time_available") or "1-2 hours/day",
+            "completed_lessons_count": user_prog.get("completed_lessons_count", 0),
+            "recent_completed_lessons": user_prog.get("recent_completed_lessons", []),
+            "user_projects": user_prog.get("user_projects", []),
+            "recent_activity": user_prog.get("recent_activity", {}),
             "catalog_context": retrieved.get("catalog_context"),
             "technea_catalog_context": retrieved.get("catalog_context"),
             "matched_skills": retrieved.get("skills", []),
@@ -417,6 +467,19 @@ async def chat_with_ai(
             "active_roadmaps": [],
             "completed_milestones": 0,
             "is_guest": True,
+            "learning_goal": "Explore Technea Learning Paths",
+            "current_skill_level": "Beginner",
+            "interests": "Web Development, Python",
+            "preferred_language": "Python",
+            "time_available": "Self-paced",
+            "completed_lessons_count": 0,
+            "recent_completed_lessons": [],
+            "user_projects": [],
+            "recent_activity": {
+                "streak": 0,
+                "total_study_minutes": 0,
+                "completed_goals_count": 0,
+            },
             "catalog_context": retrieved.get("catalog_context"),
             "technea_catalog_context": retrieved.get("catalog_context"),
             "matched_skills": retrieved.get("skills", []),
@@ -442,13 +505,19 @@ async def chat_with_ai(
     )
 
     # Resource visibility rules:
-    # Only show resources when: user asks roadmap, what next, project, or learning advice.
+    # Only show resources when: user asks roadmap, what next, project, learning advice, daily goal, weekly plan, revision, or interview prep.
     # For casual messages or greetings, hide resources.
     allow_resources = intent in {
         INTENT_ROADMAP_REQUEST,
         INTENT_NEXT_STEP,
         INTENT_PROJECT_SUGGESTION,
         INTENT_LEARNING_ADVICE,
+        INTENT_DAILY_GOAL,
+        INTENT_WEEKLY_PLAN,
+        INTENT_REVISION,
+        INTENT_INTERVIEW_PREP,
+        INTENT_CODE_HELP,
+        INTENT_CODING_HELP,
     }
 
     if allow_resources:
@@ -467,7 +536,15 @@ async def chat_with_ai(
         related_actions = []
 
     suggestions = retrieved.get("suggestions", [])
-    if not suggestions or len(suggestions) < 3 or intent in {INTENT_GREETING, INTENT_CASUAL}:
+    if not suggestions or len(suggestions) < 3 or intent in {
+        INTENT_GREETING,
+        INTENT_CASUAL,
+        INTENT_DAILY_GOAL,
+        INTENT_WEEKLY_PLAN,
+        INTENT_REVISION,
+        INTENT_INTERVIEW_PREP,
+        INTENT_CODE_HELP,
+    }:
         suggestions = _build_suggestions(payload.message, domain, is_guest=is_guest, intent=intent)
 
     return AIChatResponse(
@@ -476,4 +553,78 @@ async def chat_with_ai(
         related_actions=related_actions,
         provider_used=provider_used,
     )
+
+
+@router.get(
+    "/mentor/context",
+    response_model=dict[str, Any],
+    status_code=status.HTTP_200_OK,
+    summary="Get current user active mentor memory summary and live sync state",
+    description="Returns the learner profile, active roadmap milestone, completed lessons, current projects, and daily learning activity for real-time frontend dashboard syncing.",
+)
+async def get_mentor_context(
+    db: DatabaseDep,
+    current_user: OptionalUserDep,
+) -> dict[str, Any]:
+    """Retrieve active AI Mentor 2.0 memory state for dashboard sync badge."""
+    if current_user is None:
+        return {
+            "authenticated": False,
+            "sync_status": "guest",
+            "user_name": "Guest Developer",
+            "developer_level": "Explorer",
+            "current_skill_level": "Explorer",
+            "xp_points": 0,
+            "streak": 0,
+            "learning_goal": "Explore Technea Learning Paths",
+            "interests": "Web Development, Python",
+            "bio": "",
+            "preferred_language": "Python",
+            "time_available": "Self-paced",
+            "active_roadmap": None,
+            "active_roadmaps": [],
+            "completed_milestones": [],
+            "completed_lessons_count": 0,
+            "recent_completed_lessons": [],
+            "user_projects": [],
+            "recent_activity": {
+                "streak": 0,
+                "total_study_minutes": 0,
+                "completed_goals_count": 0,
+            },
+            "synced_at": datetime.now(timezone.utc).isoformat(),
+        }
+
+    user_prog = await context_retriever.get_user_progress(db=db, user_id=current_user.id)
+    active_rm = user_prog.get("active_roadmaps", [None])[0] if user_prog.get("active_roadmaps") else None
+
+    return {
+        "authenticated": True,
+        "sync_status": "synced",
+        "user_id": str(current_user.id),
+        "user_name": user_prog.get("user_name", "Developer"),
+        "full_name": user_prog.get("full_name", ""),
+        "username": user_prog.get("username", ""),
+        "developer_level": user_prog.get("developer_level", "Junior Developer"),
+        "current_skill_level": user_prog.get("current_skill_level") or user_prog.get("developer_level", "Beginner"),
+        "xp_points": user_prog.get("xp_points", 0),
+        "streak": user_prog.get("streak", 0),
+        "learning_goal": user_prog.get("learning_goal"),
+        "interests": user_prog.get("interests"),
+        "bio": user_prog.get("bio"),
+        "preferred_language": user_prog.get("preferred_language", "Python"),
+        "time_available": user_prog.get("time_available", "1 hour/day"),
+        "active_roadmap": active_rm,
+        "active_roadmaps": user_prog.get("active_roadmaps", []),
+        "completed_milestones": user_prog.get("completed_milestones", []),
+        "current_milestone_title": user_prog.get("current_milestone_title"),
+        "current_milestone_description": user_prog.get("current_milestone_description"),
+        "upcoming_milestone": user_prog.get("upcoming_milestone"),
+        "completed_lessons_count": user_prog.get("completed_lessons_count", 0),
+        "recent_completed_lessons": user_prog.get("recent_completed_lessons", []),
+        "user_projects": user_prog.get("user_projects", []),
+        "recent_activity": user_prog.get("recent_activity", {}),
+        "formatted_guidance": user_prog.get("formatted_guidance"),
+        "synced_at": datetime.now(timezone.utc).isoformat(),
+    }
 

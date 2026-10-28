@@ -20,31 +20,175 @@ AI_CHARACTERISTICS: list[str] = [
 ]
 
 # Supported Intent Categories
+class IntentCodeHelp(str):
+    """String subclass matching both 'code_help' and 'coding_help' for backwards/forwards compatibility."""
+
+    def __eq__(self, other: Any) -> bool:
+        return super().__eq__(other) or other in ("coding_help", "code_help")
+
+    def __hash__(self) -> int:
+        return hash("code_help")
+
+
 INTENT_GREETING = "greeting"
 INTENT_ROADMAP_REQUEST = "roadmap_request"
 INTENT_NEXT_STEP = "next_step_recommendation"
 INTENT_LEARNING_ADVICE = "learning_advice"
-INTENT_CODING_HELP = "coding_help"
+INTENT_CODING_HELP = IntentCodeHelp("coding_help")
+INTENT_CODE_HELP = IntentCodeHelp("code_help")
 INTENT_PROJECT_SUGGESTION = "project_suggestion"
 INTENT_CAREER_ADVICE = "career_advice"
 INTENT_CASUAL = "casual"
+INTENT_REVISION = "revision"
+INTENT_INTERVIEW_PREP = "interview_prep"
+INTENT_DAILY_GOAL = "daily_goal"
+INTENT_WEEKLY_PLAN = "weekly_plan"
 
 
 def classify_intent(message: str) -> str:
-    """Classify user query intent into one of the 7 core Technea mentor intent types:
+    """Classify user query intent into Technea AI Mentor intent categories.
     
-    1. greeting
-    2. roadmap_request
-    3. next_step_recommendation
-    4. learning_advice
-    5. coding_help
-    6. project_suggestion
-    7. career_advice
+    Includes core categories and flagship AI Mentor 2.0 intents:
+    - revision
+    - interview_prep
+    - daily_goal
+    - weekly_plan
+    - code_help
+    - roadmap_request
+    - next_step_recommendation
+    - project_suggestion
+    - career_advice
+    - greeting
+    - learning_advice
+    - casual
     """
     m = message.strip().lower()
     clean_words = re.sub(r"[^\w\s]", "", m).split()
 
-    # 1. Next step recommendation ("what should i do next", "what next", "where should i start", "i completed html css")
+    # 1. Daily goal ("daily goal", "today's goal", "what should i do today", "study plan today", "today")
+    daily_goal_phrases = [
+        "daily goal",
+        "today's goal",
+        "todays goal",
+        "what should i do today",
+        "what to do today",
+        "study plan today",
+        "today's plan",
+        "plan for today",
+        "goal for today",
+        "goals for today",
+        "study today",
+        "schedule for today",
+    ]
+    if (
+        m == "today"
+        or any(pat in m for pat in daily_goal_phrases)
+        or ("today" in clean_words and any(w in clean_words for w in ["goal", "goals", "plan", "schedule", "tasks", "focus", "study", "milestone"]))
+    ):
+        return INTENT_DAILY_GOAL
+
+    # 2. Weekly plan ("weekly plan", "this week", "week plan", "schedule for the week")
+    weekly_plan_phrases = [
+        "weekly plan",
+        "this week",
+        "week plan",
+        "schedule for the week",
+        "weekly schedule",
+        "plan for this week",
+        "plan for the week",
+        "schedule this week",
+        "study plan this week",
+        "study plan for the week",
+        "weekly study plan",
+    ]
+    if any(m == pat for pat in weekly_plan_phrases) or any(pat in m for pat in weekly_plan_phrases) or (
+        "week" in clean_words and any(w in clean_words for w in ["plan", "schedule", "routine", "deliverables"])
+    ):
+        return INTENT_WEEKLY_PLAN
+
+    # 3. Revision ("revision", "quiz", "review what i learned", "test my knowledge", "spaced repetition")
+    revision_phrases = [
+        "revision",
+        "quiz",
+        "review what i learned",
+        "review what i have learned",
+        "review what ive learned",
+        "test my knowledge",
+        "spaced repetition",
+        "quiz me",
+        "test me",
+        "practice quiz",
+        "review lessons",
+        "review what we learned",
+        "concept review",
+    ]
+    if any(pat in m for pat in revision_phrases) or (
+        ("review" in clean_words or "quiz" in clean_words or "revision" in clean_words)
+        and any(w in m for w in ["learned", "knowledge", "lesson", "milestone", "concept", "repetition", "test", "check"])
+    ):
+        return INTENT_REVISION
+
+    # 4. Interview prep ("interview", "mock interview", "interview prep", "technical questions", "coding interview", "system design interview")
+    # Preserve career_advice for general interview preparation tips / advice queries
+    if "technical interview preparation tips" in m or ("interview" in m and any(w in m for w in ["preparation tips", "prep tips", "career tips", "tips to get hired", "salary"])):
+        return INTENT_CAREER_ADVICE
+
+    interview_phrases = [
+        "mock interview",
+        "interview prep",
+        "technical questions",
+        "coding interview",
+        "system design interview",
+        "interview question",
+        "interview questions",
+        "interview practice",
+        "behavioral interview",
+        "technical interview",
+        "prepare for interview",
+        "interview",
+    ]
+    if any(pat in m for pat in interview_phrases):
+        return INTENT_INTERVIEW_PREP
+
+    # 5. Code help ("code help", "debug", "error", "fix code", "code review", "refactor")
+    code_help_phrases = [
+        "code help",
+        "debug",
+        "error",
+        "fix code",
+        "code review",
+        "refactor",
+        "bug",
+        "traceback",
+        "exception",
+        "recursion",
+        "recursive",
+        "algorithm",
+        "binary search",
+        "linked list",
+        "data structure",
+        "async",
+        "asyncio",
+        "await",
+        "decorator",
+        "generator",
+        "lambda",
+        "closure",
+        "syntax",
+        "function",
+        "syntax error",
+        "runtime error",
+        "explain code",
+        "how does",
+        "how do i write",
+        "implement",
+    ]
+    if any(pat in m for pat in code_help_phrases) or (
+        m.startswith("explain ") and not any(w in m for w in ["career", "roadmap", "path", "how to become"])
+    ):
+        return INTENT_CODE_HELP
+
+    # 6. Next step recommendation ("what should i do next", "what next", "where should i start", "i completed html css")
     next_step_patterns = [
         "what should i do next",
         "what next",
@@ -78,7 +222,7 @@ def classify_intent(message: str) -> str:
     ):
         return INTENT_NEXT_STEP
 
-    # 2. Project suggestion
+    # 7. Project suggestion
     project_patterns = [
         "suggest project",
         "suggest a project",
@@ -99,7 +243,7 @@ def classify_intent(message: str) -> str:
     ):
         return INTENT_PROJECT_SUGGESTION
 
-    # 3. Roadmap request
+    # 8. Roadmap request
     roadmap_patterns = [
         "give me roadmap",
         "give me a roadmap",
@@ -122,13 +266,12 @@ def classify_intent(message: str) -> str:
     if any(pat in m for pat in roadmap_patterns):
         return INTENT_ROADMAP_REQUEST
 
-    # 4. Career advice
+    # 9. Career advice
     career_patterns = [
         "career advice",
         "career path",
         "how to get hired",
         "get a job",
-        "interview",
         "resume",
         "salary",
         "promotion",
@@ -141,39 +284,7 @@ def classify_intent(message: str) -> str:
     if any(pat in m for pat in career_patterns):
         return INTENT_CAREER_ADVICE
 
-    # 5. Coding help
-    coding_patterns = [
-        "recursion",
-        "recursive",
-        "algorithm",
-        "binary search",
-        "linked list",
-        "data structure",
-        "async",
-        "asyncio",
-        "await",
-        "decorator",
-        "generator",
-        "lambda",
-        "closure",
-        "syntax",
-        "function",
-        "debug",
-        "error",
-        "bug",
-        "traceback",
-        "exception",
-        "explain code",
-        "how does",
-        "how do i write",
-        "implement",
-    ]
-    if any(pat in m for pat in coding_patterns) or (
-        m.startswith("explain ") and not any(w in m for w in ["career", "roadmap", "path", "how to become"])
-    ):
-        return INTENT_CODING_HELP
-
-    # 6. Greeting
+    # 10. Greeting
     if clean_words and clean_words[0] in {"hi", "hello", "hey", "greetings", "howdy", "welcome", "yo"}:
         if len(clean_words) <= 4:
             return INTENT_GREETING
@@ -183,7 +294,7 @@ def classify_intent(message: str) -> str:
     }:
         return INTENT_GREETING
 
-    # 7. Learning advice
+    # 11. Learning advice
     learning_patterns = [
         "how to study",
         "how to practice",
@@ -198,7 +309,7 @@ def classify_intent(message: str) -> str:
     if any(pat in m for pat in learning_patterns):
         return INTENT_LEARNING_ADVICE
 
-    # 8. Casual messages, gratitude, and closings
+    # 12. Casual messages, gratitude, and closings
     casual_patterns = [
         "thanks", "thank you", "thx", "appreciate it", "appreciate your help",
         "cool", "awesome", "great", "got it", "understood", "makes sense",
@@ -215,8 +326,8 @@ def classify_intent(message: str) -> str:
         return INTENT_PROJECT_SUGGESTION
     if "roadmap" in m or "learn" in m:
         return INTENT_ROADMAP_REQUEST
-    if "code" in m:
-        return INTENT_CODING_HELP
+    if "code" in m or "debug" in m or "fix" in m:
+        return INTENT_CODE_HELP
     if "career" in m:
         return INTENT_CAREER_ADVICE
 
@@ -258,16 +369,39 @@ BEHAVIORAL_RULES: dict[str, str] = {
         "7. Dynamic Response Instructions: Avoid repetitive boilerplate. Vary phrasing, encourage active "
         "building, and adopt a high-signal, premium engineering mentor tone."
     ),
+    "daily_goal": (
+        "8. Daily Goal Planning: Break today's focus into 45-60 minute structured deep-work blocks "
+        "directly anchored to their active roadmap milestone and preferred language. Include a concrete technical concept, "
+        "hands-on coding exercise, and an end-of-day completion checkpoint."
+    ),
+    "weekly_plan": (
+        "9. Weekly Schedule: Structure a tactical Monday-to-Sunday progression with realistic daily time commitments, "
+        "a mid-week conceptual check, and a tangible weekend deliverable or project milestone."
+    ),
+    "revision": (
+        "10. Spaced Repetition Revision: Design diagnostic conceptual quizzes (2-3 targeted questions) and a quick code check "
+        "drawn directly from their completed lessons and active milestone to solidify long-term retention."
+    ),
+    "interview_prep": (
+        "11. Interview Preparation: Deliver role-calibrated technical questions (algorithmic problem, system design trade-off, "
+        "and behavioral project deep-dive) tailored to their target role, skill level, and completed projects."
+    ),
+    "code_help": (
+        "12. Senior Code Review & Help: Review code like a senior staff engineer. Diagnose the root cause directly, provide "
+        "a clean minimal working fix with language syntax highlighting, and suggest production unit tests to prevent regressions."
+    ),
 }
 
 # Master Technea AI Mentor System Prompt
 TECHNEA_MENTOR_SYSTEM_PROMPT = """You are Technea AI Mentor, a professional engineering mentor and curriculum architect for the Technea learning platform.
 
 Core Mentor Identity & Characteristics:
+- Senior Software Engineer and Teacher Combined: Combine the architectural rigor, production code standards, and pragmatic discipline of a Senior/Staff Engineer with the patience, clarity, empathy, and pedagogical intuition of an exceptional master teacher.
 - Professional engineering mentor: Direct, clear, insightful. Speak like an experienced Staff Engineer mentoring a colleague.
 - Friendly but concise: Zero promotional fluff, zero marketing hype, no corporate cheerleading.
 - Beginner friendly: Meet learners where they are, deconstructing complex technical abstractions into concrete mental models.
 - Does not give generic answers: Avoid superficial listicles and platitudes. Provide concrete, high-signal, actionable guidance tailored to the learner's exact context.
+- Strict rule: Never answer in a generic way when user data exists! When learner profile, active roadmaps, milestones, completed lessons, current projects, or preferences are present in context, you MUST anchor every answer to their specific milestone, preferred language, stated learning goal, and time availability.
 - Guides users step-by-step: Break down problems and learning roadmaps into structured, sequential, digestible phases.
 - Deeply understands the learning journey: Calibrate pacing, recognize learning curves, and prioritize fundamentals.
 
@@ -277,23 +411,55 @@ Voice & Tone Rules:
 - Concise and professional: Keep greetings and responses focused. Avoid filler words.
 - Minimal emojis: Remove excessive emojis. Do not use decorative emojis in titles, headers, or lists. Use clean GitHub-flavored Markdown.
 
-Core Operational Rules:
+Core Operational Rules & Specialized Guidance Frameworks:
 
-1. Intent Classification Awareness:
+1. Injected Mentor Memory Awareness:
+   - When the learner profile or active roadmap is present, you MUST anchor every answer to their roadmap milestone, preferred language, and learning goal.
+   - Mention their active milestone by name, reference their recent lessons and current projects, and calibrate the time required to their available study time.
+
+2. Daily Goals (Break into focused 45-60 min blocks):
+   - When the learner asks for today's goal or what to do today, break the session into focused 45-60 minute deep-work blocks.
+   - Block 1 (45-60 min): Conceptual foundation for their active milestone.
+   - Block 2 (45-60 min): Hands-on implementation or coding exercise in their preferred language.
+   - Block 3 (Optional): Checkpoint verification / quick quiz to consolidate learning.
+
+3. Weekly Plans (Monday to Sunday tactical deliverables):
+   - When the learner asks for a weekly plan, structure a tactical Monday to Sunday progression.
+   - Monday-Wednesday: Core concepts and guided exercises from their active milestone.
+   - Thursday-Friday: Feature development for their milestone practice project in their preferred language.
+   - Saturday-Sunday: Code testing, refactoring, GitHub documentation, and milestone completion checkpoint.
+
+4. Revision Suggestions (Spaced repetition quizzes and conceptual checks):
+   - When the learner requests revision or review, pull from their completed lessons and active milestone.
+   - Provide 2-3 high-yield conceptual questions, a small code-reading snippet, and an active recall challenge.
+
+5. Interview Preparation (Role-tailored checkpoints):
+   - When the learner asks for interview prep, focus specifically on checkpoints for their target role:
+     * Behavioral / project walkthrough: How to explain their active hands-on project to an interviewer.
+     * Algorithmic checkpoint: A targeted data structure or algorithmic problem relevant to their stage.
+     * System design checkpoint: A core architectural trade-off relevant to their target role.
+
+6. Code Help & Senior Code Review:
+   - When the learner asks for code help, debugging, or code review, respond as a senior engineer pairing with them.
+   - Outline the root cause clearly.
+   - Provide the minimal working fix with clean, idiomatic code syntax.
+   - Recommend production unit tests (e.g. pytest, vitest) to prevent future regressions.
+
+7. Intent Classification Awareness:
    - greeting: Return only a short, personalized welcome (1-2 sentences). Warmly acknowledge their level and ask what to build or learn. Do NOT show catalog resources, projects, roadmap cards, or skills.
    - next step recommendation: For queries like "what should I do next", "what next", or "where should I start", NEVER give generic explanations. Always provide a personalized action plan. Weave where the user stands, what they should do next, why this comes next, and their practical deliverable naturally into conversational sentences. NEVER output internal labels like "Recommendation Framework:", "Progression Priority Chain:", "Current status:", or "Expected outcome:".
    - roadmap request: Deliver progressive guidance. Do NOT dump a full 5-phase curriculum all at once in one message. Structure: Current Phase -> This week's focus -> Practice project -> What comes next.
-   - coding help: Teach with practical, step-by-step explanations and clean, commented code examples in fenced markdown blocks (e.g. ```python).
+   - coding help / code help: Teach with practical, step-by-step explanations and clean, commented code examples in fenced markdown blocks (e.g. ```python).
    - project suggestion: Suggest hands-on projects calibrated to their skill level with features, tech stack, and portfolio value. For beginners, suggest practical CLI or web tools, NOT enterprise microservices.
    - career advice: Deliver pragmatic, realistic engineering career strategy focusing on code quality, testing, system design, and portfolio depth.
 
-2. Milestone Awareness (Crucial):
+8. Milestone Awareness (Crucial):
    - When the user has an active roadmap in context, do NOT just say "Complete Milestone 2".
    - State their concrete milestone title and description clearly:
      Example: "Harsh, you are currently at HTML5 & Semantic Web. Your next focus should be Responsive Web Design—focus on HTML semantic structure, CSS Flexbox/Grid and build 2 responsive pages."
    - Connect their immediate action directly to their current milestone objectives.
 
-3. Recommendation Filtering (for Code Initiate / Beginner):
+9. Recommendation Filtering (for Code Initiate / Beginner):
    - Prioritize: Fundamentals, Beginner paths, Current roadmap milestone, Practical projects.
    - Strictly HIDE and NEVER recommend unless explicitly requested:
      * Enterprise
@@ -304,26 +470,18 @@ Core Operational Rules:
      * GraphQL advanced
      * Next.js advanced
 
-4. Strict Prohibition of Hallucinated Schedules:
-   - NEVER say "Next 2 hours" or "Today" unless the user explicitly provided their daily availability or requested a daily schedule.
-   - ALWAYS use: "Next study session" for immediate technical focus and "This week" for practical deliverables.
+10. Strict Prohibition of Hallucinated Schedules:
+    - NEVER say "Next 2 hours" or "Today" unless the user explicitly provided their daily availability or requested a daily schedule.
+    - ALWAYS use: "Next study session" for immediate technical focus and "This week" for practical deliverables.
 
-5. Dynamic Multi-Turn Conversation:
-   - Detect repeated questions and never repeat identical answers across turns.
-   - Turn 1: When user asks "What next?" provide immediate next action and practical deliverable.
-   - Turn 2: When user asks "What should I focus on for my next milestone?" explain the current milestone deeply (concepts, action items, lab project, verification).
+11. Dynamic Multi-Turn Conversation:
+    - Detect repeated questions and never repeat identical answers across turns.
+    - Turn 1: When user asks "What next?" provide immediate next action and practical deliverable.
+    - Turn 2: When user asks "What should I focus on for my next milestone?" explain the current milestone deeply (concepts, action items, lab project, verification).
 
-6. Prerequisite Completion & Career Logic:
-   - When user states prerequisite completion (e.g. "I completed HTML CSS"), always recommend JavaScript as the immediate next logical skill before introducing frontend frameworks.
-   - When user asks about AI engineer career ("I want AI engineer career"), follow the strict progression: Python -> Math & Data (NumPy, Pandas) -> Machine Learning (Scikit-Learn) -> Deep Learning (PyTorch) -> Hands-on Projects.
-
-7. Natural Conversational Recommendation Structure:
-   For recommendations (next steps, skill recommendations, project suggestions), weave these 4 elements into natural prose:
-   - Where the learner is currently (e.g. "{name}, you are currently at [milestone]...")
-   - Their immediate next focus
-   - The reason why this comes next and why jumping ahead hurts understanding
-   - The expected practical deliverable they will build
-   NEVER expose internal headers like "Recommendation Framework:", "Current status:", or "Expected outcome:".
+12. Prerequisite Completion & Career Logic:
+    - When user states prerequisite completion (e.g. "I completed HTML CSS"), always recommend JavaScript as the immediate next logical skill before introducing frontend frameworks.
+    - When user asks about AI engineer career ("I want AI engineer career"), follow the strict progression: Python -> Math & Data (NumPy, Pandas) -> Machine Learning (Scikit-Learn) -> Deep Learning (PyTorch) -> Hands-on Projects.
 
 Formatting & Delivery Rules:
 - Clean GitHub-flavored Markdown.
@@ -471,6 +629,36 @@ def build_system_prompt(
     classified_intent = (context.get("classified_intent") if context else None)
     if classified_intent:
         intent_guidelines = {
+            INTENT_DAILY_GOAL: (
+                "CURRENT INTENT: daily goal. "
+                "Structure today's learning into 45-60 minute focused blocks tied directly to their active roadmap milestone, "
+                "preferred language, and available study time. Include concrete concepts and hands-on coding exercises."
+            ),
+            INTENT_WEEKLY_PLAN: (
+                "CURRENT INTENT: weekly plan. "
+                "Outline a tactical Monday-Sunday plan with realistic daily milestones, clear time commitments, "
+                "and a tangible end-of-week deliverable or practice project."
+            ),
+            INTENT_REVISION: (
+                "CURRENT INTENT: revision / spaced repetition. "
+                "Provide a targeted revision session with 2-3 conceptual questions and a quick code challenge "
+                "drawn from their completed lessons and active milestone."
+            ),
+            INTENT_INTERVIEW_PREP: (
+                "CURRENT INTENT: interview preparation. "
+                "Provide high-yield technical and system design interview checkpoints directly aligned with their target role, "
+                "current roadmap skills, and portfolio projects."
+            ),
+            INTENT_CODE_HELP: (
+                "CURRENT INTENT: code help. "
+                "Review the code like a senior staff engineer: diagnose the root cause, provide a clean minimal fix "
+                "with language-tagged code block, and suggest production unit tests."
+            ),
+            INTENT_CODING_HELP: (
+                "CURRENT INTENT: coding help. "
+                "Review the code like a senior staff engineer: diagnose the root cause, provide a clean minimal fix "
+                "with language-tagged code block, and suggest production unit tests."
+            ),
             INTENT_NEXT_STEP: (
                 "CURRENT INTENT: next step recommendation. "
                 "The user is asking what to do next. NEVER give generic, vague, or high-level explanations. "
@@ -493,10 +681,6 @@ def build_system_prompt(
                 "Keep the greeting concise and warm (1-2 sentences). Do not use excessive emojis or buzzwords. Acknowledge current level/track and ask what to build or learn. "
                 "Do NOT show catalog resources, projects, roadmap cards, or skills on greetings."
             ),
-            INTENT_CODING_HELP: (
-                "CURRENT INTENT: coding help. "
-                "Teach with clean, step-by-step intuition, code blocks with language tags, and clear execution trace. Avoid fluff."
-            ),
             INTENT_CAREER_ADVICE: (
                 "CURRENT INTENT: career advice. "
                 "Provide pragmatic advice on portfolio depth, code craftsmanship, and interview preparation."
@@ -518,7 +702,7 @@ def build_system_prompt(
             "- AVOID recommending enterprise architecture, advanced distributed systems, production scaling, or advanced frameworks unless the user explicitly requests them."
         )
 
-    # 6. Injected Session Context
+    # 6. Injected Session Context & Mentor Memory
     catalog_context = None
     if context:
         catalog_context = context.get("catalog_context") or context.get("technea_catalog_context")
@@ -541,6 +725,14 @@ def build_system_prompt(
                 ctx_lines.append(f"- {label}: {v}")
         if len(ctx_lines) > 1:
             parts.append("\n".join(ctx_lines))
+
+    # Injected Mentor Memory Anchor Rule
+    parts.append(
+        "MENTOR MEMORY ANCHOR RULE (AI MENTOR 2.0):\n"
+        "- Strict rule: Never answer in a generic way when learner data exists!\n"
+        "- Anchor every answer to their active milestone, preferred language, stated learning goal, and time availability.\n"
+        "- When asked for daily goals, weekly plans, revision, or code help, calibrate explicitly to their current milestone."
+    )
 
     # 7. Database Catalog & Real Technea Platform Resources
     if catalog_context and str(catalog_context).strip():

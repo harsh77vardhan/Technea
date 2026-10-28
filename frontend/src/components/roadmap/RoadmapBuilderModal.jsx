@@ -4,6 +4,7 @@ import { useAuth } from '../../context/useAuth'
 import {
   generateRoadmapApi,
   saveRoadmapApi,
+  updateRoadmapApi,
   toggleRoadmapMilestoneApi,
 } from '../../services/api'
 import RoadmapHUDFrame from './RoadmapHUDFrame'
@@ -25,6 +26,16 @@ export default function RoadmapBuilderModal({
   const [goal, setGoal] = useState(() => initialGoal || '')
   const [prevGoalProp, setPrevGoalProp] = useState(initialGoal)
 
+  // 6 Onboarding parameters state
+  const [preferences, setPreferences] = useState({
+    goal: initialGoal || '',
+    experience_level: 'Complete Beginner',
+    available_time: '1-2 hours/day',
+    preferred_language: 'TypeScript / JavaScript',
+    current_skills: ['HTML/CSS', 'JavaScript'],
+    target_role: 'Full-Stack Developer',
+  })
+
   // Generation data & UI state
   const [generatedData, setGeneratedData] = useState(null)
   const [savedRoadmapId, setSavedRoadmapId] = useState(null)
@@ -40,6 +51,7 @@ export default function RoadmapBuilderModal({
     setPrevGoalProp(initialGoal)
     if (initialGoal) {
       setGoal(initialGoal)
+      setPreferences((prev) => ({ ...prev, goal: initialGoal }))
     }
   }
 
@@ -65,24 +77,28 @@ export default function RoadmapBuilderModal({
     if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current)
     toastTimeoutRef.current = setTimeout(() => {
       setToastMessage(null)
-    }, 3500)
+    }, 3800)
   }
 
-  // Triggered when user submits the configurator form
+  // Triggered when user completes the 6-step configurator
   const handleStartSynthesis = async (onboardingPayload) => {
     setError(null)
     const targetGoal = onboardingPayload.goal || goal || 'Full Stack Developer'
     setGoal(targetGoal)
+    setPreferences(onboardingPayload)
     setStage('generating')
 
     try {
       const response = await generateRoadmapApi({
         goal: targetGoal,
-        experience_level: onboardingPayload.experience_level || 'Beginner',
-        current_level: onboardingPayload.current_level || 'basic_knowledge',
-        available_time: onboardingPayload.available_time || '1_hour',
-        main_goal: onboardingPayload.main_goal || 'get_job',
-        preferred_style: onboardingPayload.preferred_style || 'projects',
+        experience_level: onboardingPayload.experience_level || 'Complete Beginner',
+        available_time: onboardingPayload.available_time || '1-2 hours/day',
+        preferred_language: onboardingPayload.preferred_language || 'TypeScript / JavaScript',
+        current_skills: onboardingPayload.current_skills || ['HTML/CSS', 'JavaScript'],
+        target_role: onboardingPayload.target_role || 'Full-Stack Developer',
+        current_level: onboardingPayload.current_level || onboardingPayload.experience_level || 'Complete Beginner',
+        main_goal: onboardingPayload.main_goal || 'Job',
+        preferred_style: onboardingPayload.preferred_style || 'Projects',
       })
 
       setGeneratedData(response)
@@ -123,6 +139,27 @@ export default function RoadmapBuilderModal({
     }
   }
 
+  // Update roadmap after edits
+  const handleUpdateRoadmap = async (updatedData) => {
+    setGeneratedData(updatedData)
+    if (savedRoadmapId && user) {
+      try {
+        await updateRoadmapApi(savedRoadmapId, {
+          title: updatedData.title,
+          target_role: updatedData.target_role,
+          roadmap_data: updatedData.roadmap_data,
+          completed_milestone_ids: completedMilestones,
+        })
+        showToast('Changes saved to your account.')
+      } catch (err) {
+        console.warn('Failed to sync roadmap updates to server:', err)
+        showToast('Roadmap updated locally.')
+      }
+    } else {
+      showToast('Roadmap updated locally.')
+    }
+  }
+
   // Save Roadmap (Cloud or LocalStorage fallback)
   const handleSaveRoadmap = async () => {
     if (!generatedData) return
@@ -148,7 +185,7 @@ export default function RoadmapBuilderModal({
           'technea_guest_saved_roadmaps',
           JSON.stringify(guestRoadmaps.slice(0, 10))
         )
-        showToast('Saved locally in your browser. Sign in to sync across devices.')
+        showToast('Saved locally in browser. Sign in to sync across devices.')
       } catch (e) {
         console.warn('Failed to save roadmap to localStorage:', e)
       }
@@ -175,12 +212,25 @@ export default function RoadmapBuilderModal({
     }
   }
 
-  // Share / Copy Link
+  // Share Roadmap: format summary & copy to clipboard
   const handleShare = () => {
+    if (!generatedData) return
+    const title = generatedData.title || 'Technea AI Roadmap'
+    const role = generatedData.target_role || 'Software Engineer'
+    const duration = generatedData.estimated_duration || '16 Weeks'
+    const phasesCount = generatedData.roadmap_data?.phases?.length || 4
+
+    const shareText = `🚀 Check out my AI Career Roadmap for ${role} on Technea!\n\n📌 Title: ${title}\n⏱ Estimated Duration: ${duration}\n🗺 Phases: ${phasesCount} progressive learning phases\n🔗 Built on Technea: ${window.location.origin}`
+
     if (navigator.clipboard) {
-      navigator.clipboard.writeText(window.location.href)
-      showToast('Roadmap URL copied to clipboard.')
+      navigator.clipboard.writeText(shareText)
+      showToast('Roadmap summary & link copied to clipboard!')
     }
+  }
+
+  // Regenerate: back to configurator with preferences preserved
+  const handleRegenerate = () => {
+    setStage('entry')
   }
 
   if (!isOpen) return null
@@ -200,43 +250,44 @@ export default function RoadmapBuilderModal({
           exit={{ opacity: 0 }}
           transition={{ duration: 0.25 }}
           onClick={onClose}
-          className="fixed inset-0 bg-black/80 cursor-pointer"
+          className="fixed inset-0 bg-black/85 backdrop-blur-md cursor-pointer"
           aria-hidden="true"
         />
 
-        {/* Modal */}
+        {/* Modal Window */}
         <motion.div
           initial={{ opacity: 0, scale: 0.98, y: 8 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.98, y: 8 }}
           transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-          className="relative z-10 w-full max-w-[1200px] h-[92vh] max-h-[900px] rounded-3xl bg-black border border-[#1a1a1a] shadow-[0_32px_80px_rgba(0,0,0,0.9)] overflow-hidden flex flex-col"
+          className="relative z-10 w-full max-w-[1240px] h-[92vh] max-h-[920px] rounded-3xl bg-[#050505]/95 backdrop-blur-3xl border border-white/[0.1] shadow-[0_32px_80px_rgba(0,0,0,0.95)] overflow-hidden flex flex-col"
           data-lenis-prevent
         >
           <CinematicBackground />
           <RoadmapHUDFrame onClose={onClose} />
 
-          {/* Toast */}
+          {/* Toast Notification */}
           <AnimatePresence>
             {toastMessage && (
               <motion.div
                 initial={{ opacity: 0, y: -12 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -12 }}
-                className="absolute top-14 left-1/2 -translate-x-1/2 z-50 bg-[#111] border border-[#222] text-white text-xs font-mono px-4 py-2 rounded-lg"
+                className="absolute top-14 left-1/2 -translate-x-1/2 z-50 bg-[#111]/90 backdrop-blur-xl border border-white/[0.15] text-white text-xs font-mono px-4 py-2.5 rounded-xl shadow-2xl flex items-center gap-2"
               >
-                {toastMessage}
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                <span>{toastMessage}</span>
               </motion.div>
             )}
           </AnimatePresence>
 
-          {/* Content area */}
+          {/* Scrollable Content Container */}
           <div
             data-lenis-prevent
             className="relative z-20 flex-1 overflow-y-auto px-5 sm:px-8 lg:px-12 pt-16 sm:pt-20 pb-14 sm:pb-16"
           >
             <div className="mx-auto max-h-full">
-              {/* ENTRY STAGE */}
+              {/* ENTRY STAGE: 6-STEP CONFIGURATOR */}
               {stage === 'entry' && (
                 <motion.div
                   initial={{ opacity: 0, y: 6 }}
@@ -245,12 +296,13 @@ export default function RoadmapBuilderModal({
                   className="max-w-2xl mx-auto"
                 >
                   {error && (
-                    <div className="mb-6 p-3 rounded-lg bg-[#110000] border border-[#330000] text-red-400 text-xs font-mono">
+                    <div className="mb-6 p-3.5 rounded-xl bg-red-950/40 border border-red-500/30 text-red-300 text-xs font-mono">
                       {error}
                     </div>
                   )}
                   <AIArchitectConversation
                     initialGoal={goal}
+                    initialPreferences={preferences}
                     onStartSynthesis={handleStartSynthesis}
                     onResetGoal={() => setGoal('')}
                     onUserInteracting={() => {}}
@@ -273,7 +325,7 @@ export default function RoadmapBuilderModal({
                 </motion.div>
               )}
 
-              {/* VIEW STAGE */}
+              {/* VIEW STAGE: RICH TIMELINE & SYNTHESIS */}
               {stage === 'view' && generatedData && (
                 <motion.div
                   initial={{ opacity: 0, y: 6 }}
@@ -287,6 +339,8 @@ export default function RoadmapBuilderModal({
                     onToggleMilestone={handleToggleMilestone}
                     onSaveRoadmap={handleSaveRoadmap}
                     onShareRoadmap={handleShare}
+                    onRegenerate={handleRegenerate}
+                    onUpdateRoadmap={handleUpdateRoadmap}
                     onResetGoal={() => {
                       setStage('entry')
                       setGeneratedData(null)

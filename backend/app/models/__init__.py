@@ -31,6 +31,7 @@ from app.models.community import (
     UserLearningRoom,
 )
 from app.models.achievement import (
+    Achievement,
     UserAchievement,
 )
 from app.models.follow import Follow
@@ -60,6 +61,7 @@ __all__ = [
     "UserProject",
     "LearningRoom",
     "UserLearningRoom",
+    "Achievement",
     "UserAchievement",
     "Follow",
     "EmailOTP",

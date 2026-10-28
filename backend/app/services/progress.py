@@ -19,8 +19,9 @@ from app.models.user import User
 from app.models.user_roadmap import DailyLearningActivity, UserGeneratedRoadmap
 from app.models.project import Project, UserProject
 from app.models.community import LearningRoom, UserLearningRoom
-from app.models.achievement import UserAchievement
+from app.models.achievement import Achievement, UserAchievement
 from app.schemas.progress import (
+    AchievementItemResponse,
     AIBuddyResponse,
     AIMentorChatRequest,
     AIMentorChatResponse,
@@ -961,7 +962,124 @@ class ProgressService:
             quick_prompts=quick_prompts,
         )
 
+    async def get_achievements(
+        self,
+        db: AsyncSession,
+        user_id: uuid.UUID | None = None,
+    ) -> list[AchievementItemResponse]:
+        """Fetch all developer achievements and indicate unlock status for user."""
+        try:
+            stmt = select(Achievement).order_by(Achievement.id.asc())
+            res = await db.execute(stmt)
+            achievements = list(res.scalars().all())
+        except Exception:
+            achievements = []
+
+        if not achievements:
+            from app.db.init_db import DEFAULT_ACHIEVEMENTS
+            items = []
+            for d in DEFAULT_ACHIEVEMENTS:
+                items.append(
+                    AchievementItemResponse(
+                        id=d["achievement_id"],
+                        achievement_id=d["achievement_id"],
+                        title=d["title"],
+                        description=d["description"],
+                        icon=d["icon"],
+                        category=d.get("category", "General"),
+                        xp_reward=d.get("xp_reward", 50),
+                        criteria=d.get("criteria"),
+                        unlocked=True if d["achievement_id"] == "early_adopter" else False,
+                        earned=True if d["achievement_id"] == "early_adopter" else False,
+                        unlocked_at="2026-10-01" if d["achievement_id"] == "early_adopter" else None,
+                    )
+                )
+            return items
+
+        user_unlocked_map: dict[str, UserAchievement] = {}
+        total_milestones = 0
+        streak = 1
+        total_projects = 0
+        total_roadmaps = 0
+        total_rooms = 0
+
+        if user_id:
+            ua_stmt = select(UserAchievement).where(UserAchievement.user_id == user_id)
+            ua_res = await db.execute(ua_stmt)
+            for ua in ua_res.scalars().all():
+                user_unlocked_map[ua.achievement_id] = ua
+
+            m_stmt = select(func.count(UserRoadmapProgress.id)).where(
+                UserRoadmapProgress.user_id == user_id,
+                UserRoadmapProgress.is_completed.is_(True),
+            )
+            m_res = await db.execute(m_stmt)
+            total_milestones = m_res.scalar() or 0
+
+            daily_act = await self.get_daily_activity(db, user_id=user_id)
+            streak = daily_act.streak_count
+
+            p_stmt = select(func.count(UserProject.id)).where(UserProject.user_id == user_id)
+            p_res = await db.execute(p_stmt)
+            total_projects = p_res.scalar() or 0
+
+            r_stmt = select(func.count(UserGeneratedRoadmap.id)).where(UserGeneratedRoadmap.user_id == user_id)
+            r_res = await db.execute(r_stmt)
+            total_roadmaps = r_res.scalar() or 0
+
+            rm_stmt = select(func.count(UserLearningRoom.id)).where(UserLearningRoom.user_id == user_id)
+            rm_res = await db.execute(rm_stmt)
+            total_rooms = rm_res.scalar() or 0
+
+        result: list[AchievementItemResponse] = []
+        for ach in achievements:
+            unlocked = False
+            unlocked_at = None
+
+            if user_id:
+                if ach.achievement_id in user_unlocked_map:
+                    unlocked = True
+                    ua_obj = user_unlocked_map[ach.achievement_id]
+                    unlocked_at = ua_obj.unlocked_at.strftime("%Y-%m-%d") if ua_obj.unlocked_at else None
+                else:
+                    if ach.achievement_id == "early_adopter":
+                        unlocked = True
+                        unlocked_at = "2026-10-01"
+                    elif ach.achievement_id in ("streak_master", "consistent_coder") and streak >= 3:
+                        unlocked = True
+                    elif ach.achievement_id in ("milestone_champion", "milestone_conqueror") and total_milestones >= 5:
+                        unlocked = True
+                    elif ach.achievement_id in ("roadmap_architect", "system_architect") and total_roadmaps >= 1:
+                        unlocked = True
+                    elif ach.achievement_id in ("project_builder", "first_project") and total_projects >= 1:
+                        unlocked = True
+                    elif ach.achievement_id in ("community_pioneer", "guild_contributor") and total_rooms >= 1:
+                        unlocked = True
+                    elif ach.achievement_id == "polyglot_engineer" and total_milestones >= 3:
+                        unlocked = True
+                    elif ach.achievement_id == "full_stack_hero" and total_milestones >= 8:
+                        unlocked = True
+
+            result.append(
+                AchievementItemResponse(
+                    id=ach.achievement_id,
+                    achievement_id=ach.achievement_id,
+                    title=ach.title,
+                    description=ach.description,
+                    icon=ach.icon,
+                    category=ach.category,
+                    xp_reward=ach.xp_reward,
+                    criteria=ach.criteria,
+                    unlocked=unlocked,
+                    earned=unlocked,
+                    unlocked_at=unlocked_at,
+                )
+            )
+
+        return result
+
 
 progress_service = ProgressService()
+
 
 

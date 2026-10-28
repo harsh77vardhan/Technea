@@ -170,6 +170,10 @@ def create_application() -> FastAPI:
     # Mount auth router at root /auth for direct OAuth callback compatibility
     app.include_router(auth_router, prefix="/auth", tags=["Authentication Direct"], include_in_schema=False)
 
+    # Mount AI router at root /ai for direct AI mentor endpoints compatibility
+    from app.routers.ai import router as ai_router
+    app.include_router(ai_router, prefix="/ai", tags=["AI Mentor Direct"], include_in_schema=False)
+
     # User uploads directory for avatars
     uploads_dir = os.path.join(os.path.dirname(__file__), "..", "uploads")
     os.makedirs(os.path.join(uploads_dir, "avatars"), exist_ok=True)

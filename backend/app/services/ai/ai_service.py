@@ -15,12 +15,17 @@ from app.services.ai.gemini_client import GeminiProvider, sanitize_text
 from app.services.ai.prompts import (
     INTENT_CAREER_ADVICE,
     INTENT_CASUAL,
+    INTENT_CODE_HELP,
     INTENT_CODING_HELP,
+    INTENT_DAILY_GOAL,
     INTENT_GREETING,
+    INTENT_INTERVIEW_PREP,
     INTENT_LEARNING_ADVICE,
     INTENT_NEXT_STEP,
     INTENT_PROJECT_SUGGESTION,
+    INTENT_REVISION,
     INTENT_ROADMAP_REQUEST,
+    INTENT_WEEKLY_PLAN,
     build_system_prompt,
     classify_intent,
 )
@@ -127,7 +132,15 @@ class RuleBasedProvider(BaseAIProvider):
         ]
 
         rng = random.Random(seed) if seed is not None else None
-        selected_greeting = self._choose(greetings, rng=rng)
+        if seed is None and hasattr(self, "_last_greeting") and self._last_greeting:
+            avail = [g for g in greetings if g != self._last_greeting]
+            selected_greeting = random.choice(avail) if avail else self._choose(greetings)
+        else:
+            selected_greeting = self._choose(greetings, rng=rng)
+        
+        if seed is None:
+            self._last_greeting = selected_greeting
+
         selected_closing = self._choose(closings, rng=rng)
 
         return (
@@ -848,6 +861,144 @@ class RuleBasedProvider(BaseAIProvider):
             f"{self._choose(tips, rng=rng)}"
         )
 
+    def _generate_daily_goal_response(
+        self,
+        domain: str,
+        level: str,
+        context: dict[str, Any] | None = None,
+        seed: int | None = None,
+    ) -> str:
+        """Synthesize a structured daily learning goal broken into 45-60 min deep work blocks."""
+        cur_m = "Core Foundations"
+        pref_lang = "Python"
+        time_avail = "1-2 hours/day"
+
+        if context:
+            cur_m = context.get("current_milestone_title") or context.get("current_milestone") or cur_m
+            if isinstance(cur_m, dict):
+                cur_m = cur_m.get("title", "Core Foundations")
+            pref_lang = context.get("preferred_language") or pref_lang
+            time_avail = context.get("time_available") or time_avail
+
+        return (
+            f"Here is your high-impact daily study plan calibrated for **{cur_m}**:\n\n"
+            f"### 🎯 Today's Deep-Work Objectives ({time_avail})\n\n"
+            f"#### ⏱️ Block 1: Conceptual Foundation (45–60 min)\n"
+            f"- Master the foundational mental models and architectural principles of **{cur_m}**.\n"
+            f"- Identify 2–3 key trade-offs and review documentation before coding.\n\n"
+            f"#### 💻 Block 2: Hands-on Implementation ({pref_lang}) (45–60 min)\n"
+            f"- Open your editor and write a working implementation in **{pref_lang}** applying today's concepts.\n"
+            f"- Build a minimal feature or refactor your active milestone deliverable.\n"
+            f"- Focus on clean code hygiene, idiomatic syntax, and proper error boundaries.\n\n"
+            f"#### ✅ Verification & Completion Checkpoint (15 min)\n"
+            f"- Run automated tests or execute a manual test suite to verify correctness.\n"
+            f"- Commit your changes to git with a clear, descriptive message (`feat({cur_m.lower().replace(' ', '-')})`)."
+        )
+
+    def _generate_weekly_plan_response(
+        self,
+        domain: str,
+        level: str,
+        context: dict[str, Any] | None = None,
+        seed: int | None = None,
+    ) -> str:
+        """Synthesize a tactical Monday-Sunday weekly learning roadmap."""
+        cur_m = "Core Milestone"
+        target_role = "Software Engineer"
+        pref_lang = "Python"
+
+        if context:
+            cur_m = context.get("current_milestone_title") or cur_m
+            pref_lang = context.get("preferred_language") or pref_lang
+            active_rms = context.get("active_roadmaps") or []
+            if active_rms and isinstance(active_rms[0], dict):
+                target_role = active_rms[0].get("target_role") or target_role
+
+        return (
+            f"Here is your tactical Monday-to-Sunday progression for **{cur_m}** ({target_role}):\n\n"
+            f"### 📅 Weekly Engineering Deliverables\n\n"
+            f"- **Monday – Tuesday: Deep Dive into Core Principles**\n"
+            f"  - Deconstruct core patterns and standard libraries in **{pref_lang}**.\n"
+            f"  - Complete guided exercises and take structured conceptual notes.\n\n"
+            f"- **Wednesday – Thursday: Active Feature Implementation**\n"
+            f"  - Build out the primary business logic and interfaces for this milestone.\n"
+            f"  - Implement edge-case validation and clean function abstractions.\n\n"
+            f"- **Friday: Hands-on Practice Project Integration**\n"
+            f"  - Connect your components into a cohesive deliverable.\n"
+            f"  - Write automated tests and perform a senior-style code review.\n\n"
+            f"- **Saturday – Sunday: Review, Documentation & Milestone Sign-off**\n"
+            f"  - Polish README documentation and push code to your GitHub portfolio.\n"
+            f"  - Consolidate learned concepts with a quick revision check before advancing."
+        )
+
+    def _generate_revision_response(
+        self,
+        domain: str,
+        level: str,
+        context: dict[str, Any] | None = None,
+        seed: int | None = None,
+    ) -> str:
+        """Synthesize spaced repetition quizzes and diagnostic conceptual checks."""
+        cur_m = "your recent lessons"
+        pref_lang = "Python"
+
+        if context:
+            cur_m = context.get("current_milestone_title") or cur_m
+            pref_lang = context.get("preferred_language") or pref_lang
+
+        return (
+            f"### 🧠 Spaced Repetition Revision: {cur_m}\n\n"
+            f"Let's test and reinforce your active recall on **{cur_m}**:\n\n"
+            f"#### 1. Conceptual Diagnostic Question\n"
+            f"- In **{pref_lang}**, what is the primary architectural trade-off between procedural execution and modular abstractions?\n"
+            f"- How does the underlying runtime manage resource allocation during peak workloads?\n\n"
+            f"#### 2. Code Review & Pitfall Diagnosis\n"
+            f"```python\n"
+            f"# Identify the potential regression or memory leak in this pattern:\n"
+            f"def process_stream(data_chunks):\n"
+            f"    buffer = []\n"
+            f"    for chunk in data_chunks:\n"
+            f"        buffer.append(chunk)\n"
+            f"    return buffer\n"
+            f"```\n"
+            f"- *Question*: Why is accumulating unbounded chunks in a list dangerous for large payloads, and how would you rewrite this using generators?\n\n"
+            f"#### 3. Active Implementation Challenge\n"
+            f"- Write a clean, parameterized test verifying that unexpected null or invalid inputs are caught gracefully."
+        )
+
+    def _generate_interview_prep_response(
+        self,
+        domain: str,
+        level: str,
+        context: dict[str, Any] | None = None,
+        seed: int | None = None,
+    ) -> str:
+        """Synthesize role-calibrated technical and system design interview checkpoints."""
+        cur_m = "Active Technical Track"
+        target_role = "Software Engineer"
+        pref_lang = "Python"
+
+        if context:
+            cur_m = context.get("current_milestone_title") or cur_m
+            pref_lang = context.get("preferred_language") or pref_lang
+            active_rms = context.get("active_roadmaps") or []
+            if active_rms and isinstance(active_rms[0], dict):
+                target_role = active_rms[0].get("target_role") or target_role
+
+        return (
+            f"### 💼 Technical Interview Preparation: {target_role}\n\n"
+            f"Here are your high-yield interview checkpoints calibrated for **{cur_m}**:\n\n"
+            f"#### 🎯 1. Behavioral & Project Deep-Dive (STAR Method)\n"
+            f"- **Question**: *'Walk me through the architecture of your recent project. What was the toughest technical bottleneck you faced, and how did you resolve it?'*\n"
+            f"- **Senior Mentor Tip**: Focus on measurable metrics—latency reduction, error rates, and why you selected your chosen stack in {pref_lang}.\n\n"
+            f"#### ⚡ 2. Algorithmic & Coding Checkpoint\n"
+            f"- **Question**: *'Given an input stream of data, design an in-memory data structure that supports insert and lookup in O(1) average time while maintaining insertion order.'*\n"
+            f"- **Language Focus**: Explain how hash maps and doubly-linked nodes interact under the hood in {pref_lang}.\n\n"
+            f"#### 🏛️ 3. System Design & Architectural Trade-off\n"
+            f"- **Question**: *'How would you design a rate limiter to protect backend APIs from abusive traffic spikes?'*\n"
+            f"- **Key Concepts**: Token bucket vs Leaky bucket algorithms, Redis atomic operations, and graceful degradation."
+        )
+
     def _generate_debugging_response(self, prompt: str, seed: Any = None) -> str:
         rng = random.Random(seed) if seed is not None else None
         intros = [
@@ -1003,14 +1154,22 @@ class RuleBasedProvider(BaseAIProvider):
         elif intent == INTENT_CASUAL:
             res = self._generate_casual_response(prompt, seed=seed)
             return res  # Return casual response directly without appending catalog block!
+        elif intent == INTENT_DAILY_GOAL:
+            res = self._generate_daily_goal_response(domain, level, context=context, seed=seed)
+        elif intent == INTENT_WEEKLY_PLAN:
+            res = self._generate_weekly_plan_response(domain, level, context=context, seed=seed)
+        elif intent == INTENT_REVISION:
+            res = self._generate_revision_response(domain, level, context=context, seed=seed)
+        elif intent == INTENT_INTERVIEW_PREP:
+            res = self._generate_interview_prep_response(domain, level, context=context, seed=seed)
+        elif intent in {INTENT_CODE_HELP, INTENT_CODING_HELP}:
+            res = self._generate_coding_response(prompt, domain, level, seed=seed)
         elif intent == INTENT_PROJECT_SUGGESTION:
             res = self._generate_project_response(domain, level, seed=seed)
         elif intent == INTENT_ROADMAP_REQUEST:
             res = self._generate_roadmap_response(domain, level, topic=p, seed=seed)
         elif intent == INTENT_CAREER_ADVICE:
             res = self._generate_career_response(level, domain, seed=seed)
-        elif intent == INTENT_CODING_HELP:
-            res = self._generate_coding_response(prompt, domain, level, seed=seed)
         elif intent == INTENT_LEARNING_ADVICE:
             if any(w in p for w in ["next", "start", "begin", "where do i", "what should i"]):
                 res = self._generate_next_step_response(domain, level, prompt=prompt, context=context, seed=seed)
@@ -1037,13 +1196,17 @@ class RuleBasedProvider(BaseAIProvider):
                         f"{res}"
                     )
 
-        # Resource visibility rules: only show catalog resources when user asks for roadmap, what next, project, or learning advice
+        # Resource visibility rules: show catalog resources for structured learning intents
         allow_catalog_resources = (
             intent in {
                 INTENT_ROADMAP_REQUEST,
                 INTENT_NEXT_STEP,
                 INTENT_PROJECT_SUGGESTION,
                 INTENT_LEARNING_ADVICE,
+                INTENT_DAILY_GOAL,
+                INTENT_WEEKLY_PLAN,
+                INTENT_REVISION,
+                INTENT_INTERVIEW_PREP,
             }
             and not (has_recursion or has_async or has_debugging or intent == INTENT_GREETING)
         )

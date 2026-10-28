@@ -539,7 +539,7 @@ export async function getDashboardSummaryApi() {
 
 /**
  * Generate a personalized career roadmap from natural language career goal
- * @param {Object} data - { goal: string, experience_level: string }
+ * @param {Object} data - { goal: string, experience_level?: string, available_time?: string, preferred_language?: string, current_skills?: string[], target_role?: string, current_level?: string, main_goal?: string, preferred_style?: string }
  * @returns {Promise<Object>} Generated roadmap with phases, milestones, courses, projects
  */
 export async function generateRoadmapApi(data) {
@@ -558,6 +558,19 @@ export async function saveRoadmapApi(data) {
   return request('/roadmaps/save', {
     method: 'POST',
     body: JSON.stringify(data),
+  })
+}
+
+/**
+ * Update an existing saved roadmap (title, target role, milestone hierarchy, or roadmap_data)
+ * @param {number|string} roadmapId
+ * @param {Object} payload - { title?: string, target_role?: string, roadmap_data?: Object, completed_milestone_ids?: string[] }
+ * @returns {Promise<Object>} Updated roadmap model
+ */
+export async function updateRoadmapApi(roadmapId, payload) {
+  return request(`/roadmaps/${roadmapId}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
   })
 }
 

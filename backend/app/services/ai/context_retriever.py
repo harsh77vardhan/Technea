@@ -7,6 +7,7 @@ Synthesizes structured system context blocks, deep-link actions, and dynamic fol
 """
 
 import logging
+from datetime import datetime, timedelta, timezone
 import re
 import uuid
 from typing import Any
@@ -16,8 +17,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.course import Course
 from app.models.learning_path import LearningPath
-from app.models.progress import UserLearningPath, UserLearningPathProgress, UserRoadmapProgress
-from app.models.project import Project
+from app.models.lesson import Lesson
+from app.models.progress import UserLearningPath, UserLearningPathProgress, UserLessonProgress, UserRoadmapProgress
+from app.models.project import Project, UserProject
 from app.models.roadmap_step import RoadmapStep
 from app.models.skill import Skill
 from app.models.user import User
@@ -393,29 +395,59 @@ class ContextRetriever:
             })
         return results
 
-    async def retrieve_user_progress(
+    async def get_user_progress(
         self,
         db: AsyncSession,
         user_id: uuid.UUID,
     ) -> dict[str, Any]:
-        """Fetch active roadmaps, enrolled tracks, level, XP, and streak for a learner."""
+        """Fetch deep learner memory: profile, roadmaps, lessons, projects, and recent activity."""
         user_progress: dict[str, Any] = {
             "user_id": str(user_id),
+            "user_name": "Developer",
+            "full_name": "",
+            "username": "",
             "developer_level": "Junior Developer",
+            "current_skill_level": "Beginner",
             "xp_points": 0,
             "streak": 0,
             "streak_count": 0,
+            "learning_goal": "Software Engineering Mastery",
+            "interests": "Full Stack Development, Web APIs",
+            "bio": "",
+            "preferred_language": "Python",
+            "time_available": "1-2 hours/day",
             "active_roadmaps": [],
             "enrolled_paths": [],
-            "user_name": "Developer",
+            "completed_milestones": [],
+            "completed_lessons_count": 0,
+            "recent_completed_lessons": [],
+            "user_projects": [],
+            "recent_activity": {
+                "streak": 0,
+                "total_study_minutes": 0,
+                "study_time_hours": 0.0,
+                "completed_goals_count": 0,
+                "days_active_last_week": 0,
+                "recent_logs": [],
+            },
         }
 
-        # 1. Fetch user model
+        # 1. Fetch User model: full_name, username, developer_level, xp_points, learning_goal, current_skill_level, interests, bio
         try:
             stmt_user = select(User).where(User.id == user_id)
             user_obj = (await db.execute(stmt_user)).scalars().first()
             if user_obj:
+                user_progress["full_name"] = user_obj.full_name or ""
+                user_progress["username"] = user_obj.username or ""
                 user_progress["user_name"] = user_obj.full_name or user_obj.username or "Developer"
+                if user_obj.learning_goal:
+                    user_progress["learning_goal"] = user_obj.learning_goal
+                if user_obj.current_skill_level:
+                    user_progress["current_skill_level"] = user_obj.current_skill_level
+                if user_obj.interests:
+                    user_progress["interests"] = user_obj.interests
+                if user_obj.bio:
+                    user_progress["bio"] = user_obj.bio
                 if getattr(user_obj, "developer_level", None):
                     user_progress["developer_level"] = user_obj.developer_level
                 if getattr(user_obj, "xp_points", None) is not None:
@@ -427,14 +459,17 @@ class ContextRetriever:
         try:
             dash = await progress_service.get_dashboard_summary(db, user_id=user_id)
             if dash:
-                user_progress["developer_level"] = dash.developer_level
-                user_progress["xp_points"] = dash.xp_points
-                user_progress["streak"] = dash.streak_count
-                user_progress["streak_count"] = dash.streak_count
+                if dash.developer_level:
+                    user_progress["developer_level"] = dash.developer_level
+                if dash.xp_points is not None:
+                    user_progress["xp_points"] = dash.xp_points
+                if dash.streak_count is not None:
+                    user_progress["streak"] = dash.streak_count
+                    user_progress["streak_count"] = dash.streak_count
         except Exception as exc:
             logger.debug("Failed to query progress dashboard in context retriever: %s", exc)
 
-        # 3. Query Active Roadmaps (UserGeneratedRoadmap / UserRoadmap)
+        # 3. Query Active Roadmaps (UserGeneratedRoadmap & UserLearningPath)
         try:
             stmt_roadmaps = (
                 select(UserGeneratedRoadmap)
@@ -451,17 +486,36 @@ class ContextRetriever:
                 completed_count = extracted.get("completed_count") or 0
                 current_step = min(completed_count + 1, total_steps) if total_steps else 1
 
+                # Extract preferred_language & time_commitment from roadmap_data
+                r_data = getattr(r, "roadmap_data", None) or {}
+                if isinstance(r_data, dict):
+                    pref_lang = r_data.get("preferred_language") or r_data.get("language") or r_data.get("programming_language")
+                    if pref_lang and (not user_progress.get("preferred_language") or user_progress.get("preferred_language") == "Python"):
+                        user_progress["preferred_language"] = str(pref_lang)
+                    time_com = r_data.get("time_commitment") or r_data.get("available_time") or r_data.get("time_available") or r_data.get("hours_per_week")
+                    if time_com:
+                        user_progress["time_available"] = str(time_com)
+
+                # Ensure current_milestone has lessons key
+                cur_m = extracted.get("current_milestone")
+                if cur_m and isinstance(cur_m, dict):
+                    if "lessons" not in cur_m:
+                        cur_m["lessons"] = cur_m.get("courses") or []
+
                 ar_dict = {
                     "id": r.id,
                     "title": extracted["roadmap_title"],
                     "goal": extracted["roadmap_goal"],
                     "target_role": extracted["target_role"],
+                    "experience_level": getattr(r, "experience_level", None) or "Beginner",
+                    "estimated_duration": getattr(r, "estimated_duration", None) or "3-6 Months",
                     "progress_percent": r.progress_percent,
+                    "completed_milestone_ids": getattr(r, "completed_milestone_ids", None) or [],
                     "current_step": current_step,
                     "total_steps": total_steps,
                     "completed_milestones": extracted["completed_milestones"],
                     "completed_count": completed_count,
-                    "current_milestone": extracted["current_milestone"],
+                    "current_milestone": cur_m,
                     "current_milestone_title": extracted["current_milestone_title"],
                     "current_milestone_description": extracted["current_milestone_description"],
                     "upcoming_milestone": extracted["upcoming_milestone"],
@@ -475,22 +529,7 @@ class ContextRetriever:
                 }
                 user_progress["active_roadmaps"].append(ar_dict)
 
-            # Inject top-level milestone awareness fields for AI reasoning
-            if user_progress["active_roadmaps"]:
-                top_ar = user_progress["active_roadmaps"][0]
-                user_progress["roadmap_goal"] = top_ar["goal"]
-                user_progress["completed_milestones"] = top_ar["completed_milestones"]
-                user_progress["current_milestone_title"] = top_ar["current_milestone_title"]
-                user_progress["current_milestone_description"] = top_ar["current_milestone_description"]
-                user_progress["upcoming_milestone"] = top_ar["upcoming_milestone_title"]
-                user_progress["required_prerequisites"] = top_ar["required_prerequisites"]
-                user_progress["current_key_skills"] = top_ar["current_key_skills"]
-                user_progress["formatted_guidance"] = top_ar["formatted_guidance"]
-        except Exception as exc:
-            logger.debug("Failed to query active roadmaps in context retriever: %s", exc)
-
-        # 4. Query Enrolled / In-Progress Learning Paths
-        try:
+            # Query Enrolled / In-Progress Learning Paths (UserLearningPath)
             stmt_enrolled = (
                 select(UserLearningPath, LearningPath)
                 .join(LearningPath, UserLearningPath.learning_path_id == LearningPath.id)
@@ -509,10 +548,312 @@ class ContextRetriever:
                     "category": lp.category,
                     "level": lp.level,
                 })
+
+            # If user has no custom generated roadmap, treat active enrolled path as active roadmap
+            if not user_progress["active_roadmaps"] and user_progress["enrolled_paths"]:
+                for ulp, lp in res_enrolled:
+                    if ulp.status == "active":
+                        stmt_steps = (
+                            select(RoadmapStep)
+                            .where(RoadmapStep.learning_path_id == lp.id)
+                            .order_by(RoadmapStep.step_order.asc())
+                        )
+                        steps = (await db.execute(stmt_steps)).scalars().all()
+                        stmt_prog = (
+                            select(UserRoadmapProgress.step_id)
+                            .where(
+                                UserRoadmapProgress.user_id == user_id,
+                                UserRoadmapProgress.learning_path_id == lp.id,
+                                UserRoadmapProgress.is_completed == True,
+                            )
+                        )
+                        done_ids = set((await db.execute(stmt_prog)).scalars().all())
+
+                        completed_titles = [s.title for s in steps if s.id in done_ids]
+                        pending_steps = [s for s in steps if s.id not in done_ids]
+                        curr_step = pending_steps[0] if pending_steps else (steps[-1] if steps else None)
+                        next_step = pending_steps[1] if len(pending_steps) > 1 else None
+
+                        curr_milestone_dict = {
+                            "id": curr_step.id if curr_step else 0,
+                            "title": curr_step.title if curr_step else "Foundations",
+                            "description": curr_step.description if curr_step else "",
+                            "key_skills": [lp.category] if lp.category else [],
+                            "prerequisites": [],
+                            "action_items": [],
+                            "lessons": [],
+                            "project": None,
+                        } if curr_step else None
+
+                        user_progress["active_roadmaps"].append({
+                            "id": lp.id,
+                            "title": lp.title,
+                            "goal": f"Complete {lp.title}",
+                            "target_role": lp.title,
+                            "experience_level": lp.level or "Beginner",
+                            "estimated_duration": lp.duration or "4-8 Weeks",
+                            "progress_percent": ulp.progress_percent,
+                            "completed_milestone_ids": list(done_ids),
+                            "current_step": len(completed_titles) + 1,
+                            "total_steps": len(steps) or 1,
+                            "completed_milestones": completed_titles,
+                            "completed_count": len(completed_titles),
+                            "current_milestone": curr_milestone_dict,
+                            "current_milestone_title": curr_step.title if curr_step else "Foundations",
+                            "current_milestone_description": curr_step.description if curr_step else "",
+                            "upcoming_milestone": next_step.title if next_step else None,
+                            "upcoming_milestone_title": next_step.title if next_step else "",
+                            "required_prerequisites": [],
+                            "current_key_skills": [lp.category] if lp.category else [],
+                            "current_action_items": [],
+                            "current_project": None,
+                            "milestones": [{"id": s.id, "title": s.title} for s in steps],
+                            "formatted_guidance": f"Continue with milestone: {curr_step.title}" if curr_step else "",
+                        })
+                        break
+
+            # Inject top-level milestone awareness fields for AI reasoning
+            if user_progress["active_roadmaps"]:
+                top_ar = user_progress["active_roadmaps"][0]
+                user_progress["roadmap_goal"] = top_ar["goal"]
+                user_progress["completed_milestones"] = top_ar["completed_milestones"]
+                user_progress["current_milestone_title"] = top_ar["current_milestone_title"]
+                user_progress["current_milestone_description"] = top_ar["current_milestone_description"]
+                user_progress["upcoming_milestone"] = top_ar["upcoming_milestone_title"]
+                user_progress["required_prerequisites"] = top_ar["required_prerequisites"]
+                user_progress["current_key_skills"] = top_ar["current_key_skills"]
+                user_progress["formatted_guidance"] = top_ar["formatted_guidance"]
         except Exception as exc:
-            logger.debug("Failed to query enrolled paths in context retriever: %s", exc)
+            logger.debug("Failed to query active roadmaps in context retriever: %s", exc)
+
+        # 4. Retrieve Completed Lessons (UserLessonProgress)
+        try:
+            stmt_completed_lessons = (
+                select(func.count(UserLessonProgress.id))
+                .where(
+                    UserLessonProgress.user_id == user_id,
+                    UserLessonProgress.is_completed == True,
+                )
+            )
+            completed_count = (await db.execute(stmt_completed_lessons)).scalar() or 0
+            user_progress["completed_lessons_count"] = completed_count
+
+            stmt_recent_lessons = (
+                select(
+                    Lesson.title.label("lesson_title"),
+                    Course.title.label("course_title"),
+                    UserLessonProgress.completed_at,
+                )
+                .join(Lesson, UserLessonProgress.lesson_id == Lesson.id)
+                .outerjoin(Course, UserLessonProgress.course_id == Course.id)
+                .where(
+                    UserLessonProgress.user_id == user_id,
+                    UserLessonProgress.is_completed == True,
+                )
+                .order_by(UserLessonProgress.completed_at.desc())
+                .limit(5)
+            )
+            res_recent_lessons = (await db.execute(stmt_recent_lessons)).all()
+            user_progress["recent_completed_lessons"] = [
+                {
+                    "lesson_title": row.lesson_title,
+                    "course_title": row.course_title or "Technea Course",
+                    "completed_at": row.completed_at.isoformat() if row.completed_at else None,
+                }
+                for row in res_recent_lessons
+            ]
+        except Exception as exc:
+            logger.debug("Failed to query completed lessons in context retriever: %s", exc)
+
+        # 5. Retrieve Current Projects (UserProject joining Project)
+        try:
+            stmt_user_projects = (
+                select(Project, UserProject)
+                .join(Project, UserProject.project_id == Project.id)
+                .where(UserProject.user_id == user_id)
+                .order_by(UserProject.started_at.desc())
+                .limit(10)
+            )
+            res_projects = (await db.execute(stmt_user_projects)).all()
+            user_progress["user_projects"] = [
+                {
+                    "title": p.title,
+                    "difficulty": p.difficulty or "Beginner",
+                    "status": up.status or "in_progress",
+                    "technologies": p.technologies or [],
+                    "github_url": up.github_url or "",
+                }
+                for p, up in res_projects
+            ]
+        except Exception as exc:
+            logger.debug("Failed to query user projects in context retriever: %s", exc)
+
+        # 6. Retrieve Recent Activity (DailyLearningActivity for last 7 days)
+        try:
+            seven_days_ago = (datetime.now(timezone.utc) - timedelta(days=7)).strftime("%Y-%m-%d")
+            stmt_activity = (
+                select(DailyLearningActivity)
+                .where(
+                    DailyLearningActivity.user_id == user_id,
+                    DailyLearningActivity.activity_date >= seven_days_ago,
+                )
+                .order_by(DailyLearningActivity.activity_date.desc())
+            )
+            res_activities = (await db.execute(stmt_activity)).scalars().all()
+            total_study_minutes = sum(a.minutes_spent for a in res_activities) if res_activities else 0
+            completed_goals = sum(a.task_count for a in res_activities) if res_activities else 0
+            activity_streak = res_activities[0].streak_count if res_activities else user_progress.get("streak", 0)
+
+            user_progress["recent_activity"] = {
+                "streak": activity_streak,
+                "total_study_minutes": total_study_minutes,
+                "study_time_hours": round(total_study_minutes / 60, 1),
+                "completed_goals_count": completed_goals,
+                "days_active_last_week": len(res_activities),
+                "recent_logs": [
+                    {
+                        "date": a.activity_date,
+                        "minutes_spent": a.minutes_spent,
+                        "tasks": a.completed_tasks,
+                        "streak": a.streak_count,
+                    }
+                    for a in res_activities
+                ],
+            }
+        except Exception as exc:
+            logger.debug("Failed to query recent activity in context retriever: %s", exc)
+
+        # Preferred language heuristics fallback if default Python:
+        text_for_lang = f"{user_progress.get('interests', '')} {user_progress.get('learning_goal', '')}".lower()
+        if user_progress["preferred_language"] == "Python":
+            if "typescript" in text_for_lang:
+                user_progress["preferred_language"] = "TypeScript"
+            elif "javascript" in text_for_lang or "react" in text_for_lang:
+                user_progress["preferred_language"] = "JavaScript"
+            elif "golang" in text_for_lang or " go " in f" {text_for_lang} ":
+                user_progress["preferred_language"] = "Go"
+            elif "rust" in text_for_lang:
+                user_progress["preferred_language"] = "Rust"
+            elif "java" in text_for_lang:
+                user_progress["preferred_language"] = "Java"
+            elif "c++" in text_for_lang:
+                user_progress["preferred_language"] = "C++"
 
         return user_progress
+
+    async def retrieve_user_progress(
+        self,
+        db: AsyncSession,
+        user_id: uuid.UUID,
+    ) -> dict[str, Any]:
+        """Fetch active roadmaps, enrolled tracks, level, XP, and streak for a learner (backward compatible wrapper)."""
+        return await self.get_user_progress(db=db, user_id=user_id)
+
+    def formulate_user_progress_context(self, user_progress: dict[str, Any]) -> str:
+        """Synthesize rich, high-signal Markdown block for AI Mentor 2.0 learner profile and memory."""
+        if not user_progress or not user_progress.get("user_id"):
+            return ""
+
+        name = user_progress.get("full_name") or user_progress.get("user_name", "Developer")
+        username = user_progress.get("username", "")
+        lvl = user_progress.get("developer_level", "Junior Developer")
+        skill_lvl = user_progress.get("current_skill_level") or lvl
+        xp = user_progress.get("xp_points", 0)
+        streak = user_progress.get("streak", 0)
+        goal = user_progress.get("learning_goal") or "Master modern software engineering"
+        interests = user_progress.get("interests") or "Full Stack Development, Web APIs"
+        bio = user_progress.get("bio") or ""
+        pref_lang = user_progress.get("preferred_language", "Python")
+        time_avail = user_progress.get("time_available", "1-2 hours/day")
+
+        lines: list[str] = [
+            "### 👤 LEARNER PROFILE & MENTOR MEMORY",
+            "#### 👤 Learner Profile & Standing (Active Milestone Context):",
+            f"- **Learner**: **{name}**" + (f" (`@{username}`)" if username else "") + f" | Level: **{lvl}** (Skill: {skill_lvl}) | XP: **{xp}** | Daily Streak: **{streak} day(s)**",
+            f"- **Primary Learning Goal**: {goal}",
+            f"- **Preferred Language**: **{pref_lang}** | **Time Commitment / Availability**: **{time_avail}**",
+            f"- **Technical Interests**: {interests}",
+        ]
+        if bio:
+            lines.append(f"- **Bio**: {bio}")
+
+        active_roadmaps = user_progress.get("active_roadmaps", [])
+        if active_roadmaps:
+            lines.append("\n#### 🗺️ Active Roadmap & Milestone Trajectory:")
+            for ar in active_roadmaps:
+                lines.append(
+                    f"- Active Roadmap: **{ar['title']}** (Goal: *{ar['goal']}*, "
+                    f"Milestone {ar['current_step']}/{ar['total_steps']}, Progress: {ar['progress_percent']}%)"
+                )
+                if ar.get("target_role"):
+                    lines.append(f"  - Target Role: **{ar['target_role']}**")
+                if ar.get("experience_level"):
+                    lines.append(f"  - Experience Level: {ar['experience_level']}")
+                if ar.get("estimated_duration"):
+                    lines.append(f"  - Estimated Duration: {ar['estimated_duration']}")
+                completed = ar.get("completed_milestones", [])
+                comp_str = ", ".join(completed) if completed else "None yet"
+                lines.append(f"  - Completed Milestones: {comp_str}")
+                cur_title = ar.get("current_milestone_title") or f"Milestone {ar['current_step']}"
+                lines.append(f"  - Current Milestone: **{cur_title}**")
+                if ar.get("current_milestone_description"):
+                    lines.append(f"    - Description: {ar['current_milestone_description']}")
+                skills = ar.get("current_key_skills", [])
+                if skills:
+                    lines.append(f"    - Key Skills: {', '.join(skills)}")
+                prereqs = ar.get("required_prerequisites", [])
+                if prereqs:
+                    lines.append(f"    - Required Prerequisites: {', '.join(prereqs)}")
+                cur_m = ar.get("current_milestone") or {}
+                action_items = cur_m.get("action_items") or ar.get("current_action_items", [])
+                if action_items:
+                    lines.append(f"    - Action Items: {'; '.join(action_items[:4])}")
+                cur_proj = cur_m.get("project") or ar.get("current_project")
+                if cur_proj and isinstance(cur_proj, dict) and cur_proj.get("title"):
+                    lines.append(f"    - Hands-on Project: **{cur_proj['title']}** ({cur_proj.get('difficulty', 'Beginner')})")
+                up_title = ar.get("upcoming_milestone_title") or ar.get("upcoming_milestone")
+                if up_title:
+                    lines.append(f"  - Upcoming Milestone: **{up_title}**")
+                if ar.get("formatted_guidance"):
+                    lines.append(f"  - Guidance: {ar['formatted_guidance']}")
+
+        enrolled_paths = user_progress.get("enrolled_paths", [])
+        if enrolled_paths:
+            enrolled_titles = [f"{ep['title']} ({ep['progress_percent']}%)" for ep in enrolled_paths[:3]]
+            lines.append(f"- Enrolled Learning Paths: {', '.join(enrolled_titles)}")
+
+        # Completed Lessons
+        completed_lessons_count = user_progress.get("completed_lessons_count", 0)
+        recent_lessons = user_progress.get("recent_completed_lessons", [])
+        lines.append(f"\n#### 🎓 Completed Lessons & Knowledge Baseline ({completed_lessons_count} total completed):")
+        if recent_lessons:
+            for l in recent_lessons[:5]:
+                lines.append(f"- Completed Lesson: **{l['lesson_title']}** (Course: *{l['course_title']}*)")
+        else:
+            lines.append("- No individual video lessons marked as completed yet.")
+
+        # Current Projects
+        user_projects = user_progress.get("user_projects", [])
+        lines.append("\n#### 🛠️ Current Hands-on Projects:")
+        if user_projects:
+            for up in user_projects[:5]:
+                techs = ", ".join(up.get("technologies", [])[:4])
+                gh = f" [GitHub: {up['github_url']}]" if up.get("github_url") else ""
+                lines.append(f"- Project: **{up['title']}** (Status: `{up.get('status', 'in_progress')}`, Difficulty: {up.get('difficulty', 'Beginner')}, Stack: {techs}){gh}")
+        else:
+            lines.append("- No portfolio projects recorded yet.")
+
+        # Recent Activity
+        activity = user_progress.get("recent_activity", {})
+        act_streak = activity.get("streak", streak)
+        study_mins = activity.get("total_study_minutes", 0)
+        study_hrs = activity.get("study_time_hours", round(study_mins / 60, 1))
+        completed_goals = activity.get("completed_goals_count", 0)
+        days_active = activity.get("days_active_last_week", activity.get("days_active", 0))
+        lines.append("\n#### 📈 Recent Activity & Study Consistency (Last 7 Days):")
+        lines.append(f"- Active Days: **{days_active}/7** | Total Study Time: **{study_mins} mins** (~{study_hrs} hrs) | Tasks/Goals Completed: **{completed_goals}** | Streak: **{act_streak} day(s)**")
+
+        return "\n".join(lines)
 
     def formulate_catalog_context(
         self,
@@ -570,39 +911,7 @@ class ContextRetriever:
 
         # User progress if authenticated
         if user_progress and user_progress.get("user_id"):
-            lines.append("\n#### 👤 Learner Profile & Standing (Active Milestone Context):")
-            lvl = user_progress.get("developer_level", "Junior Developer")
-            xp = user_progress.get("xp_points", 0)
-            streak = user_progress.get("streak", 0)
-            lines.append(f"- Current Level: **{lvl}** | XP: **{xp}** | Daily Streak: **{streak} day(s)**")
-
-            active_roadmaps = user_progress.get("active_roadmaps", [])
-            if active_roadmaps:
-                for ar in active_roadmaps:
-                    lines.append(
-                        f"- Active Roadmap: **{ar['title']}** (Goal: *{ar['goal']}*, "
-                        f"Milestone {ar['current_step']}/{ar['total_steps']}, Progress: {ar['progress_percent']}%)"
-                    )
-                    completed = ar.get("completed_milestones", [])
-                    comp_str = ", ".join(completed) if completed else "None yet"
-                    lines.append(f"  - Completed Milestones: {comp_str}")
-                    cur_title = ar.get("current_milestone_title") or f"Milestone {ar['current_step']}"
-                    lines.append(f"  - Current Milestone: **{cur_title}**")
-                    if ar.get("current_milestone_description"):
-                        lines.append(f"    - Description: {ar['current_milestone_description']}")
-                    prereqs = ar.get("required_prerequisites", [])
-                    if prereqs:
-                        lines.append(f"    - Required Prerequisites: {', '.join(prereqs)}")
-                    up_title = ar.get("upcoming_milestone_title")
-                    if up_title:
-                        lines.append(f"  - Upcoming Milestone: **{up_title}**")
-                    if ar.get("formatted_guidance"):
-                        lines.append(f"  - Guidance: {ar['formatted_guidance']}")
-
-            enrolled_paths = user_progress.get("enrolled_paths", [])
-            if enrolled_paths:
-                enrolled_titles = [f"{ep['title']} ({ep['progress_percent']}%)" for ep in enrolled_paths[:3]]
-                lines.append(f"- Enrolled Learning Paths: {', '.join(enrolled_titles)}")
+            lines.append("\n" + self.formulate_user_progress_context(user_progress))
 
         return "\n".join(lines)
 
@@ -759,7 +1068,7 @@ class ContextRetriever:
         # 1. Retrieve user progress first (if authenticated)
         user_progress: dict[str, Any] | None = None
         if user_id is not None:
-            user_progress = await self.retrieve_user_progress(db, user_id)
+            user_progress = await self.get_user_progress(db, user_id)
 
         # 2. Determine learner level and whether to filter advanced/enterprise topics
         lvl_str = (user_progress.get("developer_level") if user_progress else "Beginner").lower()

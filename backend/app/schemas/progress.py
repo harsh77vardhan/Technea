@@ -202,3 +202,20 @@ class DashboardSummaryResponse(BaseModel):
     daily_activity: DailyActivityResponse | None = None
 
 
+class AchievementItemResponse(BaseModel):
+    """Developer achievement badge displayed in achievements showcase and dashboard."""
+
+    id: str
+    achievement_id: str
+    title: str
+    description: str
+    icon: str
+    category: str = "General"
+    xp_reward: int = 50
+    criteria: str | None = None
+    unlocked: bool = False
+    earned: bool = False
+    unlocked_at: str | None = None
+
+
+

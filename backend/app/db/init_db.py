@@ -15,6 +15,8 @@ from app.core.logger import logger
 from app.db.base import Base
 from app.db.session import async_session_maker, engine
 from app.models.skill import Skill
+from app.models.achievement import Achievement
+from sqlalchemy.ext.asyncio import AsyncSession
 import app.models  # noqa: F401 - Register all models for Base.metadata
 
 
@@ -165,6 +167,136 @@ async def seed_initial_catalog_if_needed() -> None:
         logger.warning("Error checking or seeding initial catalog: %s. Continuing startup.", exc)
 
 
+DEFAULT_ACHIEVEMENTS = [
+    {
+        "achievement_id": "early_adopter",
+        "title": "Early Adopter",
+        "description": "Joined Technea AI engineering platform during early release.",
+        "icon": "sparkles",
+        "category": "Community",
+        "xp_reward": 50,
+        "criteria": "Account created during initial release",
+    },
+    {
+        "achievement_id": "streak_master",
+        "title": "Consistent Coder",
+        "description": "Maintained daily learning momentum for 3+ consecutive days.",
+        "icon": "flame",
+        "category": "Consistency",
+        "xp_reward": 100,
+        "criteria": "Maintain a 3-day active learning streak",
+    },
+    {
+        "achievement_id": "milestone_champion",
+        "title": "Milestone Conqueror",
+        "description": "Mastered 5 or more core engineering milestones.",
+        "icon": "target",
+        "category": "Learning",
+        "xp_reward": 150,
+        "criteria": "Complete 5 curriculum milestones",
+    },
+    {
+        "achievement_id": "roadmap_architect",
+        "title": "Roadmap Architect",
+        "description": "Designed and initialized an AI-synthesized career roadmap.",
+        "icon": "layers",
+        "category": "AI & Planning",
+        "xp_reward": 75,
+        "criteria": "Generate and save a personalized AI roadmap",
+    },
+    {
+        "achievement_id": "project_builder",
+        "title": "Hands-on Builder",
+        "description": "Started or completed an active software project deliverable.",
+        "icon": "code",
+        "category": "Projects",
+        "xp_reward": 200,
+        "criteria": "Start or complete a hands-on project",
+    },
+    {
+        "achievement_id": "community_pioneer",
+        "title": "Peer Collaborator",
+        "description": "Connected with peers in Technea community learning rooms.",
+        "icon": "users",
+        "category": "Community",
+        "xp_reward": 50,
+        "criteria": "Join any community study room",
+    },
+    {
+        "achievement_id": "polyglot_engineer",
+        "title": "Polyglot Programmer",
+        "description": "Explored multiple languages and runtime environments across learning paths.",
+        "icon": "terminal",
+        "category": "Mastery",
+        "xp_reward": 125,
+        "criteria": "Engage with courses in 2 or more programming languages",
+    },
+    {
+        "achievement_id": "full_stack_hero",
+        "title": "Full Stack Hero",
+        "description": "Completed frontend and backend milestones with integrated API persistence.",
+        "icon": "award",
+        "category": "Engineering",
+        "xp_reward": 300,
+        "criteria": "Complete full-stack milestones",
+    },
+]
+
+
+async def seed_achievements(session: AsyncSession | None = None) -> None:
+    """Ensure achievements table exists and default achievements are populated."""
+    try:
+        # Ensure table exists via DDL if not created by Alembic/Base.metadata
+        async with engine.begin() as conn:
+            await conn.execute(
+                text("""
+                    CREATE TABLE IF NOT EXISTS achievements (
+                        id SERIAL PRIMARY KEY,
+                        achievement_id VARCHAR(100) UNIQUE NOT NULL,
+                        title VARCHAR(255) NOT NULL,
+                        description TEXT NOT NULL,
+                        icon VARCHAR(50) DEFAULT 'award' NOT NULL,
+                        category VARCHAR(100) DEFAULT 'General' NOT NULL,
+                        xp_reward INTEGER DEFAULT 50 NOT NULL,
+                        criteria VARCHAR(255),
+                        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+                    )
+                """)
+            )
+            await conn.execute(
+                text("CREATE INDEX IF NOT EXISTS ix_achievements_achievement_id ON achievements(achievement_id)")
+            )
+
+        async def _do_seed(s: AsyncSession) -> None:
+            result = await s.execute(select(func.count(Achievement.id)))
+            count = result.scalar() or 0
+            if count == 0:
+                logger.info("Achievements table is empty. Seeding default platform achievements...")
+                for item in DEFAULT_ACHIEVEMENTS:
+                    ach = Achievement(
+                        achievement_id=item["achievement_id"],
+                        title=item["title"],
+                        description=item["description"],
+                        icon=item["icon"],
+                        category=item["category"],
+                        xp_reward=item["xp_reward"],
+                        criteria=item["criteria"],
+                    )
+                    s.add(ach)
+                await s.commit()
+                logger.info("Seeded %d default achievements.", len(DEFAULT_ACHIEVEMENTS))
+            else:
+                logger.info("Achievements already populated (%d records). Skipping seed.", count)
+
+        if session:
+            await _do_seed(session)
+        else:
+            async with async_session_maker() as s:
+                await _do_seed(s)
+    except Exception as exc:
+        logger.warning("Error seeding achievements: %s. Continuing startup.", exc)
+
+
 async def init_db() -> None:
     """Master database initialization function.
 
@@ -175,6 +307,7 @@ async def init_db() -> None:
     await migrate_database()
     await run_auth_migrations(engine)
     await seed_initial_catalog_if_needed()
+    await seed_achievements()
     logger.info("Database initialization completed successfully.")
 
 

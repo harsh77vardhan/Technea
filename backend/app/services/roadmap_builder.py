@@ -1,5 +1,4 @@
-"""Service for synthesizing personalized career roadmaps from user career goals."""
-
+from datetime import datetime, timezone
 import re
 import uuid
 from typing import Any
@@ -20,6 +19,7 @@ from app.schemas.roadmap_builder import (
     RoadmapMilestone,
     RoadmapPhase,
 )
+from app.services.roadmap_curriculum import enrich_milestone_content
 
 # Rich curriculum templates designed to bridge catalog data into structured phases
 CAREER_BLUEPRINTS: dict[str, dict[str, Any]] = {
@@ -28,7 +28,7 @@ CAREER_BLUEPRINTS: dict[str, dict[str, Any]] = {
         "target_role": "Full Stack Developer",
         "summary": "Master modern full-stack web engineering from semantic DOM foundations and reactive clients to distributed backend APIs, relational databases, and cloud deployments.",
         "estimated_duration": "18 Weeks",
-        "keywords": ["full stack", "fullstack", "web developer", "web dev", "website", "websites", "software engineer", "mern"],
+        "keywords": ["full stack", "fullstack", "web developer", "web dev", "website", "websites", "software engineer", "mern", "backend", "frontend", "web", "api"],
         "phases": [
             {
                 "phase_number": 1,
@@ -852,6 +852,9 @@ class RoadmapBuilderService:
         available_time: str | None = None,
         main_goal: str | None = None,
         preferred_style: str | None = None,
+        preferred_language: str | None = None,
+        current_skills: list[str] | str | None = None,
+        target_role: str | None = None,
     ) -> RoadmapGenerateResponse:
         """Construct an exhaustive, catalog-connected roadmap from user's career goal and onboarding profile."""
         blueprint_key = self.identify_blueprint_key(goal)
@@ -862,8 +865,15 @@ class RoadmapBuilderService:
         effective_time = available_time or "1 hour/day"
         effective_style = preferred_style or "Projects"
 
-        target_role = self.extract_role_title(goal, bp["target_role"])
-        roadmap_title = f"{target_role} Roadmap"
+        cleaned_skills: list[str] = []
+        if isinstance(current_skills, str):
+            cleaned_skills = [s.strip() for s in current_skills.split(",") if s.strip()]
+        elif isinstance(current_skills, list):
+            cleaned_skills = [str(s).strip() for s in current_skills if str(s).strip()]
+
+        extracted_role = self.extract_role_title(goal, bp["target_role"])
+        final_target_role = (target_role.strip() if target_role and target_role.strip() else None) or extracted_role
+        roadmap_title = f"{final_target_role} Roadmap"
 
         # Calculate tailored duration based on time availability
         raw_duration = bp.get("estimated_duration", "18 Weeks")
@@ -937,17 +947,29 @@ class RoadmapBuilderService:
 
                 total_courses_count += len(matched_courses_refs)
 
+                # Enrich milestone with concrete lessons, resources, practice tasks, interview prep & checkpoints
+                enrichment = enrich_milestone_content(
+                    title=raw_m["title"],
+                    category=raw_m.get("category", "General"),
+                    skills=raw_m.get("skills", []),
+                    preferred_language=preferred_language,
+                    current_skills=cleaned_skills,
+                )
+
+                m_title = enrichment.get("title", raw_m["title"])
+                m_skills = enrichment.get("skills", raw_m["skills"])
+
                 # Generate hands-on milestone project spec tailored to style
                 project_diff = "Intermediate" if raw_phase["phase_number"] >= 3 else "Beginner"
                 if effective_level == "Intermediate":
                     project_diff = "Intermediate" if raw_phase["phase_number"] <= 2 else "Advanced"
 
                 milestone_project = ProjectSpec(
-                    title=f"{raw_m['title']} Practice Lab",
-                    description=f"Construct a hands-on practical deliverable demonstrating proficiency in {', '.join(raw_m['skills'][:3])}.",
-                    tech_stack=raw_m["skills"][:4],
+                    title=f"{m_title} Practice Lab",
+                    description=f"Construct a hands-on practical deliverable demonstrating proficiency in {', '.join(m_skills[:3])}.",
+                    tech_stack=m_skills[:4],
                     key_features=[
-                        f"Implement clean, modular architecture utilizing {raw_m['skills'][0]}",
+                        f"Implement clean, modular architecture utilizing {m_skills[0]}",
                         f"Write structured unit and integration tests verifying implementation",
                         f"Publish version-controlled GitHub repository with comprehensive README",
                     ],
@@ -957,17 +979,22 @@ class RoadmapBuilderService:
                 milestone = RoadmapMilestone(
                     id=m_id,
                     step_number=len(phase_milestones) + 1,
-                    title=raw_m["title"],
+                    title=m_title,
                     description=raw_m["description"],
                     estimated_weeks=raw_m["duration"],
                     category=raw_m["category"],
-                    key_skills=raw_m["skills"],
+                    key_skills=m_skills,
                     prerequisites=raw_m.get("prerequisites", []),
                     action_items=raw_m.get("action_items", []),
                     learning_path_id=matched_path.id if matched_path else None,
                     learning_path_title=matched_path.title if matched_path else None,
                     courses=matched_courses_refs,
                     project=milestone_project,
+                    lessons=enrichment["lessons"],
+                    resources=enrichment["resources"],
+                    practice_tasks=enrichment["practice_tasks"],
+                    interview_prep=enrichment["interview_prep"],
+                    checkpoints=enrichment["checkpoints"],
                 )
                 phase_milestones.append(milestone)
 
@@ -984,6 +1011,21 @@ class RoadmapBuilderService:
         # ── Tailored Outcome Phase based on User's Main Goal ──
         final_phase_num = len(constructed_phases) + 1
         if effective_goal in ["Job", "Internship"]:
+            m1_enrich = enrich_milestone_content(
+                title="Technical Interview Drills & Problem Solving",
+                category="Interview Prep",
+                skills=["Algorithms", "Data Structures", "Big-O", "STAR Method"],
+                preferred_language=preferred_language,
+                current_skills=cleaned_skills,
+            )
+            m2_enrich = enrich_milestone_content(
+                title="System Architecture Defense & Resume Polish",
+                category="Career Strategy",
+                skills=["System Design", "Resume Optimization", "GitHub Polish"],
+                preferred_language=preferred_language,
+                current_skills=cleaned_skills,
+            )
+
             outcome_phase = RoadmapPhase(
                 phase_number=final_phase_num,
                 title=f"Phase {final_phase_num}: Technical Interview & Production Readiness",
@@ -993,11 +1035,11 @@ class RoadmapBuilderService:
                     RoadmapMilestone(
                         id=f"m{final_phase_num}-1",
                         step_number=1,
-                        title="Technical Interview Drills & Problem Solving",
+                        title=m1_enrich["title"],
                         description="Master top technical interview patterns, complexity analysis, and whiteboard problem solving.",
                         estimated_weeks="2 Weeks",
                         category="Interview Prep",
-                        key_skills=["Algorithms", "Data Structures", "Big-O", "STAR Method"],
+                        key_skills=m1_enrich["skills"],
                         action_items=[
                             "Solve top 25 high-frequency technical interview questions",
                             "Conduct peer mock interview with timed whiteboard explanation",
@@ -1015,27 +1057,45 @@ class RoadmapBuilderService:
                             ],
                             difficulty="Intermediate",
                         ),
+                        lessons=m1_enrich["lessons"],
+                        resources=m1_enrich["resources"],
+                        practice_tasks=m1_enrich["practice_tasks"],
+                        interview_prep=m1_enrich["interview_prep"],
+                        checkpoints=m1_enrich["checkpoints"],
                     ),
                     RoadmapMilestone(
                         id=f"m{final_phase_num}-2",
                         step_number=2,
-                        title="System Architecture Defense & Resume Polish",
+                        title=m2_enrich["title"],
                         description="Structure resume bullet points around measurable business impact, and practice architectural defense.",
                         estimated_weeks="1 Week",
                         category="Career Strategy",
-                        key_skills=["System Design", "Resume Optimization", "GitHub Polish"],
+                        key_skills=m2_enrich["skills"],
                         action_items=[
                             "Format resume following Google XYZ resume formula (Accomplished [X] as measured by [Y] by doing [Z])",
                             "Document system architecture diagrams (C4 model) for top 2 projects",
                             "Verify all GitHub repositories have clean commit histories and comprehensive READMEs",
                         ],
                         courses=[],
+                        lessons=m2_enrich["lessons"],
+                        resources=m2_enrich["resources"],
+                        practice_tasks=m2_enrich["practice_tasks"],
+                        interview_prep=m2_enrich["interview_prep"],
+                        checkpoints=m2_enrich["checkpoints"],
                     ),
                 ],
             )
             constructed_phases.append(outcome_phase)
             milestone_counter += 2
         elif effective_goal == "Freelancing":
+            m_fl_enrich = enrich_milestone_content(
+                title="Client Scoping & Payment Integration",
+                category="Freelance",
+                skills=["Stripe API", "Invoicing", "Client Delivery", "CMS"],
+                preferred_language=preferred_language,
+                current_skills=cleaned_skills,
+            )
+
             outcome_phase = RoadmapPhase(
                 phase_number=final_phase_num,
                 title=f"Phase {final_phase_num}: Client Delivery & Monetization",
@@ -1045,23 +1105,36 @@ class RoadmapBuilderService:
                     RoadmapMilestone(
                         id=f"m{final_phase_num}-1",
                         step_number=1,
-                        title="Client Scoping & Payment Integration",
+                        title=m_fl_enrich["title"],
                         description="Implement Stripe payments, customer invoices, and headless CMS client handoffs.",
                         estimated_weeks="2 Weeks",
                         category="Freelance",
-                        key_skills=["Stripe API", "Invoicing", "Client Delivery", "CMS"],
+                        key_skills=m_fl_enrich["skills"],
                         action_items=[
                             "Integrate Stripe Checkout and subscription billing webhooks",
                             "Set up headless CMS (Strapi / Sanity) allowing non-technical client editing",
                             "Draft standard Statement of Work (SOW) and scope creep protection clauses",
                         ],
                         courses=[],
+                        lessons=m_fl_enrich["lessons"],
+                        resources=m_fl_enrich["resources"],
+                        practice_tasks=m_fl_enrich["practice_tasks"],
+                        interview_prep=m_fl_enrich["interview_prep"],
+                        checkpoints=m_fl_enrich["checkpoints"],
                     ),
                 ],
             )
             constructed_phases.append(outcome_phase)
             milestone_counter += 1
         elif effective_goal == "Startup":
+            m_st_enrich = enrich_milestone_content(
+                title="Production SaaS Multi-tenancy & Telemetry",
+                category="Startup Architecture",
+                skills=["Multi-tenancy", "Telemetry", "PostHog", "Sentry", "Cloud Launch"],
+                preferred_language=preferred_language,
+                current_skills=cleaned_skills,
+            )
+
             outcome_phase = RoadmapPhase(
                 phase_number=final_phase_num,
                 title=f"Phase {final_phase_num}: Rapid MVP & Cloud Scaling",
@@ -1071,17 +1144,22 @@ class RoadmapBuilderService:
                     RoadmapMilestone(
                         id=f"m{final_phase_num}-1",
                         step_number=1,
-                        title="Production SaaS Multi-tenancy & Telemetry",
+                        title=m_st_enrich["title"],
                         description="Configure tenant isolation, error tracking with Sentry, and user conversion funnel analytics.",
                         estimated_weeks="2 Weeks",
                         category="Startup Architecture",
-                        key_skills=["Multi-tenancy", "Telemetry", "PostHog", "Sentry", "Cloud Launch"],
+                        key_skills=m_st_enrich["skills"],
                         action_items=[
                             "Implement multi-tenant database isolation or organizational RBAC",
                             "Configure centralized error logging with Sentry and product telemetry with PostHog",
                             "Conduct load test simulating 500 concurrent users with zero memory leaks",
                         ],
                         courses=[],
+                        lessons=m_st_enrich["lessons"],
+                        resources=m_st_enrich["resources"],
+                        practice_tasks=m_st_enrich["practice_tasks"],
+                        interview_prep=m_st_enrich["interview_prep"],
+                        checkpoints=m_st_enrich["checkpoints"],
                     ),
                 ],
             )
@@ -1089,11 +1167,25 @@ class RoadmapBuilderService:
             milestone_counter += 1
 
         capstone_data = bp.get("capstone")
+        capstone_stack = list(capstone_data["tech_stack"]) if capstone_data else []
+        if preferred_language and capstone_data:
+            lang_clean = preferred_language.strip()
+            if lang_clean.lower() in ("go", "golang") and "FastAPI" in capstone_stack:
+                capstone_stack[capstone_stack.index("FastAPI")] = "Go (Gin)"
+            elif lang_clean.lower() in ("typescript", "node", "nodejs") and "FastAPI" in capstone_stack:
+                capstone_stack[capstone_stack.index("FastAPI")] = "TypeScript (NestJS)"
+            elif lang_clean.lower() in ("rust",) and "FastAPI" in capstone_stack:
+                capstone_stack[capstone_stack.index("FastAPI")] = "Rust (Axum)"
+            elif lang_clean.lower() in ("java",) and "FastAPI" in capstone_stack:
+                capstone_stack[capstone_stack.index("FastAPI")] = "Java (Spring Boot)"
+            elif lang_clean not in capstone_stack and len(capstone_stack) > 0:
+                capstone_stack.insert(1, lang_clean)
+
         capstone_spec = (
             ProjectSpec(
                 title=capstone_data["title"],
                 description=capstone_data["description"],
-                tech_stack=capstone_data["tech_stack"],
+                tech_stack=capstone_stack,
                 key_features=capstone_data["key_features"],
                 difficulty=capstone_data.get("difficulty", "Advanced"),
             )
@@ -1101,11 +1193,19 @@ class RoadmapBuilderService:
             else None
         )
 
+        skills_summary_clause = f" Built upon your current skills in {', '.join(cleaned_skills)}." if cleaned_skills else ""
+        lang_summary_clause = f" Focus language: {preferred_language}." if preferred_language else ""
+
+        summary_text = (
+            f"{bp['summary']} Customized for {effective_goal} outcome, {effective_time} commitment, and "
+            f"{effective_style}-first learning style.{skills_summary_clause}{lang_summary_clause}"
+        )
+
         roadmap_data = GeneratedRoadmapData(
-            target_role=target_role,
+            target_role=final_target_role,
             goal=goal,
             experience_level=effective_level,
-            summary=f"{bp['summary']} Customized for {effective_goal} outcome, {effective_time} commitment, and {effective_style}-first learning style.",
+            summary=summary_text,
             estimated_total_duration=tailored_duration,
             total_milestones=milestone_counter,
             total_courses=total_courses_count,
@@ -1117,7 +1217,7 @@ class RoadmapBuilderService:
         return RoadmapGenerateResponse(
             title=roadmap_title,
             goal=goal,
-            target_role=target_role,
+            target_role=final_target_role,
             experience_level=effective_level,
             estimated_duration=tailored_duration,
             roadmap_data=roadmap_data,
@@ -1152,6 +1252,43 @@ class RoadmapBuilderService:
         await db.commit()
         await db.refresh(new_roadmap)
         return new_roadmap
+
+    async def update_user_roadmap(
+        self,
+        db: AsyncSession,
+        roadmap_id: int,
+        user_id: uuid.UUID,
+        title: str | None = None,
+        target_role: str | None = None,
+        roadmap_data: dict[str, Any] | None = None,
+        completed_milestone_ids: list[str] | None = None,
+    ) -> UserGeneratedRoadmap:
+        """Update roadmap title, target role, milestone hierarchy, or completed status."""
+        roadmap = await self.get_roadmap_by_id(db, roadmap_id=roadmap_id, user_id=user_id)
+        if not roadmap:
+            raise ValueError("Roadmap not found or unauthorized access.")
+        if title is not None:
+            roadmap.title = title
+        if target_role is not None:
+            roadmap.target_role = target_role
+        if roadmap_data is not None:
+            roadmap.roadmap_data = roadmap_data
+        if completed_milestone_ids is not None:
+            roadmap.completed_milestone_ids = completed_milestone_ids
+
+        # Recalculate progress percent
+        total_milestones = 0
+        if isinstance(roadmap.roadmap_data, dict):
+            phases = roadmap.roadmap_data.get("phases", [])
+            for p in phases:
+                total_milestones += len(p.get("milestones", []))
+        if total_milestones > 0:
+            completed_count = len(roadmap.completed_milestone_ids or [])
+            roadmap.progress_percent = min(100, round((completed_count / total_milestones) * 100))
+
+        await db.commit()
+        await db.refresh(roadmap)
+        return roadmap
 
     async def get_user_roadmaps(
         self,
@@ -1217,6 +1354,57 @@ class RoadmapBuilderService:
         await db.refresh(roadmap)
         return roadmap
 
+    async def regenerate_user_roadmap(
+        self,
+        db: AsyncSession,
+        roadmap_id: int,
+        user_id: uuid.UUID,
+        goal: str | None = None,
+        experience_level: str | None = None,
+        current_level: str | None = None,
+        available_time: str | None = None,
+        main_goal: str | None = None,
+        preferred_style: str | None = None,
+        preferred_language: str | None = None,
+        current_skills: list[str] | str | None = None,
+        target_role: str | None = None,
+    ) -> UserGeneratedRoadmap:
+        """Regenerates a roadmap while preserving the existing roadmap ID and user association."""
+        roadmap = await self.get_roadmap_by_id(db, roadmap_id=roadmap_id, user_id=user_id)
+        if not roadmap:
+            raise ValueError("Roadmap not found or unauthorized access.")
+
+        eff_goal = goal or roadmap.goal
+        eff_level = current_level or experience_level or roadmap.experience_level or "Beginner"
+        eff_role = target_role or roadmap.target_role
+
+        generated = await self.generate_roadmap(
+            db=db,
+            goal=eff_goal,
+            experience_level=eff_level,
+            current_level=current_level,
+            available_time=available_time,
+            main_goal=main_goal,
+            preferred_style=preferred_style,
+            preferred_language=preferred_language,
+            current_skills=current_skills,
+            target_role=eff_role,
+        )
+
+        roadmap.title = generated.title
+        roadmap.goal = generated.goal
+        roadmap.target_role = generated.target_role
+        roadmap.experience_level = generated.experience_level
+        roadmap.estimated_duration = generated.estimated_duration
+        roadmap.roadmap_data = generated.roadmap_data.model_dump()
+        roadmap.completed_milestone_ids = []
+        roadmap.progress_percent = 0
+        roadmap.updated_at = datetime.now(timezone.utc)
+
+        await db.commit()
+        await db.refresh(roadmap)
+        return roadmap
+
     async def delete_roadmap(
         self,
         db: AsyncSession,
@@ -1233,3 +1421,4 @@ class RoadmapBuilderService:
 
 
 roadmap_builder_service = RoadmapBuilderService()
+

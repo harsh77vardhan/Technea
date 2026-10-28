@@ -44,6 +44,11 @@ class RoadmapMilestone(BaseModel):
     learning_path_title: str | None = None
     courses: list[RoadmapCourseRef] = Field(default_factory=list, description="Catalog courses for this milestone")
     project: ProjectSpec | None = None
+    lessons: list[str] = Field(default_factory=list, description="Key conceptual and coding lessons")
+    resources: list[dict[str, str]] = Field(default_factory=list, description="Official docs, guides, and references")
+    practice_tasks: list[str] = Field(default_factory=list, description="Hands-on exercises and coding challenges")
+    interview_prep: list[str] = Field(default_factory=list, description="Targeted interview questions & conceptual checkpoints")
+    checkpoints: list[str] = Field(default_factory=list, description="Verification criteria before advancing")
 
 
 class RoadmapPhase(BaseModel):
@@ -78,8 +83,19 @@ class RoadmapGenerateRequest(BaseModel):
     experience_level: str | None = Field(default="Beginner", description="Optional experience tier")
     current_level: str | None = Field(default="Complete beginner", description="Complete beginner | Basic knowledge | Intermediate")
     available_time: str | None = Field(default="1 hour/day", description="30 minutes/day | 1 hour/day | 2+ hours/day")
+    preferred_language: str | None = Field(default=None, description="Preferred language (e.g. Python, TypeScript, Go, Rust, Java, C++, Swift)")
+    current_skills: list[str] | str | None = Field(default=None, description="Current skills (e.g. ['HTML/CSS', 'Python Basics'])")
+    target_role: str | None = Field(default=None, description="Target role (e.g. 'Full Stack Developer', 'AI Engineer')")
     main_goal: str | None = Field(default="Job", description="Internship | Job | Freelancing | College | Startup")
     preferred_style: str | None = Field(default="Projects", description="Projects | Videos | Reading")
+
+
+class RoadmapUpdateRequest(BaseModel):
+    """Payload to update an existing saved roadmap."""
+
+    title: str | None = None
+    target_role: str | None = None
+    roadmap_data: dict[str, Any] | None = None
 
 
 class RoadmapGenerateResponse(BaseModel):

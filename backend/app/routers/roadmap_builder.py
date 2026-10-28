@@ -10,6 +10,7 @@ from app.schemas.roadmap_builder import (
     RoadmapGenerateResponse,
     RoadmapProgressToggleRequest,
     RoadmapSaveRequest,
+    RoadmapUpdateRequest,
 )
 from app.services.learning_path import learning_path_service
 from app.services.roadmap_builder import roadmap_builder_service
@@ -36,6 +37,9 @@ async def generate_roadmap(
         available_time=payload.available_time,
         main_goal=payload.main_goal,
         preferred_style=payload.preferred_style,
+        preferred_language=payload.preferred_language,
+        current_skills=payload.current_skills,
+        target_role=payload.target_role,
     )
 
 
@@ -130,6 +134,36 @@ async def get_roadmap(
     return RoadmapDetailResponse.model_validate(roadmap)
 
 
+@router.put(
+    "/{roadmap_id}",
+    response_model=RoadmapDetailResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Update saved roadmap",
+)
+async def update_user_roadmap(
+    roadmap_id: int,
+    payload: RoadmapUpdateRequest,
+    current_user: CurrentUserDep,
+    db: DatabaseDep,
+) -> RoadmapDetailResponse:
+    """Update milestone titles, custom milestones, or metadata in a saved roadmap."""
+    try:
+        updated = await roadmap_builder_service.update_user_roadmap(
+            db,
+            roadmap_id=roadmap_id,
+            user_id=current_user.id,
+            title=payload.title,
+            target_role=payload.target_role,
+            roadmap_data=payload.roadmap_data,
+        )
+        return RoadmapDetailResponse.model_validate(updated)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e),
+        )
+
+
 @router.post(
     "/{roadmap_id}/progress",
     response_model=RoadmapDetailResponse,
@@ -150,6 +184,42 @@ async def toggle_milestone_progress(
             user_id=current_user.id,
             milestone_id=payload.milestone_id,
             is_completed=payload.is_completed,
+        )
+        return RoadmapDetailResponse.model_validate(updated)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e),
+        )
+
+
+@router.post(
+    "/{roadmap_id}/regenerate",
+    response_model=RoadmapDetailResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Regenerate an existing roadmap",
+)
+async def regenerate_user_roadmap(
+    roadmap_id: int,
+    current_user: CurrentUserDep,
+    db: DatabaseDep,
+    payload: RoadmapGenerateRequest | None = None,
+) -> RoadmapDetailResponse:
+    """Regenerate a saved roadmap with updated parameters or current configuration, preserving the ID."""
+    try:
+        updated = await roadmap_builder_service.regenerate_user_roadmap(
+            db,
+            roadmap_id=roadmap_id,
+            user_id=current_user.id,
+            goal=payload.goal if payload else None,
+            experience_level=payload.experience_level if payload else None,
+            current_level=payload.current_level if payload else None,
+            available_time=payload.available_time if payload else None,
+            main_goal=payload.main_goal if payload else None,
+            preferred_style=payload.preferred_style if payload else None,
+            preferred_language=payload.preferred_language if payload else None,
+            current_skills=payload.current_skills if payload else None,
+            target_role=payload.target_role if payload else None,
         )
         return RoadmapDetailResponse.model_validate(updated)
     except ValueError as e:
@@ -182,3 +252,4 @@ async def delete_roadmap(
             detail="Roadmap not found or unauthorized.",
         )
     return MessageResponse(message="Roadmap successfully removed.")
+
