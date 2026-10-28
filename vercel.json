@@ -4,8 +4,6 @@
   "buildCommand": "cd frontend && npm install --include=dev && npm run build",
   "outputDirectory": "frontend/dist",
   "installCommand": "npm --prefix frontend install --include=dev",
-  "cleanUrls": true,
-  "trailingSlash": false,
   "rewrites": [
     {
       "source": "/api/v1/:path*",
