@@ -34,7 +34,7 @@ class Settings(BaseSettings):
 
     # Email / Resend API Configuration
     RESEND_API_KEY: str | None = None
-    EMAIL_FROM: str = "Technea <onboarding@resend.dev>"
+    EMAIL_FROM: str = "Technea <noreply@technea.in>"
 
     # SMTP Configuration
     SMTP_HOST: str | None = None
@@ -65,6 +65,8 @@ class Settings(BaseSettings):
         "http://127.0.0.1:3000",
         "http://127.0.0.1:5173",
         "https://technea.vercel.app",
+        "https://technea.in",
+        "https://www.technea.in",
         "https://technea.dev",
         "https://www.technea.dev",
         "https://*.vercel.app",
@@ -75,11 +77,11 @@ class Settings(BaseSettings):
     def validate_email_from(cls, v: Any) -> str:
         """Validate and clean sender address string, stripping whitespace and surrounding quotes."""
         if not v:
-            return "Technea <onboarding@resend.dev>"
+            return "Technea <noreply@technea.in>"
         val = str(v).strip()
         while (val.startswith('"') and val.endswith('"')) or (val.startswith("'") and val.endswith("'")):
             val = val[1:-1].strip()
-        return val if val else "Technea <onboarding@resend.dev>"
+        return val if val else "Technea <noreply@technea.in>"
 
     @field_validator("SMTP_HOST", mode="before")
     @classmethod
@@ -114,6 +116,8 @@ class Settings(BaseSettings):
             "http://127.0.0.1:3000",
             "http://127.0.0.1:5173",
             "https://technea.vercel.app",
+            "https://technea.in",
+            "https://www.technea.in",
             "https://technea.dev",
             "https://www.technea.dev",
             "https://*.vercel.app",

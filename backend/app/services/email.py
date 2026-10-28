@@ -37,7 +37,7 @@ class EmailService:
         """
         sender = raw_sender if raw_sender is not None else settings.EMAIL_FROM
         if not sender or not str(sender).strip():
-            return "Technea <onboarding@resend.dev>"
+            return "Technea <noreply@technea.in>"
 
         cleaned = str(sender).strip()
         while (cleaned.startswith('"') and cleaned.endswith('"')) or (
@@ -55,7 +55,7 @@ class EmailService:
             return addr
         elif cleaned and "@" in cleaned:
             return cleaned.strip("<>'\" ")
-        return "Technea <onboarding@resend.dev>"
+        return "Technea <noreply@technea.in>"
 
     async def _send_smtp_email(
         self,

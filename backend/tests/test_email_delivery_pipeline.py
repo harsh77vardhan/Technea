@@ -319,7 +319,7 @@ async def test_health_check_email_fields_unconfigured():
             data = res.json()
             assert data["email_service"] == "unconfigured"
             assert data["email_configured"] is False
-            assert data["email_sender"] == "Technea <onboarding@resend.dev>"
+            assert data["email_sender"] == "Technea <noreply@technea.in>"
     finally:
         settings.RESEND_API_KEY = orig_key
         settings.SMTP_HOST = orig_smtp
@@ -340,7 +340,7 @@ async def test_health_check_email_fields_resend():
             data = res.json()
             assert data["email_service"] == "resend"
             assert data["email_configured"] is True
-            assert data["email_sender"] == "Technea <onboarding@resend.dev>"
+            assert data["email_sender"] == "Technea <noreply@technea.in>"
     finally:
         settings.RESEND_API_KEY = orig_key
         settings.SMTP_HOST = orig_smtp
@@ -361,7 +361,7 @@ async def test_health_check_email_fields_smtp():
             data = res.json()
             assert data["email_service"] == "smtp"
             assert data["email_configured"] is True
-            assert data["email_sender"] == "Technea <onboarding@resend.dev>"
+            assert data["email_sender"] == "Technea <noreply@technea.in>"
     finally:
         settings.RESEND_API_KEY = orig_key
         settings.SMTP_HOST = orig_smtp
@@ -464,13 +464,13 @@ def test_sender_address_formatting_robustness():
     service = EmailService()
 
     # Default fallback
-    assert service._get_sender_address("") == "Technea <onboarding@resend.dev>"
-    assert service._get_sender_address("   ") == "Technea <onboarding@resend.dev>"
+    assert service._get_sender_address("") == "Technea <noreply@technea.in>"
+    assert service._get_sender_address("   ") == "Technea <noreply@technea.in>"
 
     # Standard "Name <email@domain.com>"
     assert (
-        service._get_sender_address("Technea <onboarding@resend.dev>")
-        == "Technea <onboarding@resend.dev>"
+        service._get_sender_address("Technea <noreply@technea.in>")
+        == "Technea <noreply@technea.in>"
     )
 
     # Pure email format
@@ -479,8 +479,8 @@ def test_sender_address_formatting_robustness():
 
     # Excess quotes wrapping name or whole string
     assert (
-        service._get_sender_address('"Technea" <onboarding@resend.dev>')
-        == "Technea <onboarding@resend.dev>"
+        service._get_sender_address('"Technea" <noreply@technea.in>')
+        == "Technea <noreply@technea.in>"
     )
     assert (
         service._get_sender_address('"Technea Support" <support@technea.dev>')

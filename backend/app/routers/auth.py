@@ -354,6 +354,8 @@ async def google_auth_login() -> GoogleAuthUrlResponse:
 
 ALLOWED_FRONTEND_HOSTS = {
     "technea.vercel.app",
+    "technea.in",
+    "www.technea.in",
     "technea.dev",
     "www.technea.dev",
     "localhost:5173",

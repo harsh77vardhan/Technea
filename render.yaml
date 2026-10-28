@@ -50,7 +50,7 @@ services:
       - key: RESEND_API_KEY
         sync: false # Resend API Key (re_...) from Resend Dashboard for transactional emails
       - key: EMAIL_FROM
-        value: "Technea <onboarding@resend.dev>" # Configured sender address; update to "Technea <noreply@yourdomain.com>" once custom domain is verified
+        value: "Technea <noreply@technea.in>" # Production sender address for technea.in domain
       - key: SMTP_HOST
         sync: false # Optional SMTP server hostname for fallback or direct delivery (e.g. smtp.gmail.com, email-smtp.us-east-1.amazonaws.com)
       - key: SMTP_PORT
