@@ -25,7 +25,7 @@ function formatAuthError(err, fallbackMessage) {
 }
 
 export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
-  const { login, signup, forgotPassword, loginWithGoogle, sendOtp, verifyOtp } = useAuth()
+  const { login, signup, forgotPassword, loginWithGoogle, sendOtp, verifyOtp, openDashboard } = useAuth()
   const [mode, setMode] = useState(initialMode || 'login') // 'otp' | 'otp-verify' | 'login' | 'signup' | 'forgot'
 
   const [email, setEmail] = useState('')
@@ -149,9 +149,14 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
       setSuccessMsg('Signed in successfully!')
       setTimeout(() => {
         onClose()
-        if (resUser?.profile_completed === false) {
+        const isCompleted = Boolean(resUser?.profile_completed)
+        if (!isCompleted) {
           window.history.pushState({}, '', '/setup-profile')
           window.dispatchEvent(new PopStateEvent('popstate'))
+        } else {
+          window.history.pushState({}, '', '/dashboard')
+          window.dispatchEvent(new PopStateEvent('popstate'))
+          openDashboard()
         }
       }, 400)
     } catch (err) {
@@ -162,7 +167,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
       setLoading(false)
       submittingRef.current = false
     }
-  }, [email, otp, loading, verifyOtp, onClose])
+  }, [email, otp, loading, verifyOtp, onClose, openDashboard])
 
   // Auto-submit OTP on 6th digit after slight delay (300ms)
   useEffect(() => {
@@ -247,9 +252,14 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
       }
       setTimeout(() => {
         onClose()
-        if (resUser?.profile_completed === false) {
+        const isCompleted = Boolean(resUser?.profile_completed)
+        if (!isCompleted) {
           window.history.pushState({}, '', '/setup-profile')
           window.dispatchEvent(new PopStateEvent('popstate'))
+        } else {
+          window.history.pushState({}, '', '/dashboard')
+          window.dispatchEvent(new PopStateEvent('popstate'))
+          openDashboard()
         }
       }, 400)
     } catch (err) {

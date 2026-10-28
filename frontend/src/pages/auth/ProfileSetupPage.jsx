@@ -107,6 +107,13 @@ export default function ProfileSetupPage() {
     }
   }, [user])
 
+  // If user has already completed profile, redirect directly to dashboard
+  useEffect(() => {
+    if (!isLoading && user && user.profile_completed) {
+      window.location.replace('/dashboard')
+    }
+  }, [user, isLoading])
+
   // Focus input when entering Step 1 or Step 2
   useEffect(() => {
     if (step === 1) {
@@ -263,13 +270,15 @@ export default function ProfileSetupPage() {
     const cleanUsername = username.trim().replace(/^@/, '') || `user_${Date.now().toString(36)}`
 
     const payload = {
-      full_name: fullName.trim() || undefined,
+      full_name: fullName.trim() || user?.full_name || cleanUsername || 'Technea Engineer',
       username: cleanUsername,
       avatar_url: avatarUrl,
-      goal: selectedGoal,
       learning_goal: selectedGoal,
+      goal: selectedGoal,
+      current_skill_level: selectedLevel,
       level: selectedLevel,
       experience_level: selectedLevel,
+      interests: selectedFocus,
       primary_focus: selectedFocus,
       profile_completed: true,
     }

@@ -4,7 +4,7 @@ from datetime import datetime
 import json
 from typing import Any
 import uuid
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
 
 
 class UserBase(BaseModel):
@@ -13,7 +13,7 @@ class UserBase(BaseModel):
     email: EmailStr
     username: str | None = Field(default=None, max_length=50)
     full_name: str | None = Field(default=None, max_length=255)
-    avatar_url: str | None = Field(default=None, max_length=500)
+    avatar_url: str | None = None
     bio: str | None = None
     location: str | None = Field(default=None, max_length=100)
     github_url: str | None = Field(default=None, max_length=500)
@@ -44,7 +44,7 @@ class UserUpdate(BaseModel):
 
     full_name: str | None = Field(default=None, max_length=255)
     username: str | None = Field(default=None, max_length=50)
-    avatar_url: str | None = Field(default=None, max_length=500)
+    avatar_url: str | None = None
     bio: str | None = None
     location: str | None = Field(default=None, max_length=100)
     github_url: str | None = Field(default=None, max_length=500)
@@ -142,13 +142,37 @@ class CheckUsernameResponse(BaseModel):
 class ProfileSetupRequest(BaseModel):
     """Schema for initial profile setup during onboarding."""
 
-    full_name: str = Field(..., min_length=1, max_length=255)
-    username: str = Field(..., min_length=3, max_length=30, pattern=r"^[a-zA-Z0-9_]+$")
-    avatar_url: str | None = Field(default=None, max_length=500)
+    full_name: str | None = Field(default=None, max_length=255)
+    username: str = Field(..., min_length=3, max_length=50, pattern=r"^[a-zA-Z0-9_]+$")
+    avatar_url: str | None = None
     bio: str | None = Field(default=None, max_length=500)
     learning_goal: str | None = Field(default=None, max_length=255)
+    goal: str | None = Field(default=None, max_length=255)
     current_skill_level: str | None = Field(default=None, max_length=50)
+    level: str | None = Field(default=None, max_length=50)
+    experience_level: str | None = Field(default=None, max_length=50)
     interests: list[str] | None = None
+    primary_focus: list[str] | None = None
+    profile_completed: bool | None = True
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_onboarding_payload(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            # Normalize goal/learning_goal
+            if not data.get("learning_goal") and data.get("goal"):
+                data["learning_goal"] = data.get("goal")
+            # Normalize level/experience_level/current_skill_level
+            if not data.get("current_skill_level"):
+                data["current_skill_level"] = data.get("level") or data.get("experience_level")
+            # Normalize primary_focus/interests
+            if not data.get("interests") and data.get("primary_focus"):
+                data["interests"] = data.get("primary_focus")
+            # Fallback full_name if empty or missing
+            if not data.get("full_name") or not str(data.get("full_name")).strip():
+                clean_user = str(data.get("username", "")).strip().replace("@", "")
+                data["full_name"] = clean_user if clean_user else "Technea Engineer"
+        return data
 
 
 class ProfileSetupResponse(BaseModel):

@@ -102,6 +102,12 @@ async def run_auth_migrations(engine) -> None:
                         await conn.execute(text(alter_query))
                         logger.info("Auth migration: column '%s' successfully added.", col_name)
 
+                # Ensure avatar_url column can store full SVG/Base64 strings
+                try:
+                    await conn.execute(text("ALTER TABLE users ALTER COLUMN avatar_url TYPE TEXT"))
+                except Exception as alter_avatar_exc:
+                    logger.debug("Auth migration avatar_url type check: %s", alter_avatar_exc)
+
                 # Crucial for existing users: backfill profile_completed for users who already have active profiles
                 try:
                     await conn.execute(

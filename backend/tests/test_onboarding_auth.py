@@ -317,3 +317,90 @@ async def test_google_oauth_callback_profile_completed_flag():
             assert "profile_completed" in data
             assert data["profile_completed"] is False
             assert data["user"]["profile_completed"] is False
+
+
+@pytest.mark.asyncio
+async def test_otp_user_onboarding_persistence_across_sessions():
+    """Test scenario required by user:
+    User A:
+    1. Register/Login with OTP (returns profile_completed=False)
+    2. Complete profile setup (saves to DB, returns profile_completed=True)
+    3. Logout
+    4. Login again with same email OTP (must return profile_completed=True directly)
+    """
+    from datetime import datetime, timezone, timedelta
+    from app.models.email_otp import EmailOTP
+    from app.routers.auth import _hash_otp
+
+    test_email = f"user_a_{uuid.uuid4().hex[:8]}@example.com"
+    otp_code_1 = "654321"
+
+    # Step 1: User A registers/logs in via OTP for the first time
+    async with async_session_maker() as session:
+        otp_rec1 = EmailOTP(
+            email=test_email,
+            hashed_otp=_hash_otp(otp_code_1),
+            expires_at=datetime.now(timezone.utc) + timedelta(minutes=5),
+            attempts=0,
+            is_used=False,
+        )
+        session.add(otp_rec1)
+        await session.commit()
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        # Verify first OTP
+        res1 = await client.post(
+            "/api/v1/auth/verify-otp",
+            json={"email": test_email, "otp": otp_code_1},
+        )
+        assert res1.status_code == 200
+        data1 = res1.json()
+        assert data1["profile_completed"] is False
+        token1 = data1["access_token"]
+
+        # Step 2: Complete profile setup
+        unique_handle = f"user_a_{uuid.uuid4().hex[:6]}"
+        setup_res = await client.post(
+            "/api/v1/auth/profile-setup",
+            json={
+                "full_name": "User Alpha",
+                "username": unique_handle,
+                "avatar_url": "data:image/svg+xml;utf8,<svg>test</svg>",
+                "goal": "Build Production Apps",
+                "level": "Advanced",
+                "primary_focus": ["AI & Agents", "Full-Stack Web"],
+            },
+            headers={"Authorization": f"Bearer {token1}"},
+        )
+        assert setup_res.status_code == 200
+        setup_data = setup_res.json()
+        assert setup_data["profile_completed"] is True
+        assert setup_data["user"]["profile_completed"] is True
+
+        # Step 3: Logout (session discarded)
+
+        # Step 4: Login again with same email OTP
+        otp_code_2 = "987654"
+        async with async_session_maker() as session:
+            otp_rec2 = EmailOTP(
+                email=test_email,
+                hashed_otp=_hash_otp(otp_code_2),
+                expires_at=datetime.now(timezone.utc) + timedelta(minutes=5),
+                attempts=0,
+                is_used=False,
+            )
+            session.add(otp_rec2)
+            await session.commit()
+
+        res2 = await client.post(
+            "/api/v1/auth/verify-otp",
+            json={"email": test_email, "otp": otp_code_2},
+        )
+        assert res2.status_code == 200
+        data2 = res2.json()
+        # MUST BE TRUE DIRECTLY TO DASHBOARD!
+        assert data2["profile_completed"] is True
+        assert data2["user"]["profile_completed"] is True
+        assert data2["user"]["username"] == unique_handle
+        assert data2["user"]["full_name"] == "User Alpha"

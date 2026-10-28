@@ -46,7 +46,7 @@ class User(Base, UUIDIdMixin, TimestampMixin):
         nullable=True,
     )
     avatar_url: Mapped[str | None] = mapped_column(
-        String(500),
+        Text,
         nullable=True,
     )
     bio: Mapped[str | None] = mapped_column(

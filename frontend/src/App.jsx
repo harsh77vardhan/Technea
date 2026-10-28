@@ -127,8 +127,12 @@ function AppContent() {
       openDashboard()
     } else if (currentPath === '/roadmap') {
       openRoadmapBuilder()
+    } else if (currentPath === '/setup-profile' && user?.profile_completed) {
+      window.history.replaceState({}, '', '/dashboard')
+      window.dispatchEvent(new PopStateEvent('popstate'))
+      openDashboard()
     }
-  }, [currentPath, openDashboard, openRoadmapBuilder])
+  }, [currentPath, user, openDashboard, openRoadmapBuilder])
 
   const handledOpenAuthRef = useRef(false)
 

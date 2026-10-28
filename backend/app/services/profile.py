@@ -370,6 +370,8 @@ class ProfileService:
         if payload.avatar_url is not None:
             user.avatar_url = payload.avatar_url.strip() or None
 
+        user.profile_completed = True
+
         await db.commit()
         await db.refresh(user)
 

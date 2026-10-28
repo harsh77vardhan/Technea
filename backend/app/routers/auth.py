@@ -776,7 +776,10 @@ async def setup_profile(
         )
 
     # Update profile fields
-    current_user.full_name = data.full_name.strip()
+    if data.full_name and data.full_name.strip():
+        current_user.full_name = data.full_name.strip()
+    elif not current_user.full_name:
+        current_user.full_name = clean_username or "Technea Engineer"
     current_user.username = clean_username
     if data.avatar_url is not None:
         current_user.avatar_url = data.avatar_url.strip() if data.avatar_url else None
