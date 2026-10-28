@@ -204,7 +204,7 @@ function renderInline(text) {
           href={match[8]}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-blue-400 hover:text-blue-300 underline underline-offset-2 transition-colors"
+          className="text-neutral-200 hover:text-white underline underline-offset-4 decoration-white/30 hover:decoration-white transition-colors font-medium"
         >
           {match[7]}
         </a>
@@ -266,31 +266,39 @@ function CodeBlock({ language, code }) {
   const langLabel = language ? language.toLowerCase().trim() : 'code'
 
   return (
-    <div className="my-3 rounded-[8px] border border-white/[0.08] bg-[#0A0B0E] overflow-hidden text-left shadow-sm">
+    <div
+      role="region"
+      aria-label={`Code snippet (${langLabel})`}
+      className="my-3 rounded-[8px] border border-white/[0.08] bg-[#0A0B0E] overflow-hidden text-left shadow-sm"
+    >
       <div className="flex items-center justify-between px-3.5 py-1.5 bg-[#12131A] border-b border-white/[0.06]">
-        <span className="text-[11px] font-mono font-medium text-[#8A8F98] tracking-wider uppercase">
+        <span className="text-[11px] font-mono font-medium text-[#A1A1AA] tracking-wider uppercase">
           {langLabel}
         </span>
         <button
           type="button"
           onClick={handleCopy}
-          className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-[4px] text-[11px] font-medium text-[#A1A1AA] hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer"
+          className="inline-flex min-h-[36px] sm:min-h-[28px] items-center gap-1.5 px-2.5 py-1 rounded-[4px] text-[11px] font-medium text-[#A1A1AA] hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer"
           title="Copy code to clipboard"
+          aria-label={copied ? "Code copied to clipboard" : `Copy ${langLabel} code to clipboard`}
         >
           {copied ? (
             <>
-              <Check className="h-3 w-3 text-emerald-400" />
+              <Check className="h-3.5 w-3.5 text-emerald-400" />
               <span className="text-emerald-400 font-mono text-[10px]">Copied!</span>
             </>
           ) : (
             <>
-              <Copy className="h-3 w-3" />
+              <Copy className="h-3.5 w-3.5" />
               <span className="font-mono text-[10px]">Copy Code</span>
             </>
           )}
         </button>
       </div>
-      <div className="relative overflow-x-auto">
+      <div
+        data-lenis-prevent
+        className="relative overflow-x-auto scrollbar-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
         <pre className="p-3.5 sm:p-4 text-[12px] sm:text-[13px] font-mono text-[#EDEDED] leading-relaxed selection:bg-white/20 whitespace-pre">
           <code>{code}</code>
         </pre>
@@ -350,8 +358,8 @@ export default function AIMessageRenderer({ content, className = '' }) {
             return (
               <ul key={idx} className="my-2 space-y-1.5 pl-0.5">
                 {block.items.map((item, itemIdx) => (
-                  <li key={itemIdx} className="flex items-start gap-2 text-xs sm:text-sm text-[#D4D4D8] leading-relaxed">
-                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#8A8F98] shrink-0 mt-2" />
+                  <li key={itemIdx} className="flex items-start gap-2 text-xs sm:text-sm text-[#EDEDED] leading-relaxed">
+                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#A1A1AA] shrink-0 mt-2" aria-hidden="true" />
                     <span className="flex-1">{renderInline(item)}</span>
                   </li>
                 ))}
@@ -362,8 +370,8 @@ export default function AIMessageRenderer({ content, className = '' }) {
             return (
               <ol key={idx} className="my-2 space-y-1.5 pl-0.5">
                 {block.items.map((item, itemIdx) => (
-                  <li key={itemIdx} className="flex items-start gap-2 text-xs sm:text-sm text-[#D4D4D8] leading-relaxed">
-                    <span className="font-mono text-[11px] font-semibold text-[#8A8F98] shrink-0 min-w-[16px] text-right mt-0.5">
+                  <li key={itemIdx} className="flex items-start gap-2 text-xs sm:text-sm text-[#EDEDED] leading-relaxed">
+                    <span className="font-mono text-[11px] font-semibold text-[#A1A1AA] shrink-0 min-w-[16px] text-right mt-0.5">
                       {itemIdx + 1}.
                     </span>
                     <span className="flex-1">{renderInline(item)}</span>
@@ -382,7 +390,7 @@ export default function AIMessageRenderer({ content, className = '' }) {
           case 'paragraph':
           default:
             return (
-              <p key={idx} className="text-xs sm:text-sm text-[#D4D4D8] leading-relaxed my-2 first:mt-0 last:mb-0">
+              <p key={idx} className="text-xs sm:text-sm text-[#EDEDED] leading-relaxed my-2 first:mt-0 last:mb-0">
                 {renderInline(block.content)}
               </p>
             )

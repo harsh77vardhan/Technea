@@ -109,7 +109,6 @@ function GithubIcon({ className = 'h-3 w-3' }) {
   )
 }
 
-
 /* ─────────────────────────────────────────
    Animated counter component
 ───────────────────────────────────────── */
@@ -146,27 +145,29 @@ function AnimatedStat({ value, suffix = '' }) {
 }
 
 /* ─────────────────────────────────────────
-   Minimal Progress Bar
+   Minimal Hairline Progress Bar
 ───────────────────────────────────────── */
-function MinimalProgressBar({ percent = 0, delay = 0, height = 4 }) {
+function MinimalProgressBar({ percent = 0, delay = 0, height = 3, className = '' }) {
   const safePercent = Math.min(Math.max(percent || 0, 0), 100)
   return (
     <div
-      className="w-full overflow-hidden"
-      style={{ height, background: '#1A1A1A', borderRadius: height / 2 }}
+      className={`w-full overflow-hidden bg-white/[0.06] rounded-full relative ${className}`}
+      style={{ height }}
     >
       <motion.div
-        style={{ height: '100%', background: '#EDEDED', borderRadius: height / 2 }}
+        className="h-full bg-gradient-to-r from-neutral-300 via-white to-neutral-200 rounded-full relative"
         initial={{ width: 0 }}
         animate={{ width: `${safePercent}%` }}
         transition={{ duration: 0.8, delay, ease: [0.16, 1, 0.3, 1] }}
-      />
+      >
+        <div className="absolute right-0 top-0 bottom-0 w-2 bg-white blur-[2px] opacity-75" />
+      </motion.div>
     </div>
   )
 }
 
 /* ─────────────────────────────────────────
-   Weekly Activity 7-Day Component (Clean & Minimal)
+   Weekly Activity 7-Day Component (Minimalist Dot Indicators + Streak Telemetry)
 ───────────────────────────────────────── */
 function WeeklyActivityStrip({ weeklyHistory = [], streakCount = 1 }) {
   const defaultDays = [
@@ -181,36 +182,56 @@ function WeeklyActivityStrip({ weeklyHistory = [], streakCount = 1 }) {
   const days = weeklyHistory.length === 7 ? weeklyHistory : defaultDays
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between text-xs font-mono text-[#888888]">
-        <span>Weekly Progress</span>
-        <span className="text-[#EDEDED] font-medium">{streakCount} Days Active</span>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between text-xs font-mono">
+        <span className="text-[10px] uppercase tracking-widest text-neutral-400 font-semibold">
+          Weekly Consistency
+        </span>
+        <div className="flex items-center gap-1.5">
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+          <span className="text-white font-medium text-xs font-mono">
+            {streakCount}d Active Streak
+          </span>
+        </div>
       </div>
 
-      <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
+      <div className="grid grid-cols-7 gap-1 sm:gap-2">
         {days.map((day, idx) => {
           const isToday = idx === days.length - 1
           return (
             <div
               key={day.date || idx}
-              className={`rounded-[7px] border p-2.5 text-center flex flex-col items-center justify-between gap-2 transition-colors ${
+              className={`rounded-lg sm:rounded-xl border p-1 sm:p-2.5 text-center flex flex-col items-center justify-between gap-1.5 sm:gap-2.5 transition-all ${
                 isToday
-                  ? 'border-white/20 bg-[#161822]'
-                  : 'border-white/[0.06] bg-[#0E1015]'
+                  ? 'border-white/30 bg-white/[0.06] shadow-[0_2px_12px_rgba(255,255,255,0.06)]'
+                  : 'border-white/[0.06] bg-white/[0.02] hover:border-white/15'
               }`}
             >
-              <span className="text-[10px] font-mono text-[#8A8F98] uppercase">
+              <span
+                className={`text-[8px] sm:text-[10px] font-mono uppercase tracking-wider ${
+                  isToday ? 'text-white font-semibold' : 'text-neutral-400'
+                }`}
+              >
                 {day.day_name?.slice(0, 3)}
               </span>
-              <div
-                className={`h-7 w-full rounded-[3px] transition-colors ${
-                  day.is_active
-                    ? 'bg-[#EDEDED]'
-                    : 'bg-[#181A22]'
-                }`}
-                title={day.is_active ? `${day.completed_tasks_count || 1} tasks completed` : 'Inactive'}
-              />
-              <span className="text-[9px] font-mono text-[#6B7280]">
+              <div className="flex items-center justify-center py-1">
+                {day.is_active ? (
+                  <div
+                    className={`h-2 sm:h-2.5 w-2 sm:w-2.5 rounded-full bg-white transition-all ${
+                      isToday
+                        ? 'shadow-[0_0_8px_rgba(255,255,255,0.9)] ring-2 ring-white/30'
+                        : 'shadow-[0_0_6px_rgba(255,255,255,0.5)]'
+                    }`}
+                    title={`${day.completed_tasks_count || 1} tasks completed`}
+                  />
+                ) : (
+                  <div
+                    className="h-1.5 sm:h-2 w-1.5 sm:w-2 rounded-full bg-white/10"
+                    title="Inactive"
+                  />
+                )}
+              </div>
+              <span className="text-[8px] sm:text-[9px] font-mono text-neutral-400">
                 {day.completed_tasks_count > 0 ? `${day.completed_tasks_count}` : '—'}
               </span>
             </div>
@@ -237,20 +258,23 @@ export default function LearningDashboardModal({
   const [error, setError] = useState(null)
   const [activeTab, setActiveTab] = useState('overview') // 'overview' | 'projects' | 'mentor' | 'community' | 'roadmaps' | 'profile'
   const [toastMessage, setToastMessage] = useState(null)
-  const [headerAvatarError, setHeaderAvatarError] = useState(false)
-  const [profileAvatarError, setProfileAvatarError] = useState(false)
-  const [shareAvatarError, setShareAvatarError] = useState(false)
-  const [prevDashboardAvatar, setPrevDashboardAvatar] = useState(user?.avatar_url)
+  const [failedHeaderAvatarUrl, setFailedHeaderAvatarUrl] = useState(null)
+  const [failedProfileAvatarUrl, setFailedProfileAvatarUrl] = useState(null)
+  const [failedShareAvatarUrl, setFailedShareAvatarUrl] = useState(null)
   const toastTimeoutRef = useRef(null)
+  const modalRef = useRef(null)
 
-  if (user?.avatar_url !== prevDashboardAvatar) {
-    setPrevDashboardAvatar(user?.avatar_url)
-    setHeaderAvatarError(false)
-    setProfileAvatarError(false)
-    setShareAvatarError(false)
-  }
+  const headerAvatarError = failedHeaderAvatarUrl === user?.avatar_url && Boolean(user?.avatar_url)
+  const profileAvatarError = failedProfileAvatarUrl === user?.avatar_url && Boolean(user?.avatar_url)
+  const shareAvatarError = failedShareAvatarUrl === user?.avatar_url && Boolean(user?.avatar_url)
 
-  // Projects State (Phase 1)
+  useEffect(() => {
+    return () => {
+      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current)
+    }
+  }, [])
+
+  // Projects State
   const [projectsList, setProjectsList] = useState([])
   const [recommendedProjects, setRecommendedProjects] = useState([])
   const [userProjectsMap, setUserProjectsMap] = useState({})
@@ -310,12 +334,12 @@ export default function LearningDashboardModal({
     }
   }, [mentorMessages, mentorConversationId])
 
-  // Community Rooms State (Phase 4)
+  // Community Rooms State
   const [communityRooms, setCommunityRooms] = useState([])
   const [joinedRoomIds, setJoinedRoomIds] = useState(new Set())
   const [roomFilter, setRoomFilter] = useState('all') // 'all' | 'joined'
 
-  // User Profile & Portfolio Details (Phase 5 & 6)
+  // User Profile & Portfolio Details
   const [profileData, setProfileData] = useState(null)
   const [isShareModalOpen, setIsShareModalOpen] = useState(false)
   const [copiedLink, setCopiedLink] = useState(false)
@@ -326,7 +350,6 @@ export default function LearningDashboardModal({
     { id: 'milestone', text: 'Finish one milestone', done: false },
     { id: 'build', text: 'Build something', done: false },
   ])
-
 
   const showToast = (msg) => {
     setToastMessage(msg)
@@ -366,7 +389,7 @@ export default function LearningDashboardModal({
     }
   }
 
-  // Project Actions (Phase 1)
+  // Project Actions
   const handleStartProject = async (projectId) => {
     setUserProjectsMap((prev) => ({
       ...prev,
@@ -531,7 +554,7 @@ export default function LearningDashboardModal({
     }
   }
 
-  // Community Room Action (Phase 4)
+  // Community Room Action
   const handleToggleRoom = async (roomId) => {
     const isCurrentlyJoined = joinedRoomIds.has(roomId)
     const nextSet = new Set(joinedRoomIds)
@@ -655,15 +678,60 @@ export default function LearningDashboardModal({
     }
   }, [isOpen])
 
-
-  // ESC to close
+  // Body scroll lock and focus trap
   useEffect(() => {
     if (!isOpen) return
+    const originalOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    const modalEl = modalRef.current
+    const focusableSelectors =
+      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+
+    // Focus active tab or first interactive element
+    const timer = setTimeout(() => {
+      if (!modalEl) return
+      const activeTabEl = modalEl.querySelector('[role="tab"][aria-selected="true"]')
+      if (activeTabEl) {
+        activeTabEl.focus()
+      } else {
+        const first = modalEl.querySelector(focusableSelectors)
+        first?.focus()
+      }
+    }, 50)
+
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') {
+        onClose()
+        return
+      }
+
+      if (e.key === 'Tab' && modalEl) {
+        const focusable = Array.from(modalEl.querySelectorAll(focusableSelectors))
+        if (focusable.length === 0) return
+        const first = focusable[0]
+        const last = focusable[focusable.length - 1]
+
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault()
+            last.focus()
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault()
+            first.focus()
+          }
+        }
+      }
     }
+
     window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
+    return () => {
+      clearTimeout(timer)
+      document.body.style.overflow = originalOverflow
+      window.removeEventListener('keydown', handleKeyDown)
+    }
   }, [isOpen, onClose])
 
   if (!isOpen) return null
@@ -693,8 +761,6 @@ export default function LearningDashboardModal({
   const activeProjectsCount = dashboardData?.active_projects_count ?? 0
   const joinedRoomsCount = dashboardData?.joined_rooms_count ?? joinedRoomIds.size ?? 0
 
-
-
   const handleCopyProfileLink = () => {
     if (navigator.clipboard) {
       const url = `https://technea.dev/@${firstName.toLowerCase()}`
@@ -712,7 +778,7 @@ export default function LearningDashboardModal({
         aria-modal="true"
         aria-label="Personal AI Engineering Workspace"
         data-lenis-prevent
-        className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 overflow-y-auto"
+        className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 overflow-y-auto overflow-x-hidden"
       >
         {/* Deep Backdrop */}
         <motion.div
@@ -720,22 +786,26 @@ export default function LearningDashboardModal({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
-          className="fixed inset-0 bg-black/90 backdrop-blur-sm cursor-pointer"
+          className="fixed inset-0 bg-black/85 backdrop-blur-md cursor-pointer"
         />
 
-        {/* Modal Shell — Deep Black #050505 canvas with #1F1F1F subtle borders */}
+        {/* Modal Shell — Spatial Glass container with subtle inner hairline glow */}
         <motion.div
+          ref={modalRef}
           initial={{ opacity: 0, scale: 0.98, y: 16 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.98, y: 16 }}
           transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
-          className="relative z-10 flex flex-col w-full max-w-6xl h-[92vh] max-h-[940px] rounded-[10px] border border-[#1F1F1F] bg-[#050505] shadow-[0_30px_100px_rgba(0,0,0,0.98)] overflow-hidden"
+          className="relative z-10 flex flex-col w-full max-w-6xl h-[92vh] max-h-[960px] rounded-2xl sm:rounded-3xl border border-white/[0.12] bg-[#07080c]/90 backdrop-blur-2xl shadow-[0_30px_120px_rgba(0,0,0,0.95)] overflow-hidden"
         >
+          {/* Subtle top edge specular highlight (VisionOS / Tesla UI style) */}
+          <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/25 to-transparent pointer-events-none z-30" />
+
           {/* Futuristic Space-Garden Atmospheric Background */}
           <SpaceGardenAtmosphere />
 
           {/* ──────────────── Top Header Bar ──────────────── */}
-          <header className="relative z-20 flex flex-col md:flex-row md:items-center justify-between border-b border-[#1A1A1A] bg-[#0A0A0A] px-4 sm:px-5 py-3 gap-3 shrink-0">
+          <header className="relative z-20 flex flex-col md:flex-row md:items-center justify-between border-b border-white/[0.08] bg-[#0A0C12]/80 backdrop-blur-xl px-4 sm:px-6 py-3.5 gap-3.5 shrink-0">
             {/* Top row on mobile, Left on desktop */}
             <div className="flex items-center justify-between w-full md:w-auto gap-3">
               <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
@@ -743,24 +813,24 @@ export default function LearningDashboardModal({
                   <img
                     src={getAvatarUrl(user.avatar_url)}
                     alt={fullName}
-                    onError={() => setHeaderAvatarError(true)}
-                    className="h-8 w-8 rounded-[7px] object-cover border border-[#242424] shrink-0"
+                    onError={() => setFailedHeaderAvatarUrl(user?.avatar_url)}
+                    className="h-8 w-8 rounded-xl object-cover border border-white/10 shrink-0"
                   />
                 ) : (
-                  <div className="flex h-8 w-8 items-center justify-center rounded-[7px] border border-[#242424] bg-[#141414] text-xs font-bold text-[#EDEDED] font-mono shadow-sm shrink-0">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-xs font-bold text-white font-mono shadow-inner shrink-0">
                     {initials}
                   </div>
                 )}
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5 sm:gap-2">
-                    <span className="text-xs font-bold text-[#EDEDED] tracking-tight truncate max-w-[120px] sm:max-w-none">
+                    <span className="text-xs font-bold text-white tracking-tight truncate max-w-[120px] sm:max-w-none">
                       {fullName}
                     </span>
-                    <span className="rounded-[4px] border border-white/10 bg-white/[0.04] px-1.5 py-0.5 text-[9px] font-mono font-medium text-neutral-300 uppercase tracking-wider shrink-0">
+                    <span className="rounded-full border border-white/10 bg-white/[0.05] px-2 py-0.5 text-[9px] font-mono font-medium text-neutral-300 uppercase tracking-wider shrink-0">
                       {developerLevel}
                     </span>
                   </div>
-                  <p className="text-[10px] text-[#666666] font-mono truncate hidden sm:block">
+                  <p className="text-[10px] text-neutral-400 font-mono truncate hidden sm:block">
                     {userEmail} • {xpPoints} XP
                   </p>
                 </div>
@@ -771,7 +841,7 @@ export default function LearningDashboardModal({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-[6px] border border-[#222222] bg-[#111111] text-[#737373] hover:text-[#EDEDED] hover:bg-[#171717] transition-colors cursor-pointer"
+                  className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.03] text-neutral-400 hover:text-white hover:border-white/20 transition-all cursor-pointer"
                   aria-label="Close dashboard"
                 >
                   <X className="h-4 w-4" />
@@ -781,16 +851,20 @@ export default function LearningDashboardModal({
 
             {/* Middle: 6-Tab Switcher (Overview • Projects • AI Mentor • Community • Roadmaps • Portfolio) */}
             <nav
+              role="tablist"
+              aria-label="Dashboard views"
               data-lenis-prevent
-              className="flex items-center rounded-[6px] border border-[#1F1F1F] bg-[#0D0D0D] p-0.5 text-xs font-mono overflow-x-auto w-full md:w-auto max-w-full scrollbar-none shrink-0"
+              className="flex items-center rounded-xl border border-white/[0.08] bg-white/[0.03] p-1 text-xs font-mono overflow-x-auto w-full md:w-auto max-w-full scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden shrink-0 backdrop-blur-md"
             >
               <button
                 type="button"
+                role="tab"
+                aria-selected={activeTab === 'overview'}
                 onClick={() => setActiveTab('overview')}
-                className={`rounded-[4px] px-3 py-2 sm:px-2.5 sm:py-1 transition-colors cursor-pointer shrink-0 ${
+                className={`rounded-lg px-3.5 py-2 sm:px-3 sm:py-1.5 min-h-[44px] sm:min-h-[36px] flex items-center justify-center transition-all cursor-pointer shrink-0 ${
                   activeTab === 'overview'
-                    ? 'bg-[#1C1C1C] text-[#EDEDED] font-semibold shadow-xs'
-                    : 'text-[#737373] hover:text-[#EDEDED]'
+                    ? 'bg-white text-black font-semibold shadow-[0_2px_10px_rgba(255,255,255,0.12)]'
+                    : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
                 }`}
               >
                 Overview
@@ -798,16 +872,24 @@ export default function LearningDashboardModal({
 
               <button
                 type="button"
+                role="tab"
+                aria-selected={activeTab === 'projects'}
                 onClick={() => setActiveTab('projects')}
-                className={`rounded-[4px] px-3 py-2 sm:px-2.5 sm:py-1 transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                className={`rounded-lg px-3.5 py-2 sm:px-3 sm:py-1.5 min-h-[44px] sm:min-h-[36px] transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0 ${
                   activeTab === 'projects'
-                    ? 'bg-[#1C1C1C] text-[#EDEDED] font-semibold shadow-xs'
-                    : 'text-[#737373] hover:text-[#EDEDED]'
+                    ? 'bg-white text-black font-semibold shadow-[0_2px_10px_rgba(255,255,255,0.12)]'
+                    : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
                 }`}
               >
                 <span>Projects</span>
                 {recommendedProjects.length > 0 && (
-                  <span className="rounded-full bg-white/10 text-neutral-300 px-1.5 text-[9px] font-mono">
+                  <span
+                    className={`rounded-full px-1.5 text-[9px] font-mono ${
+                      activeTab === 'projects'
+                        ? 'bg-black/10 text-black font-bold'
+                        : 'bg-white/10 text-neutral-300'
+                    }`}
+                  >
                     {recommendedProjects.length}
                   </span>
                 )}
@@ -815,30 +897,40 @@ export default function LearningDashboardModal({
 
               <button
                 type="button"
+                role="tab"
+                aria-selected={activeTab === 'mentor'}
                 onClick={() => setActiveTab('mentor')}
-                className={`rounded-[4px] px-3 py-2 sm:px-2.5 sm:py-1 transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                className={`rounded-lg px-3.5 py-2 sm:px-3 sm:py-1.5 min-h-[44px] sm:min-h-[36px] transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0 ${
                   activeTab === 'mentor'
-                    ? 'bg-[#1C1C1C] text-[#EDEDED] font-semibold shadow-xs'
-                    : 'text-[#737373] hover:text-[#EDEDED]'
+                    ? 'bg-white text-black font-semibold shadow-[0_2px_10px_rgba(255,255,255,0.12)]'
+                    : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
                 }`}
               >
-                <Bot className="h-3 w-3 text-[#A1A1A1]" />
+                <Bot className={`h-3 w-3 ${activeTab === 'mentor' ? 'text-black' : 'text-neutral-400'}`} />
                 <span>AI Mentor</span>
               </button>
 
               <button
                 type="button"
+                role="tab"
+                aria-selected={activeTab === 'community'}
                 onClick={() => setActiveTab('community')}
-                className={`rounded-[4px] px-3 py-2 sm:px-2.5 sm:py-1 transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                className={`rounded-lg px-3.5 py-2 sm:px-3 sm:py-1.5 min-h-[44px] sm:min-h-[36px] transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0 ${
                   activeTab === 'community'
-                    ? 'bg-[#1C1C1C] text-[#EDEDED] font-semibold shadow-xs'
-                    : 'text-[#737373] hover:text-[#EDEDED]'
+                    ? 'bg-white text-black font-semibold shadow-[0_2px_10px_rgba(255,255,255,0.12)]'
+                    : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
                 }`}
               >
-                <Users className="h-3 w-3 text-neutral-400" />
+                <Users className={`h-3 w-3 ${activeTab === 'community' ? 'text-black' : 'text-neutral-400'}`} />
                 <span>Community</span>
                 {joinedRoomIds.size > 0 && (
-                  <span className="rounded-full bg-white/10 text-neutral-300 px-1.5 text-[9px] font-mono">
+                  <span
+                    className={`rounded-full px-1.5 text-[9px] font-mono ${
+                      activeTab === 'community'
+                        ? 'bg-black/10 text-black font-bold'
+                        : 'bg-white/10 text-neutral-300'
+                    }`}
+                  >
                     {joinedRoomIds.size}
                   </span>
                 )}
@@ -846,16 +938,24 @@ export default function LearningDashboardModal({
 
               <button
                 type="button"
+                role="tab"
+                aria-selected={activeTab === 'roadmaps'}
                 onClick={() => setActiveTab('roadmaps')}
-                className={`rounded-[4px] px-3 py-2 sm:px-2.5 sm:py-1 transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                className={`rounded-lg px-3.5 py-2 sm:px-3 sm:py-1.5 min-h-[44px] sm:min-h-[36px] transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0 ${
                   activeTab === 'roadmaps'
-                    ? 'bg-[#1C1C1C] text-[#EDEDED] font-semibold shadow-xs'
-                    : 'text-[#737373] hover:text-[#EDEDED]'
+                    ? 'bg-white text-black font-semibold shadow-[0_2px_10px_rgba(255,255,255,0.12)]'
+                    : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
                 }`}
               >
                 <span>Roadmaps</span>
                 {savedRoadmaps.length > 0 && (
-                  <span className="rounded-full bg-white/10 text-neutral-300 px-1.5 text-[9px] font-mono">
+                  <span
+                    className={`rounded-full px-1.5 text-[9px] font-mono ${
+                      activeTab === 'roadmaps'
+                        ? 'bg-black/10 text-black font-bold'
+                        : 'bg-white/10 text-neutral-300'
+                    }`}
+                  >
                     {savedRoadmaps.length}
                   </span>
                 )}
@@ -863,11 +963,13 @@ export default function LearningDashboardModal({
 
               <button
                 type="button"
+                role="tab"
+                aria-selected={activeTab === 'profile'}
                 onClick={() => setActiveTab('profile')}
-                className={`rounded-[4px] px-3 py-2 sm:px-2.5 sm:py-1 transition-colors cursor-pointer shrink-0 ${
+                className={`rounded-lg px-3.5 py-2 sm:px-3 sm:py-1.5 min-h-[44px] sm:min-h-[36px] flex items-center justify-center transition-all cursor-pointer shrink-0 ${
                   activeTab === 'profile'
-                    ? 'bg-[#1C1C1C] text-[#EDEDED] font-semibold shadow-xs'
-                    : 'text-[#737373] hover:text-[#EDEDED]'
+                    ? 'bg-white text-black font-semibold shadow-[0_2px_10px_rgba(255,255,255,0.12)]'
+                    : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
                 }`}
               >
                 Portfolio
@@ -876,20 +978,21 @@ export default function LearningDashboardModal({
 
             {/* Right: Actions (Desktop) */}
             <div className="hidden md:flex items-center gap-2">
-              <div className="flex items-center gap-1.5 rounded-[6px] border border-[#222222] bg-[#111111] px-2.5 py-1 text-xs font-mono text-[#D4D4D4]">
-                <Zap className="h-3 w-3 text-neutral-400" />
+              <div className="flex items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-xs font-mono text-neutral-200">
+                <Zap className="h-3 w-3 text-neutral-300" />
                 <span>{xpPoints} XP</span>
               </div>
-              <div className="flex items-center gap-1.5 rounded-[6px] border border-[#222222] bg-[#111111] px-2.5 py-1 text-xs font-mono text-[#D4D4D4]">
-                <Flame className="h-3.5 w-3.5 text-neutral-400" />
+              <div className="flex items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-xs font-mono text-neutral-200">
+                <Flame className="h-3.5 w-3.5 text-neutral-300" />
                 <span>{streakCount}d</span>
               </div>
 
               <button
                 type="button"
                 onClick={logout}
-                className="flex min-h-[44px] sm:min-h-0 items-center gap-1.5 rounded-[6px] border border-[#222222] bg-[#111111] px-2.5 py-1 text-xs font-medium text-[#737373] hover:text-[#EDEDED] hover:bg-[#171717] hover:border-[#333333] transition-colors cursor-pointer"
+                className="flex min-h-[44px] md:min-h-[36px] items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.03] hover:border-white/20 px-3 py-1.5 text-xs font-mono text-neutral-400 hover:text-white transition-all cursor-pointer"
                 title="Sign out of account"
+                aria-label="Sign out of account"
               >
                 <LogOut className="h-3 w-3" />
                 <span className="hidden sm:inline">Sign Out</span>
@@ -898,10 +1001,10 @@ export default function LearningDashboardModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="flex min-h-[44px] min-w-[44px] sm:h-7 sm:w-7 sm:min-h-0 sm:min-w-0 items-center justify-center rounded-[6px] border border-[#222222] bg-[#111111] text-[#737373] hover:text-[#EDEDED] hover:bg-[#171717] hover:border-[#333333] transition-colors cursor-pointer"
+                className="flex min-h-[44px] min-w-[44px] md:min-h-[36px] md:min-w-[36px] items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.03] hover:border-white/20 text-neutral-400 hover:text-white transition-all cursor-pointer"
                 aria-label="Close dashboard"
               >
-                <X className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+                <X className="h-4 w-4" />
               </button>
             </div>
           </header>
@@ -913,62 +1016,74 @@ export default function LearningDashboardModal({
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="absolute top-14 left-1/2 -translate-x-1/2 z-50 rounded-[6px] border border-[#2E2E2E] bg-[#141414] px-3.5 py-1.5 text-xs font-mono text-[#EDEDED] shadow-xl"
+                className="absolute top-16 left-1/2 -translate-x-1/2 z-50 rounded-xl border border-white/20 bg-black/90 backdrop-blur-xl px-4 py-2 text-xs font-mono text-white shadow-[0_8px_32px_rgba(0,0,0,0.8)] flex items-center gap-2"
               >
-                {toastMessage}
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+                <span>{toastMessage}</span>
               </motion.div>
             )}
           </AnimatePresence>
 
-          {/* ──────────────── Scrollable Dashboard Canvas (#050505 Canvas with Atmosphere) ──────────────── */}
+          {/* ──────────────── Scrollable Dashboard Canvas ──────────────── */}
           <div data-lenis-prevent className="relative z-10 flex-1 overflow-y-auto overflow-x-hidden bg-transparent p-4 sm:p-6 md:p-8 space-y-7">
             {loading ? (
               <div className="flex flex-col items-center justify-center h-96 space-y-3">
-                <div className="h-7 w-7 animate-spin rounded-full border-2 border-[#222222] border-t-[#EDEDED]" />
-                <p className="text-xs text-[#737373] font-mono">
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/10 border-t-white" />
+                <p className="text-xs text-neutral-400 font-mono">
                   Loading your engineering workspace…
                 </p>
               </div>
             ) : error ? (
-              <div className="rounded-[8px] border border-red-900/40 bg-[#0E0E0E] p-6 text-center text-xs text-red-400">
+              <div className="rounded-2xl border border-red-500/20 bg-red-950/20 backdrop-blur-xl p-6 text-center text-xs text-red-300 font-mono">
                 <p>{error}</p>
               </div>
             ) : (
               <>
                 {/* ══════════════ TAB 1: OVERVIEW (AI ENGINEERING COMMAND CENTER) ══════════════ */}
                 {activeTab === 'overview' && (
-                  <div className="space-y-8">
-                    {/* ── SECTION 1: Premium Welcome Header ── */}
-                    <div className="rounded-[14px] border border-white/[0.08] bg-[#0E1016]/92 backdrop-blur-xl p-6 sm:p-7 shadow-[0_10px_32px_rgba(0,0,0,0.55)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <motion.div
+                    key="overview"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                    className="space-y-8"
+                  >
+                    {/* ── SECTION 1: User Greeting Section (Command Center Header) ── */}
+                    <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-xl p-6 sm:p-7 shadow-[0_4px_24px_rgba(0,0,0,0.4)] flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative overflow-hidden">
+                      <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/15 to-transparent" />
+
                       <div className="space-y-1.5">
                         <div className="flex items-center gap-2">
+                          <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
                           <span className="text-[10px] font-mono uppercase tracking-widest text-neutral-400 font-semibold">
                             Engineering Workspace
                           </span>
-                          <span className="text-[#3A3D48]">•</span>
-                          <span className="text-[10px] font-mono text-[#8A8F98]">{developerLevel}</span>
+                          <span className="text-white/20">•</span>
+                          <span className="text-[10px] font-mono uppercase tracking-wider text-neutral-300">
+                            {developerLevel}
+                          </span>
                         </div>
-                        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#EDEDED]">
+                        <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
                           Welcome back, {firstName}
                         </h1>
-                        <p className="text-xs sm:text-sm font-mono text-[#8A8F98]">
+                        <p className="text-xs sm:text-sm font-mono text-neutral-400">
                           Current Focus:{' '}
-                          <span className="text-[#EDEDED] font-medium">
+                          <span className="text-white font-medium">
                             {currentPath?.title || 'Python Developer Roadmap'}
                           </span>
                         </p>
                       </div>
 
-                      <div className="flex items-center gap-2.5 shrink-0">
+                      <div className="flex flex-col min-[420px]:flex-row items-stretch min-[420px]:items-center gap-2.5 shrink-0 w-full min-[420px]:w-auto">
                         <button
                           type="button"
                           onClick={() => {
                             onClose()
                             openRoadmapBuilder()
                           }}
-                          className="min-h-[44px] inline-flex items-center justify-center gap-2 rounded-[7px] border border-white/[0.12] bg-[#14161E] px-4 py-2 text-xs font-semibold text-[#D4D4D8] hover:bg-[#1C1F2B] hover:text-white transition-all cursor-pointer shadow-xs"
+                          className="min-h-[44px] inline-flex items-center justify-center gap-2 bg-white text-black font-semibold rounded-xl hover:bg-neutral-200 transition-all px-4 py-2 text-xs cursor-pointer shadow-[0_2px_12px_rgba(255,255,255,0.1)]"
                         >
-                          <Sparkles className="h-3.5 w-3.5 text-neutral-300" />
+                          <Sparkles className="h-3.5 w-3.5" />
                           <span>Build My Roadmap</span>
                         </button>
                         <button
@@ -977,7 +1092,7 @@ export default function LearningDashboardModal({
                             onClose()
                             onOpenExplorer()
                           }}
-                          className="min-h-[44px] inline-flex items-center justify-center gap-2 rounded-[7px] border border-white/[0.12] bg-[#14161E] px-4 py-2 text-xs font-semibold text-[#D4D4D4] hover:bg-[#1C1F2B] hover:text-white transition-all cursor-pointer shadow-xs"
+                          className="min-h-[44px] inline-flex items-center justify-center gap-2 border border-white/[0.1] bg-white/[0.03] text-neutral-300 rounded-xl hover:border-white/20 hover:text-white transition-all px-4 py-2 text-xs cursor-pointer"
                         >
                           <Compass className="h-3.5 w-3.5" />
                           <span>Browse Catalog</span>
@@ -985,80 +1100,111 @@ export default function LearningDashboardModal({
                       </div>
                     </div>
 
-                    {/* ── SECTION 2: Learning Overview ── */}
-                    <div className="rounded-[14px] border border-white/[0.08] bg-[#0F1117]/92 backdrop-blur-xl p-6 sm:p-8 space-y-6 shadow-[0_14px_40px_rgba(0,0,0,0.65)]">
+                    {/* ── SECTION 2: Progress Overview & XP/Level System (4-Stat Telemetry Grid) ── */}
+                    <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-xl p-5 sm:p-8 space-y-6 shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/[0.06] pb-4">
                         <div>
-                          <h2 className="text-base sm:text-lg font-bold text-[#EDEDED] tracking-tight">
+                          <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">
                             Learning Overview
                           </h2>
-                          <p className="text-xs text-[#8A8F98] mt-0.5">
-                            Key progression metrics and validated milestones across your curriculum.
+                          <p className="text-xs text-neutral-400 mt-0.5">
+                            Key telemetry metrics and validated milestones across your engineering stack.
                           </p>
                         </div>
                         <button
                           type="button"
                           onClick={() => setActiveTab('roadmaps')}
-                          className="self-start sm:self-auto text-xs font-mono text-[#8A8F98] hover:text-[#EDEDED] flex items-center gap-1 transition-colors cursor-pointer"
+                          className="self-start sm:self-auto min-h-[44px] sm:min-h-0 text-xs font-mono text-neutral-400 hover:text-white inline-flex items-center gap-1 transition-colors cursor-pointer py-1 sm:py-0"
                         >
                           <span>Track roadmaps</span>
                           <ArrowRight className="h-3 w-3" />
                         </button>
                       </div>
 
-                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div className="rounded-[10px] border border-white/[0.06] bg-[#0A0C11]/85 p-5 hover:border-white/[0.12] transition-colors">
-                          <span className="text-xs font-mono uppercase tracking-wider text-[#8A8F98] block mb-2">
-                            Learning Progress
-                          </span>
-                          <div className="text-2xl sm:text-3xl font-black font-mono text-[#F4F4F5] tracking-tight">
-                            <AnimatedStat value={overallPercent} suffix="%" />
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                        {/* Stat 1: Learning Progress % */}
+                        <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-xl p-4 sm:p-5 hover:border-white/20 transition-all shadow-[0_4px_24px_rgba(0,0,0,0.4)] flex flex-col justify-between group">
+                          <div>
+                            <span className="text-[10px] font-mono tracking-widest text-neutral-400 uppercase mb-2 block">
+                              Learning Progress
+                            </span>
+                            <div className="text-2xl sm:text-3xl font-black text-white font-mono tracking-tight">
+                              <AnimatedStat value={overallPercent} suffix="%" />
+                            </div>
+                            <span className="text-[11px] font-mono text-neutral-400 mt-1.5 block">
+                              Curriculum mastery
+                            </span>
                           </div>
-                          <span className="text-[11px] font-mono text-[#6B7280] mt-1.5 block">
-                            Overall mastery
-                          </span>
+                          <MinimalProgressBar percent={overallPercent} height={2} delay={0.1} className="mt-3" />
                         </div>
 
-                        <div className="rounded-[10px] border border-white/[0.06] bg-[#0A0C11]/85 p-5 hover:border-white/[0.12] transition-colors">
-                          <span className="text-xs font-mono uppercase tracking-wider text-[#8A8F98] block mb-2">
-                            Completed Milestones
-                          </span>
-                          <div className="text-2xl sm:text-3xl font-black font-mono text-[#F4F4F5] tracking-tight">
-                            <AnimatedStat value={completedMilestones} />
+                        {/* Stat 2: Completed Milestones */}
+                        <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-xl p-4 sm:p-5 hover:border-white/20 transition-all shadow-[0_4px_24px_rgba(0,0,0,0.4)] flex flex-col justify-between group">
+                          <div>
+                            <span className="text-[10px] font-mono tracking-widest text-neutral-400 uppercase mb-2 block">
+                              Completed Milestones
+                            </span>
+                            <div className="text-2xl sm:text-3xl font-black text-white font-mono tracking-tight">
+                              <AnimatedStat value={completedMilestones} />
+                            </div>
+                            <span className="text-[11px] font-mono text-neutral-400 mt-1.5 block">
+                              Verified competencies
+                            </span>
                           </div>
-                          <span className="text-[11px] font-mono text-[#6B7280] mt-1.5 block">
-                            Verified competencies
-                          </span>
+                          <MinimalProgressBar
+                            percent={Math.min(100, (completedMilestones / 10) * 100)}
+                            height={2}
+                            delay={0.2}
+                            className="mt-3"
+                          />
                         </div>
 
-                        <div className="rounded-[10px] border border-white/[0.06] bg-[#0A0C11]/85 p-5 hover:border-white/[0.12] transition-colors">
-                          <span className="text-xs font-mono uppercase tracking-wider text-[#8A8F98] block mb-2">
-                            Lessons Completed
-                          </span>
-                          <div className="text-2xl sm:text-3xl font-black font-mono text-[#F4F4F5] tracking-tight">
-                            <AnimatedStat value={completedLessons} />
+                        {/* Stat 3: Daily Streak */}
+                        <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-xl p-4 sm:p-5 hover:border-white/20 transition-all shadow-[0_4px_24px_rgba(0,0,0,0.4)] flex flex-col justify-between group">
+                          <div>
+                            <span className="text-[10px] font-mono tracking-widest text-neutral-400 uppercase mb-2 block">
+                              Daily Streak
+                            </span>
+                            <div className="text-2xl sm:text-3xl font-black text-white font-mono tracking-tight">
+                              <AnimatedStat value={streakCount} suffix="d" />
+                            </div>
+                            <span className="text-[11px] font-mono text-neutral-400 mt-1.5 block">
+                              Active study velocity
+                            </span>
                           </div>
-                          <span className="text-[11px] font-mono text-[#6B7280] mt-1.5 block">
-                            Knowledge modules
-                          </span>
+                          <MinimalProgressBar
+                            percent={Math.min(100, (streakCount / 7) * 100)}
+                            height={2}
+                            delay={0.3}
+                            className="mt-3"
+                          />
                         </div>
 
-                        <div className="rounded-[10px] border border-white/[0.06] bg-[#0A0C11]/85 p-5 hover:border-white/[0.12] transition-colors">
-                          <span className="text-xs font-mono uppercase tracking-wider text-[#8A8F98] block mb-2">
-                            Projects Built
-                          </span>
-                          <div className="text-2xl sm:text-3xl font-black font-mono text-[#F4F4F5] tracking-tight">
-                            <AnimatedStat value={completedProjectsCount || (completedProjectsCount + activeProjectsCount)} />
+                        {/* Stat 4: Projects Built */}
+                        <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-xl p-4 sm:p-5 hover:border-white/20 transition-all shadow-[0_4px_24px_rgba(0,0,0,0.4)] flex flex-col justify-between group">
+                          <div>
+                            <span className="text-[10px] font-mono tracking-widest text-neutral-400 uppercase mb-2 block">
+                              Projects Built
+                            </span>
+                            <div className="text-2xl sm:text-3xl font-black text-white font-mono tracking-tight">
+                              <AnimatedStat value={completedProjectsCount || (completedProjectsCount + activeProjectsCount)} />
+                            </div>
+                            <span className="text-[11px] font-mono text-neutral-400 mt-1.5 block">
+                              Production builds
+                            </span>
                           </div>
-                          <span className="text-[11px] font-mono text-[#6B7280] mt-1.5 block">
-                            Production builds
-                          </span>
+                          <MinimalProgressBar
+                            percent={Math.min(100, Math.max(20, ((completedProjectsCount || 1) / 5) * 100))}
+                            height={2}
+                            delay={0.4}
+                            className="mt-3"
+                          />
                         </div>
                       </div>
                     </div>
 
-                    {/* ── SECTION 3: Continue Learning (Hero Focus Card - Main Focus) ── */}
-                    <div className="rounded-[14px] border border-white/[0.1] bg-[#10131A]/95 backdrop-blur-xl p-6 sm:p-9 space-y-6 shadow-[0_18px_50px_rgba(0,0,0,0.72)] relative overflow-hidden">
+                    {/* ── SECTION 3: Current Learning Path (Hero Focus Card in Overview) ── */}
+                    <div className="rounded-2xl border border-white/[0.1] bg-white/[0.02] backdrop-blur-xl p-6 sm:p-8 space-y-6 shadow-[0_4px_24px_rgba(0,0,0,0.4)] relative overflow-hidden">
                       <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent" />
 
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/[0.06] pb-5">
@@ -1066,15 +1212,15 @@ export default function LearningDashboardModal({
                           <span className="text-[10px] font-mono uppercase tracking-widest text-neutral-400 font-semibold block mb-1">
                             Active Learning Focus
                           </span>
-                          <h2 className="text-xl sm:text-2xl font-bold text-[#EDEDED] tracking-tight">
+                          <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
                             Continue {currentPath?.title || 'Python Fundamentals'}
                           </h2>
-                          <p className="text-xs text-[#8A8F98] mt-0.5">
+                          <p className="text-xs text-neutral-400 mt-0.5">
                             Resume your active milestone and hands-on coding curriculum.
                           </p>
                         </div>
                         {currentPath?.category && (
-                          <span className="self-start sm:self-auto rounded-[5px] border border-white/[0.1] bg-[#14161F] px-3 py-1 text-[10px] font-mono text-[#D4D4D8]">
+                          <span className="self-start sm:self-auto rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[10px] font-mono text-neutral-300">
                             {currentPath.category}
                           </span>
                         )}
@@ -1082,26 +1228,26 @@ export default function LearningDashboardModal({
 
                       <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
                         <div className="md:col-span-8 space-y-3.5">
-                          <div className="rounded-[10px] border border-white/[0.06] bg-[#0A0C11]/85 p-5 space-y-3">
+                          <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5 space-y-3">
                             <div>
-                              <span className="text-xs font-mono text-[#8A8F98] block mb-1">
+                              <span className="text-xs font-mono text-neutral-400 block mb-1">
                                 Current milestone:
                               </span>
-                              <h3 className="text-base sm:text-lg font-semibold text-[#EDEDED]">
+                              <h3 className="text-base sm:text-lg font-semibold text-white">
                                 {currentPath?.next_step_title || 'Object Oriented Programming'}
                               </h3>
                             </div>
 
                             <div className="space-y-1.5 pt-1">
-                              <div className="flex items-center justify-between text-xs font-mono text-[#8A8F98]">
+                              <div className="flex items-center justify-between text-xs font-mono text-neutral-400">
                                 <span>Progress</span>
-                                <span className="text-[#EDEDED] font-medium">
+                                <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-xs font-mono font-semibold text-white">
                                   {currentPath?.progress_percent ?? 80}%
                                 </span>
                               </div>
                               <MinimalProgressBar
                                 percent={currentPath?.progress_percent ?? 80}
-                                height={6}
+                                height={4}
                                 delay={0.1}
                               />
                             </div>
@@ -1119,22 +1265,25 @@ export default function LearningDashboardModal({
                                 openRoadmapBuilder()
                               }
                             }}
-                            className="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 rounded-[7px] bg-[#EDEDED] px-6 py-3 text-xs sm:text-sm font-semibold text-[#050505] hover:bg-white transition-all cursor-pointer shadow-[0_4px_16px_rgba(255,255,255,0.08)]"
+                            className="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 rounded-xl bg-white px-6 py-3 text-xs sm:text-sm font-semibold text-black hover:bg-neutral-200 transition-all cursor-pointer shadow-[0_2px_12px_rgba(255,255,255,0.1)] group"
                           >
                             <span>Continue Learning</span>
-                            <ArrowRight className="h-4 w-4" />
+                            <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
                           </button>
                         </div>
                       </div>
                     </div>
 
-                    {/* ── SECTION 4: AI Mentor (Minimal Query Bar) ── */}
-                    <div className="rounded-[14px] border border-white/[0.08] bg-[#0E1016]/92 backdrop-blur-xl p-6 sm:p-7 shadow-[0_14px_40px_rgba(0,0,0,0.65)] space-y-3.5">
+                    {/* ── SECTION 4: AI Mentor Entry Point & Chat UI (Overview) ── */}
+                    <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-xl p-6 sm:p-7 shadow-[0_4px_24px_rgba(0,0,0,0.4)] space-y-3.5 relative overflow-hidden">
                       <div className="space-y-0.5">
-                        <h3 className="text-base font-bold text-[#EDEDED] tracking-tight">
-                          Ask Technea AI anything...
-                        </h3>
-                        <p className="text-xs text-[#8A8F98]">
+                        <div className="flex items-center gap-2">
+                          <Bot className="h-4 w-4 text-neutral-300" />
+                          <h3 className="text-base font-bold text-white tracking-tight">
+                            Ask Technea AI anything...
+                          </h3>
+                        </div>
+                        <p className="text-xs text-neutral-400">
                           Your AI learning companion • Ask about roadmaps, skills, projects, or doubts
                         </p>
                       </div>
@@ -1147,7 +1296,7 @@ export default function LearningDashboardModal({
                           handleSendMentorMessage(q)
                           setActiveTab('mentor')
                         }}
-                        className="flex flex-col sm:flex-row items-center gap-2.5 pt-0.5"
+                        className="flex flex-col min-[420px]:flex-row items-stretch min-[420px]:items-center gap-2.5 pt-0.5"
                       >
                         <div className="relative flex-1 w-full">
                           <input
@@ -1155,16 +1304,16 @@ export default function LearningDashboardModal({
                             value={mentorInput}
                             onChange={(e) => setMentorInput(e.target.value)}
                             placeholder="Ask Technea AI anything..."
-                            className="w-full min-h-[44px] rounded-[8px] border border-white/[0.08] bg-[#07080B] px-4 py-2.5 text-xs sm:text-sm text-[#EDEDED] placeholder-[#555555] focus:border-white/20 focus:outline-none font-mono transition-colors"
+                            className="w-full min-h-[44px] rounded-xl border border-white/[0.08] bg-black/40 px-4 py-2.5 text-xs sm:text-sm text-white placeholder-neutral-500 focus:border-white/30 focus:ring-1 focus:ring-white/20 focus:outline-none font-mono transition-all"
                           />
                         </div>
                         <button
                           type="submit"
                           disabled={!mentorInput.trim() || isMentorTyping}
-                          className={`w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 rounded-[8px] px-6 py-2.5 text-xs font-semibold transition-all shrink-0 cursor-pointer ${
+                          className={`w-full min-[420px]:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 rounded-xl px-6 py-2.5 text-xs font-semibold transition-all shrink-0 cursor-pointer ${
                             mentorInput.trim() && !isMentorTyping
-                              ? 'bg-[#EDEDED] text-[#050505] hover:bg-white shadow-[0_2px_12px_rgba(255,255,255,0.08)]'
-                              : 'bg-[#14151B] text-[#555555] border border-white/[0.05] cursor-not-allowed'
+                              ? 'bg-white text-black hover:bg-neutral-200 shadow-[0_2px_12px_rgba(255,255,255,0.1)]'
+                              : 'bg-white/[0.03] text-neutral-500 border border-white/[0.06] cursor-not-allowed'
                           }`}
                         >
                           <span>Send</span>
@@ -1173,23 +1322,22 @@ export default function LearningDashboardModal({
                       </form>
                     </div>
 
-
-                    {/* ── SECTION 5: Daily Learning Tracker ── */}
-                    <div className="rounded-[14px] border border-white/[0.08] bg-[#0F1117]/92 backdrop-blur-xl p-7 sm:p-8 space-y-6 shadow-[0_14px_40px_rgba(0,0,0,0.65)]">
+                    {/* ── SECTION 5: Daily Learning Tracker (Overview Tab) ── */}
+                    <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-xl p-6 sm:p-8 space-y-6 shadow-[0_4px_24px_rgba(0,0,0,0.4)] relative overflow-hidden">
                       <div className="flex items-center justify-between border-b border-white/[0.06] pb-4">
                         <div className="space-y-0.5">
-                          <h3 className="text-base font-bold text-[#EDEDED] tracking-tight">
+                          <h3 className="text-base font-bold text-white tracking-tight">
                             Daily Learning Tracker
                           </h3>
-                          <p className="text-xs text-[#8A8F98]">
+                          <p className="text-xs text-neutral-400">
                             Build daily engineering consistency and track task velocity.
                           </p>
                         </div>
                         <div className="text-right">
-                          <span className="text-[10px] font-mono uppercase tracking-wider text-[#8A8F98] block">
+                          <span className="text-[10px] font-mono uppercase tracking-widest text-neutral-400 block">
                             Learning Streak
                           </span>
-                          <span className="text-base sm:text-lg font-bold font-mono text-[#EDEDED]">
+                          <span className="text-base sm:text-lg font-bold font-mono text-white">
                             {streakCount} Days
                           </span>
                         </div>
@@ -1198,7 +1346,7 @@ export default function LearningDashboardModal({
                       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                         {/* Left: Today's Goals (7 cols) */}
                         <div className="lg:col-span-7 space-y-3">
-                          <div className="flex items-center justify-between text-xs font-mono text-[#8A8F98] mb-1">
+                          <div className="flex items-center justify-between text-xs font-mono text-neutral-400 mb-1">
                             <span>Today&apos;s Goals</span>
                             <span>
                               {completedTasksCount} / {tasks.length} Completed
@@ -1210,23 +1358,30 @@ export default function LearningDashboardModal({
                               <button
                                 key={task.id}
                                 type="button"
+                                role="checkbox"
+                                aria-checked={task.done}
+                                aria-label={`Task: ${task.text}, ${task.done ? 'completed' : 'incomplete'}`}
                                 onClick={() => toggleTask(task.id)}
-                                className={`w-full flex items-center gap-3 rounded-[8px] border px-4 py-3 text-left text-xs transition-colors cursor-pointer ${
+                                className={`w-full min-h-[44px] flex items-center gap-3.5 rounded-xl border px-4 py-3 text-left text-xs transition-all cursor-pointer ${
                                   task.done
-                                    ? 'border-white/[0.04] bg-[#090A0E]/60 text-[#6B7280]'
-                                    : 'border-white/[0.07] bg-[#0A0C11]/85 text-[#EDEDED] hover:border-white/[0.14]'
+                                    ? 'border-white/[0.04] bg-white/[0.01] text-neutral-400'
+                                    : 'border-white/[0.08] bg-white/[0.02] text-neutral-200 hover:border-white/20 hover:text-white'
                                 }`}
                               >
                                 <span
-                                  className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-[3px] border transition-colors ${
+                                  className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-[4px] border transition-all ${
                                     task.done
-                                      ? 'border-emerald-500/50 bg-emerald-950/20 text-emerald-400'
-                                      : 'border-[#333333] bg-[#141414]'
+                                      ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400'
+                                      : 'border-white/20 bg-white/[0.04]'
                                   }`}
                                 >
                                   {task.done && <Check className="h-2.5 w-2.5 stroke-[2.5]" />}
                                 </span>
-                                <span className={`truncate ${task.done ? 'line-through text-[#6B7280]' : ''}`}>
+                                <span
+                                  className={`truncate font-mono ${
+                                    task.done ? 'line-through text-neutral-400' : 'text-neutral-200'
+                                  }`}
+                                >
                                   {task.text}
                                 </span>
                               </button>
@@ -1235,7 +1390,7 @@ export default function LearningDashboardModal({
                         </div>
 
                         {/* Right: Weekly Progress Visualization (5 cols) */}
-                        <div className="lg:col-span-5 rounded-[10px] border border-white/[0.06] bg-[#0A0C11]/85 p-5">
+                        <div className="lg:col-span-5 rounded-xl border border-white/[0.06] bg-white/[0.02] p-5">
                           <WeeklyActivityStrip
                             weeklyHistory={dailyActivity?.weekly_history || []}
                             streakCount={streakCount}
@@ -1243,31 +1398,36 @@ export default function LearningDashboardModal({
                         </div>
                       </div>
                     </div>
-                  </div>
+                  </motion.div>
                 )}
 
-
-                {/* ══════════════ TAB: PROJECTS (PHASE 1) ══════════════ */}
+                {/* ══════════════ TAB: PROJECTS (PROJECT CATALOG) ══════════════ */}
                 {activeTab === 'projects' && (
-                  <div className="space-y-6">
+                  <motion.div
+                    key="projects"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                    className="space-y-6"
+                  >
                     {/* Projects Header */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#1A1A1A] pb-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/[0.08] pb-4">
                       <div>
                         <div className="flex items-center gap-2">
-                          <h2 className="text-lg font-bold text-[#EDEDED]">
+                          <h2 className="text-lg font-bold text-white tracking-tight">
                             Engineering Project Catalog
                           </h2>
-                          <span className="rounded-[4px] border border-white/10 bg-white/[0.03] px-2 py-0.5 text-[10px] font-mono text-neutral-400">
+                          <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-0.5 text-[10px] font-mono text-neutral-300">
                             {projectsList.length} Real-World Builds
                           </span>
                         </div>
-                        <p className="text-xs text-[#737373] mt-0.5">
+                        <p className="text-xs text-neutral-400 mt-0.5">
                           Bridge theory into production deliverables. Connect code repositories to your developer portfolio.
                         </p>
                       </div>
 
                       {/* Filter Pills */}
-                      <div className="flex items-center gap-1.5 flex-wrap">
+                      <div className="flex items-center gap-1.5 overflow-x-auto max-w-full pb-1 scrollbar-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden shrink-0">
                         {[
                           { id: 'all', label: 'All Projects' },
                           { id: 'recommended', label: `Recommended (${recommendedProjects.length})` },
@@ -1279,10 +1439,10 @@ export default function LearningDashboardModal({
                             key={f.id}
                             type="button"
                             onClick={() => setProjectFilter(f.id)}
-                            className={`rounded-[6px] border px-3 py-1.5 sm:py-1 text-xs font-mono transition-colors cursor-pointer ${
+                            className={`rounded-xl border px-3 py-1.5 min-h-[44px] sm:min-h-[36px] flex items-center justify-center text-xs font-mono transition-all cursor-pointer shrink-0 ${
                               projectFilter === f.id
-                                ? 'border-[#EDEDED] bg-[#171717] text-[#EDEDED] font-semibold'
-                                : 'border-[#1F1F1F] bg-[#0A0A0A] text-[#737373] hover:text-[#D4D4D4]'
+                                ? 'border-white/20 bg-white/[0.1] text-white font-semibold shadow-xs'
+                                : 'border-white/[0.08] bg-white/[0.02] text-neutral-400 hover:text-white hover:border-white/15'
                             }`}
                           >
                             {f.label}
@@ -1306,19 +1466,19 @@ export default function LearningDashboardModal({
                         return (
                           <div
                             key={proj.id}
-                            className={`rounded-[10px] border p-5 flex flex-col justify-between gap-4 transition-all ${
+                            className={`rounded-2xl border p-4 sm:p-5 flex flex-col justify-between gap-4 transition-all backdrop-blur-xl shadow-[0_4px_24px_rgba(0,0,0,0.4)] ${
                               userStatus === 'completed'
-                                ? 'border-emerald-500/30 bg-[#080B09]'
+                                ? 'border-emerald-500/30 bg-emerald-950/10'
                                 : userStatus === 'in_progress'
-                                ? 'border-white/20 bg-[#0E0E0E]'
-                                : 'border-[#1F1F1F] bg-[#0D0D0D] hover:border-[#2E2E2E]'
+                                ? 'border-white/20 bg-white/[0.04]'
+                                : 'border-white/[0.08] bg-white/[0.02] hover:border-white/20'
                             }`}
                           >
                             <div className="space-y-2.5">
                               <div className="flex items-center justify-between gap-2">
                                 <div className="flex items-center gap-2">
                                   <span
-                                    className={`rounded-[4px] border px-2 py-0.5 text-[9px] font-mono font-medium uppercase tracking-wider ${
+                                    className={`rounded-full border px-2.5 py-0.5 text-[9px] font-mono font-medium uppercase tracking-wider ${
                                       proj.difficulty === 'Beginner'
                                         ? 'border-white/10 bg-white/[0.04] text-neutral-300'
                                         : proj.difficulty === 'Intermediate'
@@ -1328,11 +1488,11 @@ export default function LearningDashboardModal({
                                   >
                                     {proj.difficulty}
                                   </span>
-                                  <span className="text-[10px] font-mono text-[#666666]">
+                                  <span className="text-[10px] font-mono text-neutral-400">
                                     {proj.duration_weeks || '2 Weeks'}
                                   </span>
                                   {isRec && (
-                                    <span className="rounded-[4px] border border-white/10 bg-white/[0.04] px-1.5 py-0.5 text-[9px] font-mono text-neutral-300">
+                                    <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[9px] font-mono text-neutral-300">
                                       ★ Recommended
                                     </span>
                                   )}
@@ -1344,8 +1504,8 @@ export default function LearningDashboardModal({
                                     userStatus === 'completed'
                                       ? 'text-emerald-400 flex items-center gap-1'
                                       : userStatus === 'in_progress'
-                                      ? 'text-neutral-300'
-                                      : 'text-[#666666]'
+                                      ? 'text-neutral-200'
+                                      : 'text-neutral-400'
                                   }`}
                                 >
                                   {userStatus === 'completed' && <Check className="h-3 w-3" />}
@@ -1358,8 +1518,8 @@ export default function LearningDashboardModal({
                               </div>
 
                               <div>
-                                <h3 className="text-sm font-bold text-[#EDEDED]">{proj.title}</h3>
-                                <p className="text-xs text-[#888888] leading-relaxed mt-1">
+                                <h3 className="text-sm font-bold text-white break-words">{proj.title}</h3>
+                                <p className="text-xs text-neutral-400 leading-relaxed mt-1">
                                   {proj.description}
                                 </p>
                               </div>
@@ -1369,7 +1529,7 @@ export default function LearningDashboardModal({
                                 {(proj.tech_stack || []).map((tech) => (
                                   <span
                                     key={tech}
-                                    className="rounded-[4px] border border-[#222222] bg-[#121212] px-2 py-0.5 text-[10px] font-mono text-[#A1A1A1]"
+                                    className="rounded-md border border-white/[0.08] bg-white/[0.03] px-2 py-0.5 text-[10px] font-mono text-neutral-300"
                                   >
                                     {tech}
                                   </span>
@@ -1378,8 +1538,8 @@ export default function LearningDashboardModal({
 
                               {/* Architectural requirements */}
                               {proj.architecture_spec?.length > 0 && (
-                                <div className="rounded-[6px] border border-[#1C1C1C] bg-[#080808] p-2.5 text-[11px] font-mono text-[#777777] space-y-1">
-                                  <span className="text-[9px] uppercase tracking-wider text-[#555555] block font-bold">
+                                <div className="rounded-xl border border-white/[0.06] bg-black/40 p-3 text-[11px] font-mono text-neutral-400 space-y-1">
+                                  <span className="text-[9px] uppercase tracking-wider text-neutral-400 block font-bold">
                                     Key Architectural Specifications:
                                   </span>
                                   <ul className="list-disc list-inside space-y-0.5">
@@ -1392,7 +1552,7 @@ export default function LearningDashboardModal({
                             </div>
 
                             {/* Bottom Actions */}
-                            <div className="pt-3 border-t border-[#1C1C1C] flex items-center justify-between gap-2">
+                            <div className="pt-3.5 border-t border-white/[0.06] flex items-center justify-between gap-2">
                               <div className="min-w-0 flex-1">
                                 {githubUrl ? (
                                   <a
@@ -1412,9 +1572,9 @@ export default function LearningDashboardModal({
                                       setEditingGithubProject(proj)
                                       setGithubUrlInput('')
                                     }}
-                                    className="min-h-[36px] text-[11px] font-mono text-[#666666] hover:text-[#EDEDED] flex items-center gap-1 cursor-pointer transition-colors"
+                                    className="min-h-[44px] sm:min-h-[36px] text-[11px] font-mono text-neutral-400 hover:text-white inline-flex items-center gap-1.5 cursor-pointer transition-colors"
                                   >
-                                    <GithubIcon className="h-3 w-3" />
+                                    <GithubIcon className="h-3.5 w-3.5" />
                                     <span>Link GitHub Repo</span>
                                   </button>
                                 )}
@@ -1425,7 +1585,7 @@ export default function LearningDashboardModal({
                                   <button
                                     type="button"
                                     onClick={() => handleStartProject(proj.id)}
-                                    className="inline-flex min-h-[36px] items-center gap-1.5 rounded-[6px] bg-[#EDEDED] px-3.5 py-1.5 text-xs font-bold text-[#050505] hover:bg-white transition-colors cursor-pointer"
+                                    className="inline-flex min-h-[44px] sm:min-h-[36px] items-center gap-1.5 rounded-xl bg-white px-3.5 py-1.5 text-xs font-semibold text-black hover:bg-neutral-200 transition-all cursor-pointer shadow-sm"
                                   >
                                     <span>Start Project</span>
                                     <ArrowRight className="h-3 w-3" />
@@ -1439,15 +1599,16 @@ export default function LearningDashboardModal({
                                         setEditingGithubProject(proj)
                                         setGithubUrlInput(githubUrl || '')
                                       }}
-                                      className="min-h-[36px] rounded-[6px] border border-[#2A2A2A] bg-[#141414] px-2.5 py-1.5 text-xs font-mono text-[#D4D4D4] hover:text-white transition-colors cursor-pointer"
+                                      className="min-h-[44px] min-w-[44px] sm:min-h-[36px] sm:min-w-[36px] flex items-center justify-center rounded-xl border border-white/[0.1] bg-white/[0.03] p-2 text-xs font-mono text-neutral-300 hover:text-white transition-colors cursor-pointer"
                                       title="Update repo URL"
+                                      aria-label={`Update GitHub repository URL for ${proj.title}`}
                                     >
-                                      <GithubIcon className="h-3 w-3" />
+                                      <GithubIcon className="h-3.5 w-3.5" />
                                     </button>
                                     <button
                                       type="button"
                                       onClick={() => handleCompleteProject(proj.id)}
-                                      className="inline-flex min-h-[36px] items-center gap-1 rounded-[6px] border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white hover:bg-white/20 transition-colors cursor-pointer"
+                                      className="inline-flex min-h-[44px] sm:min-h-[36px] items-center gap-1 rounded-xl border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white hover:bg-white/20 transition-all cursor-pointer"
                                     >
                                       <Check className="h-3 w-3" />
                                       <span>Complete (+150 XP)</span>
@@ -1455,7 +1616,7 @@ export default function LearningDashboardModal({
                                   </>
                                 )}
                                 {userStatus === 'completed' && (
-                                  <span className="text-[11px] font-mono text-emerald-400/90 font-medium flex items-center gap-1">
+                                  <span className="text-[11px] font-mono text-emerald-400 font-medium flex items-center gap-1">
                                     ✓ Verified (+150 XP)
                                   </span>
                                 )}
@@ -1465,19 +1626,25 @@ export default function LearningDashboardModal({
                         )
                       })}
                     </div>
-                  </div>
+                  </motion.div>
                 )}
 
-                {/* ══════════════ TAB: AI MENTOR (MINIMAL CHAT INTERFACE) ══════════════ */}
+                {/* ══════════════ TAB: AI MENTOR (CONVERSATIONAL INTERFACE) ══════════════ */}
                 {activeTab === 'mentor' && (
-                  <div className="max-w-3xl mx-auto w-full flex flex-col min-h-[580px] sm:min-h-[640px]">
+                  <motion.div
+                    key="mentor"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                    className="max-w-3xl mx-auto w-full flex flex-col min-h-[580px] sm:min-h-[640px]"
+                  >
                     {/* Top: Simple Heading & Subtitle */}
                     <div className="border-b border-white/[0.08] pb-4 mb-6 flex items-center justify-between gap-4">
                       <div>
-                        <h2 className="text-xl sm:text-2xl font-bold text-[#EDEDED] tracking-tight">
+                        <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
                           Technea AI Mentor
                         </h2>
-                        <p className="text-xs sm:text-sm text-[#8A8F98] mt-1">
+                        <p className="text-xs sm:text-sm text-neutral-400 mt-1">
                           Your personal engineering companion & codebase advisor
                         </p>
                       </div>
@@ -1485,20 +1652,21 @@ export default function LearningDashboardModal({
                         <button
                           type="button"
                           onClick={handleClearMentorChat}
-                          className="inline-flex items-center gap-1.5 border border-white/[0.08] text-[#8A8F98] hover:text-[#EDEDED] hover:bg-white/[0.04] px-2.5 py-1 rounded-[6px] text-xs font-mono transition-colors cursor-pointer"
+                          className="inline-flex min-h-[44px] sm:min-h-[36px] items-center gap-1.5 border border-white/[0.1] bg-white/[0.03] text-neutral-300 hover:text-white hover:border-white/20 px-3 py-1.5 rounded-xl text-xs font-mono transition-all cursor-pointer"
                           title="Reset conversation"
+                          aria-label="Clear chat conversation"
                         >
-                          <RotateCcw className="h-3 w-3" />
+                          <RotateCcw className="h-3.5 w-3.5" />
                           <span>Clear Chat</span>
                         </button>
-                        <div className="hidden sm:flex items-center gap-2">
-                          <span className="flex h-2 w-2 rounded-full bg-emerald-500/80 animate-pulse" />
-                          <span className="text-[11px] font-mono text-[#8A8F98]">Online</span>
+                        <div className="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded-full border border-white/10 bg-white/[0.03]">
+                          <span className="flex h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)] animate-pulse" />
+                          <span className="text-[11px] font-mono text-neutral-300">Neural Engine Online</span>
                         </div>
                       </div>
                     </div>
 
-                    {/* Middle: Only the Conversation Area */}
+                    {/* Middle: Conversation Area with clear contrast */}
                     <div data-lenis-prevent className="flex-1 overflow-y-auto overflow-x-hidden pr-1 space-y-6 max-h-[480px] min-h-[360px]">
                       {mentorMessages.map((msg, idx) => {
                         const isLatestMentor =
@@ -1507,22 +1675,22 @@ export default function LearningDashboardModal({
 
                         return msg.sender === 'user' ? (
                           <div key={msg.id} className="flex justify-end ml-auto">
-                            <div className="max-w-xl rounded-[12px] bg-[#161822] border border-white/[0.08] px-4 py-3 text-xs sm:text-sm text-[#EDEDED] leading-relaxed whitespace-pre-wrap break-words">
+                            <div className="max-w-xl rounded-2xl bg-white/[0.08] border border-white/[0.12] backdrop-blur-md px-4 py-3 text-xs sm:text-sm text-white leading-relaxed whitespace-pre-wrap break-words shadow-sm">
                               {msg.text}
                             </div>
                           </div>
                         ) : (
                           <div key={msg.id} className="flex items-start gap-3.5 max-w-2xl mr-auto w-full">
-                            <div className="flex h-7 w-7 items-center justify-center rounded-[6px] border border-white/[0.08] bg-[#12131A] text-[#EDEDED] shrink-0 mt-0.5">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-white shrink-0 mt-0.5 shadow-sm">
                               <Bot className="h-4 w-4" />
                             </div>
                             <div className="flex-1 space-y-2 min-w-0">
                               <div className="flex items-center gap-2">
-                                <span className="text-[11px] font-semibold text-[#8A8F98]">
+                                <span className="text-[11px] font-semibold text-neutral-300 font-mono">
                                   Technea AI Mentor
                                 </span>
                                 {msg.timestamp && (
-                                  <span className="text-[10px] font-mono text-[#555555]">
+                                  <span className="text-[10px] font-mono text-neutral-400">
                                     {msg.timestamp}
                                   </span>
                                 )}
@@ -1540,7 +1708,7 @@ export default function LearningDashboardModal({
                                         key={actIdx}
                                         type="button"
                                         onClick={() => handleRelatedAction(act)}
-                                        className="inline-flex items-center gap-1.5 rounded-[6px] border border-white/[0.12] bg-[#14151E] hover:bg-[#1C1E2A] hover:border-white/25 px-2.5 py-1 text-xs font-medium text-[#EDEDED] hover:text-white transition-all cursor-pointer shadow-sm group"
+                                        className="inline-flex min-h-[44px] sm:min-h-[36px] items-center gap-1.5 rounded-xl border border-white/[0.1] bg-white/[0.03] hover:bg-white/[0.08] hover:border-white/20 px-3 py-1.5 text-xs font-medium text-neutral-200 hover:text-white transition-all cursor-pointer shadow-xs group"
                                       >
                                         {act.action_type === 'view_roadmap' && (
                                           <Compass className="h-3.5 w-3.5 text-neutral-400 group-hover:scale-110 transition-transform" />
@@ -1555,7 +1723,7 @@ export default function LearningDashboardModal({
                                           <Compass className="h-3.5 w-3.5 text-neutral-400 group-hover:scale-110 transition-transform" />
                                         )}
                                         {!['view_roadmap', 'view_project', 'explore_skill', 'browse_catalog'].includes(act.action_type) && (
-                                          <ArrowRight className="h-3.5 w-3.5 text-[#8A8F98] group-hover:translate-x-0.5 transition-transform" />
+                                          <ArrowRight className="h-3.5 w-3.5 text-neutral-400 group-hover:translate-x-0.5 transition-transform" />
                                         )}
                                         <span>{act.title}</span>
                                       </button>
@@ -1567,8 +1735,8 @@ export default function LearningDashboardModal({
                               {/* Follow-up Suggestion Chips below the latest AI message */}
                               {Array.isArray(msg.suggestions) && msg.suggestions.length > 0 && isLatestMentor && (
                                 <div className="pt-2.5">
-                                  <div className="flex items-center gap-1.5 mb-1.5 text-[10px] font-mono uppercase tracking-wider text-[#666666]">
-                                    <Sparkles className="h-2.5 w-2.5 text-[#8A8F98]" />
+                                  <div className="flex items-center gap-1.5 mb-1.5 text-[10px] font-mono uppercase tracking-wider text-neutral-400">
+                                    <Sparkles className="h-2.5 w-2.5 text-neutral-300" />
                                     <span>Follow-up Suggestions</span>
                                   </div>
                                   <div className="flex flex-wrap gap-1.5">
@@ -1578,9 +1746,9 @@ export default function LearningDashboardModal({
                                         type="button"
                                         disabled={isMentorTyping}
                                         onClick={() => handleSendMentorMessage(suggestion)}
-                                        className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-[#0E0F14] hover:bg-[#181922] hover:border-white/20 px-3 py-1 text-xs text-[#A1A1AA] hover:text-[#EDEDED] transition-all cursor-pointer text-left shadow-sm disabled:opacity-50 disabled:cursor-not-allowed group"
+                                        className="inline-flex min-h-[44px] sm:min-h-[36px] items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.02] hover:bg-white/[0.08] hover:border-white/20 px-3.5 py-1.5 text-xs text-neutral-300 hover:text-white transition-all cursor-pointer text-left shadow-xs disabled:opacity-50 disabled:cursor-not-allowed group"
                                       >
-                                        <span className="text-[#666666] group-hover:text-[#8A8F98] transition-colors">↳</span>
+                                        <span className="text-neutral-400 group-hover:text-neutral-200 transition-colors">↳</span>
                                         <span>{suggestion}</span>
                                       </button>
                                     ))}
@@ -1594,29 +1762,29 @@ export default function LearningDashboardModal({
 
                       {isMentorTyping && (
                         <div className="flex items-start gap-3.5 max-w-2xl mr-auto">
-                          <div className="flex h-7 w-7 items-center justify-center rounded-[6px] border border-white/[0.08] bg-[#12131A] text-[#EDEDED] shrink-0 mt-0.5">
+                          <div className="flex h-8 w-8 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-white shrink-0 mt-0.5">
                             <Bot className="h-4 w-4 animate-pulse" />
                           </div>
-                          <div className="flex items-center gap-2.5 text-xs text-[#8A8F98] pt-1.5">
-                            <div className="flex items-center gap-1.5 py-1 px-2.5 rounded-full bg-[#12131A] border border-white/[0.06]">
-                              <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#EDEDED] animate-pulse [animation-duration:900ms]" />
-                              <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#EDEDED] animate-pulse [animation-duration:900ms] [animation-delay:200ms]" />
-                              <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#EDEDED] animate-pulse [animation-duration:900ms] [animation-delay:400ms]" />
+                          <div className="flex items-center gap-2.5 text-xs text-neutral-400 pt-1.5">
+                            <div className="flex items-center gap-1.5 py-1 px-2.5 rounded-full bg-white/[0.04] border border-white/[0.08]">
+                              <span className="inline-block h-1.5 w-1.5 rounded-full bg-white animate-pulse [animation-duration:900ms]" />
+                              <span className="inline-block h-1.5 w-1.5 rounded-full bg-white animate-pulse [animation-duration:900ms] [animation-delay:200ms]" />
+                              <span className="inline-block h-1.5 w-1.5 rounded-full bg-white animate-pulse [animation-duration:900ms] [animation-delay:400ms]" />
                             </div>
-                            <span className="text-xs text-[#8A8F98] font-sans">Technea AI is thinking…</span>
+                            <span className="text-xs text-neutral-400 font-mono">Technea AI is thinking…</span>
                           </div>
                         </div>
                       )}
                       <div ref={chatBottomRef} />
                     </div>
 
-                    {/* Bottom: Only One Input Bar */}
+                    {/* Bottom: Only One Monospace Input Bar */}
                     <form
                       onSubmit={(e) => {
                         e.preventDefault()
                         handleSendMentorMessage()
                       }}
-                      className="pt-4 border-t border-white/[0.08] flex flex-col sm:flex-row items-center gap-2.5 mt-6"
+                      className="pt-4 border-t border-white/[0.08] flex flex-col min-[420px]:flex-row items-stretch min-[420px]:items-center gap-2.5 mt-6"
                     >
                       <div className="relative flex-1 w-full">
                         <input
@@ -1630,41 +1798,47 @@ export default function LearningDashboardModal({
                             }
                           }}
                           placeholder="Ask Technea AI anything..."
-                          className="w-full min-h-[44px] rounded-[8px] border border-white/[0.08] bg-[#07080B] px-4 py-2.5 text-xs sm:text-sm text-[#EDEDED] placeholder-[#555555] focus:border-white/20 focus:outline-none transition-colors"
+                          className="w-full min-h-[44px] rounded-xl border border-white/[0.08] bg-black/40 px-4 py-2.5 text-xs sm:text-sm text-white placeholder-neutral-500 focus:border-white/30 focus:ring-1 focus:ring-white/20 focus:outline-none transition-all font-mono"
                           disabled={isMentorTyping}
                         />
                       </div>
                       <button
                         type="submit"
                         disabled={!mentorInput.trim() || isMentorTyping}
-                        className={`w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 rounded-[8px] px-6 py-2.5 text-xs font-semibold transition-all shrink-0 cursor-pointer ${
+                        className={`w-full min-[420px]:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 rounded-xl px-6 py-2.5 text-xs font-semibold transition-all shrink-0 cursor-pointer ${
                           mentorInput.trim() && !isMentorTyping
-                            ? 'bg-[#EDEDED] text-[#050505] hover:bg-white shadow-[0_2px_12px_rgba(255,255,255,0.08)]'
-                            : 'bg-[#14151B] text-[#555555] border border-white/[0.05] cursor-not-allowed'
+                            ? 'bg-white text-black hover:bg-neutral-200 shadow-[0_2px_12px_rgba(255,255,255,0.1)]'
+                            : 'bg-white/[0.03] text-neutral-500 border border-white/[0.06] cursor-not-allowed'
                         }`}
                       >
                         <span>Send</span>
                         <Send className="h-3.5 w-3.5" />
                       </button>
                     </form>
-                  </div>
+                  </motion.div>
                 )}
 
-                {/* ══════════════ TAB: COMMUNITY (PHASE 4) ══════════════ */}
+                {/* ══════════════ TAB: COMMUNITY ══════════════ */}
                 {activeTab === 'community' && (
-                  <div className="space-y-6">
+                  <motion.div
+                    key="community"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                    className="space-y-6"
+                  >
                     {/* Community Header */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#1A1A1A] pb-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/[0.08] pb-4">
                       <div>
                         <div className="flex items-center gap-2">
-                          <h2 className="text-lg font-bold text-[#EDEDED]">
+                          <h2 className="text-lg font-bold text-white tracking-tight">
                             Peer Learning Rooms
                           </h2>
-                          <span className="rounded-[4px] border border-white/10 bg-white/[0.03] px-2 py-0.5 text-[10px] font-mono text-neutral-400">
+                          <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-0.5 text-[10px] font-mono text-neutral-300">
                             {communityRooms.length} Active Guilds
                           </span>
                         </div>
-                        <p className="text-xs text-[#737373] mt-0.5">
+                        <p className="text-xs text-neutral-400 mt-0.5">
                           Join focused engineering circles. Ask questions, compare code implementations, and stay accountable with peers.
                         </p>
                       </div>
@@ -1673,10 +1847,10 @@ export default function LearningDashboardModal({
                         <button
                           type="button"
                           onClick={() => setRoomFilter('all')}
-                          className={`min-h-[36px] rounded-[6px] border px-3 py-1.5 text-xs font-mono transition-colors cursor-pointer ${
+                          className={`min-h-[44px] sm:min-h-[36px] flex items-center justify-center rounded-xl border px-3.5 py-1.5 text-xs font-mono transition-all cursor-pointer ${
                             roomFilter === 'all'
-                              ? 'border-[#EDEDED] bg-[#171717] text-[#EDEDED] font-semibold'
-                              : 'border-[#1F1F1F] bg-[#0A0A0A] text-[#737373] hover:text-[#EDEDED]'
+                              ? 'border-white/20 bg-white/[0.1] text-white font-semibold shadow-xs'
+                              : 'border-white/[0.08] bg-white/[0.02] text-neutral-400 hover:text-white'
                           }`}
                         >
                           All Rooms ({communityRooms.length})
@@ -1684,10 +1858,10 @@ export default function LearningDashboardModal({
                         <button
                           type="button"
                           onClick={() => setRoomFilter('joined')}
-                          className={`min-h-[36px] rounded-[6px] border px-3 py-1.5 text-xs font-mono transition-colors cursor-pointer ${
+                          className={`min-h-[44px] sm:min-h-[36px] flex items-center justify-center rounded-xl border px-3.5 py-1.5 text-xs font-mono transition-all cursor-pointer ${
                             roomFilter === 'joined'
-                              ? 'border-[#EDEDED] bg-[#171717] text-[#EDEDED] font-semibold'
-                              : 'border-[#1F1F1F] bg-[#0A0A0A] text-[#737373] hover:text-[#EDEDED]'
+                              ? 'border-white/20 bg-white/[0.1] text-white font-semibold shadow-xs'
+                              : 'border-white/[0.08] bg-white/[0.02] text-neutral-400 hover:text-white'
                           }`}
                         >
                           My Joined ({joinedRoomIds.size})
@@ -1704,26 +1878,26 @@ export default function LearningDashboardModal({
                           return (
                             <div
                               key={room.id}
-                              className={`rounded-[10px] border p-5 flex flex-col justify-between gap-4 transition-all ${
+                              className={`rounded-2xl border p-4 sm:p-5 flex flex-col justify-between gap-4 transition-all backdrop-blur-xl shadow-[0_4px_24px_rgba(0,0,0,0.4)] ${
                                 isJoined
-                                  ? 'border-white/20 bg-[#0E0E0E]'
-                                  : 'border-[#1F1F1F] bg-[#0D0D0D] hover:border-[#2E2E2E]'
+                                  ? 'border-white/20 bg-white/[0.04]'
+                                  : 'border-white/[0.08] bg-white/[0.02] hover:border-white/20'
                               }`}
                             >
                               <div className="space-y-2.5">
                                 <div className="flex items-center justify-between">
-                                  <span className="rounded-[4px] border border-[#262626] bg-[#121212] px-2 py-0.5 text-[9px] font-mono text-[#A1A1A1] uppercase">
+                                  <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-0.5 text-[9px] font-mono text-neutral-300 uppercase">
                                     {room.category}
                                   </span>
-                                  <span className="flex items-center gap-1.5 text-[10px] font-mono text-neutral-400">
-                                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400/80" />
+                                  <span className="flex items-center gap-1.5 text-[10px] font-mono text-neutral-300">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)]" />
                                     {room.active_learners_count} peers
                                   </span>
                                 </div>
 
                                 <div>
-                                  <h3 className="text-sm font-bold text-[#EDEDED]">{room.title}</h3>
-                                  <p className="text-xs text-[#888888] leading-relaxed mt-1">
+                                  <h3 className="text-sm font-bold text-white">{room.title}</h3>
+                                  <p className="text-xs text-neutral-400 leading-relaxed mt-1">
                                     {room.description}
                                   </p>
                                 </div>
@@ -1734,7 +1908,7 @@ export default function LearningDashboardModal({
                                     {room.topics_covered.map((t, idx) => (
                                       <span
                                         key={idx}
-                                        className="rounded-[3px] border border-[#222222] bg-[#111111] px-1.5 py-0.5 text-[10px] font-mono text-[#888888]"
+                                        className="rounded-md border border-white/[0.08] bg-white/[0.03] px-2 py-0.5 text-[10px] font-mono text-neutral-300"
                                       >
                                         {t}
                                       </span>
@@ -1743,17 +1917,17 @@ export default function LearningDashboardModal({
                                 )}
                               </div>
 
-                              <div className="pt-3 border-t border-[#1C1C1C] flex items-center justify-between">
-                                <span className="text-[10px] font-mono text-[#666666]">
+                              <div className="pt-3.5 border-t border-white/[0.06] flex items-center justify-between">
+                                <span className="text-[10px] font-mono text-neutral-400">
                                   {isJoined ? 'Connected Room' : 'Public Room'}
                                 </span>
                                 <button
                                   type="button"
                                   onClick={() => handleToggleRoom(room.id)}
-                                  className={`inline-flex min-h-[36px] items-center gap-1.5 rounded-[6px] px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
+                                  className={`inline-flex min-h-[44px] sm:min-h-[36px] items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
                                     isJoined
                                       ? 'border border-white/20 bg-white/10 text-white hover:bg-white/15'
-                                      : 'bg-[#EDEDED] text-[#050505] hover:bg-white'
+                                      : 'bg-white text-black hover:bg-neutral-200'
                                   }`}
                                 >
                                   {isJoined ? (
@@ -1773,18 +1947,24 @@ export default function LearningDashboardModal({
                           )
                         })}
                     </div>
-                  </div>
+                  </motion.div>
                 )}
 
                 {/* ══════════════ TAB: AI ROADMAPS ══════════════ */}
                 {activeTab === 'roadmaps' && (
-                  <div className="space-y-6">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#1A1A1A] pb-4">
+                  <motion.div
+                    key="roadmaps"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                    className="space-y-6"
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/[0.08] pb-4">
                       <div>
-                        <h2 className="text-lg font-bold text-[#EDEDED]">
+                        <h2 className="text-lg font-bold text-white tracking-tight">
                           Your Career Roadmaps
                         </h2>
-                        <p className="text-xs text-[#737373]">
+                        <p className="text-xs text-neutral-400">
                           AI-generated blueprints and enrolled catalog journeys.
                         </p>
                       </div>
@@ -1794,9 +1974,9 @@ export default function LearningDashboardModal({
                           onClose()
                           openRoadmapBuilder()
                         }}
-                        className="inline-flex min-h-[44px] items-center gap-2 rounded-[6px] bg-[#EDEDED] px-4 py-2 text-xs font-semibold text-[#050505] hover:bg-white transition-colors cursor-pointer shadow-sm"
+                        className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-white px-4 py-2 text-xs font-semibold text-black hover:bg-neutral-200 transition-all cursor-pointer shadow-sm"
                       >
-                        <Sparkles className="h-3.5 w-3.5 text-neutral-300" />
+                        <Sparkles className="h-3.5 w-3.5" />
                         <span>Build New Roadmap</span>
                       </button>
                     </div>
@@ -1812,34 +1992,34 @@ export default function LearningDashboardModal({
                           return (
                             <div
                               key={roadmap.id}
-                              className="rounded-[8px] border border-[#1F1F1F] bg-[#0D0D0D] p-5 flex flex-col justify-between hover:border-[#2D2D2D] transition-colors"
+                              className="rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-xl p-4 sm:p-5 hover:border-white/20 transition-all shadow-[0_4px_24px_rgba(0,0,0,0.4)] flex flex-col justify-between group"
                             >
-                              <div className="space-y-2">
+                              <div className="space-y-2.5">
                                 <div className="flex items-center justify-between">
-                                  <span className="rounded-[4px] border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[9px] font-mono text-neutral-300 uppercase">
+                                  <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-0.5 text-[9px] font-mono text-neutral-300 uppercase tracking-wider">
                                     {roadmap.target_role || 'Career Blueprint'}
                                   </span>
-                                  <span className="text-[10px] font-mono text-[#737373]">
+                                  <span className="text-[10px] font-mono text-neutral-400">
                                     {roadmap.estimated_duration || '18 Weeks'}
                                   </span>
                                 </div>
 
-                                <h4 className="text-sm font-bold text-[#EDEDED]">
+                                <h4 className="text-sm font-bold text-white truncate">
                                   {roadmap.title}
                                 </h4>
-                                <p className="text-xs text-[#737373] line-clamp-2">
+                                <p className="text-xs text-neutral-400 line-clamp-2">
                                   Goal: &quot;{roadmap.goal}&quot;
                                 </p>
                               </div>
 
-                              <div className="mt-4 pt-3 border-t border-[#1C1C1C] space-y-2">
-                                <div className="flex items-center justify-between text-[11px] font-mono text-[#737373]">
+                              <div className="mt-4 pt-3.5 border-t border-white/[0.06] space-y-2.5">
+                                <div className="flex items-center justify-between text-[11px] font-mono text-neutral-400">
                                   <span>{completedCount} milestones completed</span>
-                                  <span className="text-[#EDEDED] font-bold">
+                                  <span className="text-white font-bold">
                                     {progress}%
                                   </span>
                                 </div>
-                                <MinimalProgressBar percent={progress} height={4} />
+                                <MinimalProgressBar percent={progress} height={3} />
 
                                 <div className="pt-2 flex justify-end">
                                   <button
@@ -1848,7 +2028,7 @@ export default function LearningDashboardModal({
                                       onClose()
                                       openRoadmapBuilder(roadmap.goal)
                                     }}
-                                    className="inline-flex min-h-[36px] items-center gap-1.5 rounded-[4px] border border-[#2B2B2B] bg-[#141414] px-3 py-1.5 text-xs font-mono text-[#EDEDED] hover:bg-white hover:text-black transition-colors cursor-pointer"
+                                    className="inline-flex min-h-[44px] sm:min-h-[36px] items-center gap-1.5 rounded-xl bg-white text-black font-semibold px-3.5 py-1.5 text-xs hover:bg-neutral-200 transition-all cursor-pointer shadow-sm"
                                   >
                                     <span>Open Roadmap</span>
                                     <ArrowRight className="h-3 w-3" />
@@ -1860,12 +2040,12 @@ export default function LearningDashboardModal({
                         })}
                       </div>
                     ) : (
-                      <div className="rounded-[10px] border border-[#1F1F1F] bg-[#0A0A0A] p-8 text-center space-y-3">
-                        <Bookmark className="h-8 w-8 text-[#555555] mx-auto" />
-                        <h4 className="text-sm font-bold text-[#EDEDED]">
+                      <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-xl p-8 text-center space-y-3 shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+                        <Bookmark className="h-8 w-8 text-neutral-500 mx-auto" />
+                        <h4 className="text-sm font-bold text-white">
                           No AI Career Roadmaps Generated Yet
                         </h4>
-                        <p className="text-xs text-[#737373] max-w-sm mx-auto">
+                        <p className="text-xs text-neutral-400 max-w-sm mx-auto">
                           Tell Technea what you want to become (e.g. Full Stack Developer, DevOps Engineer) and synthesize your personalized curriculum.
                         </p>
                         <div className="pt-2">
@@ -1875,9 +2055,9 @@ export default function LearningDashboardModal({
                               onClose()
                               openRoadmapBuilder()
                             }}
-                            className="inline-flex min-h-[44px] items-center gap-2 rounded-[6px] bg-[#EDEDED] px-4 py-2 text-xs font-semibold text-[#050505] hover:bg-white transition-colors cursor-pointer"
+                            className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-white px-5 py-2 text-xs font-semibold text-black hover:bg-neutral-200 transition-all cursor-pointer shadow-sm"
                           >
-                            <Sparkles className="h-3.5 w-3.5 text-neutral-300" />
+                            <Sparkles className="h-3.5 w-3.5" />
                             <span>Launch Roadmap Builder</span>
                           </button>
                         </div>
@@ -1886,8 +2066,8 @@ export default function LearningDashboardModal({
 
                     {/* Catalog Enrolled Journeys */}
                     {enrolledPaths.length > 0 && (
-                      <div className="space-y-3 pt-4 border-t border-[#1C1C1C]">
-                        <h3 className="text-xs font-mono uppercase tracking-wider text-[#737373] flex items-center gap-2">
+                      <div className="space-y-3 pt-4 border-t border-white/[0.06]">
+                        <h3 className="text-xs font-mono uppercase tracking-wider text-neutral-400 flex items-center gap-2">
                           <Layers className="h-3.5 w-3.5" />
                           <span>Catalog Enrolled Journeys ({enrolledPaths.length})</span>
                         </h3>
@@ -1895,67 +2075,75 @@ export default function LearningDashboardModal({
                           {enrolledPaths.map((path) => (
                             <div
                               key={path.id}
-                              className="flex min-h-[44px] items-center justify-between rounded-[8px] border border-[#1F1F1F] bg-[#0D0D0D] p-3.5 hover:border-[#2D2D2D] transition-colors cursor-pointer"
+                              className="flex min-h-[44px] items-center justify-between rounded-xl border border-white/[0.08] bg-white/[0.02] p-4 hover:border-white/20 transition-all cursor-pointer group"
                               onClick={() => {
                                 onClose()
                                 onSelectPath(path)
                               }}
                             >
                               <div className="min-w-0 pr-3">
-                                <span className="text-[10px] font-mono text-[#737373] block">
+                                <span className="text-[10px] font-mono text-neutral-400 block">
                                   {path.category}
                                 </span>
-                                <h5 className="text-xs font-bold text-[#EDEDED] truncate">
+                                <h5 className="text-xs font-bold text-white truncate">
                                   {path.title}
                                 </h5>
-                                <span className="text-[10px] text-[#555555] font-mono">
+                                <span className="text-[10px] text-neutral-400 font-mono">
                                   {path.completed_steps_count} / {path.total_steps_count} milestones
                                 </span>
                               </div>
                               <div className="flex items-center gap-2 shrink-0">
-                                <span className="text-xs font-mono font-bold text-[#EDEDED]">
+                                <span className="text-xs font-mono font-bold text-white">
                                   {path.progress_percent}%
                                 </span>
-                                <ArrowRight className="h-3.5 w-3.5 text-[#555555]" />
+                                <ArrowRight className="h-3.5 w-3.5 text-neutral-400 group-hover:translate-x-0.5 transition-transform" />
                               </div>
                             </div>
                           ))}
                         </div>
                       </div>
                     )}
-                  </div>
+                  </motion.div>
                 )}
 
                 {/* ══════════════ TAB 6: DEVELOPER PORTFOLIO & MASTERY ══════════════ */}
                 {activeTab === 'profile' && (
-                  <div className="space-y-6">
+                  <motion.div
+                    key="profile"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                    className="space-y-6"
+                  >
                     {/* Profile Header Identity Card with Level & XP Meter */}
-                    <div className="rounded-[10px] border border-[#1F1F1F] bg-[#0D0D0D] p-5 sm:p-6 space-y-5">
+                    <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-xl p-6 sm:p-7 space-y-5 shadow-[0_4px_24px_rgba(0,0,0,0.4)] relative overflow-hidden">
+                      <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/15 to-transparent" />
+
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div className="flex items-center gap-4">
                           {user?.avatar_url && !profileAvatarError ? (
                             <img
                               src={getAvatarUrl(user.avatar_url)}
                               alt={fullName}
-                              onError={() => setProfileAvatarError(true)}
-                              className="h-14 w-14 rounded-[10px] object-cover border border-[#262626] shadow-inner shrink-0"
+                              onError={() => setFailedProfileAvatarUrl(user?.avatar_url)}
+                              className="h-14 w-14 rounded-2xl object-cover border border-white/10 shadow-inner shrink-0"
                             />
                           ) : (
-                            <div className="flex h-14 w-14 items-center justify-center rounded-[10px] border border-[#262626] bg-[#141414] text-xl font-bold text-[#EDEDED] font-mono shadow-inner shrink-0">
+                            <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-xl font-bold text-white font-mono shadow-inner shrink-0">
                               {initials}
                             </div>
                           )}
                           <div>
                             <div className="flex items-center gap-2 flex-wrap">
-                              <h3 className="text-lg font-bold text-[#EDEDED]">{fullName}</h3>
-                              <span className="rounded-[4px] border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[9px] font-mono font-medium text-neutral-300 uppercase tracking-wider">
+                              <h3 className="text-lg font-bold text-white">{fullName}</h3>
+                              <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-0.5 text-[9px] font-mono font-medium text-neutral-300 uppercase tracking-wider">
                                 {developerLevel}
                               </span>
-                              <span className="rounded-[4px] border border-white/10 bg-white/[0.03] px-2 py-0.5 text-[9px] font-mono text-neutral-400">
+                              <span className="rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-0.5 text-[9px] font-mono text-neutral-400">
                                 Verified Developer
                               </span>
                             </div>
-                            <p className="text-xs text-[#737373] font-mono mt-0.5">
+                            <p className="text-xs text-neutral-400 font-mono mt-0.5 truncate max-w-full">
                               {userEmail} • Technea Developer ID: #{user?.id ? String(user.id).slice(0, 8) : 'eng-core'}
                             </p>
                           </div>
@@ -1965,7 +2153,7 @@ export default function LearningDashboardModal({
                           <button
                             type="button"
                             onClick={() => setIsShareModalOpen(true)}
-                            className="inline-flex min-h-[36px] items-center gap-1.5 rounded-[6px] border border-[#2B2B2B] bg-[#141414] px-3.5 py-2 text-xs font-mono text-[#EDEDED] hover:bg-white hover:text-black transition-colors cursor-pointer shadow-xs"
+                            className="inline-flex min-h-[44px] sm:min-h-[36px] items-center gap-1.5 rounded-xl border border-white/[0.1] bg-white/[0.03] px-3.5 py-2 text-xs font-mono text-neutral-200 hover:text-white hover:border-white/20 transition-all cursor-pointer shadow-xs"
                           >
                             <Share2 className="h-3.5 w-3.5" />
                             <span>Share Portfolio</span>
@@ -1974,13 +2162,13 @@ export default function LearningDashboardModal({
                       </div>
 
                       {/* Developer XP & Tier Progression Bar */}
-                      <div className="pt-4 border-t border-[#1A1A1A] space-y-2">
+                      <div className="pt-4 border-t border-white/[0.06] space-y-2">
                         <div className="flex items-center justify-between text-xs font-mono">
-                          <span className="text-[#888888] flex items-center gap-1.5">
-                            <Zap className="h-3.5 w-3.5 text-neutral-400" />
+                          <span className="text-neutral-400 flex items-center gap-1.5">
+                            <Zap className="h-3.5 w-3.5 text-neutral-300" />
                             <span>Developer Level Progress</span>
                           </span>
-                          <span className="text-[#EDEDED] font-bold">
+                          <span className="text-white font-bold">
                             {xpPoints} / {nextLevelXp} XP ({Math.max(0, nextLevelXp - xpPoints)} XP to next tier)
                           </span>
                         </div>
@@ -1990,51 +2178,51 @@ export default function LearningDashboardModal({
 
                     {/* Developer Metrics Quick Strip */}
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-                      <div className="rounded-[8px] border border-[#1A1A1A] bg-[#0A0A0A] p-3 space-y-1">
-                        <span className="text-[10px] font-mono text-[#666666] uppercase block">Milestones</span>
-                        <div className="text-base font-bold text-[#EDEDED] font-mono">{completedMilestones}</div>
-                        <span className="text-[9px] font-mono text-neutral-500 block">Verified mastery</span>
+                      <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 sm:p-3.5 space-y-1.5 hover:border-white/15 transition-all">
+                        <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-wider block">Milestones</span>
+                        <div className="text-lg font-black text-white font-mono">{completedMilestones}</div>
+                        <span className="text-[9px] font-mono text-neutral-400 block">Verified mastery</span>
                       </div>
-                      <div className="rounded-[8px] border border-[#1A1A1A] bg-[#0A0A0A] p-3 space-y-1">
-                        <span className="text-[10px] font-mono text-[#666666] uppercase block">Lessons</span>
-                        <div className="text-base font-bold text-[#EDEDED] font-mono">{completedLessons}</div>
-                        <span className="text-[9px] font-mono text-[#737373] block">Completed units</span>
+                      <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 sm:p-3.5 space-y-1.5 hover:border-white/15 transition-all">
+                        <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-wider block">Lessons</span>
+                        <div className="text-lg font-black text-white font-mono">{completedLessons}</div>
+                        <span className="text-[9px] font-mono text-neutral-400 block">Completed units</span>
                       </div>
-                      <div className="rounded-[8px] border border-[#1A1A1A] bg-[#0A0A0A] p-3 space-y-1">
-                        <span className="text-[10px] font-mono text-[#666666] uppercase block">Projects</span>
-                        <div className="text-base font-bold text-[#EDEDED] font-mono">{completedProjectsCount}</div>
-                        <span className="text-[9px] font-mono text-[#737373] block">{activeProjectsCount} in progress</span>
+                      <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 sm:p-3.5 space-y-1.5 hover:border-white/15 transition-all">
+                        <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-wider block">Projects</span>
+                        <div className="text-lg font-black text-white font-mono">{completedProjectsCount}</div>
+                        <span className="text-[9px] font-mono text-neutral-400 block">{activeProjectsCount} in progress</span>
                       </div>
-                      <div className="rounded-[8px] border border-[#1A1A1A] bg-[#0A0A0A] p-3 space-y-1">
-                        <span className="text-[10px] font-mono text-[#666666] uppercase block">Coding Streak</span>
-                        <div className="text-base font-bold text-[#EDEDED] font-mono">{streakCount}d</div>
-                        <span className="text-[9px] font-mono text-neutral-500 block">Active velocity</span>
+                      <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 sm:p-3.5 space-y-1.5 hover:border-white/15 transition-all">
+                        <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-wider block">Coding Streak</span>
+                        <div className="text-lg font-black text-white font-mono">{streakCount}d</div>
+                        <span className="text-[9px] font-mono text-neutral-400 block">Active velocity</span>
                       </div>
-                      <div className="rounded-[8px] border border-[#1A1A1A] bg-[#0A0A0A] p-3 space-y-1">
-                        <span className="text-[10px] font-mono text-[#666666] uppercase block">Active Paths</span>
-                        <div className="text-base font-bold text-[#EDEDED] font-mono">{activePathsCount}</div>
-                        <span className="text-[9px] font-mono text-[#737373] block">Enrolled curricula</span>
+                      <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 sm:p-3.5 space-y-1.5 hover:border-white/15 transition-all">
+                        <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-wider block">Active Paths</span>
+                        <div className="text-lg font-black text-white font-mono">{activePathsCount}</div>
+                        <span className="text-[9px] font-mono text-neutral-400 block">Enrolled curricula</span>
                       </div>
-                      <div className="rounded-[8px] border border-[#1A1A1A] bg-[#0A0A0A] p-3 space-y-1">
-                        <span className="text-[10px] font-mono text-[#666666] uppercase block">Guilds Joined</span>
-                        <div className="text-base font-bold text-[#EDEDED] font-mono">{joinedRoomsCount}</div>
-                        <span className="text-[9px] font-mono text-[#737373] block">Peer study rooms</span>
+                      <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 sm:p-3.5 space-y-1.5 hover:border-white/15 transition-all">
+                        <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-wider block">Guilds Joined</span>
+                        <div className="text-lg font-black text-white font-mono">{joinedRoomsCount}</div>
+                        <span className="text-[9px] font-mono text-neutral-400 block">Peer study rooms</span>
                       </div>
                     </div>
 
                     {/* Verified Hands-on Engineering Projects Portfolio */}
-                    <div className="rounded-[10px] border border-[#1F1F1F] bg-[#0D0D0D] p-5 sm:p-6 space-y-4">
-                      <div className="flex items-center justify-between border-b border-[#1C1C1C] pb-3">
+                    <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-xl p-6 sm:p-7 space-y-4 shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+                      <div className="flex items-center justify-between border-b border-white/[0.06] pb-3">
                         <div className="flex items-center gap-2">
-                          <FolderGit2 className="h-4 w-4 text-[#EDEDED]" />
-                          <h4 className="text-xs font-bold uppercase tracking-wider text-[#EDEDED] font-mono">
+                          <FolderGit2 className="h-4 w-4 text-white" />
+                          <h4 className="text-xs font-bold uppercase tracking-wider text-white font-mono">
                             Hands-On Engineering Projects & Deliverables
                           </h4>
                         </div>
                         <button
                           type="button"
                           onClick={() => setActiveTab('projects')}
-                          className="text-xs font-mono text-[#737373] hover:text-[#EDEDED] flex items-center gap-1 cursor-pointer transition-colors"
+                          className="min-h-[44px] sm:min-h-0 text-xs font-mono text-neutral-400 hover:text-white inline-flex items-center gap-1 cursor-pointer transition-colors"
                         >
                           <span>Explore project catalog</span>
                           <ArrowRight className="h-3 w-3" />
@@ -2051,12 +2239,12 @@ export default function LearningDashboardModal({
                         if (activeOrCompletedProjects.length === 0) {
                           const topProj = recommendedProjects[0] || projectsList[0]
                           return (
-                            <div className="rounded-[8px] border border-[#1C1C1C] bg-[#090909] p-5 space-y-3 text-center sm:text-left sm:flex sm:items-center sm:justify-between">
+                            <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5 space-y-3 text-center sm:text-left sm:flex sm:items-center sm:justify-between">
                               <div className="space-y-1">
-                                <h5 className="text-xs font-bold text-[#EDEDED]">
+                                <h5 className="text-xs font-bold text-white">
                                   No hands-on projects linked to your portfolio yet
                                 </h5>
-                                <p className="text-[11px] text-[#737373] max-w-md">
+                                <p className="text-[11px] text-neutral-400 max-w-md">
                                   Engineering recruiters evaluate production artifacts. Start building hands-on projects to showcase live code and linked GitHub repos.
                                 </p>
                               </div>
@@ -2067,7 +2255,7 @@ export default function LearningDashboardModal({
                                     handleStartProject(topProj.id)
                                     setActiveTab('projects')
                                   }}
-                                  className="inline-flex items-center gap-1.5 rounded-[6px] bg-[#EDEDED] px-3.5 py-1.5 text-xs font-bold text-[#050505] hover:bg-white transition-colors cursor-pointer shrink-0 mt-3 sm:mt-0"
+                                  className="inline-flex min-h-[44px] sm:min-h-[36px] items-center gap-1.5 rounded-xl bg-white px-4 py-2 text-xs font-semibold text-black hover:bg-neutral-200 transition-all cursor-pointer shrink-0 mt-3 sm:mt-0 shadow-sm"
                                 >
                                   <span>Start {topProj.title}</span>
                                   <ArrowRight className="h-3 w-3" />
@@ -2087,31 +2275,31 @@ export default function LearningDashboardModal({
                               return (
                                 <div
                                   key={proj.id}
-                                  className="rounded-[8px] border border-[#1C1C1C] bg-[#090909] p-4 flex flex-col justify-between space-y-3"
+                                  className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4.5 flex flex-col justify-between space-y-3 hover:border-white/15 transition-all"
                                 >
                                   <div className="space-y-1.5">
                                     <div className="flex items-center justify-between gap-2">
-                                      <h5 className="text-xs font-bold text-[#EDEDED] truncate">
+                                      <h5 className="text-xs font-bold text-white truncate">
                                         {proj.title}
                                       </h5>
-                                       <span
-                                        className={`rounded-[3px] px-1.5 py-0.5 text-[9px] font-mono font-medium uppercase shrink-0 ${
+                                      <span
+                                        className={`rounded-full px-2 py-0.5 text-[9px] font-mono font-medium uppercase shrink-0 ${
                                           isComplete
-                                            ? 'bg-white/10 border border-white/20 text-white'
-                                            : 'bg-white/[0.03] border border-white/10 text-neutral-400'
+                                            ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400'
+                                            : 'bg-white/[0.04] border border-white/10 text-neutral-300'
                                         }`}
                                       >
                                         {isComplete ? '✓ Completed' : 'In Progress'}
                                       </span>
                                     </div>
-                                    <p className="text-[11px] text-[#737373] line-clamp-2">
+                                    <p className="text-[11px] text-neutral-400 line-clamp-2">
                                       {proj.description}
                                     </p>
                                     <div className="flex flex-wrap gap-1 pt-1">
                                       {(proj.tech_stack || []).map((tech) => (
                                         <span
                                           key={tech}
-                                          className="rounded-[3px] border border-[#222222] bg-[#121212] px-1.5 py-0.2 text-[9px] font-mono text-[#A1A1A1]"
+                                          className="rounded-md border border-white/[0.08] bg-white/[0.03] px-2 py-0.5 text-[9px] font-mono text-neutral-300"
                                         >
                                           {tech}
                                         </span>
@@ -2119,8 +2307,8 @@ export default function LearningDashboardModal({
                                     </div>
                                   </div>
 
-                                  <div className="pt-2 border-t border-[#171717] flex items-center justify-between text-xs font-mono">
-                                    <span className="text-[10px] text-[#555555]">
+                                  <div className="pt-2 border-t border-white/[0.06] flex items-center justify-between text-xs font-mono">
+                                    <span className="text-[10px] text-neutral-400">
                                       {proj.difficulty} • +150 XP
                                     </span>
 
@@ -2145,9 +2333,10 @@ export default function LearningDashboardModal({
                                             setGithubUrlInput(repoUrl)
                                           }}
                                           title="Update repository URL"
-                                          className="text-[#666666] hover:text-[#EDEDED] transition-colors cursor-pointer"
+                                          aria-label={`Update repository URL for ${proj.title}`}
+                                          className="min-h-[44px] min-w-[44px] sm:min-h-[32px] sm:min-w-[32px] flex items-center justify-center text-neutral-400 hover:text-white transition-colors cursor-pointer"
                                         >
-                                          <Edit3 className="h-3 w-3" />
+                                          <Edit3 className="h-3.5 w-3.5" />
                                         </button>
                                       </div>
                                     ) : (
@@ -2157,7 +2346,7 @@ export default function LearningDashboardModal({
                                           setEditingGithubProject(proj)
                                           setGithubUrlInput('')
                                         }}
-                                        className="inline-flex items-center gap-1 text-[11px] font-mono text-[#737373] hover:text-[#EDEDED] transition-colors cursor-pointer"
+                                        className="inline-flex min-h-[44px] sm:min-h-[32px] items-center gap-1 text-[11px] font-mono text-neutral-400 hover:text-white transition-colors cursor-pointer"
                                       >
                                         <GithubIcon className="h-3 w-3" />
                                         <span>Link GitHub Repo</span>
@@ -2173,13 +2362,13 @@ export default function LearningDashboardModal({
                     </div>
 
                     {/* Skill Mastery Breakdown */}
-                    <div className="rounded-[10px] border border-[#1F1F1F] bg-[#0D0D0D] p-5 sm:p-6 space-y-4">
-                      <div className="flex items-center justify-between border-b border-[#1C1C1C] pb-3">
-                        <span className="text-xs font-bold uppercase tracking-wider text-[#EDEDED] font-mono flex items-center gap-2">
-                          <Award className="h-4 w-4 text-[#A1A1A1]" />
+                    <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-xl p-6 sm:p-7 space-y-4 shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+                      <div className="flex items-center justify-between border-b border-white/[0.06] pb-3">
+                        <span className="text-xs font-bold uppercase tracking-wider text-white font-mono flex items-center gap-2">
+                          <Award className="h-4 w-4 text-neutral-300" />
                           Engineering Skill Mastery Breakdown
                         </span>
-                        <span className="text-[10px] font-mono text-[#666666]">
+                        <span className="text-[10px] font-mono text-neutral-400">
                           Continuous Evaluation
                         </span>
                       </div>
@@ -2188,13 +2377,13 @@ export default function LearningDashboardModal({
                         {skillsOverview.map((skill, i) => (
                           <div
                             key={i}
-                            className="rounded-[6px] border border-[#1C1C1C] bg-[#090909] p-3 space-y-1.5"
+                            className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3.5 space-y-2 hover:border-white/15 transition-all"
                           >
                             <div className="flex items-center justify-between text-xs font-mono">
-                              <span className="text-[#EDEDED] font-bold">
+                              <span className="text-white font-bold">
                                 {skill.skill_name}
                               </span>
-                              <span className="text-[#EDEDED] font-bold">
+                              <span className="text-white font-bold">
                                 {skill.mastery_percent}%
                               </span>
                             </div>
@@ -2203,7 +2392,7 @@ export default function LearningDashboardModal({
                               height={3}
                               delay={0.05 * i}
                             />
-                            <span className="text-[9px] font-mono text-[#555555] block">
+                            <span className="text-[9px] font-mono text-neutral-400 block">
                               {skill.completed_milestones} milestones validated
                             </span>
                           </div>
@@ -2212,21 +2401,21 @@ export default function LearningDashboardModal({
                     </div>
 
                     {/* Achievements & Badges Earned */}
-                    <div className="rounded-[10px] border border-[#1F1F1F] bg-[#0D0D0D] p-5 sm:p-6 space-y-4">
-                      <div className="flex items-center justify-between border-b border-[#1C1C1C] pb-3">
-                        <span className="text-xs font-bold uppercase tracking-wider text-[#EDEDED] font-mono flex items-center gap-2">
+                    <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-xl p-6 sm:p-7 space-y-4 shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+                      <div className="flex items-center justify-between border-b border-white/[0.06] pb-3">
+                        <span className="text-xs font-bold uppercase tracking-wider text-white font-mono flex items-center gap-2">
                           <Trophy className="h-4 w-4 text-neutral-300" />
                           Earned Developer Achievements
                         </span>
-                        <span className="text-[10px] font-mono text-[#666666]">
+                        <span className="text-[10px] font-mono text-neutral-400">
                           6 Badges Available
                         </span>
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                        <div className="rounded-[8px] border border-white/[0.08] bg-[#0E0E0E] p-3.5 space-y-1.5 hover:border-white/15 transition-colors">
+                        <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-3.5 space-y-1.5 hover:border-white/20 transition-all">
                           <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold text-[#EDEDED]">
+                            <span className="text-xs font-semibold text-white">
                               Early Adopter
                             </span>
                             <Sparkles className="h-3.5 w-3.5 text-neutral-300" />
@@ -2239,9 +2428,9 @@ export default function LearningDashboardModal({
                           </span>
                         </div>
 
-                        <div className="rounded-[8px] border border-white/[0.08] bg-[#0E0E0E] p-3.5 space-y-1.5 hover:border-white/15 transition-colors">
+                        <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-3.5 space-y-1.5 hover:border-white/20 transition-all">
                           <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold text-[#EDEDED]">
+                            <span className="text-xs font-semibold text-white">
                               Consistent Coder
                             </span>
                             <Flame className="h-3.5 w-3.5 text-neutral-300" />
@@ -2254,9 +2443,9 @@ export default function LearningDashboardModal({
                           </span>
                         </div>
 
-                        <div className="rounded-[8px] border border-white/[0.08] bg-[#0E0E0E] p-3.5 space-y-1.5 hover:border-white/15 transition-colors">
+                        <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-3.5 space-y-1.5 hover:border-white/20 transition-all">
                           <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold text-[#EDEDED]">
+                            <span className="text-xs font-semibold text-white">
                               Milestone Conqueror
                             </span>
                             <Target className="h-3.5 w-3.5 text-neutral-300" />
@@ -2269,9 +2458,9 @@ export default function LearningDashboardModal({
                           </span>
                         </div>
 
-                        <div className="rounded-[8px] border border-white/[0.08] bg-[#0E0E0E] p-3.5 space-y-1.5 hover:border-white/15 transition-colors">
+                        <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-3.5 space-y-1.5 hover:border-white/20 transition-all">
                           <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold text-[#EDEDED]">
+                            <span className="text-xs font-semibold text-white">
                               Roadmap Architect
                             </span>
                             <Layers className="h-3.5 w-3.5 text-neutral-300" />
@@ -2284,9 +2473,9 @@ export default function LearningDashboardModal({
                           </span>
                         </div>
 
-                        <div className="rounded-[8px] border border-white/[0.08] bg-[#0E0E0E] p-3.5 space-y-1.5 hover:border-white/15 transition-colors">
+                        <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-3.5 space-y-1.5 hover:border-white/20 transition-all">
                           <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold text-[#EDEDED]">
+                            <span className="text-xs font-semibold text-white">
                               Project Deliverable
                             </span>
                             <FolderGit2 className="h-3.5 w-3.5 text-neutral-300" />
@@ -2301,9 +2490,9 @@ export default function LearningDashboardModal({
                           </span>
                         </div>
 
-                        <div className="rounded-[8px] border border-white/[0.08] bg-[#0E0E0E] p-3.5 space-y-1.5 hover:border-white/15 transition-colors">
+                        <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-3.5 space-y-1.5 hover:border-white/20 transition-all">
                           <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold text-[#EDEDED]">
+                            <span className="text-xs font-semibold text-white">
                               Guild Contributor
                             </span>
                             <Users className="h-3.5 w-3.5 text-neutral-300" />
@@ -2317,7 +2506,7 @@ export default function LearningDashboardModal({
                         </div>
                       </div>
                     </div>
-                  </div>
+                  </motion.div>
                 )}
               </>
             )}
@@ -2325,17 +2514,25 @@ export default function LearningDashboardModal({
 
           {/* ══════════════ MODAL: LINK GITHUB REPOSITORY ══════════════ */}
           {editingGithubProject && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs">
-              <div className="w-full max-w-md rounded-[10px] border border-[#2B2B2B] bg-[#0E0E0E] p-6 shadow-2xl space-y-4">
-                <div className="flex items-center justify-between border-b border-[#1C1C1C] pb-3">
+            <div
+              data-lenis-prevent
+              role="dialog"
+              aria-modal="true"
+              aria-label="Link GitHub Repository"
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+            >
+              <div className="w-full max-w-md rounded-2xl border border-white/[0.12] bg-[#0E1016]/95 backdrop-blur-2xl p-6 sm:p-7 shadow-[0_24px_80px_rgba(0,0,0,0.85)] space-y-5 relative overflow-hidden">
+                <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+
+                <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
                   <div className="flex items-center gap-2">
-                    <GithubIcon className="h-4 w-4 text-[#EDEDED]" />
-                    <h4 className="text-sm font-bold text-[#EDEDED]">Link GitHub Repository</h4>
+                    <GithubIcon className="h-4 w-4 text-white" />
+                    <h4 className="text-sm font-bold text-white">Link GitHub Repository</h4>
                   </div>
                   <button
                     type="button"
                     onClick={() => setEditingGithubProject(null)}
-                    className="flex h-11 w-11 items-center justify-center -mr-2 text-[#666666] hover:text-[#EDEDED] cursor-pointer transition-colors"
+                    className="flex min-h-[44px] min-w-[44px] sm:h-8 sm:w-8 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.03] text-neutral-400 hover:text-white hover:border-white/20 cursor-pointer transition-all"
                     aria-label="Close dialog"
                   >
                     <X className="h-4 w-4" />
@@ -2343,19 +2540,19 @@ export default function LearningDashboardModal({
                 </div>
 
                 <div className="space-y-1">
-                  <p className="text-xs text-[#888888]">
+                  <p className="text-xs text-neutral-400">
                     Project:{' '}
-                    <span className="text-[#EDEDED] font-semibold">
+                    <span className="text-white font-semibold">
                       {editingGithubProject.title}
                     </span>
                   </p>
-                  <p className="text-[11px] text-[#666666]">
+                  <p className="text-[11px] text-neutral-400">
                     Connect your repository to showcase your code deliverables on your developer portfolio.
                   </p>
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[11px] font-mono text-[#888888] block">
+                  <label className="text-[11px] font-mono text-neutral-400 block">
                     Repository URL
                   </label>
                   <input
@@ -2363,15 +2560,15 @@ export default function LearningDashboardModal({
                     value={githubUrlInput}
                     onChange={(e) => setGithubUrlInput(e.target.value)}
                     placeholder="https://github.com/username/project-repo"
-                    className="w-full rounded-[6px] border border-[#2B2B2B] bg-[#080808] px-3 py-2 text-xs text-[#EDEDED] placeholder-[#444444] focus:border-[#555555] focus:outline-none font-mono"
+                    className="w-full min-h-[44px] rounded-xl border border-white/[0.08] bg-black/50 px-3.5 py-2.5 text-xs text-white placeholder-neutral-500 focus:border-white/30 focus:outline-none font-mono"
                   />
                 </div>
 
-                <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#1C1C1C]">
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-white/[0.08]">
                   <button
                     type="button"
                     onClick={() => setEditingGithubProject(null)}
-                    className="inline-flex min-h-[44px] items-center justify-center rounded-[6px] border border-[#262626] bg-[#141414] px-4 py-2 text-xs font-mono text-[#888888] hover:text-[#EDEDED] transition-colors cursor-pointer"
+                    className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-white/[0.1] bg-white/[0.03] px-4 py-2 text-xs font-mono text-neutral-300 hover:text-white hover:border-white/20 transition-all cursor-pointer"
                   >
                     Cancel
                   </button>
@@ -2380,7 +2577,7 @@ export default function LearningDashboardModal({
                     onClick={() =>
                       handleSaveGithubUrl(editingGithubProject.id, githubUrlInput)
                     }
-                    className="inline-flex min-h-[44px] items-center justify-center rounded-[6px] bg-[#EDEDED] px-5 py-2 text-xs font-bold text-[#050505] hover:bg-white transition-colors cursor-pointer"
+                    className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-white px-5 py-2 text-xs font-bold text-black hover:bg-neutral-200 transition-all cursor-pointer shadow-sm"
                   >
                     Save to Portfolio
                   </button>
@@ -2391,89 +2588,97 @@ export default function LearningDashboardModal({
 
           {/* ══════════════ MODAL: SHARE DEVELOPER PORTFOLIO ══════════════ */}
           {isShareModalOpen && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs">
-              <div className="w-full max-w-lg rounded-[10px] border border-[#2B2B2B] bg-[#0E0E0E] p-6 shadow-2xl space-y-5">
-                <div className="flex items-center justify-between border-b border-[#1C1C1C] pb-3">
+            <div
+              data-lenis-prevent
+              role="dialog"
+              aria-modal="true"
+              aria-label="Share Developer Portfolio"
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+            >
+              <div className="w-full max-w-lg rounded-2xl border border-white/[0.12] bg-[#0E1016]/95 backdrop-blur-2xl p-6 sm:p-7 shadow-[0_24px_80px_rgba(0,0,0,0.85)] space-y-5 relative overflow-hidden">
+                <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+
+                <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
                   <div className="flex items-center gap-2">
-                    <Share2 className="h-4 w-4 text-[#EDEDED]" />
-                    <h4 className="text-sm font-bold text-[#EDEDED]">Share Developer Portfolio</h4>
+                    <Share2 className="h-4 w-4 text-white" />
+                    <h4 className="text-sm font-bold text-white">Share Developer Portfolio</h4>
                   </div>
                   <button
                     type="button"
                     onClick={() => setIsShareModalOpen(false)}
-                    className="flex h-11 w-11 items-center justify-center -mr-2 text-[#666666] hover:text-[#EDEDED] cursor-pointer transition-colors"
+                    className="flex min-h-[44px] min-w-[44px] sm:h-8 sm:w-8 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.03] text-neutral-400 hover:text-white hover:border-white/20 cursor-pointer transition-all"
                     aria-label="Close share modal"
                   >
                     <X className="h-4 w-4" />
                   </button>
                 </div>
 
-                <p className="text-xs text-[#888888] leading-relaxed">
+                <p className="text-xs text-neutral-400 leading-relaxed">
                   Your verified engineering portfolio showcases your developer tier, completed milestones, and hands-on GitHub projects to engineering teams and recruiters.
                 </p>
 
                 {/* Live Portfolio Card Preview */}
-                <div className="rounded-[8px] border border-[#222222] bg-[#080808] p-4 space-y-3">
+                <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-4.5 space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       {user?.avatar_url && !shareAvatarError ? (
                         <img
                           src={getAvatarUrl(user.avatar_url)}
                           alt={fullName}
-                          onError={() => setShareAvatarError(true)}
-                          className="h-10 w-10 rounded-[8px] object-cover border border-[#282828] shrink-0"
+                          onError={() => setFailedShareAvatarUrl(user?.avatar_url)}
+                          className="h-10 w-10 rounded-xl object-cover border border-white/10 shrink-0"
                         />
                       ) : (
-                        <div className="flex h-10 w-10 items-center justify-center rounded-[8px] border border-[#282828] bg-[#141414] text-sm font-bold text-[#EDEDED] font-mono shrink-0">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-sm font-bold text-white font-mono shrink-0">
                           {initials}
                         </div>
                       )}
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-bold text-[#EDEDED]">{fullName}</span>
-                          <span className="rounded-[3px] border border-white/10 bg-white/[0.04] px-1.5 py-0.5 text-[9px] font-mono text-neutral-300">
+                          <span className="text-sm font-bold text-white truncate max-w-[150px] sm:max-w-[200px]">{fullName}</span>
+                          <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[9px] font-mono text-neutral-300">
                             {developerLevel}
                           </span>
                         </div>
-                        <span className="text-[11px] font-mono text-[#666666]">
+                        <span className="text-[11px] font-mono text-neutral-400 truncate">
                           {xpPoints} XP • Verified Learner
                         </span>
                       </div>
                     </div>
-                    <span className="text-[10px] font-mono text-neutral-400 border border-white/10 bg-white/[0.03] px-2 py-0.5 rounded-[4px]">
+                    <span className="text-[10px] font-mono text-neutral-300 border border-white/10 bg-white/[0.04] px-2.5 py-0.5 rounded-full">
                       Public Ready
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-2 pt-2 border-t border-[#1C1C1C] text-center">
-                    <div className="p-1.5 rounded-[4px] bg-[#111111]">
-                      <span className="text-xs font-bold text-[#EDEDED] font-mono block">
+                  <div className="grid grid-cols-3 gap-2 pt-2 border-t border-white/[0.06] text-center">
+                    <div className="p-2 rounded-lg bg-white/[0.02] border border-white/[0.04]">
+                      <span className="text-xs font-bold text-white font-mono block">
                         {completedMilestones}
                       </span>
-                      <span className="text-[9px] font-mono text-[#666666]">Milestones</span>
+                      <span className="text-[9px] font-mono text-neutral-400">Milestones</span>
                     </div>
-                    <div className="p-1.5 rounded-[4px] bg-[#111111]">
-                      <span className="text-xs font-bold text-[#EDEDED] font-mono block">
+                    <div className="p-2 rounded-lg bg-white/[0.02] border border-white/[0.04]">
+                      <span className="text-xs font-bold text-white font-mono block">
                         {completedProjectsCount}
                       </span>
-                      <span className="text-[9px] font-mono text-[#666666]">Projects</span>
+                      <span className="text-[9px] font-mono text-neutral-400">Projects</span>
                     </div>
-                    <div className="p-1.5 rounded-[4px] bg-[#111111]">
-                      <span className="text-xs font-bold text-[#EDEDED] font-mono block">
+                    <div className="p-2 rounded-lg bg-white/[0.02] border border-white/[0.04]">
+                      <span className="text-xs font-bold text-white font-mono block">
                         {streakCount}d
                       </span>
-                      <span className="text-[9px] font-mono text-[#666666]">Streak</span>
+                      <span className="text-[9px] font-mono text-neutral-400">Streak</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Share Link Input */}
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-mono text-[#737373] block">
+                  <label className="text-[11px] font-mono text-neutral-400 block">
                     Public Portfolio URL
                   </label>
                   <div className="flex items-center gap-2">
-                    <div className="flex-1 rounded-[6px] border border-[#262626] bg-[#060606] px-3 py-2 text-xs font-mono text-[#A1A1A1] truncate">
+                    <div className="flex-1 rounded-xl border border-white/[0.08] bg-black/50 px-3.5 py-2.5 text-xs font-mono text-neutral-300 truncate">
                       https://technea.dev/@{(firstName || 'developer').toLowerCase()}
                     </div>
                     <button
@@ -2483,11 +2688,12 @@ export default function LearningDashboardModal({
                         setCopiedLink(true)
                         setTimeout(() => setCopiedLink(false), 2000)
                       }}
-                      className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-[6px] bg-[#EDEDED] px-4 py-2 text-xs font-bold text-[#050505] hover:bg-white transition-colors cursor-pointer shrink-0"
+                      className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl bg-white px-4 py-2 text-xs font-bold text-black hover:bg-neutral-200 transition-all cursor-pointer shrink-0 shadow-sm"
+                      aria-label={copiedLink ? "Public portfolio link copied" : "Copy public portfolio link"}
                     >
                       {copiedLink ? (
                         <>
-                          <CheckCheck className="h-3.5 w-3.5 text-neutral-900" />
+                          <CheckCheck className="h-3.5 w-3.5 text-black" />
                           <span>Copied</span>
                         </>
                       ) : (
@@ -2500,11 +2706,11 @@ export default function LearningDashboardModal({
                   </div>
                 </div>
 
-                <div className="flex justify-end pt-2 border-t border-[#1C1C1C]">
+                <div className="flex justify-end pt-2 border-t border-white/[0.08]">
                   <button
                     type="button"
                     onClick={() => setIsShareModalOpen(false)}
-                    className="inline-flex min-h-[44px] items-center justify-center rounded-[6px] border border-[#262626] bg-[#141414] px-5 py-2 text-xs font-mono text-[#EDEDED] hover:bg-[#1A1A1A] transition-colors cursor-pointer"
+                    className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-white/[0.1] bg-white/[0.03] px-5 py-2 text-xs font-mono text-white hover:bg-white/[0.08] hover:border-white/20 transition-all cursor-pointer"
                   >
                     Done
                   </button>
