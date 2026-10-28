@@ -28,6 +28,9 @@ export default defineConfig(({ mode }) => {
             if (id.includes('three')) {
               return 'three-vendor'
             }
+            if (id.includes('vanta')) {
+              return 'vanta-vendor'
+            }
             if (id.includes('gsap') || id.includes('@gsap/react')) {
               return 'gsap-vendor'
             }

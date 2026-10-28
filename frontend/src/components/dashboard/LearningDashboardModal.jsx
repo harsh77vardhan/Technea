@@ -40,7 +40,7 @@ import {
   getUserProfileApi,
   getAvatarUrl,
 } from '../../services/api'
-import SpaceGardenAtmosphere from './SpaceGardenAtmosphere'
+import VantaAtmosphere from './VantaAtmosphere'
 import AIMessageRenderer from './AIMessageRenderer'
 
 let messageCounter = 1000
@@ -796,16 +796,17 @@ export default function LearningDashboardModal({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.98, y: 16 }}
           transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
+          data-lenis-prevent
           className="relative z-10 flex flex-col w-full max-w-6xl h-[92vh] max-h-[960px] rounded-2xl sm:rounded-3xl border border-white/[0.12] bg-[#07080c]/90 backdrop-blur-2xl shadow-[0_30px_120px_rgba(0,0,0,0.95)] overflow-hidden"
         >
           {/* Subtle top edge specular highlight (VisionOS / Tesla UI style) */}
           <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/25 to-transparent pointer-events-none z-30" />
 
-          {/* Futuristic Space-Garden Atmospheric Background */}
-          <SpaceGardenAtmosphere />
+          {/* Futuristic Vanta 3D Atmospheric Background */}
+          {isOpen && <VantaAtmosphere />}
 
           {/* ──────────────── Top Header Bar ──────────────── */}
-          <header className="relative z-20 flex flex-col md:flex-row md:items-center justify-between border-b border-white/[0.08] bg-[#0A0C12]/80 backdrop-blur-xl px-4 sm:px-6 py-3.5 gap-3.5 shrink-0">
+          <header className="relative z-20 flex flex-col md:flex-row md:items-center justify-between border-b border-white/[0.08] bg-[#080a10]/85 backdrop-blur-2xl px-4 sm:px-6 py-3.5 gap-3.5 shrink-0 shadow-[0_4px_24px_rgba(0,0,0,0.5)]">
             {/* Top row on mobile, Left on desktop */}
             <div className="flex items-center justify-between w-full md:w-auto gap-3">
               <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
@@ -826,7 +827,7 @@ export default function LearningDashboardModal({
                     <span className="text-xs font-bold text-white tracking-tight truncate max-w-[120px] sm:max-w-none">
                       {fullName}
                     </span>
-                    <span className="rounded-full border border-white/10 bg-white/[0.05] px-2 py-0.5 text-[9px] font-mono font-medium text-neutral-300 uppercase tracking-wider shrink-0">
+                    <span className="rounded-full border border-white/10 bg-white/[0.03] px-2 py-0.5 text-[9px] font-mono font-medium text-neutral-300 uppercase tracking-wider shrink-0">
                       {developerLevel}
                     </span>
                   </div>
@@ -841,7 +842,7 @@ export default function LearningDashboardModal({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.03] text-neutral-400 hover:text-white hover:border-white/20 transition-all cursor-pointer"
+                  className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.03] text-neutral-400 hover:text-white hover:border-white/20 hover:bg-white/[0.06] transition-all duration-300 cursor-pointer"
                   aria-label="Close dashboard"
                 >
                   <X className="h-4 w-4" />
@@ -854,17 +855,17 @@ export default function LearningDashboardModal({
               role="tablist"
               aria-label="Dashboard views"
               data-lenis-prevent
-              className="flex items-center rounded-xl border border-white/[0.08] bg-white/[0.03] p-1 text-xs font-mono overflow-x-auto w-full md:w-auto max-w-full scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden shrink-0 backdrop-blur-md"
+              className="flex items-center rounded-xl border border-white/[0.08] bg-black/40 p-1 text-xs font-mono overflow-x-auto w-full md:w-auto max-w-full scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden shrink-0 backdrop-blur-md shadow-inner"
             >
               <button
                 type="button"
                 role="tab"
                 aria-selected={activeTab === 'overview'}
                 onClick={() => setActiveTab('overview')}
-                className={`rounded-lg px-3.5 py-2 sm:px-3 sm:py-1.5 min-h-[44px] sm:min-h-[36px] flex items-center justify-center transition-all cursor-pointer shrink-0 ${
+                className={`rounded-lg px-3.5 py-2 sm:px-3 sm:py-1.5 min-h-[44px] sm:min-h-[36px] flex items-center justify-center transition-all duration-300 cursor-pointer shrink-0 ${
                   activeTab === 'overview'
                     ? 'bg-white text-black font-semibold shadow-[0_2px_10px_rgba(255,255,255,0.12)]'
-                    : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
+                    : 'text-neutral-400 hover:text-white hover:bg-white/[0.05]'
                 }`}
               >
                 Overview
@@ -875,10 +876,10 @@ export default function LearningDashboardModal({
                 role="tab"
                 aria-selected={activeTab === 'projects'}
                 onClick={() => setActiveTab('projects')}
-                className={`rounded-lg px-3.5 py-2 sm:px-3 sm:py-1.5 min-h-[44px] sm:min-h-[36px] transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0 ${
+                className={`rounded-lg px-3.5 py-2 sm:px-3 sm:py-1.5 min-h-[44px] sm:min-h-[36px] transition-all duration-300 cursor-pointer flex items-center justify-center gap-1.5 shrink-0 ${
                   activeTab === 'projects'
                     ? 'bg-white text-black font-semibold shadow-[0_2px_10px_rgba(255,255,255,0.12)]'
-                    : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
+                    : 'text-neutral-400 hover:text-white hover:bg-white/[0.05]'
                 }`}
               >
                 <span>Projects</span>
@@ -886,7 +887,7 @@ export default function LearningDashboardModal({
                   <span
                     className={`rounded-full px-1.5 text-[9px] font-mono ${
                       activeTab === 'projects'
-                        ? 'bg-black/10 text-black font-bold'
+                        ? 'bg-black/15 text-black font-bold'
                         : 'bg-white/10 text-neutral-300'
                     }`}
                   >
@@ -900,10 +901,10 @@ export default function LearningDashboardModal({
                 role="tab"
                 aria-selected={activeTab === 'mentor'}
                 onClick={() => setActiveTab('mentor')}
-                className={`rounded-lg px-3.5 py-2 sm:px-3 sm:py-1.5 min-h-[44px] sm:min-h-[36px] transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0 ${
+                className={`rounded-lg px-3.5 py-2 sm:px-3 sm:py-1.5 min-h-[44px] sm:min-h-[36px] transition-all duration-300 cursor-pointer flex items-center justify-center gap-1.5 shrink-0 ${
                   activeTab === 'mentor'
                     ? 'bg-white text-black font-semibold shadow-[0_2px_10px_rgba(255,255,255,0.12)]'
-                    : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
+                    : 'text-neutral-400 hover:text-white hover:bg-white/[0.05]'
                 }`}
               >
                 <Bot className={`h-3 w-3 ${activeTab === 'mentor' ? 'text-black' : 'text-neutral-400'}`} />
@@ -915,10 +916,10 @@ export default function LearningDashboardModal({
                 role="tab"
                 aria-selected={activeTab === 'community'}
                 onClick={() => setActiveTab('community')}
-                className={`rounded-lg px-3.5 py-2 sm:px-3 sm:py-1.5 min-h-[44px] sm:min-h-[36px] transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0 ${
+                className={`rounded-lg px-3.5 py-2 sm:px-3 sm:py-1.5 min-h-[44px] sm:min-h-[36px] transition-all duration-300 cursor-pointer flex items-center justify-center gap-1.5 shrink-0 ${
                   activeTab === 'community'
                     ? 'bg-white text-black font-semibold shadow-[0_2px_10px_rgba(255,255,255,0.12)]'
-                    : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
+                    : 'text-neutral-400 hover:text-white hover:bg-white/[0.05]'
                 }`}
               >
                 <Users className={`h-3 w-3 ${activeTab === 'community' ? 'text-black' : 'text-neutral-400'}`} />
@@ -927,7 +928,7 @@ export default function LearningDashboardModal({
                   <span
                     className={`rounded-full px-1.5 text-[9px] font-mono ${
                       activeTab === 'community'
-                        ? 'bg-black/10 text-black font-bold'
+                        ? 'bg-black/15 text-black font-bold'
                         : 'bg-white/10 text-neutral-300'
                     }`}
                   >
@@ -941,10 +942,10 @@ export default function LearningDashboardModal({
                 role="tab"
                 aria-selected={activeTab === 'roadmaps'}
                 onClick={() => setActiveTab('roadmaps')}
-                className={`rounded-lg px-3.5 py-2 sm:px-3 sm:py-1.5 min-h-[44px] sm:min-h-[36px] transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0 ${
+                className={`rounded-lg px-3.5 py-2 sm:px-3 sm:py-1.5 min-h-[44px] sm:min-h-[36px] transition-all duration-300 cursor-pointer flex items-center justify-center gap-1.5 shrink-0 ${
                   activeTab === 'roadmaps'
                     ? 'bg-white text-black font-semibold shadow-[0_2px_10px_rgba(255,255,255,0.12)]'
-                    : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
+                    : 'text-neutral-400 hover:text-white hover:bg-white/[0.05]'
                 }`}
               >
                 <span>Roadmaps</span>
@@ -952,7 +953,7 @@ export default function LearningDashboardModal({
                   <span
                     className={`rounded-full px-1.5 text-[9px] font-mono ${
                       activeTab === 'roadmaps'
-                        ? 'bg-black/10 text-black font-bold'
+                        ? 'bg-black/15 text-black font-bold'
                         : 'bg-white/10 text-neutral-300'
                     }`}
                   >
@@ -966,10 +967,10 @@ export default function LearningDashboardModal({
                 role="tab"
                 aria-selected={activeTab === 'profile'}
                 onClick={() => setActiveTab('profile')}
-                className={`rounded-lg px-3.5 py-2 sm:px-3 sm:py-1.5 min-h-[44px] sm:min-h-[36px] flex items-center justify-center transition-all cursor-pointer shrink-0 ${
+                className={`rounded-lg px-3.5 py-2 sm:px-3 sm:py-1.5 min-h-[44px] sm:min-h-[36px] flex items-center justify-center transition-all duration-300 cursor-pointer shrink-0 ${
                   activeTab === 'profile'
                     ? 'bg-white text-black font-semibold shadow-[0_2px_10px_rgba(255,255,255,0.12)]'
-                    : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
+                    : 'text-neutral-400 hover:text-white hover:bg-white/[0.05]'
                 }`}
               >
                 Portfolio
@@ -990,7 +991,7 @@ export default function LearningDashboardModal({
               <button
                 type="button"
                 onClick={logout}
-                className="flex min-h-[44px] md:min-h-[36px] items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.03] hover:border-white/20 px-3 py-1.5 text-xs font-mono text-neutral-400 hover:text-white transition-all cursor-pointer"
+                className="flex min-h-[44px] md:min-h-[36px] items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.06] px-3 py-1.5 text-xs font-mono text-neutral-400 hover:text-white transition-all duration-300 cursor-pointer"
                 title="Sign out of account"
                 aria-label="Sign out of account"
               >
@@ -1001,7 +1002,7 @@ export default function LearningDashboardModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="flex min-h-[44px] min-w-[44px] md:min-h-[36px] md:min-w-[36px] items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.03] hover:border-white/20 text-neutral-400 hover:text-white transition-all cursor-pointer"
+                className="flex min-h-[44px] min-w-[44px] md:min-h-[36px] md:min-w-[36px] items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.06] text-neutral-400 hover:text-white transition-all duration-300 cursor-pointer"
                 aria-label="Close dashboard"
               >
                 <X className="h-4 w-4" />
@@ -1038,32 +1039,31 @@ export default function LearningDashboardModal({
                 <p>{error}</p>
               </div>
             ) : (
-              <>
+              <AnimatePresence mode="wait">
                 {/* ══════════════ TAB 1: OVERVIEW (AI ENGINEERING COMMAND CENTER) ══════════════ */}
                 {activeTab === 'overview' && (
                   <motion.div
                     key="overview"
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
                     className="space-y-8"
                   >
                     {/* ── SECTION 1: User Greeting Section (Command Center Header) ── */}
-                    <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-xl p-6 sm:p-7 shadow-[0_4px_24px_rgba(0,0,0,0.4)] flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative overflow-hidden">
-                      <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/15 to-transparent" />
-
+                    <div className="relative overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/15 before:to-transparent rounded-2xl border border-white/[0.08] bg-[#080a10]/85 backdrop-blur-2xl p-6 sm:p-7 shadow-[0_8px_32px_rgba(0,0,0,0.5)] hover:border-white/[0.18] hover:shadow-[0_12px_40px_rgba(0,0,0,0.7)] transition-all duration-300 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                       <div className="space-y-1.5">
                         <div className="flex items-center gap-2">
-                          <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                          <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
                           <span className="text-[10px] font-mono uppercase tracking-widest text-neutral-400 font-semibold">
                             Engineering Workspace
                           </span>
                           <span className="text-white/20">•</span>
-                          <span className="text-[10px] font-mono uppercase tracking-wider text-neutral-300">
+                          <span className="rounded-full border border-white/10 bg-white/[0.03] px-2 py-0.5 text-[10px] font-mono font-medium text-neutral-300 uppercase tracking-wider">
                             {developerLevel}
                           </span>
                         </div>
-                        <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
+                        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
                           Welcome back, {firstName}
                         </h1>
                         <p className="text-xs sm:text-sm font-mono text-neutral-400">
@@ -1081,7 +1081,7 @@ export default function LearningDashboardModal({
                             onClose()
                             openRoadmapBuilder()
                           }}
-                          className="min-h-[44px] inline-flex items-center justify-center gap-2 bg-white text-black font-semibold rounded-xl hover:bg-neutral-200 transition-all px-4 py-2 text-xs cursor-pointer shadow-[0_2px_12px_rgba(255,255,255,0.1)]"
+                          className="min-h-[44px] inline-flex items-center justify-center gap-2 bg-white text-black font-semibold rounded-xl hover:bg-neutral-200 transition-all duration-300 px-4 py-2 text-xs cursor-pointer shadow-[0_2px_12px_rgba(255,255,255,0.12)] hover:shadow-[0_0_20px_rgba(255,255,255,0.25)]"
                         >
                           <Sparkles className="h-3.5 w-3.5" />
                           <span>Build My Roadmap</span>
@@ -1092,7 +1092,7 @@ export default function LearningDashboardModal({
                             onClose()
                             onOpenExplorer()
                           }}
-                          className="min-h-[44px] inline-flex items-center justify-center gap-2 border border-white/[0.1] bg-white/[0.03] text-neutral-300 rounded-xl hover:border-white/20 hover:text-white transition-all px-4 py-2 text-xs cursor-pointer"
+                          className="min-h-[44px] inline-flex items-center justify-center gap-2 border border-white/[0.1] bg-white/[0.03] text-neutral-300 hover:text-white hover:bg-white/[0.08] hover:border-white/20 rounded-xl transition-all duration-300 px-4 py-2 text-xs cursor-pointer"
                         >
                           <Compass className="h-3.5 w-3.5" />
                           <span>Browse Catalog</span>
@@ -1101,7 +1101,7 @@ export default function LearningDashboardModal({
                     </div>
 
                     {/* ── SECTION 2: Progress Overview & XP/Level System (4-Stat Telemetry Grid) ── */}
-                    <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-xl p-5 sm:p-8 space-y-6 shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+                    <div className="relative overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/15 before:to-transparent rounded-2xl border border-white/[0.08] bg-[#080a10]/85 backdrop-blur-2xl p-5 sm:p-8 space-y-6 shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/[0.06] pb-4">
                         <div>
                           <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">
@@ -1123,12 +1123,12 @@ export default function LearningDashboardModal({
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                         {/* Stat 1: Learning Progress % */}
-                        <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-xl p-4 sm:p-5 hover:border-white/20 transition-all shadow-[0_4px_24px_rgba(0,0,0,0.4)] flex flex-col justify-between group">
+                        <div className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-black/40 backdrop-blur-xl p-4 sm:p-5 hover:border-white/[0.18] hover:shadow-[0_12px_40px_rgba(0,0,0,0.7)] transition-all duration-300 before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/15 before:to-transparent flex flex-col justify-between group">
                           <div>
                             <span className="text-[10px] font-mono tracking-widest text-neutral-400 uppercase mb-2 block">
                               Learning Progress
                             </span>
-                            <div className="text-2xl sm:text-3xl font-black text-white font-mono tracking-tight">
+                            <div className="text-2xl sm:text-3xl font-bold text-white font-mono tracking-tight">
                               <AnimatedStat value={overallPercent} suffix="%" />
                             </div>
                             <span className="text-[11px] font-mono text-neutral-400 mt-1.5 block">
@@ -1139,12 +1139,12 @@ export default function LearningDashboardModal({
                         </div>
 
                         {/* Stat 2: Completed Milestones */}
-                        <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-xl p-4 sm:p-5 hover:border-white/20 transition-all shadow-[0_4px_24px_rgba(0,0,0,0.4)] flex flex-col justify-between group">
+                        <div className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-black/40 backdrop-blur-xl p-4 sm:p-5 hover:border-white/[0.18] hover:shadow-[0_12px_40px_rgba(0,0,0,0.7)] transition-all duration-300 before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/15 before:to-transparent flex flex-col justify-between group">
                           <div>
                             <span className="text-[10px] font-mono tracking-widest text-neutral-400 uppercase mb-2 block">
                               Completed Milestones
                             </span>
-                            <div className="text-2xl sm:text-3xl font-black text-white font-mono tracking-tight">
+                            <div className="text-2xl sm:text-3xl font-bold text-white font-mono tracking-tight">
                               <AnimatedStat value={completedMilestones} />
                             </div>
                             <span className="text-[11px] font-mono text-neutral-400 mt-1.5 block">
@@ -1160,12 +1160,12 @@ export default function LearningDashboardModal({
                         </div>
 
                         {/* Stat 3: Daily Streak */}
-                        <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-xl p-4 sm:p-5 hover:border-white/20 transition-all shadow-[0_4px_24px_rgba(0,0,0,0.4)] flex flex-col justify-between group">
+                        <div className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-black/40 backdrop-blur-xl p-4 sm:p-5 hover:border-white/[0.18] hover:shadow-[0_12px_40px_rgba(0,0,0,0.7)] transition-all duration-300 before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/15 before:to-transparent flex flex-col justify-between group">
                           <div>
                             <span className="text-[10px] font-mono tracking-widest text-neutral-400 uppercase mb-2 block">
                               Daily Streak
                             </span>
-                            <div className="text-2xl sm:text-3xl font-black text-white font-mono tracking-tight">
+                            <div className="text-2xl sm:text-3xl font-bold text-white font-mono tracking-tight">
                               <AnimatedStat value={streakCount} suffix="d" />
                             </div>
                             <span className="text-[11px] font-mono text-neutral-400 mt-1.5 block">
@@ -1181,12 +1181,12 @@ export default function LearningDashboardModal({
                         </div>
 
                         {/* Stat 4: Projects Built */}
-                        <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-xl p-4 sm:p-5 hover:border-white/20 transition-all shadow-[0_4px_24px_rgba(0,0,0,0.4)] flex flex-col justify-between group">
+                        <div className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-black/40 backdrop-blur-xl p-4 sm:p-5 hover:border-white/[0.18] hover:shadow-[0_12px_40px_rgba(0,0,0,0.7)] transition-all duration-300 before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/15 before:to-transparent flex flex-col justify-between group">
                           <div>
                             <span className="text-[10px] font-mono tracking-widest text-neutral-400 uppercase mb-2 block">
                               Projects Built
                             </span>
-                            <div className="text-2xl sm:text-3xl font-black text-white font-mono tracking-tight">
+                            <div className="text-2xl sm:text-3xl font-bold text-white font-mono tracking-tight">
                               <AnimatedStat value={completedProjectsCount || (completedProjectsCount + activeProjectsCount)} />
                             </div>
                             <span className="text-[11px] font-mono text-neutral-400 mt-1.5 block">
@@ -1204,9 +1204,7 @@ export default function LearningDashboardModal({
                     </div>
 
                     {/* ── SECTION 3: Current Learning Path (Hero Focus Card in Overview) ── */}
-                    <div className="rounded-2xl border border-white/[0.1] bg-white/[0.02] backdrop-blur-xl p-6 sm:p-8 space-y-6 shadow-[0_4px_24px_rgba(0,0,0,0.4)] relative overflow-hidden">
-                      <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-
+                    <div className="relative overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent rounded-2xl border border-white/[0.08] bg-[#080a10]/85 backdrop-blur-2xl p-6 sm:p-8 space-y-6 shadow-[0_8px_32px_rgba(0,0,0,0.5)] hover:border-white/[0.18] hover:shadow-[0_12px_40px_rgba(0,0,0,0.7)] transition-all duration-300">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/[0.06] pb-5">
                         <div>
                           <span className="text-[10px] font-mono uppercase tracking-widest text-neutral-400 font-semibold block mb-1">
@@ -1220,7 +1218,7 @@ export default function LearningDashboardModal({
                           </p>
                         </div>
                         {currentPath?.category && (
-                          <span className="self-start sm:self-auto rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[10px] font-mono text-neutral-300">
+                          <span className="self-start sm:self-auto rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-[10px] font-mono text-neutral-300">
                             {currentPath.category}
                           </span>
                         )}
@@ -1228,7 +1226,7 @@ export default function LearningDashboardModal({
 
                       <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
                         <div className="md:col-span-8 space-y-3.5">
-                          <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5 space-y-3">
+                          <div className="rounded-xl border border-white/[0.08] bg-black/40 backdrop-blur-xl p-5 space-y-3">
                             <div>
                               <span className="text-xs font-mono text-neutral-400 block mb-1">
                                 Current milestone:
@@ -1265,7 +1263,7 @@ export default function LearningDashboardModal({
                                 openRoadmapBuilder()
                               }
                             }}
-                            className="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 rounded-xl bg-white px-6 py-3 text-xs sm:text-sm font-semibold text-black hover:bg-neutral-200 transition-all cursor-pointer shadow-[0_2px_12px_rgba(255,255,255,0.1)] group"
+                            className="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 rounded-xl bg-white px-6 py-3 text-xs sm:text-sm font-semibold text-black hover:bg-neutral-200 transition-all duration-300 cursor-pointer shadow-[0_2px_12px_rgba(255,255,255,0.12)] hover:shadow-[0_0_24px_rgba(255,255,255,0.3)] group"
                           >
                             <span>Continue Learning</span>
                             <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
@@ -1275,7 +1273,7 @@ export default function LearningDashboardModal({
                     </div>
 
                     {/* ── SECTION 4: AI Mentor Entry Point & Chat UI (Overview) ── */}
-                    <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-xl p-6 sm:p-7 shadow-[0_4px_24px_rgba(0,0,0,0.4)] space-y-3.5 relative overflow-hidden">
+                    <div className="relative overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/15 before:to-transparent rounded-2xl border border-white/[0.08] bg-[#080a10]/85 backdrop-blur-2xl p-6 sm:p-7 shadow-[0_8px_32px_rgba(0,0,0,0.5)] space-y-3.5 hover:border-white/[0.18] transition-all duration-300">
                       <div className="space-y-0.5">
                         <div className="flex items-center gap-2">
                           <Bot className="h-4 w-4 text-neutral-300" />
@@ -1304,15 +1302,15 @@ export default function LearningDashboardModal({
                             value={mentorInput}
                             onChange={(e) => setMentorInput(e.target.value)}
                             placeholder="Ask Technea AI anything..."
-                            className="w-full min-h-[44px] rounded-xl border border-white/[0.08] bg-black/40 px-4 py-2.5 text-xs sm:text-sm text-white placeholder-neutral-500 focus:border-white/30 focus:ring-1 focus:ring-white/20 focus:outline-none font-mono transition-all"
+                            className="w-full min-h-[44px] rounded-xl border border-white/[0.08] bg-black/50 px-4 py-2.5 text-xs sm:text-sm text-white placeholder-neutral-500 focus:border-white/30 focus:ring-1 focus:ring-white/20 focus:outline-none font-mono transition-all duration-300 shadow-inner"
                           />
                         </div>
                         <button
                           type="submit"
                           disabled={!mentorInput.trim() || isMentorTyping}
-                          className={`w-full min-[420px]:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 rounded-xl px-6 py-2.5 text-xs font-semibold transition-all shrink-0 cursor-pointer ${
+                          className={`w-full min-[420px]:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 rounded-xl px-6 py-2.5 text-xs font-semibold transition-all duration-300 shrink-0 cursor-pointer ${
                             mentorInput.trim() && !isMentorTyping
-                              ? 'bg-white text-black hover:bg-neutral-200 shadow-[0_2px_12px_rgba(255,255,255,0.1)]'
+                              ? 'bg-white text-black hover:bg-neutral-200 shadow-[0_2px_12px_rgba(255,255,255,0.12)] hover:shadow-[0_0_16px_rgba(255,255,255,0.2)]'
                               : 'bg-white/[0.03] text-neutral-500 border border-white/[0.06] cursor-not-allowed'
                           }`}
                         >
@@ -1323,7 +1321,7 @@ export default function LearningDashboardModal({
                     </div>
 
                     {/* ── SECTION 5: Daily Learning Tracker (Overview Tab) ── */}
-                    <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-xl p-6 sm:p-8 space-y-6 shadow-[0_4px_24px_rgba(0,0,0,0.4)] relative overflow-hidden">
+                    <div className="relative overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/15 before:to-transparent rounded-2xl border border-white/[0.08] bg-[#080a10]/85 backdrop-blur-2xl p-6 sm:p-8 space-y-6 shadow-[0_8px_32px_rgba(0,0,0,0.5)] hover:border-white/[0.18] transition-all duration-300">
                       <div className="flex items-center justify-between border-b border-white/[0.06] pb-4">
                         <div className="space-y-0.5">
                           <h3 className="text-base font-bold text-white tracking-tight">
@@ -1362,10 +1360,10 @@ export default function LearningDashboardModal({
                                 aria-checked={task.done}
                                 aria-label={`Task: ${task.text}, ${task.done ? 'completed' : 'incomplete'}`}
                                 onClick={() => toggleTask(task.id)}
-                                className={`w-full min-h-[44px] flex items-center gap-3.5 rounded-xl border px-4 py-3 text-left text-xs transition-all cursor-pointer ${
+                                className={`w-full min-h-[44px] flex items-center gap-3.5 rounded-xl border px-4 py-3 text-left text-xs transition-all duration-300 cursor-pointer ${
                                   task.done
                                     ? 'border-white/[0.04] bg-white/[0.01] text-neutral-400'
-                                    : 'border-white/[0.08] bg-white/[0.02] text-neutral-200 hover:border-white/20 hover:text-white'
+                                    : 'border-white/[0.08] bg-black/40 text-neutral-200 hover:border-white/[0.18] hover:text-white'
                                 }`}
                               >
                                 <span
@@ -1390,7 +1388,7 @@ export default function LearningDashboardModal({
                         </div>
 
                         {/* Right: Weekly Progress Visualization (5 cols) */}
-                        <div className="lg:col-span-5 rounded-xl border border-white/[0.06] bg-white/[0.02] p-5">
+                        <div className="lg:col-span-5 rounded-xl border border-white/[0.08] bg-black/40 p-5">
                           <WeeklyActivityStrip
                             weeklyHistory={dailyActivity?.weekly_history || []}
                             streakCount={streakCount}
@@ -1407,7 +1405,8 @@ export default function LearningDashboardModal({
                     key="projects"
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
                     className="space-y-6"
                   >
                     {/* Projects Header */}
@@ -1417,7 +1416,7 @@ export default function LearningDashboardModal({
                           <h2 className="text-lg font-bold text-white tracking-tight">
                             Engineering Project Catalog
                           </h2>
-                          <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-0.5 text-[10px] font-mono text-neutral-300">
+                          <span className="rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-0.5 text-[10px] font-mono text-neutral-300">
                             {projectsList.length} Real-World Builds
                           </span>
                         </div>
@@ -1427,7 +1426,7 @@ export default function LearningDashboardModal({
                       </div>
 
                       {/* Filter Pills */}
-                      <div className="flex items-center gap-1.5 overflow-x-auto max-w-full pb-1 scrollbar-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden shrink-0">
+                      <div data-lenis-prevent className="flex items-center gap-1.5 overflow-x-auto max-w-full pb-1 scrollbar-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden shrink-0">
                         {[
                           { id: 'all', label: 'All Projects' },
                           { id: 'recommended', label: `Recommended (${recommendedProjects.length})` },
@@ -1439,10 +1438,10 @@ export default function LearningDashboardModal({
                             key={f.id}
                             type="button"
                             onClick={() => setProjectFilter(f.id)}
-                            className={`rounded-xl border px-3 py-1.5 min-h-[44px] sm:min-h-[36px] flex items-center justify-center text-xs font-mono transition-all cursor-pointer shrink-0 ${
+                            className={`rounded-xl border px-3 py-1.5 min-h-[44px] sm:min-h-[36px] flex items-center justify-center text-xs font-mono transition-all duration-300 cursor-pointer shrink-0 ${
                               projectFilter === f.id
-                                ? 'border-white/20 bg-white/[0.1] text-white font-semibold shadow-xs'
-                                : 'border-white/[0.08] bg-white/[0.02] text-neutral-400 hover:text-white hover:border-white/15'
+                                ? 'border-white/20 bg-white text-black font-semibold shadow-[0_2px_10px_rgba(255,255,255,0.12)]'
+                                : 'border-white/[0.08] bg-white/[0.03] text-neutral-400 hover:text-white hover:border-white/20'
                             }`}
                           >
                             {f.label}
@@ -1466,24 +1465,24 @@ export default function LearningDashboardModal({
                         return (
                           <div
                             key={proj.id}
-                            className={`rounded-2xl border p-4 sm:p-5 flex flex-col justify-between gap-4 transition-all backdrop-blur-xl shadow-[0_4px_24px_rgba(0,0,0,0.4)] ${
+                            className={`relative overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/15 before:to-transparent rounded-2xl border p-5 sm:p-6 flex flex-col justify-between gap-4 transition-all duration-300 backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] ${
                               userStatus === 'completed'
-                                ? 'border-emerald-500/30 bg-emerald-950/10'
+                                ? 'border-emerald-500/30 bg-[#080a10]/90 shadow-[0_8px_32px_rgba(16,185,129,0.08)]'
                                 : userStatus === 'in_progress'
-                                ? 'border-white/20 bg-white/[0.04]'
-                                : 'border-white/[0.08] bg-white/[0.02] hover:border-white/20'
+                                ? 'border-white/20 bg-[#080a10]/95 hover:border-white/30 hover:shadow-[0_12px_40px_rgba(0,0,0,0.7)]'
+                                : 'border-white/[0.08] bg-[#080a10]/85 hover:border-white/[0.18] hover:shadow-[0_12px_40px_rgba(0,0,0,0.7)]'
                             }`}
                           >
                             <div className="space-y-2.5">
                               <div className="flex items-center justify-between gap-2">
                                 <div className="flex items-center gap-2">
                                   <span
-                                    className={`rounded-full border px-2.5 py-0.5 text-[9px] font-mono font-medium uppercase tracking-wider ${
+                                    className={`rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-0.5 text-[9px] font-mono font-medium uppercase tracking-wider ${
                                       proj.difficulty === 'Beginner'
-                                        ? 'border-white/10 bg-white/[0.04] text-neutral-300'
+                                        ? 'text-neutral-300'
                                         : proj.difficulty === 'Intermediate'
-                                        ? 'border-white/15 bg-white/[0.06] text-neutral-200'
-                                        : 'border-white/20 bg-white/[0.08] text-white'
+                                        ? 'text-neutral-200'
+                                        : 'text-white'
                                     }`}
                                   >
                                     {proj.difficulty}
@@ -1492,7 +1491,7 @@ export default function LearningDashboardModal({
                                     {proj.duration_weeks || '2 Weeks'}
                                   </span>
                                   {isRec && (
-                                    <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[9px] font-mono text-neutral-300">
+                                    <span className="rounded-full border border-white/10 bg-white/[0.03] px-2 py-0.5 text-[9px] font-mono text-neutral-300">
                                       ★ Recommended
                                     </span>
                                   )}
@@ -1529,7 +1528,7 @@ export default function LearningDashboardModal({
                                 {(proj.tech_stack || []).map((tech) => (
                                   <span
                                     key={tech}
-                                    className="rounded-md border border-white/[0.08] bg-white/[0.03] px-2 py-0.5 text-[10px] font-mono text-neutral-300"
+                                    className="rounded-md border border-white/10 bg-white/[0.03] px-2 py-0.5 text-[10px] font-mono text-neutral-300"
                                   >
                                     {tech}
                                   </span>
@@ -1538,7 +1537,7 @@ export default function LearningDashboardModal({
 
                               {/* Architectural requirements */}
                               {proj.architecture_spec?.length > 0 && (
-                                <div className="rounded-xl border border-white/[0.06] bg-black/40 p-3 text-[11px] font-mono text-neutral-400 space-y-1">
+                                <div className="rounded-xl border border-white/[0.08] bg-black/50 p-3 text-[11px] font-mono text-neutral-400 space-y-1">
                                   <span className="text-[9px] uppercase tracking-wider text-neutral-400 block font-bold">
                                     Key Architectural Specifications:
                                   </span>
@@ -1585,7 +1584,7 @@ export default function LearningDashboardModal({
                                   <button
                                     type="button"
                                     onClick={() => handleStartProject(proj.id)}
-                                    className="inline-flex min-h-[44px] sm:min-h-[36px] items-center gap-1.5 rounded-xl bg-white px-3.5 py-1.5 text-xs font-semibold text-black hover:bg-neutral-200 transition-all cursor-pointer shadow-sm"
+                                    className="inline-flex min-h-[44px] sm:min-h-[36px] items-center gap-1.5 rounded-xl bg-white px-3.5 py-1.5 text-xs font-semibold text-black hover:bg-neutral-200 transition-all duration-300 cursor-pointer shadow-[0_2px_10px_rgba(255,255,255,0.1)] hover:shadow-[0_0_16px_rgba(255,255,255,0.2)]"
                                   >
                                     <span>Start Project</span>
                                     <ArrowRight className="h-3 w-3" />
@@ -1635,8 +1634,9 @@ export default function LearningDashboardModal({
                     key="mentor"
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-                    className="max-w-3xl mx-auto w-full flex flex-col min-h-[580px] sm:min-h-[640px]"
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                    className="relative overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/15 before:to-transparent rounded-2xl border border-white/[0.08] bg-[#080a10]/85 backdrop-blur-2xl p-6 sm:p-8 shadow-[0_8px_32px_rgba(0,0,0,0.5)] max-w-4xl mx-auto w-full flex flex-col min-h-[580px] sm:min-h-[640px]"
                   >
                     {/* Top: Simple Heading & Subtitle */}
                     <div className="border-b border-white/[0.08] pb-4 mb-6 flex items-center justify-between gap-4">
@@ -1652,7 +1652,7 @@ export default function LearningDashboardModal({
                         <button
                           type="button"
                           onClick={handleClearMentorChat}
-                          className="inline-flex min-h-[44px] sm:min-h-[36px] items-center gap-1.5 border border-white/[0.1] bg-white/[0.03] text-neutral-300 hover:text-white hover:border-white/20 px-3 py-1.5 rounded-xl text-xs font-mono transition-all cursor-pointer"
+                          className="inline-flex min-h-[44px] sm:min-h-[36px] items-center gap-1.5 border border-white/[0.1] bg-white/[0.03] text-neutral-300 hover:text-white hover:border-white/20 px-3 py-1.5 rounded-xl text-xs font-mono transition-all duration-300 cursor-pointer"
                           title="Reset conversation"
                           aria-label="Clear chat conversation"
                         >
@@ -1660,7 +1660,7 @@ export default function LearningDashboardModal({
                           <span>Clear Chat</span>
                         </button>
                         <div className="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded-full border border-white/10 bg-white/[0.03]">
-                          <span className="flex h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)] animate-pulse" />
+                          <span className="flex h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)] animate-pulse" />
                           <span className="text-[11px] font-mono text-neutral-300">Neural Engine Online</span>
                         </div>
                       </div>
@@ -1675,7 +1675,7 @@ export default function LearningDashboardModal({
 
                         return msg.sender === 'user' ? (
                           <div key={msg.id} className="flex justify-end ml-auto">
-                            <div className="max-w-xl rounded-2xl bg-white/[0.08] border border-white/[0.12] backdrop-blur-md px-4 py-3 text-xs sm:text-sm text-white leading-relaxed whitespace-pre-wrap break-words shadow-sm">
+                            <div className="max-w-xl rounded-2xl bg-white/[0.08] border border-white/[0.14] backdrop-blur-xl px-4 py-3 text-xs sm:text-sm text-white leading-relaxed whitespace-pre-wrap break-words shadow-sm">
                               {msg.text}
                             </div>
                           </div>
@@ -1686,7 +1686,7 @@ export default function LearningDashboardModal({
                             </div>
                             <div className="flex-1 space-y-2 min-w-0">
                               <div className="flex items-center gap-2">
-                                <span className="text-[11px] font-semibold text-neutral-300 font-mono">
+                                <span className="text-[11px] font-bold text-white font-mono">
                                   Technea AI Mentor
                                 </span>
                                 {msg.timestamp && (
@@ -1708,7 +1708,7 @@ export default function LearningDashboardModal({
                                         key={actIdx}
                                         type="button"
                                         onClick={() => handleRelatedAction(act)}
-                                        className="inline-flex min-h-[44px] sm:min-h-[36px] items-center gap-1.5 rounded-xl border border-white/[0.1] bg-white/[0.03] hover:bg-white/[0.08] hover:border-white/20 px-3 py-1.5 text-xs font-medium text-neutral-200 hover:text-white transition-all cursor-pointer shadow-xs group"
+                                        className="inline-flex min-h-[44px] sm:min-h-[36px] items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.08] hover:border-white/20 px-3 py-1.5 text-xs font-medium text-neutral-200 hover:text-white transition-all duration-300 cursor-pointer shadow-xs group"
                                       >
                                         {act.action_type === 'view_roadmap' && (
                                           <Compass className="h-3.5 w-3.5 text-neutral-400 group-hover:scale-110 transition-transform" />
@@ -1746,7 +1746,7 @@ export default function LearningDashboardModal({
                                         type="button"
                                         disabled={isMentorTyping}
                                         onClick={() => handleSendMentorMessage(suggestion)}
-                                        className="inline-flex min-h-[44px] sm:min-h-[36px] items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.02] hover:bg-white/[0.08] hover:border-white/20 px-3.5 py-1.5 text-xs text-neutral-300 hover:text-white transition-all cursor-pointer text-left shadow-xs disabled:opacity-50 disabled:cursor-not-allowed group"
+                                        className="inline-flex min-h-[44px] sm:min-h-[36px] items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] hover:bg-white/[0.08] hover:border-white/20 px-3.5 py-1.5 text-xs text-neutral-300 hover:text-white transition-all duration-300 cursor-pointer text-left shadow-xs disabled:opacity-50 disabled:cursor-not-allowed group"
                                       >
                                         <span className="text-neutral-400 group-hover:text-neutral-200 transition-colors">↳</span>
                                         <span>{suggestion}</span>
@@ -1798,16 +1798,16 @@ export default function LearningDashboardModal({
                             }
                           }}
                           placeholder="Ask Technea AI anything..."
-                          className="w-full min-h-[44px] rounded-xl border border-white/[0.08] bg-black/40 px-4 py-2.5 text-xs sm:text-sm text-white placeholder-neutral-500 focus:border-white/30 focus:ring-1 focus:ring-white/20 focus:outline-none transition-all font-mono"
+                          className="w-full min-h-[44px] rounded-xl border border-white/[0.08] bg-black/60 px-4 py-2.5 text-xs sm:text-sm text-white placeholder-neutral-500 focus:border-white/30 focus:ring-1 focus:ring-white/20 focus:outline-none transition-all duration-300 font-mono shadow-inner"
                           disabled={isMentorTyping}
                         />
                       </div>
                       <button
                         type="submit"
                         disabled={!mentorInput.trim() || isMentorTyping}
-                        className={`w-full min-[420px]:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 rounded-xl px-6 py-2.5 text-xs font-semibold transition-all shrink-0 cursor-pointer ${
+                        className={`w-full min-[420px]:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 rounded-xl px-6 py-2.5 text-xs font-semibold transition-all duration-300 shrink-0 cursor-pointer ${
                           mentorInput.trim() && !isMentorTyping
-                            ? 'bg-white text-black hover:bg-neutral-200 shadow-[0_2px_12px_rgba(255,255,255,0.1)]'
+                            ? 'bg-white text-black hover:bg-neutral-200 shadow-[0_2px_12px_rgba(255,255,255,0.12)] hover:shadow-[0_0_16px_rgba(255,255,255,0.2)]'
                             : 'bg-white/[0.03] text-neutral-500 border border-white/[0.06] cursor-not-allowed'
                         }`}
                       >
@@ -1824,7 +1824,8 @@ export default function LearningDashboardModal({
                     key="community"
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
                     className="space-y-6"
                   >
                     {/* Community Header */}
@@ -1834,7 +1835,7 @@ export default function LearningDashboardModal({
                           <h2 className="text-lg font-bold text-white tracking-tight">
                             Peer Learning Rooms
                           </h2>
-                          <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-0.5 text-[10px] font-mono text-neutral-300">
+                          <span className="rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-0.5 text-[10px] font-mono text-neutral-300">
                             {communityRooms.length} Active Guilds
                           </span>
                         </div>
@@ -1847,10 +1848,10 @@ export default function LearningDashboardModal({
                         <button
                           type="button"
                           onClick={() => setRoomFilter('all')}
-                          className={`min-h-[44px] sm:min-h-[36px] flex items-center justify-center rounded-xl border px-3.5 py-1.5 text-xs font-mono transition-all cursor-pointer ${
+                          className={`min-h-[44px] sm:min-h-[36px] flex items-center justify-center rounded-xl border px-3.5 py-1.5 text-xs font-mono transition-all duration-300 cursor-pointer ${
                             roomFilter === 'all'
-                              ? 'border-white/20 bg-white/[0.1] text-white font-semibold shadow-xs'
-                              : 'border-white/[0.08] bg-white/[0.02] text-neutral-400 hover:text-white'
+                              ? 'border-white/20 bg-white text-black font-semibold shadow-[0_2px_10px_rgba(255,255,255,0.12)]'
+                              : 'border-white/[0.08] bg-white/[0.03] text-neutral-400 hover:text-white hover:border-white/20'
                           }`}
                         >
                           All Rooms ({communityRooms.length})
@@ -1858,10 +1859,10 @@ export default function LearningDashboardModal({
                         <button
                           type="button"
                           onClick={() => setRoomFilter('joined')}
-                          className={`min-h-[44px] sm:min-h-[36px] flex items-center justify-center rounded-xl border px-3.5 py-1.5 text-xs font-mono transition-all cursor-pointer ${
+                          className={`min-h-[44px] sm:min-h-[36px] flex items-center justify-center rounded-xl border px-3.5 py-1.5 text-xs font-mono transition-all duration-300 cursor-pointer ${
                             roomFilter === 'joined'
-                              ? 'border-white/20 bg-white/[0.1] text-white font-semibold shadow-xs'
-                              : 'border-white/[0.08] bg-white/[0.02] text-neutral-400 hover:text-white'
+                              ? 'border-white/20 bg-white text-black font-semibold shadow-[0_2px_10px_rgba(255,255,255,0.12)]'
+                              : 'border-white/[0.08] bg-white/[0.03] text-neutral-400 hover:text-white hover:border-white/20'
                           }`}
                         >
                           My Joined ({joinedRoomIds.size})
@@ -1878,19 +1879,19 @@ export default function LearningDashboardModal({
                           return (
                             <div
                               key={room.id}
-                              className={`rounded-2xl border p-4 sm:p-5 flex flex-col justify-between gap-4 transition-all backdrop-blur-xl shadow-[0_4px_24px_rgba(0,0,0,0.4)] ${
+                              className={`relative overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/15 before:to-transparent rounded-2xl border p-5 sm:p-6 flex flex-col justify-between gap-4 transition-all duration-300 backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] ${
                                 isJoined
-                                  ? 'border-white/20 bg-white/[0.04]'
-                                  : 'border-white/[0.08] bg-white/[0.02] hover:border-white/20'
+                                  ? 'border-white/20 bg-[#080a10]/95 hover:border-white/30 hover:shadow-[0_12px_40px_rgba(0,0,0,0.7)]'
+                                  : 'border-white/[0.08] bg-[#080a10]/85 hover:border-white/[0.18] hover:shadow-[0_12px_40px_rgba(0,0,0,0.7)]'
                               }`}
                             >
                               <div className="space-y-2.5">
                                 <div className="flex items-center justify-between">
-                                  <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-0.5 text-[9px] font-mono text-neutral-300 uppercase">
+                                  <span className="rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-0.5 text-[9px] font-mono text-neutral-300 uppercase">
                                     {room.category}
                                   </span>
                                   <span className="flex items-center gap-1.5 text-[10px] font-mono text-neutral-300">
-                                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)]" />
+                                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)] animate-pulse" />
                                     {room.active_learners_count} peers
                                   </span>
                                 </div>
@@ -1908,7 +1909,7 @@ export default function LearningDashboardModal({
                                     {room.topics_covered.map((t, idx) => (
                                       <span
                                         key={idx}
-                                        className="rounded-md border border-white/[0.08] bg-white/[0.03] px-2 py-0.5 text-[10px] font-mono text-neutral-300"
+                                        className="rounded-md border border-white/10 bg-white/[0.03] px-2 py-0.5 text-[10px] font-mono text-neutral-300"
                                       >
                                         {t}
                                       </span>
@@ -1924,10 +1925,10 @@ export default function LearningDashboardModal({
                                 <button
                                   type="button"
                                   onClick={() => handleToggleRoom(room.id)}
-                                  className={`inline-flex min-h-[44px] sm:min-h-[36px] items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
+                                  className={`inline-flex min-h-[44px] sm:min-h-[36px] items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-semibold transition-all duration-300 cursor-pointer ${
                                     isJoined
                                       ? 'border border-white/20 bg-white/10 text-white hover:bg-white/15'
-                                      : 'bg-white text-black hover:bg-neutral-200'
+                                      : 'bg-white text-black hover:bg-neutral-200 shadow-[0_2px_10px_rgba(255,255,255,0.1)] hover:shadow-[0_0_16px_rgba(255,255,255,0.2)]'
                                   }`}
                                 >
                                   {isJoined ? (
@@ -1956,7 +1957,8 @@ export default function LearningDashboardModal({
                     key="roadmaps"
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
                     className="space-y-6"
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/[0.08] pb-4">
@@ -1974,7 +1976,7 @@ export default function LearningDashboardModal({
                           onClose()
                           openRoadmapBuilder()
                         }}
-                        className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-white px-4 py-2 text-xs font-semibold text-black hover:bg-neutral-200 transition-all cursor-pointer shadow-sm"
+                        className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-white px-4 py-2 text-xs font-semibold text-black hover:bg-neutral-200 transition-all duration-300 cursor-pointer shadow-[0_2px_10px_rgba(255,255,255,0.1)] hover:shadow-[0_0_16px_rgba(255,255,255,0.2)]"
                       >
                         <Sparkles className="h-3.5 w-3.5" />
                         <span>Build New Roadmap</span>
@@ -1992,11 +1994,11 @@ export default function LearningDashboardModal({
                           return (
                             <div
                               key={roadmap.id}
-                              className="rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-xl p-4 sm:p-5 hover:border-white/20 transition-all shadow-[0_4px_24px_rgba(0,0,0,0.4)] flex flex-col justify-between group"
+                              className="relative overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/15 before:to-transparent rounded-2xl border border-white/[0.08] bg-[#080a10]/85 backdrop-blur-2xl p-5 sm:p-6 hover:border-white/[0.18] hover:shadow-[0_12px_40px_rgba(0,0,0,0.7)] transition-all duration-300 shadow-[0_8px_32px_rgba(0,0,0,0.5)] flex flex-col justify-between group"
                             >
                               <div className="space-y-2.5">
                                 <div className="flex items-center justify-between">
-                                  <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-0.5 text-[9px] font-mono text-neutral-300 uppercase tracking-wider">
+                                  <span className="rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-0.5 text-[9px] font-mono text-neutral-300 uppercase tracking-wider">
                                     {roadmap.target_role || 'Career Blueprint'}
                                   </span>
                                   <span className="text-[10px] font-mono text-neutral-400">
@@ -2028,7 +2030,7 @@ export default function LearningDashboardModal({
                                       onClose()
                                       openRoadmapBuilder(roadmap.goal)
                                     }}
-                                    className="inline-flex min-h-[44px] sm:min-h-[36px] items-center gap-1.5 rounded-xl bg-white text-black font-semibold px-3.5 py-1.5 text-xs hover:bg-neutral-200 transition-all cursor-pointer shadow-sm"
+                                    className="inline-flex min-h-[44px] sm:min-h-[36px] items-center gap-1.5 rounded-xl bg-white text-black font-semibold px-3.5 py-1.5 text-xs hover:bg-neutral-200 transition-all duration-300 cursor-pointer shadow-[0_2px_10px_rgba(255,255,255,0.1)] hover:shadow-[0_0_16px_rgba(255,255,255,0.2)]"
                                   >
                                     <span>Open Roadmap</span>
                                     <ArrowRight className="h-3 w-3" />
@@ -2040,7 +2042,7 @@ export default function LearningDashboardModal({
                         })}
                       </div>
                     ) : (
-                      <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-xl p-8 text-center space-y-3 shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+                      <div className="relative overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/15 before:to-transparent rounded-2xl border border-white/[0.08] bg-[#080a10]/85 backdrop-blur-2xl p-8 sm:p-10 text-center space-y-3.5 shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
                         <Bookmark className="h-8 w-8 text-neutral-500 mx-auto" />
                         <h4 className="text-sm font-bold text-white">
                           No AI Career Roadmaps Generated Yet
@@ -2055,7 +2057,7 @@ export default function LearningDashboardModal({
                               onClose()
                               openRoadmapBuilder()
                             }}
-                            className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-white px-5 py-2 text-xs font-semibold text-black hover:bg-neutral-200 transition-all cursor-pointer shadow-sm"
+                            className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-white px-5 py-2 text-xs font-semibold text-black hover:bg-neutral-200 transition-all duration-300 cursor-pointer shadow-[0_2px_10px_rgba(255,255,255,0.1)] hover:shadow-[0_0_16px_rgba(255,255,255,0.2)]"
                           >
                             <Sparkles className="h-3.5 w-3.5" />
                             <span>Launch Roadmap Builder</span>
@@ -2075,7 +2077,7 @@ export default function LearningDashboardModal({
                           {enrolledPaths.map((path) => (
                             <div
                               key={path.id}
-                              className="flex min-h-[44px] items-center justify-between rounded-xl border border-white/[0.08] bg-white/[0.02] p-4 hover:border-white/20 transition-all cursor-pointer group"
+                              className="flex min-h-[44px] items-center justify-between rounded-xl border border-white/[0.08] bg-black/40 backdrop-blur-md p-4 hover:border-white/[0.18] hover:bg-black/60 transition-all duration-300 cursor-pointer group"
                               onClick={() => {
                                 onClose()
                                 onSelectPath(path)
@@ -2112,13 +2114,12 @@ export default function LearningDashboardModal({
                     key="profile"
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
                     className="space-y-6"
                   >
                     {/* Profile Header Identity Card with Level & XP Meter */}
-                    <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-xl p-6 sm:p-7 space-y-5 shadow-[0_4px_24px_rgba(0,0,0,0.4)] relative overflow-hidden">
-                      <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/15 to-transparent" />
-
+                    <div className="relative overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/15 before:to-transparent rounded-2xl border border-white/[0.08] bg-[#080a10]/85 backdrop-blur-2xl p-6 sm:p-7 space-y-5 shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div className="flex items-center gap-4">
                           {user?.avatar_url && !profileAvatarError ? (
@@ -2136,7 +2137,7 @@ export default function LearningDashboardModal({
                           <div>
                             <div className="flex items-center gap-2 flex-wrap">
                               <h3 className="text-lg font-bold text-white">{fullName}</h3>
-                              <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-0.5 text-[9px] font-mono font-medium text-neutral-300 uppercase tracking-wider">
+                              <span className="rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-0.5 text-[9px] font-mono font-medium text-neutral-300 uppercase tracking-wider">
                                 {developerLevel}
                               </span>
                               <span className="rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-0.5 text-[9px] font-mono text-neutral-400">
@@ -2153,7 +2154,7 @@ export default function LearningDashboardModal({
                           <button
                             type="button"
                             onClick={() => setIsShareModalOpen(true)}
-                            className="inline-flex min-h-[44px] sm:min-h-[36px] items-center gap-1.5 rounded-xl border border-white/[0.1] bg-white/[0.03] px-3.5 py-2 text-xs font-mono text-neutral-200 hover:text-white hover:border-white/20 transition-all cursor-pointer shadow-xs"
+                            className="inline-flex min-h-[44px] sm:min-h-[36px] items-center gap-1.5 rounded-xl border border-white/[0.1] bg-white/[0.03] px-3.5 py-2 text-xs font-mono text-neutral-200 hover:text-white hover:border-white/20 hover:bg-white/[0.08] transition-all duration-300 cursor-pointer shadow-xs"
                           >
                             <Share2 className="h-3.5 w-3.5" />
                             <span>Share Portfolio</span>
@@ -2178,40 +2179,40 @@ export default function LearningDashboardModal({
 
                     {/* Developer Metrics Quick Strip */}
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-                      <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 sm:p-3.5 space-y-1.5 hover:border-white/15 transition-all">
+                      <div className="relative overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/10 before:to-transparent rounded-xl border border-white/[0.08] bg-black/40 backdrop-blur-xl p-3.5 sm:p-4 space-y-1.5 hover:border-white/[0.18] hover:bg-black/60 transition-all duration-300">
                         <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-wider block">Milestones</span>
-                        <div className="text-lg font-black text-white font-mono">{completedMilestones}</div>
+                        <div className="text-lg font-bold text-white font-mono">{completedMilestones}</div>
                         <span className="text-[9px] font-mono text-neutral-400 block">Verified mastery</span>
                       </div>
-                      <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 sm:p-3.5 space-y-1.5 hover:border-white/15 transition-all">
+                      <div className="relative overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/10 before:to-transparent rounded-xl border border-white/[0.08] bg-black/40 backdrop-blur-xl p-3.5 sm:p-4 space-y-1.5 hover:border-white/[0.18] hover:bg-black/60 transition-all duration-300">
                         <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-wider block">Lessons</span>
-                        <div className="text-lg font-black text-white font-mono">{completedLessons}</div>
+                        <div className="text-lg font-bold text-white font-mono">{completedLessons}</div>
                         <span className="text-[9px] font-mono text-neutral-400 block">Completed units</span>
                       </div>
-                      <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 sm:p-3.5 space-y-1.5 hover:border-white/15 transition-all">
+                      <div className="relative overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/10 before:to-transparent rounded-xl border border-white/[0.08] bg-black/40 backdrop-blur-xl p-3.5 sm:p-4 space-y-1.5 hover:border-white/[0.18] hover:bg-black/60 transition-all duration-300">
                         <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-wider block">Projects</span>
-                        <div className="text-lg font-black text-white font-mono">{completedProjectsCount}</div>
+                        <div className="text-lg font-bold text-white font-mono">{completedProjectsCount}</div>
                         <span className="text-[9px] font-mono text-neutral-400 block">{activeProjectsCount} in progress</span>
                       </div>
-                      <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 sm:p-3.5 space-y-1.5 hover:border-white/15 transition-all">
+                      <div className="relative overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/10 before:to-transparent rounded-xl border border-white/[0.08] bg-black/40 backdrop-blur-xl p-3.5 sm:p-4 space-y-1.5 hover:border-white/[0.18] hover:bg-black/60 transition-all duration-300">
                         <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-wider block">Coding Streak</span>
-                        <div className="text-lg font-black text-white font-mono">{streakCount}d</div>
+                        <div className="text-lg font-bold text-white font-mono">{streakCount}d</div>
                         <span className="text-[9px] font-mono text-neutral-400 block">Active velocity</span>
                       </div>
-                      <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 sm:p-3.5 space-y-1.5 hover:border-white/15 transition-all">
+                      <div className="relative overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/10 before:to-transparent rounded-xl border border-white/[0.08] bg-black/40 backdrop-blur-xl p-3.5 sm:p-4 space-y-1.5 hover:border-white/[0.18] hover:bg-black/60 transition-all duration-300">
                         <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-wider block">Active Paths</span>
-                        <div className="text-lg font-black text-white font-mono">{activePathsCount}</div>
+                        <div className="text-lg font-bold text-white font-mono">{activePathsCount}</div>
                         <span className="text-[9px] font-mono text-neutral-400 block">Enrolled curricula</span>
                       </div>
-                      <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 sm:p-3.5 space-y-1.5 hover:border-white/15 transition-all">
+                      <div className="relative overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/10 before:to-transparent rounded-xl border border-white/[0.08] bg-black/40 backdrop-blur-xl p-3.5 sm:p-4 space-y-1.5 hover:border-white/[0.18] hover:bg-black/60 transition-all duration-300">
                         <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-wider block">Guilds Joined</span>
-                        <div className="text-lg font-black text-white font-mono">{joinedRoomsCount}</div>
+                        <div className="text-lg font-bold text-white font-mono">{joinedRoomsCount}</div>
                         <span className="text-[9px] font-mono text-neutral-400 block">Peer study rooms</span>
                       </div>
                     </div>
 
                     {/* Verified Hands-on Engineering Projects Portfolio */}
-                    <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-xl p-6 sm:p-7 space-y-4 shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+                    <div className="relative overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/15 before:to-transparent rounded-2xl border border-white/[0.08] bg-[#080a10]/85 backdrop-blur-2xl p-6 sm:p-7 space-y-4 shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
                       <div className="flex items-center justify-between border-b border-white/[0.06] pb-3">
                         <div className="flex items-center gap-2">
                           <FolderGit2 className="h-4 w-4 text-white" />
@@ -2239,7 +2240,7 @@ export default function LearningDashboardModal({
                         if (activeOrCompletedProjects.length === 0) {
                           const topProj = recommendedProjects[0] || projectsList[0]
                           return (
-                            <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5 space-y-3 text-center sm:text-left sm:flex sm:items-center sm:justify-between">
+                            <div className="rounded-xl border border-white/[0.08] bg-black/40 p-5 space-y-3 text-center sm:text-left sm:flex sm:items-center sm:justify-between">
                               <div className="space-y-1">
                                 <h5 className="text-xs font-bold text-white">
                                   No hands-on projects linked to your portfolio yet
@@ -2255,7 +2256,7 @@ export default function LearningDashboardModal({
                                     handleStartProject(topProj.id)
                                     setActiveTab('projects')
                                   }}
-                                  className="inline-flex min-h-[44px] sm:min-h-[36px] items-center gap-1.5 rounded-xl bg-white px-4 py-2 text-xs font-semibold text-black hover:bg-neutral-200 transition-all cursor-pointer shrink-0 mt-3 sm:mt-0 shadow-sm"
+                                  className="inline-flex min-h-[44px] sm:min-h-[36px] items-center gap-1.5 rounded-xl bg-white px-4 py-2 text-xs font-semibold text-black hover:bg-neutral-200 transition-all duration-300 cursor-pointer shrink-0 mt-3 sm:mt-0 shadow-[0_2px_10px_rgba(255,255,255,0.1)] hover:shadow-[0_0_16px_rgba(255,255,255,0.2)]"
                                 >
                                   <span>Start {topProj.title}</span>
                                   <ArrowRight className="h-3 w-3" />
@@ -2275,7 +2276,7 @@ export default function LearningDashboardModal({
                               return (
                                 <div
                                   key={proj.id}
-                                  className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4.5 flex flex-col justify-between space-y-3 hover:border-white/15 transition-all"
+                                  className="rounded-xl border border-white/[0.08] bg-black/40 p-4.5 flex flex-col justify-between space-y-3 hover:border-white/[0.18] hover:bg-black/60 transition-all duration-300"
                                 >
                                   <div className="space-y-1.5">
                                     <div className="flex items-center justify-between gap-2">
@@ -2286,7 +2287,7 @@ export default function LearningDashboardModal({
                                         className={`rounded-full px-2 py-0.5 text-[9px] font-mono font-medium uppercase shrink-0 ${
                                           isComplete
                                             ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400'
-                                            : 'bg-white/[0.04] border border-white/10 text-neutral-300'
+                                            : 'bg-white/[0.03] border border-white/10 text-neutral-300'
                                         }`}
                                       >
                                         {isComplete ? '✓ Completed' : 'In Progress'}
@@ -2299,7 +2300,7 @@ export default function LearningDashboardModal({
                                       {(proj.tech_stack || []).map((tech) => (
                                         <span
                                           key={tech}
-                                          className="rounded-md border border-white/[0.08] bg-white/[0.03] px-2 py-0.5 text-[9px] font-mono text-neutral-300"
+                                          className="rounded-md border border-white/10 bg-white/[0.03] px-2 py-0.5 text-[9px] font-mono text-neutral-300"
                                         >
                                           {tech}
                                         </span>
@@ -2362,7 +2363,7 @@ export default function LearningDashboardModal({
                     </div>
 
                     {/* Skill Mastery Breakdown */}
-                    <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-xl p-6 sm:p-7 space-y-4 shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+                    <div className="relative overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/15 before:to-transparent rounded-2xl border border-white/[0.08] bg-[#080a10]/85 backdrop-blur-2xl p-6 sm:p-7 space-y-4 shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
                       <div className="flex items-center justify-between border-b border-white/[0.06] pb-3">
                         <span className="text-xs font-bold uppercase tracking-wider text-white font-mono flex items-center gap-2">
                           <Award className="h-4 w-4 text-neutral-300" />
@@ -2377,7 +2378,7 @@ export default function LearningDashboardModal({
                         {skillsOverview.map((skill, i) => (
                           <div
                             key={i}
-                            className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3.5 space-y-2 hover:border-white/15 transition-all"
+                            className="rounded-xl border border-white/[0.08] bg-black/40 p-3.5 space-y-2 hover:border-white/[0.18] hover:bg-black/60 transition-all duration-300"
                           >
                             <div className="flex items-center justify-between text-xs font-mono">
                               <span className="text-white font-bold">
@@ -2401,7 +2402,7 @@ export default function LearningDashboardModal({
                     </div>
 
                     {/* Achievements & Badges Earned */}
-                    <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-xl p-6 sm:p-7 space-y-4 shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+                    <div className="relative overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/15 before:to-transparent rounded-2xl border border-white/[0.08] bg-[#080a10]/85 backdrop-blur-2xl p-6 sm:p-7 space-y-4 shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
                       <div className="flex items-center justify-between border-b border-white/[0.06] pb-3">
                         <span className="text-xs font-bold uppercase tracking-wider text-white font-mono flex items-center gap-2">
                           <Trophy className="h-4 w-4 text-neutral-300" />
@@ -2413,7 +2414,7 @@ export default function LearningDashboardModal({
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                        <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-3.5 space-y-1.5 hover:border-white/20 transition-all">
+                        <div className="rounded-xl border border-white/[0.08] bg-black/40 p-3.5 space-y-1.5 hover:border-white/[0.18] hover:bg-black/60 transition-all duration-300">
                           <div className="flex items-center justify-between">
                             <span className="text-xs font-semibold text-white">
                               Early Adopter
@@ -2428,7 +2429,7 @@ export default function LearningDashboardModal({
                           </span>
                         </div>
 
-                        <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-3.5 space-y-1.5 hover:border-white/20 transition-all">
+                        <div className="rounded-xl border border-white/[0.08] bg-black/40 p-3.5 space-y-1.5 hover:border-white/[0.18] hover:bg-black/60 transition-all duration-300">
                           <div className="flex items-center justify-between">
                             <span className="text-xs font-semibold text-white">
                               Consistent Coder
@@ -2443,7 +2444,7 @@ export default function LearningDashboardModal({
                           </span>
                         </div>
 
-                        <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-3.5 space-y-1.5 hover:border-white/20 transition-all">
+                        <div className="rounded-xl border border-white/[0.08] bg-black/40 p-3.5 space-y-1.5 hover:border-white/[0.18] hover:bg-black/60 transition-all duration-300">
                           <div className="flex items-center justify-between">
                             <span className="text-xs font-semibold text-white">
                               Milestone Conqueror
@@ -2458,7 +2459,7 @@ export default function LearningDashboardModal({
                           </span>
                         </div>
 
-                        <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-3.5 space-y-1.5 hover:border-white/20 transition-all">
+                        <div className="rounded-xl border border-white/[0.08] bg-black/40 p-3.5 space-y-1.5 hover:border-white/[0.18] hover:bg-black/60 transition-all duration-300">
                           <div className="flex items-center justify-between">
                             <span className="text-xs font-semibold text-white">
                               Roadmap Architect
@@ -2473,7 +2474,7 @@ export default function LearningDashboardModal({
                           </span>
                         </div>
 
-                        <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-3.5 space-y-1.5 hover:border-white/20 transition-all">
+                        <div className="rounded-xl border border-white/[0.08] bg-black/40 p-3.5 space-y-1.5 hover:border-white/[0.18] hover:bg-black/60 transition-all duration-300">
                           <div className="flex items-center justify-between">
                             <span className="text-xs font-semibold text-white">
                               Project Deliverable
@@ -2490,7 +2491,7 @@ export default function LearningDashboardModal({
                           </span>
                         </div>
 
-                        <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-3.5 space-y-1.5 hover:border-white/20 transition-all">
+                        <div className="rounded-xl border border-white/[0.08] bg-black/40 p-3.5 space-y-1.5 hover:border-white/[0.18] hover:bg-black/60 transition-all duration-300">
                           <div className="flex items-center justify-between">
                             <span className="text-xs font-semibold text-white">
                               Guild Contributor
@@ -2508,7 +2509,7 @@ export default function LearningDashboardModal({
                     </div>
                   </motion.div>
                 )}
-              </>
+              </AnimatePresence>
             )}
           </div>
 
@@ -2519,11 +2520,9 @@ export default function LearningDashboardModal({
               role="dialog"
               aria-modal="true"
               aria-label="Link GitHub Repository"
-              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md"
             >
-              <div className="w-full max-w-md rounded-2xl border border-white/[0.12] bg-[#0E1016]/95 backdrop-blur-2xl p-6 sm:p-7 shadow-[0_24px_80px_rgba(0,0,0,0.85)] space-y-5 relative overflow-hidden">
-                <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-
+              <div className="relative overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent w-full max-w-md rounded-2xl border border-white/[0.12] bg-[#080a10]/95 backdrop-blur-2xl p-6 sm:p-7 shadow-[0_32px_96px_rgba(0,0,0,0.85)] space-y-5">
                 <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
                   <div className="flex items-center gap-2">
                     <GithubIcon className="h-4 w-4 text-white" />
@@ -2532,7 +2531,7 @@ export default function LearningDashboardModal({
                   <button
                     type="button"
                     onClick={() => setEditingGithubProject(null)}
-                    className="flex min-h-[44px] min-w-[44px] sm:h-8 sm:w-8 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.03] text-neutral-400 hover:text-white hover:border-white/20 cursor-pointer transition-all"
+                    className="flex min-h-[44px] min-w-[44px] sm:h-8 sm:w-8 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.03] text-neutral-400 hover:text-white hover:border-white/20 hover:bg-white/[0.06] cursor-pointer transition-all duration-300"
                     aria-label="Close dialog"
                   >
                     <X className="h-4 w-4" />
@@ -2560,7 +2559,7 @@ export default function LearningDashboardModal({
                     value={githubUrlInput}
                     onChange={(e) => setGithubUrlInput(e.target.value)}
                     placeholder="https://github.com/username/project-repo"
-                    className="w-full min-h-[44px] rounded-xl border border-white/[0.08] bg-black/50 px-3.5 py-2.5 text-xs text-white placeholder-neutral-500 focus:border-white/30 focus:outline-none font-mono"
+                    className="w-full min-h-[44px] rounded-xl border border-white/[0.08] bg-black/60 px-3.5 py-2.5 text-xs text-white placeholder-neutral-500 focus:border-white/30 focus:ring-1 focus:ring-white/20 focus:outline-none font-mono transition-all duration-300 shadow-inner"
                   />
                 </div>
 
@@ -2568,7 +2567,7 @@ export default function LearningDashboardModal({
                   <button
                     type="button"
                     onClick={() => setEditingGithubProject(null)}
-                    className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-white/[0.1] bg-white/[0.03] px-4 py-2 text-xs font-mono text-neutral-300 hover:text-white hover:border-white/20 transition-all cursor-pointer"
+                    className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-white/[0.1] bg-white/[0.03] px-4 py-2 text-xs font-mono text-neutral-300 hover:text-white hover:border-white/20 hover:bg-white/[0.06] transition-all duration-300 cursor-pointer"
                   >
                     Cancel
                   </button>
@@ -2577,7 +2576,7 @@ export default function LearningDashboardModal({
                     onClick={() =>
                       handleSaveGithubUrl(editingGithubProject.id, githubUrlInput)
                     }
-                    className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-white px-5 py-2 text-xs font-bold text-black hover:bg-neutral-200 transition-all cursor-pointer shadow-sm"
+                    className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-white px-5 py-2 text-xs font-bold text-black hover:bg-neutral-200 transition-all duration-300 cursor-pointer shadow-[0_2px_10px_rgba(255,255,255,0.1)] hover:shadow-[0_0_16px_rgba(255,255,255,0.2)]"
                   >
                     Save to Portfolio
                   </button>
@@ -2593,11 +2592,9 @@ export default function LearningDashboardModal({
               role="dialog"
               aria-modal="true"
               aria-label="Share Developer Portfolio"
-              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md"
             >
-              <div className="w-full max-w-lg rounded-2xl border border-white/[0.12] bg-[#0E1016]/95 backdrop-blur-2xl p-6 sm:p-7 shadow-[0_24px_80px_rgba(0,0,0,0.85)] space-y-5 relative overflow-hidden">
-                <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-
+              <div className="relative overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent w-full max-w-lg rounded-2xl border border-white/[0.12] bg-[#080a10]/95 backdrop-blur-2xl p-6 sm:p-7 shadow-[0_32px_96px_rgba(0,0,0,0.85)] space-y-5">
                 <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
                   <div className="flex items-center gap-2">
                     <Share2 className="h-4 w-4 text-white" />
@@ -2606,7 +2603,7 @@ export default function LearningDashboardModal({
                   <button
                     type="button"
                     onClick={() => setIsShareModalOpen(false)}
-                    className="flex min-h-[44px] min-w-[44px] sm:h-8 sm:w-8 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.03] text-neutral-400 hover:text-white hover:border-white/20 cursor-pointer transition-all"
+                    className="flex min-h-[44px] min-w-[44px] sm:h-8 sm:w-8 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.03] text-neutral-400 hover:text-white hover:border-white/20 hover:bg-white/[0.06] cursor-pointer transition-all duration-300"
                     aria-label="Close share modal"
                   >
                     <X className="h-4 w-4" />
@@ -2618,7 +2615,7 @@ export default function LearningDashboardModal({
                 </p>
 
                 {/* Live Portfolio Card Preview */}
-                <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-4.5 space-y-3">
+                <div className="rounded-xl border border-white/[0.08] bg-black/40 p-4.5 space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       {user?.avatar_url && !shareAvatarError ? (
@@ -2636,7 +2633,7 @@ export default function LearningDashboardModal({
                       <div>
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-bold text-white truncate max-w-[150px] sm:max-w-[200px]">{fullName}</span>
-                          <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[9px] font-mono text-neutral-300">
+                          <span className="rounded-full border border-white/10 bg-white/[0.03] px-2 py-0.5 text-[9px] font-mono text-neutral-300">
                             {developerLevel}
                           </span>
                         </div>
@@ -2645,25 +2642,25 @@ export default function LearningDashboardModal({
                         </span>
                       </div>
                     </div>
-                    <span className="text-[10px] font-mono text-neutral-300 border border-white/10 bg-white/[0.04] px-2.5 py-0.5 rounded-full">
+                    <span className="text-[10px] font-mono text-neutral-300 border border-white/10 bg-white/[0.03] px-2.5 py-0.5 rounded-full">
                       Public Ready
                     </span>
                   </div>
 
                   <div className="grid grid-cols-3 gap-2 pt-2 border-t border-white/[0.06] text-center">
-                    <div className="p-2 rounded-lg bg-white/[0.02] border border-white/[0.04]">
+                    <div className="p-2 rounded-lg bg-black/50 border border-white/[0.06]">
                       <span className="text-xs font-bold text-white font-mono block">
                         {completedMilestones}
                       </span>
                       <span className="text-[9px] font-mono text-neutral-400">Milestones</span>
                     </div>
-                    <div className="p-2 rounded-lg bg-white/[0.02] border border-white/[0.04]">
+                    <div className="p-2 rounded-lg bg-black/50 border border-white/[0.06]">
                       <span className="text-xs font-bold text-white font-mono block">
                         {completedProjectsCount}
                       </span>
                       <span className="text-[9px] font-mono text-neutral-400">Projects</span>
                     </div>
-                    <div className="p-2 rounded-lg bg-white/[0.02] border border-white/[0.04]">
+                    <div className="p-2 rounded-lg bg-black/50 border border-white/[0.06]">
                       <span className="text-xs font-bold text-white font-mono block">
                         {streakCount}d
                       </span>
@@ -2678,7 +2675,7 @@ export default function LearningDashboardModal({
                     Public Portfolio URL
                   </label>
                   <div className="flex items-center gap-2">
-                    <div className="flex-1 rounded-xl border border-white/[0.08] bg-black/50 px-3.5 py-2.5 text-xs font-mono text-neutral-300 truncate">
+                    <div className="flex-1 rounded-xl border border-white/[0.08] bg-black/60 px-3.5 py-2.5 text-xs font-mono text-neutral-300 truncate shadow-inner">
                       https://technea.dev/@{(firstName || 'developer').toLowerCase()}
                     </div>
                     <button
@@ -2688,7 +2685,7 @@ export default function LearningDashboardModal({
                         setCopiedLink(true)
                         setTimeout(() => setCopiedLink(false), 2000)
                       }}
-                      className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl bg-white px-4 py-2 text-xs font-bold text-black hover:bg-neutral-200 transition-all cursor-pointer shrink-0 shadow-sm"
+                      className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl bg-white px-4 py-2 text-xs font-bold text-black hover:bg-neutral-200 transition-all duration-300 cursor-pointer shrink-0 shadow-[0_2px_10px_rgba(255,255,255,0.1)] hover:shadow-[0_0_16px_rgba(255,255,255,0.2)]"
                       aria-label={copiedLink ? "Public portfolio link copied" : "Copy public portfolio link"}
                     >
                       {copiedLink ? (
@@ -2710,7 +2707,7 @@ export default function LearningDashboardModal({
                   <button
                     type="button"
                     onClick={() => setIsShareModalOpen(false)}
-                    className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-white/[0.1] bg-white/[0.03] px-5 py-2 text-xs font-mono text-white hover:bg-white/[0.08] hover:border-white/20 transition-all cursor-pointer"
+                    className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-white/[0.1] bg-white/[0.03] px-5 py-2 text-xs font-mono text-white hover:bg-white/[0.08] hover:border-white/20 transition-all duration-300 cursor-pointer"
                   >
                     Done
                   </button>
