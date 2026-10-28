@@ -89,6 +89,7 @@ function AppContent() {
   const {
     user,
     isAuthModalOpen,
+    openAuthModal,
     closeAuthModal,
     authModalMode,
     isDashboardOpen,
@@ -127,6 +128,23 @@ function AppContent() {
       openRoadmapBuilder()
     }
   }, [currentPath, openDashboard, openRoadmapBuilder])
+
+  const handledOpenAuthRef = useRef(false)
+
+  // Auto-open authentication modal when ?open_auth=1 or ?open_auth=true is in search parameters on home route
+  useEffect(() => {
+    const isHome = currentPath === '/' || currentPath === '' || currentPath === '/home'
+    const searchParams = new URLSearchParams(currentSearch)
+    const openAuth = searchParams.get('open_auth')
+    if (isHome && (openAuth === '1' || openAuth === 'true')) {
+      if (!handledOpenAuthRef.current) {
+        handledOpenAuthRef.current = true
+        openAuthModal()
+      }
+    } else {
+      handledOpenAuthRef.current = false
+    }
+  }, [currentPath, currentSearch, openAuthModal])
 
   const isAnyModalOpen = Boolean(
     isAuthModalOpen ||

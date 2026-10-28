@@ -58,16 +58,32 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
 
     # Frontend URL and CORS Configuration
-    FRONTEND_URL: str | None = None
+    FRONTEND_URL: str = "https://technea.vercel.app"
     CORS_ORIGINS: list[str] = [
         "http://localhost:3000",
         "http://localhost:5173",
         "http://127.0.0.1:3000",
         "http://127.0.0.1:5173",
+        "https://technea.vercel.app",
         "https://technea.dev",
         "https://www.technea.dev",
         "https://*.vercel.app",
     ]
+
+    @field_validator("FRONTEND_URL", mode="before")
+    @classmethod
+    def assemble_frontend_url(cls, v: Any) -> str:
+        """Validate and normalize frontend base URL, strictly defaulting to production."""
+        if not v:
+            return "https://technea.vercel.app"
+        val = str(v).strip().rstrip("/")
+        return val if val else "https://technea.vercel.app"
+
+    def get_frontend_url(self) -> str:
+        """Return safe, trimmed frontend base URL without trailing slash."""
+        if self.FRONTEND_URL and str(self.FRONTEND_URL).strip():
+            return str(self.FRONTEND_URL).strip().rstrip("/")
+        return "https://technea.vercel.app"
 
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod
@@ -77,6 +93,7 @@ class Settings(BaseSettings):
             "http://localhost:5173",
             "http://127.0.0.1:3000",
             "http://127.0.0.1:5173",
+            "https://technea.vercel.app",
             "https://technea.dev",
             "https://www.technea.dev",
             "https://*.vercel.app",
@@ -155,10 +172,10 @@ class Settings(BaseSettings):
             self.SYNC_DATABASE_URL = sync_url
 
         # Normalize and include FRONTEND_URL in CORS origins
-        if self.FRONTEND_URL:
-            fe_url = str(self.FRONTEND_URL).strip().rstrip("/")
-            if fe_url and fe_url not in self.CORS_ORIGINS:
-                self.CORS_ORIGINS.append(fe_url)
+        fe_url = self.get_frontend_url()
+        self.FRONTEND_URL = fe_url
+        if fe_url and fe_url not in self.CORS_ORIGINS:
+            self.CORS_ORIGINS.append(fe_url)
 
         self.CORS_ORIGINS = [str(o).strip().rstrip("/") for o in self.CORS_ORIGINS if str(o).strip()]
 

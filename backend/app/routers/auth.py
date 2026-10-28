@@ -1,6 +1,7 @@
 import hashlib
 import hmac
 import secrets
+import urllib.parse
 from datetime import datetime, timedelta, timezone
 from typing import Annotated
 from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile, status
@@ -350,6 +351,49 @@ async def google_auth_login() -> GoogleAuthUrlResponse:
     return GoogleAuthUrlResponse(auth_url=auth_url)
 
 
+ALLOWED_FRONTEND_HOSTS = {
+    "technea.vercel.app",
+    "technea.dev",
+    "www.technea.dev",
+    "localhost:5173",
+    "localhost:3000",
+}
+
+
+def _get_safe_frontend_url(target_url: str | None = None) -> str:
+    """Resolve and validate frontend base URL with strict Open Redirect protection.
+
+    Ensures destination host is in ALLOWED_FRONTEND_HOSTS. Defaults strictly to
+    https://technea.vercel.app without fallback to localhost:3000.
+    """
+    raw = target_url or settings.get_frontend_url()
+    try:
+        parsed = urllib.parse.urlsplit(str(raw).strip())
+        host = (parsed.netloc or parsed.hostname or "").lower()
+        if host in ALLOWED_FRONTEND_HOSTS:
+            scheme = parsed.scheme if parsed.scheme in {"http", "https"} else "https"
+            return f"{scheme}://{host}"
+    except Exception:
+        pass
+    return "https://technea.vercel.app"
+
+
+def _safe_frontend_redirect(target_url: str, status_code: int = status.HTTP_302_FOUND) -> RedirectResponse:
+    """Return RedirectResponse verifying that destination host is strictly in ALLOWED_FRONTEND_HOSTS."""
+    try:
+        parsed = urllib.parse.urlsplit(target_url)
+        host = (parsed.netloc or "").lower()
+        if host in ALLOWED_FRONTEND_HOSTS:
+            return RedirectResponse(url=target_url, status_code=status_code)
+    except Exception:
+        pass
+    parsed = urllib.parse.urlsplit(target_url)
+    fallback = f"https://technea.vercel.app{parsed.path}"
+    if parsed.query:
+        fallback = f"{fallback}?{parsed.query}"
+    return RedirectResponse(url=fallback, status_code=status_code)
+
+
 @router.get(
     "/google/callback",
     summary="Google OAuth callback handler",
@@ -358,58 +402,91 @@ async def google_auth_login() -> GoogleAuthUrlResponse:
 async def google_auth_callback(
     request: Request,
     db: DatabaseDep,
-    code: Annotated[str, Query(..., description="Google OAuth authorization code")],
+    code: Annotated[str | None, Query(description="Google OAuth authorization code")] = None,
+    error: Annotated[str | None, Query(description="Google OAuth error or cancellation")] = None,
     state: Annotated[str | None, Query(description="OAuth state parameter")] = None,
     format: Annotated[str | None, Query(description="Response format ('json' for raw token JSON)")] = None,
 ):
     """Handle Google OAuth code exchange, find/create user, and redirect or return tokens."""
-    user_info = await exchange_code_for_user_info(code=code)
+    frontend_url = _get_safe_frontend_url()
+    accept_header = request.headers.get("accept", "")
+    is_json_request = format == "json" or ("application/json" in accept_header and "text/html" not in accept_header)
 
-    # 1. Look up user by google_id
-    user = await user_service.get_by_google_id(db, google_id=user_info["google_id"])
-    is_new_user = False
-
-    if not user:
-        # 2. Look up user by email to link existing account
-        existing_user = await user_service.get_by_email(db, email=user_info["email"])
-        if existing_user:
-            if not existing_user.google_id:
-                existing_user.google_id = user_info["google_id"]
-            if not existing_user.is_email_verified:
-                existing_user.is_email_verified = True
-            if not existing_user.avatar_url and user_info.get("avatar_url"):
-                existing_user.avatar_url = user_info["avatar_url"]
-            await db.commit()
-            await db.refresh(existing_user)
-            user = existing_user
-        else:
-            # 3. New user registration via Google OAuth
-            user = await user_service.create_google_user(
-                db=db,
-                email=user_info["email"],
-                full_name=user_info.get("name"),
-                google_id=user_info["google_id"],
-                avatar_url=user_info.get("avatar_url"),
+    # 1. Handle error returned by Google consent screen (e.g. error=access_denied)
+    if error:
+        logger.warning("Google OAuth callback received error: %s", error)
+        if is_json_request:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Google OAuth error: {error}",
             )
-            is_new_user = True
-    else:
-        # Existing user found by google_id; update avatar if not set
-        if not user.avatar_url and user_info.get("avatar_url"):
-            user.avatar_url = user_info["avatar_url"]
-            await db.commit()
-            await db.refresh(user)
+        redirect_target = f"{frontend_url}/auth/callback?error={urllib.parse.quote(error)}"
+        return _safe_frontend_redirect(redirect_target)
 
-    if not user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="This user account has been deactivated.",
-        )
+    # 2. Check if authorization code is missing
+    if not code:
+        logger.warning("Google OAuth callback received without code")
+        if is_json_request:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Missing Google OAuth authorization code.",
+            )
+        redirect_target = f"{frontend_url}/auth/callback?error=missing_code"
+        return _safe_frontend_redirect(redirect_target)
+
+    # 3. Exchange code for user info and link/create user
+    try:
+        user_info = await exchange_code_for_user_info(code=code)
+
+        # Look up user by google_id
+        user = await user_service.get_by_google_id(db, google_id=user_info["google_id"])
+        is_new_user = False
+
+        if not user:
+            # Look up user by email to link existing account
+            existing_user = await user_service.get_by_email(db, email=user_info["email"])
+            if existing_user:
+                if not existing_user.google_id:
+                    existing_user.google_id = user_info["google_id"]
+                if not existing_user.is_email_verified:
+                    existing_user.is_email_verified = True
+                if not existing_user.avatar_url and user_info.get("avatar_url"):
+                    existing_user.avatar_url = user_info["avatar_url"]
+                await db.commit()
+                await db.refresh(existing_user)
+                user = existing_user
+            else:
+                # New user registration via Google OAuth
+                user = await user_service.create_google_user(
+                    db=db,
+                    email=user_info["email"],
+                    full_name=user_info.get("name"),
+                    google_id=user_info["google_id"],
+                    avatar_url=user_info.get("avatar_url"),
+                )
+                is_new_user = True
+        else:
+            # Existing user found by google_id; update avatar if not set
+            if not user.avatar_url and user_info.get("avatar_url"):
+                user.avatar_url = user_info["avatar_url"]
+                await db.commit()
+                await db.refresh(user)
+
+        if not user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="This user account has been deactivated.",
+            )
+    except HTTPException as exc:
+        if format != "json" and "text/html" in accept_header:
+            redirect_target = f"{frontend_url}/auth/callback?error={urllib.parse.quote(str(exc.detail))}"
+            return _safe_frontend_redirect(redirect_target)
+        raise exc
 
     access_token = create_access_token(subject=user.id)
 
     # If client explicitly requests JSON (via query param or accept header without html)
-    accept_header = request.headers.get("accept", "")
-    if format == "json" or ("application/json" in accept_header and "text/html" not in accept_header):
+    if is_json_request:
         return GoogleCallbackResponse(
             access_token=access_token,
             token_type="bearer",
@@ -418,9 +495,8 @@ async def google_auth_callback(
         )
 
     # Standard browser flow redirects to frontend callback page
-    frontend_url = (settings.FRONTEND_URL or "http://localhost:3000").rstrip("/")
     redirect_target = f"{frontend_url}/auth/callback?token={access_token}"
-    return RedirectResponse(url=redirect_target, status_code=status.HTTP_302_FOUND)
+    return _safe_frontend_redirect(redirect_target)
 
 
 @router.post(

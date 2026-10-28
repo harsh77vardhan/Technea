@@ -41,6 +41,12 @@ services:
         value: "30"
       - key: FRONTEND_URL
         value: "https://technea.vercel.app"
+      - key: GOOGLE_CLIENT_ID
+        sync: false # Set Google OAuth Client ID in Render Dashboard
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false # Set Google OAuth Client Secret in Render Dashboard
+      - key: GOOGLE_REDIRECT_URI
+        value: "https://technea-backend.onrender.com/auth/google/callback"
       - key: RESEND_API_KEY
         sync: false # Set your Resend API Key (re_...) in Render Dashboard
       - key: EMAIL_FROM

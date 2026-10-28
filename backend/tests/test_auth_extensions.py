@@ -2,7 +2,9 @@
 
 import uuid
 from datetime import datetime, timedelta, timezone
+from unittest.mock import AsyncMock, patch
 import pytest
+from fastapi import HTTPException
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select
 
@@ -281,3 +283,130 @@ async def test_create_google_user_service():
         found = await user_service.get_by_google_id(session, google_id=google_id)
         assert found is not None
         assert found.id == user.id
+
+
+@pytest.mark.asyncio
+async def test_google_oauth_callback_302_redirect_success():
+    """Verify Google OAuth callback redirects 302 to https://technea.vercel.app/auth/callback?token=..."""
+    mock_email = f"google_success_{uuid.uuid4().hex[:8]}@gmail.com"
+    mock_user_info = {
+        "email": mock_email,
+        "name": "OAuth Success User",
+        "google_id": f"gid_{uuid.uuid4().hex[:12]}",
+        "avatar_url": "https://lh3.googleusercontent.com/avatar.jpg",
+        "verified_email": True,
+    }
+
+    with patch("app.routers.auth.exchange_code_for_user_info", new_callable=AsyncMock) as mock_exchange:
+        mock_exchange.return_value = mock_user_info
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+            res = await client.get("/api/v1/auth/google/callback?code=mock_auth_code_123", follow_redirects=False)
+            assert res.status_code == 302
+            location = res.headers.get("location")
+            assert location is not None
+            assert location.startswith("https://technea.vercel.app/auth/callback?token=")
+            token_part = location.split("token=")[1]
+            assert len(token_part) > 20
+
+
+@pytest.mark.asyncio
+async def test_google_oauth_callback_error_access_denied_redirect():
+    """Verify Google OAuth callback with error=access_denied redirects cleanly to /auth/callback?error=access_denied."""
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        res = await client.get("/api/v1/auth/google/callback?error=access_denied", follow_redirects=False)
+        assert res.status_code == 302
+        location = res.headers.get("location")
+        assert location == "https://technea.vercel.app/auth/callback?error=access_denied"
+
+
+@pytest.mark.asyncio
+async def test_google_oauth_callback_missing_code_redirect():
+    """Verify Google OAuth callback without code or error redirects cleanly to /auth/callback?error=missing_code."""
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        res = await client.get("/api/v1/auth/google/callback", follow_redirects=False)
+        assert res.status_code == 302
+        location = res.headers.get("location")
+        assert location == "https://technea.vercel.app/auth/callback?error=missing_code"
+
+
+@pytest.mark.asyncio
+async def test_google_oauth_callback_json_response_format():
+    """Verify JSON response format when requested via format=json or Accept: application/json."""
+    mock_email = f"google_json_{uuid.uuid4().hex[:8]}@gmail.com"
+    mock_user_info = {
+        "email": mock_email,
+        "name": "JSON Format User",
+        "google_id": f"gid_{uuid.uuid4().hex[:12]}",
+        "avatar_url": "https://lh3.googleusercontent.com/avatar_json.jpg",
+        "verified_email": True,
+    }
+
+    # Test via query parameter format=json
+    with patch("app.routers.auth.exchange_code_for_user_info", new_callable=AsyncMock) as mock_exchange:
+        mock_exchange.return_value = mock_user_info
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+            res = await client.get("/api/v1/auth/google/callback?code=mock_json_code&format=json")
+            assert res.status_code == 200
+            data = res.json()
+            assert "access_token" in data
+            assert data["token_type"] == "bearer"
+            assert data["user"]["email"] == mock_email
+            assert data["user"]["auth_provider"] == "google"
+
+    # Test via header Accept: application/json
+    mock_email_header = f"google_hdr_{uuid.uuid4().hex[:8]}@gmail.com"
+    mock_user_info["email"] = mock_email_header
+    mock_user_info["google_id"] = f"gid_{uuid.uuid4().hex[:12]}"
+    with patch("app.routers.auth.exchange_code_for_user_info", new_callable=AsyncMock) as mock_exchange:
+        mock_exchange.return_value = mock_user_info
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+            res = await client.get(
+                "/api/v1/auth/google/callback?code=mock_hdr_code",
+                headers={"Accept": "application/json"},
+            )
+            assert res.status_code == 200
+            data = res.json()
+            assert "access_token" in data
+            assert data["user"]["email"] == mock_email_header
+
+
+@pytest.mark.asyncio
+async def test_google_oauth_callback_browser_flow_http_exception():
+    """Verify browser flow (Accept: text/html) catches HTTPException and redirects to error page."""
+    with patch("app.routers.auth.exchange_code_for_user_info", new_callable=AsyncMock) as mock_exchange:
+        mock_exchange.side_effect = HTTPException(
+            status_code=400,
+            detail="Failed to exchange authorization code with Google.",
+        )
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+            res = await client.get(
+                "/api/v1/auth/google/callback?code=invalid_token_code",
+                headers={"Accept": "text/html,application/xhtml+xml"},
+                follow_redirects=False,
+            )
+            assert res.status_code == 302
+            location = res.headers.get("location")
+            assert location is not None
+            assert location.startswith("https://technea.vercel.app/auth/callback?error=")
+            assert "Failed%20to%20exchange" in location
+
+
+@pytest.mark.asyncio
+async def test_google_oauth_open_redirect_protection():
+    """Verify open redirect protection prevents redirects to unapproved external domains."""
+    from app.routers.auth import _safe_frontend_redirect
+
+    # Allowed domain redirects successfully
+    allowed_resp = _safe_frontend_redirect("https://technea.vercel.app/auth/callback?token=abc")
+    assert allowed_resp.headers["location"] == "https://technea.vercel.app/auth/callback?token=abc"
+
+    # Disallowed external malicious domain is safely redirected to technea.vercel.app
+    malicious_resp = _safe_frontend_redirect("https://evil-phishing.com/auth/callback?token=stolen")
+    assert malicious_resp.headers["location"] == "https://technea.vercel.app/auth/callback?token=stolen"
+

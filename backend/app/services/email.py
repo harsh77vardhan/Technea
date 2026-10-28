@@ -20,10 +20,10 @@ class EmailService:
     """Service handling transactional emails via Resend API with SMTP fallback."""
 
     def _get_frontend_url(self) -> str:
-        """Resolve frontend base URL with fallback to local development."""
+        """Resolve frontend base URL with fallback to production."""
         if settings.FRONTEND_URL and settings.FRONTEND_URL.strip():
             return settings.FRONTEND_URL.strip().rstrip("/")
-        return "http://localhost:3000"
+        return "https://technea.vercel.app"
 
     def _is_smtp_configured(self) -> bool:
         """Check if SMTP settings are configured."""
