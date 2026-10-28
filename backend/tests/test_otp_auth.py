@@ -171,6 +171,74 @@ async def test_send_otp_cooldown_rate_limit():
         assert "seconds before requesting a new code" in detail
 
 
+@pytest.mark.asyncio
+async def test_send_otp_resend_403_cleans_up_record_and_permits_retry():
+    """Verify that when Resend returns 403 sandbox restriction, OTP record is deleted and retry is permitted."""
+    test_email = f"sandbox_403_{uuid.uuid4().hex[:8]}@technea.dev"
+    transport = ASGITransport(app=app)
+
+    sandbox_403_error = (
+        "Email provider is in sandbox/testing mode: sending is restricted to verified accounts. "
+        "To send to all users in production, add and verify a custom domain in your Resend Dashboard "
+        "and configure EMAIL_FROM, or provide SMTP credentials."
+    )
+
+    with patch.object(
+        email_service,
+        "send_otp_email",
+        return_value=(False, sandbox_403_error),
+    ):
+        async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+            res = await client.post("/auth/send-otp", json={"email": test_email})
+            assert res.status_code == 502
+            data = res.json()
+            assert "sandbox/testing mode" in data["detail"]
+            assert "custom domain" in data["detail"]
+
+    # Confirm OTP record was deleted from database
+    async with async_session_maker() as session:
+        result = await session.execute(select(EmailOTP).where(EmailOTP.email == test_email.lower()))
+        assert result.scalars().first() is None
+
+    # Verify that retry is immediately permitted without 429 cooldown lockout
+    with patch.object(
+        email_service,
+        "send_otp_email",
+        return_value=(True, None),
+    ):
+        async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+            retry_res = await client.post("/auth/send-otp", json={"email": test_email})
+            assert retry_res.status_code == 200
+            assert retry_res.json()["message"] == "Verification code sent to your email."
+
+
+@pytest.mark.asyncio
+async def test_send_otp_sender_address_format_clean():
+    """Verify send_otp correctly cleans quotes and extra whitespace from EMAIL_FROM."""
+    orig_from = settings.EMAIL_FROM
+    orig_key = settings.RESEND_API_KEY
+    try:
+        settings.EMAIL_FROM = '  "Technea Security" <security@technea.dev>  '
+        settings.RESEND_API_KEY = "re_test_key"
+        assert email_service._get_sender_address() == "Technea Security <security@technea.dev>"
+
+        with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
+            mock_post.return_value = AsyncMock(status_code=200, is_success=True, text="ok")
+
+            success, error_msg = await email_service.send_otp_email(
+                to_email="clean_sender@technea.dev",
+                otp="987654",
+            )
+            assert success is True
+            assert error_msg is None
+            assert mock_post.called
+            payload = mock_post.call_args.kwargs["json"]
+            assert payload["from"] == "Technea Security <security@technea.dev>"
+    finally:
+        settings.EMAIL_FROM = orig_from
+        settings.RESEND_API_KEY = orig_key
+
+
 # -----------------------------------------------------------------------------
 # 4. POST /auth/verify-otp Tests
 # -----------------------------------------------------------------------------

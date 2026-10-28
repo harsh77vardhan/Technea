@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Check, AlertCircle, ArrowRight, ArrowLeft } from 'lucide-react'
 import { verifyEmailApi } from '../../services/api'
 
 export default function VerifyEmailPage() {
@@ -28,47 +29,73 @@ export default function VerifyEmailPage() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center p-6">
-      <div className="w-full max-w-md text-center">
+    <div className="min-h-screen bg-[#050505] flex items-center justify-center p-6 text-white relative selection:bg-[#333] selection:text-white overflow-hidden">
+      {/* Background ambient lighting & technical grid */}
+      <div
+        className="fixed inset-0 pointer-events-none bg-[radial-gradient(ellipse_80%_50%_at_50%_-10%,rgba(255,255,255,0.06),transparent_70%)]"
+        aria-hidden="true"
+      />
+      <div
+        className="fixed inset-0 pointer-events-none bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:32px_32px]"
+        aria-hidden="true"
+      />
+
+      <div className="relative z-10 w-full max-w-md overflow-hidden rounded-2xl border border-[#1a1a1a] bg-[#0A0A0A]/95 p-8 text-center shadow-[0_25px_80px_-15px_rgba(0,0,0,0.9),0_0_0_1px_rgba(255,255,255,0.06)] backdrop-blur-2xl">
+        {/* Top telemetry pill badge */}
+        <div className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[11px] font-mono text-neutral-300 mb-6">
+          <span className="h-1.5 w-1.5 rounded-full bg-neutral-300 animate-pulse" />
+          <span>TECHNEA // VERIFICATION</span>
+        </div>
+
         {status === 'loading' && (
-          <>
-            <div className="w-8 h-8 border border-white/20 border-t-white rounded-full animate-spin mx-auto mb-6" />
-            <p className="text-neutral-400 text-sm">Verifying your email...</p>
-          </>
+          <div className="space-y-4">
+            <div className="relative mx-auto mb-6 h-12 w-12 flex items-center justify-center">
+              <div className="absolute inset-0 rounded-full border border-white/10" />
+              <div className="h-12 w-12 rounded-full border-2 border-white/20 border-t-white animate-spin" />
+            </div>
+            <h1 className="text-xl font-bold tracking-tight text-white">Verifying your email...</h1>
+            <p className="text-neutral-400 text-sm leading-relaxed">
+              Please wait while we confirm your email credentials with the identity subsystem.
+            </p>
+          </div>
         )}
+
         {status === 'success' && (
-          <>
-            <div className="w-12 h-12 rounded-full border border-emerald-500/30 bg-emerald-500/10 flex items-center justify-center mx-auto mb-6">
-              <svg className="w-5 h-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
+          <div>
+            <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-2xl border border-white/15 bg-white/[0.05] text-white shadow-sm">
+              <Check className="h-6 w-6 text-white" />
             </div>
-            <h1 className="text-xl font-semibold text-white mb-2">Email Verified</h1>
-            <p className="text-neutral-400 text-sm mb-8">{message}</p>
+            <h1 className="text-xl font-bold tracking-tight text-white mb-2">Email Verified</h1>
+            <p className="text-neutral-400 text-sm mb-8 leading-relaxed">{message}</p>
             <button
-              onClick={() => { window.location.href = '/' }}
-              className="px-6 py-2.5 rounded-xl bg-white text-black text-sm font-semibold hover:bg-neutral-100 transition cursor-pointer"
+              onClick={() => {
+                window.location.href = '/'
+              }}
+              className="w-full inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-white px-6 py-2.5 text-sm font-semibold text-black hover:bg-neutral-200 transition-colors cursor-pointer shadow-md"
             >
-              Continue to Technea
+              <span>Continue to Technea</span>
+              <ArrowRight className="h-4 w-4" />
             </button>
-          </>
+          </div>
         )}
+
         {status === 'error' && (
-          <>
-            <div className="w-12 h-12 rounded-full border border-red-500/30 bg-red-500/10 flex items-center justify-center mx-auto mb-6">
-              <svg className="w-5 h-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
+          <div>
+            <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-2xl border border-white/15 bg-white/[0.05] text-white shadow-sm">
+              <AlertCircle className="h-6 w-6 text-neutral-300" />
             </div>
-            <h1 className="text-xl font-semibold text-white mb-2">Verification Failed</h1>
-            <p className="text-neutral-400 text-sm mb-8">{message}</p>
+            <h1 className="text-xl font-bold tracking-tight text-white mb-2">Verification Incomplete</h1>
+            <p className="text-neutral-400 text-sm mb-8 leading-relaxed">{message}</p>
             <button
-              onClick={() => { window.location.href = '/' }}
-              className="px-6 py-2.5 rounded-xl border border-[#2a2a2a] text-neutral-300 text-sm hover:border-[#444] transition cursor-pointer"
+              onClick={() => {
+                window.location.href = '/'
+              }}
+              className="w-full inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-[#222] bg-[#0d0d0d] px-6 py-2.5 text-sm font-medium text-neutral-300 hover:border-[#444] hover:text-white transition-colors cursor-pointer"
             >
-              Back to Home
+              <ArrowLeft className="h-4 w-4" />
+              <span>Back to Home</span>
             </button>
-          </>
+          </div>
         )}
       </div>
     </div>

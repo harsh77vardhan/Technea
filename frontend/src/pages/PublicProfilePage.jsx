@@ -55,18 +55,18 @@ function LinkedinIcon({ className = 'h-3.5 w-3.5' }) {
 function getBadgeIcon(iconName) {
   switch (iconName) {
     case 'flame':
-      return <Flame className="h-4 w-4 text-amber-400" />
+      return <Flame className="h-4 w-4 text-neutral-200" />
     case 'target':
-      return <Target className="h-4 w-4 text-emerald-400" />
+      return <Target className="h-4 w-4 text-neutral-200" />
     case 'folder_git':
-      return <FolderGit2 className="h-4 w-4 text-blue-400" />
+      return <FolderGit2 className="h-4 w-4 text-neutral-200" />
     case 'users':
-      return <Users className="h-4 w-4 text-purple-400" />
+      return <Users className="h-4 w-4 text-neutral-200" />
     case 'layers':
-      return <Layers className="h-4 w-4 text-cyan-400" />
+      return <Layers className="h-4 w-4 text-neutral-200" />
     case 'sparkles':
     default:
-      return <Sparkles className="h-4 w-4 text-amber-300" />
+      return <Sparkles className="h-4 w-4 text-neutral-200" />
   }
 }
 
@@ -322,7 +322,7 @@ export default function PublicProfilePage({
   return (
     <div className="min-h-screen bg-[#050505] text-[#EDEDED] antialiased selection:bg-[#333333] selection:text-white relative overflow-x-clip">
       {/* Background radial glow & dark command grid */}
-      <div className="fixed inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.12),rgba(255,255,255,0))] pointer-events-none" />
+      <div className="fixed inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(255,255,255,0.06),transparent)] pointer-events-none" />
       <div className="fixed inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
 
       {/* Top Header Command Bar */}
@@ -331,7 +331,7 @@ export default function PublicProfilePage({
           <button
             type="button"
             onClick={handleBack}
-            className="inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-white/[0.08] bg-[#0E0E0E] px-3.5 py-2 text-xs font-mono text-[#A1A1A1] hover:text-[#EDEDED] hover:border-white/[0.18] transition-colors cursor-pointer"
+            className="inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-[#222] bg-[#0d0d0d] px-3.5 py-2 text-xs font-mono text-neutral-300 hover:text-white hover:border-[#444] transition-colors cursor-pointer"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
             <span>Return to Technea</span>
@@ -345,7 +345,7 @@ export default function PublicProfilePage({
               DEVELOPER IDENTITY
             </span>
             {currentUsername && (
-              <span className="rounded-[4px] border border-white/[0.06] bg-[#121212] px-2 py-0.5 text-[11px] font-mono text-cyan-400">
+              <span className="rounded-md border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[11px] font-mono text-neutral-300">
                 @{currentUsername}
               </span>
             )}
@@ -356,9 +356,9 @@ export default function PublicProfilePage({
               <button
                 type="button"
                 onClick={() => setIsEditorOpen(true)}
-                className="hidden sm:inline-flex items-center gap-1.5 rounded-[6px] border border-white/[0.1] bg-[#141414] px-3 py-1.5 text-xs font-mono font-medium text-[#EDEDED] hover:bg-[#1E1E1E] transition-colors cursor-pointer"
+                className="hidden sm:inline-flex items-center gap-1.5 rounded-xl border border-[#222] bg-[#0d0d0d] px-3.5 py-1.5 text-xs font-mono font-medium text-neutral-300 hover:border-[#444] hover:text-white transition-colors cursor-pointer"
               >
-                <Pencil className="h-3 w-3 text-[#A1A1A1]" />
+                <Pencil className="h-3 w-3 text-neutral-400" />
                 <span>Edit</span>
               </button>
             )}
@@ -366,13 +366,13 @@ export default function PublicProfilePage({
             <button
               type="button"
               onClick={handleShareProfile}
-              className="inline-flex items-center gap-1.5 rounded-[6px] border border-white/[0.08] bg-[#0E0E0E] px-3 py-1.5 text-xs font-mono text-[#A1A1A1] hover:text-[#EDEDED] hover:border-white/[0.18] transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-[#222] bg-[#0d0d0d] px-3 py-1.5 text-xs font-mono text-neutral-300 hover:text-white hover:border-[#444] transition-colors cursor-pointer"
               title="Copy public profile URL"
             >
               {copiedLink ? (
                 <>
-                  <Check className="h-3 w-3 text-emerald-400" />
-                  <span className="text-emerald-400 text-xs">Copied</span>
+                  <Check className="h-3 w-3 text-white" />
+                  <span className="text-white text-xs">Copied</span>
                 </>
               ) : (
                 <>
@@ -394,17 +394,17 @@ export default function PublicProfilePage({
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mx-auto max-w-md rounded-[14px] border border-red-500/20 bg-[#0C0C0C]/90 p-8 text-center space-y-5 my-20 shadow-2xl backdrop-blur-md"
+            className="mx-auto max-w-md rounded-2xl border border-[#1a1a1a] bg-[#0d0d0d]/95 p-8 text-center space-y-5 my-20 shadow-2xl backdrop-blur-md"
           >
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-red-950/40 border border-red-500/30 text-red-400">
-              <AlertCircle className="h-7 w-7" />
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white/[0.04] border border-white/10 text-neutral-300 shadow-sm">
+              <AlertCircle className="h-7 w-7 text-neutral-300" />
             </div>
 
             <div className="space-y-1.5">
-              <h2 className="text-base font-mono font-bold text-[#EDEDED]">
+              <h2 className="text-base font-mono font-bold text-white">
                 Developer Profile Not Found
               </h2>
-              <p className="text-xs text-[#888888] leading-relaxed">
+              <p className="text-xs text-neutral-400 leading-relaxed">
                 The developer account you are looking for does not exist, has been renamed, or is currently private.
               </p>
             </div>
@@ -413,7 +413,7 @@ export default function PublicProfilePage({
               <button
                 type="button"
                 onClick={handleBack}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 rounded-[6px] bg-[#EDEDED] px-4 py-2 text-xs font-mono font-bold text-[#050505] hover:bg-white transition-all cursor-pointer shadow-xs"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 rounded-xl bg-white px-5 py-2.5 text-xs font-mono font-semibold text-black hover:bg-neutral-200 transition-all cursor-pointer shadow-sm"
               >
                 Return to Technea
               </button>
@@ -421,7 +421,7 @@ export default function PublicProfilePage({
                 <button
                   type="button"
                   onClick={() => handleNavigateUser(user.username)}
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 rounded-[6px] border border-white/[0.1] bg-[#141414] px-4 py-2 text-xs font-mono font-semibold text-[#EDEDED] hover:bg-[#1E1E1E] transition-all cursor-pointer"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 rounded-xl border border-[#222] bg-[#0d0d0d] px-4 py-2.5 text-xs font-mono font-medium text-neutral-300 hover:border-[#444] hover:text-white transition-all cursor-pointer"
                 >
                   View My Profile
                 </button>
@@ -455,12 +455,12 @@ export default function PublicProfilePage({
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-amber-400" />
-                  <h2 className="text-xs font-mono uppercase tracking-wider text-[#A1A1A1]">
+                  <Sparkles className="h-4 w-4 text-neutral-300" />
+                  <h2 className="text-xs font-mono uppercase tracking-wider text-neutral-400">
                     Developer Progression Matrix
                   </h2>
                 </div>
-                <span className="text-[11px] font-mono text-[#737373]">
+                <span className="text-[11px] font-mono text-neutral-400">
                   Tier: <span className={tierConfig.accentText}>{profile.developer_level}</span>
                 </span>
               </div>
@@ -469,17 +469,17 @@ export default function PublicProfilePage({
               <div className="rounded-2xl border border-white/[0.08] bg-[#0D0D0D]/90 backdrop-blur-xl p-5 sm:p-6 space-y-3.5 shadow-2xl relative overflow-hidden">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 text-xs font-mono">
                   <div className="flex items-center gap-2.5 flex-wrap">
-                    <Trophy className="h-4 w-4 text-amber-400 shrink-0" />
+                    <Trophy className="h-4 w-4 text-neutral-300 shrink-0" />
                     <span className="font-extrabold text-xl text-white">
                       {profile.xp_points?.toLocaleString() || 0} XP
                     </span>
-                    <span className="text-[#8A8F98]">
+                    <span className="text-neutral-400">
                       / {profile.next_level_xp?.toLocaleString() || 500} XP to next tier
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-[11px] text-[#8A8F98]">Progression</span>
-                    <span className="text-xs font-bold font-mono text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-md border border-amber-400/20">
+                    <span className="text-[11px] text-neutral-400">Progression</span>
+                    <span className="text-xs font-bold font-mono text-white bg-white/[0.08] px-2.5 py-0.5 rounded-md border border-white/15">
                       {profile.level_progress_percent}%
                     </span>
                   </div>
@@ -497,80 +497,80 @@ export default function PublicProfilePage({
               {/* 6 High-Signal Command Center Metric Cards */}
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
                 {/* 1. Learning Streak */}
-                <div className="rounded-xl border border-white/[0.08] bg-[#0D0D0D]/90 p-4 space-y-2 backdrop-blur-xl hover:border-white/[0.22] hover:-translate-y-0.5 hover:shadow-[0_8px_25px_rgba(0,0,0,0.6)] transition-all duration-200 group">
+                <div className="rounded-xl border border-white/[0.08] bg-[#0D0D0D]/90 p-4 space-y-2 backdrop-blur-xl hover:border-white/20 hover:-translate-y-0.5 hover:shadow-[0_8px_25px_rgba(0,0,0,0.6)] transition-all duration-200 group">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-mono uppercase tracking-wider text-[#8A8F98]">
+                    <span className="text-[10px] font-mono uppercase tracking-wider text-neutral-400">
                       Active Streak
                     </span>
-                    <Flame className="h-4 w-4 text-amber-500 animate-pulse" />
+                    <Flame className="h-4 w-4 text-neutral-300" />
                   </div>
-                  <p className="text-xl sm:text-2xl font-bold font-mono text-[#EDEDED] group-hover:text-white transition-colors">
+                  <p className="text-xl sm:text-2xl font-bold font-mono text-white">
                     {profile.learning_streak}{' '}
-                    <span className="text-xs font-normal text-[#8A8F98]">days</span>
+                    <span className="text-xs font-normal text-neutral-400">days</span>
                   </p>
                 </div>
 
                 {/* 2. Completed Roadmaps */}
-                <div className="rounded-xl border border-white/[0.08] bg-[#0D0D0D]/90 p-4 space-y-2 backdrop-blur-xl hover:border-cyan-500/30 hover:-translate-y-0.5 hover:shadow-[0_8px_25px_rgba(6,182,212,0.1)] transition-all duration-200 group">
+                <div className="rounded-xl border border-white/[0.08] bg-[#0D0D0D]/90 p-4 space-y-2 backdrop-blur-xl hover:border-white/20 hover:-translate-y-0.5 hover:shadow-[0_8px_25px_rgba(0,0,0,0.6)] transition-all duration-200 group">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-mono uppercase tracking-wider text-[#8A8F98]">
+                    <span className="text-[10px] font-mono uppercase tracking-wider text-neutral-400">
                       Roadmaps
                     </span>
-                    <Compass className="h-4 w-4 text-cyan-400" />
+                    <Compass className="h-4 w-4 text-neutral-300" />
                   </div>
-                  <p className="text-xl sm:text-2xl font-bold font-mono text-[#EDEDED] group-hover:text-white transition-colors">
+                  <p className="text-xl sm:text-2xl font-bold font-mono text-white">
                     {completedRoadmapsCount}
                   </p>
                 </div>
 
                 {/* 3. Milestones Mastered */}
-                <div className="rounded-xl border border-white/[0.08] bg-[#0D0D0D]/90 p-4 space-y-2 backdrop-blur-xl hover:border-emerald-500/30 hover:-translate-y-0.5 hover:shadow-[0_8px_25px_rgba(16,185,129,0.1)] transition-all duration-200 group">
+                <div className="rounded-xl border border-white/[0.08] bg-[#0D0D0D]/90 p-4 space-y-2 backdrop-blur-xl hover:border-white/20 hover:-translate-y-0.5 hover:shadow-[0_8px_25px_rgba(0,0,0,0.6)] transition-all duration-200 group">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-mono uppercase tracking-wider text-[#8A8F98]">
+                    <span className="text-[10px] font-mono uppercase tracking-wider text-neutral-400">
                       Milestones
                     </span>
-                    <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                    <CheckCircle2 className="h-4 w-4 text-neutral-300" />
                   </div>
-                  <p className="text-xl sm:text-2xl font-bold font-mono text-[#EDEDED] group-hover:text-white transition-colors">
+                  <p className="text-xl sm:text-2xl font-bold font-mono text-white">
                     {profile.completed_milestones_count || 0}
                   </p>
                 </div>
 
                 {/* 4. Lessons Completed */}
-                <div className="rounded-xl border border-white/[0.08] bg-[#0D0D0D]/90 p-4 space-y-2 backdrop-blur-xl hover:border-blue-500/30 hover:-translate-y-0.5 hover:shadow-[0_8px_25px_rgba(59,130,246,0.1)] transition-all duration-200 group">
+                <div className="rounded-xl border border-white/[0.08] bg-[#0D0D0D]/90 p-4 space-y-2 backdrop-blur-xl hover:border-white/20 hover:-translate-y-0.5 hover:shadow-[0_8px_25px_rgba(0,0,0,0.6)] transition-all duration-200 group">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-mono uppercase tracking-wider text-[#8A8F98]">
+                    <span className="text-[10px] font-mono uppercase tracking-wider text-neutral-400">
                       Lessons
                     </span>
-                    <BookOpen className="h-4 w-4 text-blue-400" />
+                    <BookOpen className="h-4 w-4 text-neutral-300" />
                   </div>
-                  <p className="text-xl sm:text-2xl font-bold font-mono text-[#EDEDED] group-hover:text-white transition-colors">
+                  <p className="text-xl sm:text-2xl font-bold font-mono text-white">
                     {profile.completed_courses_count || 0}
                   </p>
                 </div>
 
                 {/* 5. Projects Built */}
-                <div className="rounded-xl border border-white/[0.08] bg-[#0D0D0D]/90 p-4 space-y-2 backdrop-blur-xl hover:border-purple-500/30 hover:-translate-y-0.5 hover:shadow-[0_8px_25px_rgba(168,85,247,0.1)] transition-all duration-200 group">
+                <div className="rounded-xl border border-white/[0.08] bg-[#0D0D0D]/90 p-4 space-y-2 backdrop-blur-xl hover:border-white/20 hover:-translate-y-0.5 hover:shadow-[0_8px_25px_rgba(0,0,0,0.6)] transition-all duration-200 group">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-mono uppercase tracking-wider text-[#8A8F98]">
+                    <span className="text-[10px] font-mono uppercase tracking-wider text-neutral-400">
                       Projects
                     </span>
-                    <FolderGit2 className="h-4 w-4 text-purple-400" />
+                    <FolderGit2 className="h-4 w-4 text-neutral-300" />
                   </div>
-                  <p className="text-xl sm:text-2xl font-bold font-mono text-[#EDEDED] group-hover:text-white transition-colors">
+                  <p className="text-xl sm:text-2xl font-bold font-mono text-white">
                     {profile.completed_projects_count || profile.projects?.length || 0}
                   </p>
                 </div>
 
                 {/* 6. Total Platform XP */}
-                <div className="rounded-xl border border-white/[0.08] bg-[#0D0D0D]/90 p-4 space-y-2 backdrop-blur-xl hover:border-amber-400/30 hover:-translate-y-0.5 hover:shadow-[0_8px_25px_rgba(251,191,36,0.1)] transition-all duration-200 group">
+                <div className="rounded-xl border border-white/[0.08] bg-[#0D0D0D]/90 p-4 space-y-2 backdrop-blur-xl hover:border-white/20 hover:-translate-y-0.5 hover:shadow-[0_8px_25px_rgba(0,0,0,0.6)] transition-all duration-200 group">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-mono uppercase tracking-wider text-[#8A8F98]">
+                    <span className="text-[10px] font-mono uppercase tracking-wider text-neutral-400">
                       Total XP
                     </span>
-                    <Sparkles className="h-4 w-4 text-amber-400" />
+                    <Sparkles className="h-4 w-4 text-neutral-300" />
                   </div>
-                  <p className="text-xl sm:text-2xl font-bold font-mono text-amber-300">
+                  <p className="text-xl sm:text-2xl font-bold font-mono text-white">
                     {profile.xp_points || 0}
                   </p>
                 </div>
@@ -586,18 +586,18 @@ export default function PublicProfilePage({
                   className={`relative inline-flex items-center gap-2 px-4 py-3.5 text-xs font-mono font-medium transition-all cursor-pointer whitespace-nowrap ${
                     activeTab === 'skills'
                       ? 'text-white font-bold'
-                      : 'text-[#8A8F98] hover:text-[#EDEDED]'
+                      : 'text-neutral-400 hover:text-white'
                   }`}
                 >
-                  <Layers className="h-3.5 w-3.5 text-emerald-400" />
+                  <Layers className="h-3.5 w-3.5 text-neutral-300" />
                   <span>Skills Mastery</span>
-                  <span className="rounded-full bg-white/[0.08] px-1.5 py-0.2 text-[10px]">
+                  <span className="rounded-full bg-white/[0.08] px-1.5 py-0.2 text-[10px] text-neutral-300">
                     {profile.skills?.length || 0}
                   </span>
                   {activeTab === 'skills' && (
                     <motion.div
                       layoutId="publicProfileActiveTabIndicator"
-                      className="absolute bottom-0 left-0 right-0 h-[2px] bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.8)]"
+                      className="absolute bottom-0 left-0 right-0 h-[2px] bg-white shadow-[0_0_8px_rgba(255,255,255,0.4)]"
                       transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                     />
                   )}
@@ -609,18 +609,18 @@ export default function PublicProfilePage({
                   className={`relative inline-flex items-center gap-2 px-4 py-3.5 text-xs font-mono font-medium transition-all cursor-pointer whitespace-nowrap ${
                     activeTab === 'roadmaps'
                       ? 'text-white font-bold'
-                      : 'text-[#8A8F98] hover:text-[#EDEDED]'
+                      : 'text-neutral-400 hover:text-white'
                   }`}
                 >
-                  <Route className="h-3.5 w-3.5 text-cyan-400" />
+                  <Route className="h-3.5 w-3.5 text-neutral-300" />
                   <span>Learning Journey & Roadmaps</span>
-                  <span className="rounded-full bg-white/[0.08] px-1.5 py-0.2 text-[10px]">
+                  <span className="rounded-full bg-white/[0.08] px-1.5 py-0.2 text-[10px] text-neutral-300">
                     {roadmaps.length || (profile.completed_milestones_count ? 1 : 0)}
                   </span>
                   {activeTab === 'roadmaps' && (
                     <motion.div
                       layoutId="publicProfileActiveTabIndicator"
-                      className="absolute bottom-0 left-0 right-0 h-[2px] bg-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.8)]"
+                      className="absolute bottom-0 left-0 right-0 h-[2px] bg-white shadow-[0_0_8px_rgba(255,255,255,0.4)]"
                       transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                     />
                   )}
@@ -632,18 +632,18 @@ export default function PublicProfilePage({
                   className={`relative inline-flex items-center gap-2 px-4 py-3.5 text-xs font-mono font-medium transition-all cursor-pointer whitespace-nowrap ${
                     activeTab === 'projects'
                       ? 'text-white font-bold'
-                      : 'text-[#8A8F98] hover:text-[#EDEDED]'
+                      : 'text-neutral-400 hover:text-white'
                   }`}
                 >
-                  <FolderGit2 className="h-3.5 w-3.5 text-purple-400" />
+                  <FolderGit2 className="h-3.5 w-3.5 text-neutral-300" />
                   <span>Portfolio Projects</span>
-                  <span className="rounded-full bg-white/[0.08] px-1.5 py-0.2 text-[10px]">
+                  <span className="rounded-full bg-white/[0.08] px-1.5 py-0.2 text-[10px] text-neutral-300">
                     {profile.projects?.length || 0}
                   </span>
                   {activeTab === 'projects' && (
                     <motion.div
                       layoutId="publicProfileActiveTabIndicator"
-                      className="absolute bottom-0 left-0 right-0 h-[2px] bg-purple-400 shadow-[0_0_12px_rgba(168,85,247,0.8)]"
+                      className="absolute bottom-0 left-0 right-0 h-[2px] bg-white shadow-[0_0_8px_rgba(255,255,255,0.4)]"
                       transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                     />
                   )}
@@ -655,15 +655,15 @@ export default function PublicProfilePage({
                   className={`relative inline-flex items-center gap-2 px-4 py-3.5 text-xs font-mono font-medium transition-all cursor-pointer whitespace-nowrap ${
                     activeTab === 'links'
                       ? 'text-white font-bold'
-                      : 'text-[#8A8F98] hover:text-[#EDEDED]'
+                      : 'text-neutral-400 hover:text-white'
                   }`}
                 >
-                  <Globe className="h-3.5 w-3.5 text-blue-400" />
+                  <Globe className="h-3.5 w-3.5 text-neutral-300" />
                   <span>External Links</span>
                   {activeTab === 'links' && (
                     <motion.div
                       layoutId="publicProfileActiveTabIndicator"
-                      className="absolute bottom-0 left-0 right-0 h-[2px] bg-blue-400 shadow-[0_0_12px_rgba(59,130,246,0.8)]"
+                      className="absolute bottom-0 left-0 right-0 h-[2px] bg-white shadow-[0_0_8px_rgba(255,255,255,0.4)]"
                       transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                     />
                   )}
@@ -675,18 +675,18 @@ export default function PublicProfilePage({
                   className={`relative inline-flex items-center gap-2 px-4 py-3.5 text-xs font-mono font-medium transition-all cursor-pointer whitespace-nowrap ${
                     activeTab === 'achievements'
                       ? 'text-white font-bold'
-                      : 'text-[#8A8F98] hover:text-[#EDEDED]'
+                      : 'text-neutral-400 hover:text-white'
                   }`}
                 >
-                  <Trophy className="h-3.5 w-3.5 text-amber-400" />
+                  <Trophy className="h-3.5 w-3.5 text-neutral-300" />
                   <span>Achievements</span>
-                  <span className="rounded-full bg-amber-400/20 text-amber-400 px-1.5 py-0.2 text-[10px]">
+                  <span className="rounded-full bg-white/[0.08] text-neutral-300 px-1.5 py-0.2 text-[10px]">
                     {unlockedAchievementsCount}/{profile.achievements?.length || 0}
                   </span>
                   {activeTab === 'achievements' && (
                     <motion.div
                       layoutId="publicProfileActiveTabIndicator"
-                      className="absolute bottom-0 left-0 right-0 h-[2px] bg-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.8)]"
+                      className="absolute bottom-0 left-0 right-0 h-[2px] bg-white shadow-[0_0_8px_rgba(255,255,255,0.4)]"
                       transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                     />
                   )}
@@ -720,27 +720,27 @@ export default function PublicProfilePage({
                       {profile.skills.map((skill) => (
                         <div
                           key={skill.skill_id}
-                          className="rounded-xl border border-white/[0.08] bg-[#0D0D0D]/90 p-4 sm:p-5 space-y-3.5 backdrop-blur-xl hover:border-emerald-500/40 hover:-translate-y-0.5 hover:shadow-[0_8px_25px_rgba(16,185,129,0.12)] transition-all duration-200 shadow-md group"
+                          className="rounded-xl border border-white/[0.08] bg-[#0D0D0D]/90 p-4 sm:p-5 space-y-3.5 backdrop-blur-xl hover:border-white/20 hover:-translate-y-0.5 transition-all duration-200 shadow-md group"
                         >
                           <div className="flex items-center justify-between gap-2">
-                            <span className="text-xs font-bold font-mono text-[#EDEDED] group-hover:text-white transition-colors truncate">
+                            <span className="text-xs font-bold font-mono text-white group-hover:text-white transition-colors truncate">
                               {skill.skill_name}
                             </span>
-                            <span className="text-xs font-mono font-bold text-emerald-400 shrink-0">
+                            <span className="text-xs font-mono font-bold text-white shrink-0">
                               {skill.mastery_percent}%
                             </span>
                           </div>
 
                           <div className="h-2 w-full overflow-hidden rounded-full bg-[#181818] ring-1 ring-white/[0.05]">
                             <div
-                              className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]"
+                              className="h-full rounded-full bg-gradient-to-r from-neutral-300 to-white transition-all duration-500 shadow-[0_0_8px_rgba(255,255,255,0.2)]"
                               style={{ width: `${skill.mastery_percent}%` }}
                             />
                           </div>
 
-                          <div className="flex items-center justify-between text-[11px] font-mono text-[#8A8F98]">
+                          <div className="flex items-center justify-between text-[11px] font-mono text-neutral-400">
                             <span>{skill.completed_milestones} milestones verified</span>
-                            <span className="rounded-md border border-white/[0.08] bg-[#141414] px-2 py-0.5 text-[10px] text-[#A1A1A1]">
+                            <span className="rounded-md border border-white/10 bg-[#141414] px-2 py-0.5 text-[10px] text-neutral-300">
                               Level {Math.max(1, Math.ceil(skill.mastery_percent / 20))}
                             </span>
                           </div>
@@ -750,15 +750,15 @@ export default function PublicProfilePage({
                   ) : (
                     /* Inspirational Skills Empty State */
                     <div className="rounded-2xl border border-white/[0.08] bg-[#0D0D0D]/90 backdrop-blur-xl p-10 sm:p-14 text-center space-y-4 shadow-2xl relative overflow-hidden">
-                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-44 w-44 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />
-                      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-emerald-500/30 bg-emerald-950/40 text-emerald-400 shadow-[0_0_25px_rgba(16,185,129,0.2)]">
-                        <Code2 className="h-7 w-7" />
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-44 w-44 rounded-full bg-white/[0.02] blur-3xl pointer-events-none" />
+                      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-[#141416] text-white shadow-sm">
+                        <Code2 className="h-7 w-7 text-neutral-300" />
                       </div>
                       <div className="space-y-1.5 max-w-md mx-auto">
-                        <h4 className="text-base font-bold font-mono text-[#EDEDED] tracking-tight">
+                        <h4 className="text-base font-bold font-mono text-white tracking-tight">
                           No Verified Skills Yet
                         </h4>
-                        <p className="text-xs text-[#8A8F98] leading-relaxed">
+                        <p className="text-xs text-neutral-400 leading-relaxed">
                           Master milestones across curated learning roadmaps and hands-on projects to verify and showcase engineering competencies on your public developer record.
                         </p>
                       </div>
@@ -768,9 +768,9 @@ export default function PublicProfilePage({
                           whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
                           onClick={handleBack}
-                          className="inline-flex items-center gap-1.5 rounded-lg border border-white/[0.12] bg-[#141414] px-4 py-2 text-xs font-mono font-medium text-[#EDEDED] hover:bg-[#1E1E1E] hover:border-white/[0.22] transition-all cursor-pointer"
+                          className="inline-flex items-center gap-1.5 rounded-xl border border-[#222] bg-[#0d0d0d] px-4 py-2 text-xs font-mono font-medium text-neutral-300 hover:text-white hover:border-[#444] transition-all cursor-pointer"
                         >
-                          <Compass className="h-3.5 w-3.5 text-emerald-400" />
+                          <Compass className="h-3.5 w-3.5 text-neutral-300" />
                           <span>Explore Skill Catalog</span>
                         </motion.button>
                         {profile.is_own_profile && (
@@ -779,7 +779,7 @@ export default function PublicProfilePage({
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
                             onClick={() => openRoadmapBuilder?.()}
-                            className="inline-flex items-center gap-1.5 rounded-lg bg-[#EDEDED] px-4 py-2 text-xs font-mono font-bold text-[#050505] hover:bg-white transition-all cursor-pointer shadow-md"
+                            className="inline-flex items-center gap-1.5 rounded-xl bg-white px-4 py-2 text-xs font-mono font-semibold text-black hover:bg-neutral-200 transition-all cursor-pointer shadow-md"
                           >
                             <Sparkles className="h-3.5 w-3.5" />
                             <span>Build AI Roadmap</span>
@@ -801,10 +801,10 @@ export default function PublicProfilePage({
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div>
-                      <h3 className="text-sm font-bold font-mono text-[#EDEDED]">
+                      <h3 className="text-sm font-bold font-mono text-white">
                         Active & Completed Learning Roadmaps
                       </h3>
-                      <p className="text-xs text-[#8A8F98] font-mono mt-0.5">
+                      <p className="text-xs text-neutral-400 font-mono mt-0.5">
                         Step-by-step career blueprints with milestone progress and practical deliverables.
                       </p>
                     </div>
@@ -815,7 +815,7 @@ export default function PublicProfilePage({
                         whileHover={{ scale: 1.02, y: -1 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => openRoadmapBuilder?.()}
-                        className="inline-flex items-center gap-1.5 rounded-lg bg-[#EDEDED] px-4 py-2 text-xs font-mono font-bold text-[#050505] hover:bg-white transition-all cursor-pointer self-start sm:self-auto shadow-md"
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-white px-4 py-2 text-xs font-mono font-semibold text-black hover:bg-neutral-200 transition-all cursor-pointer self-start sm:self-auto shadow-md"
                       >
                         <Sparkles className="h-3.5 w-3.5" />
                         <span>Build AI Roadmap</span>
@@ -833,28 +833,28 @@ export default function PublicProfilePage({
                         return (
                           <div
                             key={r.id}
-                            className="rounded-2xl border border-white/[0.08] bg-[#0D0D0D]/90 p-5 sm:p-6 backdrop-blur-xl hover:border-cyan-500/30 hover:-translate-y-0.5 transition-all space-y-4 shadow-xl"
+                            className="rounded-2xl border border-white/[0.08] bg-[#0D0D0D]/90 p-5 sm:p-6 backdrop-blur-xl hover:border-white/20 hover:-translate-y-0.5 transition-all space-y-4 shadow-xl"
                           >
                             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                               <div className="space-y-1">
                                 <div className="flex items-center gap-2.5 flex-wrap">
-                                  <h4 className="text-sm font-bold text-[#EDEDED]">
+                                  <h4 className="text-sm font-bold text-white">
                                     {r.title}
                                   </h4>
-                                  <span className="rounded-md border border-cyan-500/30 bg-cyan-950/30 px-2 py-0.5 text-[10px] font-mono text-cyan-300">
+                                  <span className="rounded-md border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[10px] font-mono text-neutral-300">
                                     {r.target_role || 'Software Engineering'}
                                   </span>
-                                  <span className="rounded-md border border-white/[0.08] bg-[#141414] px-2 py-0.5 text-[10px] font-mono text-[#8A8F98]">
+                                  <span className="rounded-md border border-white/[0.08] bg-[#141414] px-2 py-0.5 text-[10px] font-mono text-neutral-400">
                                     {r.experience_level || 'All Levels'}
                                   </span>
                                 </div>
-                                <p className="text-xs text-[#8A8F98]">
+                                <p className="text-xs text-neutral-400">
                                   {r.goal}
                                 </p>
                               </div>
 
                               <div className="flex items-center gap-2 self-start sm:self-auto">
-                                <span className="rounded-md border border-white/[0.08] bg-[#121212] px-2.5 py-1 text-xs font-mono font-bold text-amber-400">
+                                <span className="rounded-md border border-white/10 bg-white/[0.04] px-2.5 py-1 text-xs font-mono font-semibold text-white">
                                   {r.progress_percent}% Complete
                                 </span>
                               </div>
@@ -862,13 +862,13 @@ export default function PublicProfilePage({
 
                             {/* Progress bar */}
                             <div className="space-y-1.5">
-                              <div className="flex items-center justify-between text-[11px] font-mono text-[#8A8F98]">
+                              <div className="flex items-center justify-between text-[11px] font-mono text-neutral-400">
                                 <span>{totalPhases} Curriculum Phases</span>
                                 <span>{allMilestones.length} Milestones Tracked</span>
                               </div>
                               <div className="h-2 w-full overflow-hidden rounded-full bg-[#181818] ring-1 ring-white/[0.05]">
                                 <div
-                                  className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-500 shadow-[0_0_8px_rgba(6,182,212,0.4)]"
+                                  className="h-full rounded-full bg-gradient-to-r from-neutral-300 to-white transition-all duration-500 shadow-[0_0_8px_rgba(255,255,255,0.2)]"
                                   style={{ width: `${Math.min(100, Math.max(4, r.progress_percent))}%` }}
                                 />
                               </div>
@@ -877,7 +877,7 @@ export default function PublicProfilePage({
                             {/* Milestones Overview Sample Strip */}
                             {allMilestones.length > 0 && (
                               <div className="pt-2 border-t border-white/[0.06] space-y-2">
-                                <span className="text-[10px] font-mono uppercase tracking-wider text-[#8A8F98] block">
+                                <span className="text-[10px] font-mono uppercase tracking-wider text-neutral-400 block">
                                   Milestone Checkpoints Preview
                                 </span>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
@@ -892,19 +892,19 @@ export default function PublicProfilePage({
                                       >
                                         <div className="flex items-center gap-2 min-w-0">
                                           {isDone ? (
-                                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                                            <CheckCircle2 className="h-3.5 w-3.5 text-neutral-200 shrink-0" />
                                           ) : (
-                                            <CircleDot className="h-3.5 w-3.5 text-[#52525B] shrink-0" />
+                                            <CircleDot className="h-3.5 w-3.5 text-neutral-600 shrink-0" />
                                           )}
-                                          <span className="text-[11px] text-[#EDEDED] truncate">
+                                          <span className="text-[11px] text-white truncate">
                                             {m.title}
                                           </span>
                                         </div>
                                         <span
-                                          className={`text-[9px] px-2 py-0.5 rounded-full shrink-0 ml-1 ${
+                                          className={`text-[9px] px-2 py-0.5 rounded-full shrink-0 ml-1 font-mono ${
                                             isDone
-                                              ? 'bg-emerald-950/40 text-emerald-400 border border-emerald-500/20'
-                                              : 'bg-[#141414] text-[#8A8F98]'
+                                              ? 'bg-white/[0.08] text-white border border-white/15'
+                                              : 'bg-[#141414] text-neutral-400'
                                           }`}
                                         >
                                           {isDone ? 'Completed' : 'Up Next'}
@@ -918,20 +918,20 @@ export default function PublicProfilePage({
 
                             {/* Action to Continue / Open */}
                             <div className="flex items-center justify-between pt-2">
-                              <span className="text-[11px] font-mono text-[#8A8F98]">
+                              <span className="text-[11px] font-mono text-neutral-400">
                                 Duration: {r.estimated_duration || '6 Weeks'}
                               </span>
                               {profile.is_own_profile ? (
                                 <button
                                   type="button"
                                   onClick={openDashboard}
-                                  className="inline-flex items-center gap-1.5 text-xs font-mono text-cyan-400 hover:text-cyan-300 cursor-pointer hover:underline"
+                                  className="inline-flex items-center gap-1.5 text-xs font-mono text-neutral-300 hover:text-white cursor-pointer hover:underline"
                                 >
                                   <span>Continue in Dashboard</span>
                                   <ExternalLink className="h-3 w-3" />
                                 </button>
                               ) : (
-                                <span className="text-xs font-mono text-[#8A8F98]">
+                                <span className="text-xs font-mono text-neutral-400">
                                   Public Roadmap Preview
                                 </span>
                               )}
@@ -943,15 +943,15 @@ export default function PublicProfilePage({
                   ) : (
                     /* Inspirational Roadmaps Empty State */
                     <div className="rounded-2xl border border-white/[0.08] bg-[#0D0D0D]/90 backdrop-blur-xl p-10 sm:p-14 text-center space-y-4 shadow-2xl relative overflow-hidden">
-                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-44 w-44 rounded-full bg-cyan-500/10 blur-3xl pointer-events-none" />
-                      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-cyan-500/30 bg-cyan-950/40 text-cyan-400 shadow-[0_0_25px_rgba(6,182,212,0.2)]">
-                        <Route className="h-7 w-7" />
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-44 w-44 rounded-full bg-white/[0.02] blur-3xl pointer-events-none" />
+                      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-[#141416] text-white shadow-sm">
+                        <Route className="h-7 w-7 text-neutral-300" />
                       </div>
                       <div className="space-y-1.5 max-w-md mx-auto">
-                        <h4 className="text-base font-bold font-mono text-[#EDEDED] tracking-tight">
+                        <h4 className="text-base font-bold font-mono text-white tracking-tight">
                           No Active Roadmaps Tracked
                         </h4>
-                        <p className="text-xs text-[#8A8F98] leading-relaxed">
+                        <p className="text-xs text-neutral-400 leading-relaxed">
                           Accelerate your engineering trajectory with AI-generated role blueprints tailored to your career ambitions, complete with milestone tracking and curated projects.
                         </p>
                       </div>
@@ -962,16 +962,16 @@ export default function PublicProfilePage({
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
                             onClick={() => openRoadmapBuilder?.()}
-                            className="inline-flex items-center gap-2 rounded-lg bg-[#EDEDED] px-5 py-2.5 text-xs font-mono font-bold text-[#050505] hover:bg-white transition-all cursor-pointer shadow-md"
+                            className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 text-xs font-mono font-semibold text-black hover:bg-neutral-200 transition-all cursor-pointer shadow-md"
                           >
-                            <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+                            <Sparkles className="h-3.5 w-3.5" />
                             <span>Generate First AI Roadmap</span>
                           </motion.button>
                         ) : (
                           <button
                             type="button"
                             onClick={handleBack}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-white/[0.12] bg-[#141414] px-4 py-2 text-xs font-mono text-[#EDEDED] hover:bg-[#1E1E1E] transition-colors cursor-pointer"
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-[#222] bg-[#0d0d0d] px-4 py-2 text-xs font-mono text-neutral-300 hover:text-white hover:border-[#444] transition-colors cursor-pointer"
                           >
                             <span>Browse Curated Paths</span>
                           </button>
@@ -992,14 +992,14 @@ export default function PublicProfilePage({
                 >
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="text-sm font-bold font-mono text-[#EDEDED]">
+                      <h3 className="text-sm font-bold font-mono text-white">
                         Hands-on Projects Portfolio
                       </h3>
-                      <p className="text-xs text-[#8A8F98] font-mono mt-0.5">
+                      <p className="text-xs text-neutral-400 font-mono mt-0.5">
                         Production-grade code deliverables built and verified during the learning progression.
                       </p>
                     </div>
-                    <span className="text-xs font-mono text-[#8A8F98]">
+                    <span className="text-xs font-mono text-neutral-400">
                       {profile.projects?.length || 0} Showcased
                     </span>
                   </div>
@@ -1009,38 +1009,30 @@ export default function PublicProfilePage({
                       {profile.projects.map((proj) => (
                         <div
                           key={proj.id}
-                          className="rounded-2xl border border-white/[0.08] bg-[#0D0D0D]/90 p-5 sm:p-6 hover:border-purple-500/30 hover:-translate-y-0.5 transition-all space-y-3.5 shadow-xl group"
+                          className="rounded-2xl border border-white/[0.08] bg-[#0D0D0D]/90 p-5 sm:p-6 hover:border-white/20 hover:-translate-y-0.5 transition-all space-y-3.5 shadow-xl group"
                         >
                           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                             <div className="flex items-center gap-2.5 flex-wrap">
-                              <h4 className="text-sm font-bold text-[#EDEDED] group-hover:text-white transition-colors">
+                              <h4 className="text-sm font-bold text-white group-hover:text-white transition-colors">
                                 {proj.title}
                               </h4>
-                              <span className="rounded-md border border-white/[0.08] bg-[#141414] px-2 py-0.5 text-[10px] font-mono text-[#8A8F98]">
+                              <span className="rounded-md border border-white/[0.08] bg-[#141414] px-2 py-0.5 text-[10px] font-mono text-neutral-400">
                                 {proj.category || 'Engineering'}
                               </span>
-                              <span
-                                className={`rounded-md px-2 py-0.5 text-[10px] font-mono font-medium ${
-                                  proj.difficulty === 'Advanced'
-                                    ? 'border border-purple-500/30 bg-purple-950/30 text-purple-300'
-                                    : proj.difficulty === 'Intermediate'
-                                    ? 'border border-blue-500/30 bg-blue-950/30 text-blue-300'
-                                    : 'border border-emerald-500/30 bg-emerald-950/30 text-emerald-300'
-                                }`}
-                              >
+                              <span className="rounded-md border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[10px] font-mono font-medium text-neutral-300">
                                 {proj.difficulty}
                               </span>
                             </div>
 
                             {proj.completed_at && (
-                              <span className="text-[11px] font-mono text-[#8A8F98]">
+                              <span className="text-[11px] font-mono text-neutral-400">
                                 Completed {proj.completed_at}
                               </span>
                             )}
                           </div>
 
                           {proj.description && (
-                            <p className="text-xs text-[#CCCCCC] leading-relaxed">
+                            <p className="text-xs text-neutral-300 leading-relaxed">
                               {proj.description}
                             </p>
                           )}
@@ -1051,7 +1043,7 @@ export default function PublicProfilePage({
                               {proj.tech_stack?.map((tech) => (
                                 <span
                                   key={tech}
-                                  className="rounded-md border border-white/[0.08] bg-[#111116] px-2 py-0.5 text-[10px] font-mono text-[#8A8F98]"
+                                  className="rounded-md border border-white/[0.08] bg-[#111116] px-2 py-0.5 text-[10px] font-mono text-neutral-400"
                                 >
                                   {tech}
                                 </span>
@@ -1063,11 +1055,11 @@ export default function PublicProfilePage({
                                 href={proj.github_url}
                                 target="_blank"
                                 rel="noreferrer noopener"
-                                className="inline-flex items-center gap-1.5 text-xs font-mono text-[#EDEDED] hover:underline hover:text-white transition-colors"
+                                className="inline-flex items-center gap-1.5 text-xs font-mono text-neutral-300 hover:underline hover:text-white transition-colors"
                               >
-                                <GithubIcon className="h-3.5 w-3.5 text-[#EDEDED]" />
+                                <GithubIcon className="h-3.5 w-3.5 text-neutral-300" />
                                 <span>View Repository</span>
-                                <ExternalLink className="h-3 w-3 text-[#8A8F98]" />
+                                <ExternalLink className="h-3 w-3 text-neutral-400" />
                               </a>
                             )}
                           </div>
@@ -1077,15 +1069,15 @@ export default function PublicProfilePage({
                   ) : (
                     /* Inspirational Projects Empty State */
                     <div className="rounded-2xl border border-white/[0.08] bg-[#0D0D0D]/90 backdrop-blur-xl p-10 sm:p-14 text-center space-y-4 shadow-2xl relative overflow-hidden">
-                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-44 w-44 rounded-full bg-purple-500/10 blur-3xl pointer-events-none" />
-                      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-purple-500/30 bg-purple-950/40 text-purple-400 shadow-[0_0_25px_rgba(168,85,247,0.2)]">
-                        <FolderGit2 className="h-7 w-7" />
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-44 w-44 rounded-full bg-white/[0.02] blur-3xl pointer-events-none" />
+                      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-[#141416] text-white shadow-sm">
+                        <FolderGit2 className="h-7 w-7 text-neutral-300" />
                       </div>
                       <div className="space-y-1.5 max-w-md mx-auto">
-                        <h4 className="text-base font-bold font-mono text-[#EDEDED] tracking-tight">
+                        <h4 className="text-base font-bold font-mono text-white tracking-tight">
                           No Capstone Projects Showcased Yet
                         </h4>
-                        <p className="text-xs text-[#8A8F98] leading-relaxed">
+                        <p className="text-xs text-neutral-400 leading-relaxed">
                           Production-grade open source deliverables, full-stack microservices, and system architectures built during your learning journey will be verified and showcased here.
                         </p>
                       </div>
@@ -1096,9 +1088,9 @@ export default function PublicProfilePage({
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
                             onClick={openDashboard}
-                            className="inline-flex items-center gap-2 rounded-lg bg-[#EDEDED] px-5 py-2.5 text-xs font-mono font-bold text-[#050505] hover:bg-white transition-all cursor-pointer shadow-md"
+                            className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 text-xs font-mono font-semibold text-black hover:bg-neutral-200 transition-all cursor-pointer shadow-md"
                           >
-                            <FolderGit2 className="h-3.5 w-3.5 text-purple-600" />
+                            <FolderGit2 className="h-3.5 w-3.5" />
                             <span>Explore Project Blueprints</span>
                           </motion.button>
                         </div>
@@ -1117,103 +1109,103 @@ export default function PublicProfilePage({
                   className="space-y-4"
                 >
                   <div>
-                    <h3 className="text-sm font-bold font-mono text-[#EDEDED]">
+                    <h3 className="text-sm font-bold font-mono text-white">
                       External Developer Links & Presence
                     </h3>
-                    <p className="text-xs text-[#8A8F98] font-mono mt-0.5">
+                    <p className="text-xs text-neutral-400 font-mono mt-0.5">
                       Verified public links to external repositories, engineering networks, and personal web presence.
                     </p>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
                     {/* GitHub Card */}
-                    <div className="rounded-xl border border-white/[0.08] bg-[#0D0D0D]/90 p-5 space-y-3.5 backdrop-blur-xl hover:border-white/[0.22] hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200 group">
+                    <div className="rounded-xl border border-white/[0.08] bg-[#0D0D0D]/90 p-5 space-y-3.5 backdrop-blur-xl hover:border-white/20 hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200 group">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-mono text-[#8A8F98]">GitHub</span>
+                        <span className="text-xs font-mono text-neutral-400">GitHub</span>
                         <div className="p-2 rounded-lg bg-white/[0.05] border border-white/[0.06] text-white">
                           <GithubIcon className="h-4 w-4" />
                         </div>
                       </div>
                       {profile.github_url ? (
                         <div className="space-y-2">
-                          <p className="text-xs font-mono text-[#EDEDED] truncate font-medium">
+                          <p className="text-xs font-mono text-white truncate font-medium">
                             {profile.github_url.replace(/^https?:\/\/(www\.)?github\.com\/?/, '@')}
                           </p>
                           <a
                             href={profile.github_url}
                             target="_blank"
                             rel="noreferrer noopener"
-                            className="inline-flex items-center gap-1.5 text-xs font-mono text-cyan-400 hover:text-cyan-300 hover:underline"
+                            className="inline-flex items-center gap-1.5 text-xs font-mono text-neutral-300 hover:text-white hover:underline"
                           >
                             <span>Open Profile</span>
                             <ExternalLink className="h-3 w-3" />
                           </a>
                         </div>
                       ) : (
-                        <p className="text-xs font-mono text-[#52525B]">Not linked</p>
+                        <p className="text-xs font-mono text-neutral-500">Not linked</p>
                       )}
                     </div>
 
                     {/* LinkedIn Card */}
-                    <div className="rounded-xl border border-white/[0.08] bg-[#0D0D0D]/90 p-5 space-y-3.5 backdrop-blur-xl hover:border-[#0A66C2]/50 hover:-translate-y-0.5 hover:shadow-[0_8px_25px_rgba(10,102,194,0.12)] transition-all duration-200 group">
+                    <div className="rounded-xl border border-white/[0.08] bg-[#0D0D0D]/90 p-5 space-y-3.5 backdrop-blur-xl hover:border-white/20 hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200 group">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-mono text-[#8A8F98]">LinkedIn</span>
-                        <div className="p-2 rounded-lg bg-[#0A66C2]/10 border border-[#0A66C2]/30 text-[#0A66C2]">
+                        <span className="text-xs font-mono text-neutral-400">LinkedIn</span>
+                        <div className="p-2 rounded-lg bg-white/[0.05] border border-white/[0.06] text-white">
                           <LinkedinIcon className="h-4 w-4" />
                         </div>
                       </div>
                       {profile.linkedin_url ? (
                         <div className="space-y-2">
-                          <p className="text-xs font-mono text-[#EDEDED] truncate font-medium">
+                          <p className="text-xs font-mono text-white truncate font-medium">
                             {profile.linkedin_url.replace(/^https?:\/\/(www\.)?linkedin\.com\/in\/?/, '')}
                           </p>
                           <a
                             href={profile.linkedin_url}
                             target="_blank"
                             rel="noreferrer noopener"
-                            className="inline-flex items-center gap-1.5 text-xs font-mono text-[#0A66C2] hover:underline"
+                            className="inline-flex items-center gap-1.5 text-xs font-mono text-neutral-300 hover:text-white hover:underline"
                           >
                             <span>View Network</span>
                             <ExternalLink className="h-3 w-3" />
                           </a>
                         </div>
                       ) : (
-                        <p className="text-xs font-mono text-[#52525B]">Not linked</p>
+                        <p className="text-xs font-mono text-neutral-500">Not linked</p>
                       )}
                     </div>
 
                     {/* Portfolio Card */}
-                    <div className="rounded-xl border border-white/[0.08] bg-[#0D0D0D]/90 p-5 space-y-3.5 backdrop-blur-xl hover:border-emerald-500/40 hover:-translate-y-0.5 hover:shadow-[0_8px_25px_rgba(16,185,129,0.12)] transition-all duration-200 group">
+                    <div className="rounded-xl border border-white/[0.08] bg-[#0D0D0D]/90 p-5 space-y-3.5 backdrop-blur-xl hover:border-white/20 hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200 group">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-mono text-[#8A8F98]">Personal Portfolio</span>
-                        <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+                        <span className="text-xs font-mono text-neutral-400">Personal Portfolio</span>
+                        <div className="p-2 rounded-lg bg-white/[0.05] border border-white/[0.06] text-white">
                           <Globe className="h-4 w-4" />
                         </div>
                       </div>
                       {(profile.portfolio_url || profile.website_url) ? (
                         <div className="space-y-2">
-                          <p className="text-xs font-mono text-[#EDEDED] truncate font-medium">
+                          <p className="text-xs font-mono text-white truncate font-medium">
                             {(profile.portfolio_url || profile.website_url).replace(/^https?:\/\//, '')}
                           </p>
                           <a
                             href={profile.portfolio_url || profile.website_url}
                             target="_blank"
                             rel="noreferrer noopener"
-                            className="inline-flex items-center gap-1.5 text-xs font-mono text-emerald-400 hover:underline"
+                            className="inline-flex items-center gap-1.5 text-xs font-mono text-neutral-300 hover:text-white hover:underline"
                           >
                             <span>Visit Website</span>
                             <ExternalLink className="h-3 w-3" />
                           </a>
                         </div>
                       ) : (
-                        <p className="text-xs font-mono text-[#52525B]">Not linked</p>
+                        <p className="text-xs font-mono text-neutral-500">Not linked</p>
                       )}
                     </div>
                   </div>
 
                   {!profile.github_url && !profile.linkedin_url && !profile.portfolio_url && !profile.website_url && profile.is_own_profile && (
                     <div className="rounded-xl border border-white/[0.06] bg-[#0A0A0A] p-6 text-center space-y-2.5 font-mono">
-                      <p className="text-xs text-[#8A8F98]">
+                      <p className="text-xs text-neutral-400">
                         You haven&apos;t added any external developer links yet.
                       </p>
                       <motion.button
@@ -1221,7 +1213,7 @@ export default function PublicProfilePage({
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => setIsEditorOpen(true)}
-                        className="inline-flex items-center gap-1.5 rounded-lg bg-[#EDEDED] px-4 py-2 text-xs font-bold text-[#050505] hover:bg-white transition-all cursor-pointer shadow-sm"
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-white px-4 py-2 text-xs font-semibold text-black hover:bg-neutral-200 transition-all cursor-pointer shadow-sm"
                       >
                         <Pencil className="h-3 w-3" />
                         <span>Add External Links</span>
@@ -1241,14 +1233,14 @@ export default function PublicProfilePage({
                 >
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="text-sm font-bold font-mono text-[#EDEDED]">
+                      <h3 className="text-sm font-bold font-mono text-white">
                         Developer Achievements & Trophies
                       </h3>
-                      <p className="text-xs text-[#8A8F98] font-mono mt-0.5">
+                      <p className="text-xs text-neutral-400 font-mono mt-0.5">
                         Gamification badges earned across learning velocity, project deliverables, and milestones.
                       </p>
                     </div>
-                    <span className="text-xs font-mono text-amber-400 font-bold bg-amber-400/10 px-2 py-0.5 rounded-md border border-amber-400/20">
+                    <span className="text-xs font-mono text-white font-bold bg-white/[0.08] px-2.5 py-0.5 rounded-md border border-white/15">
                       {unlockedAchievementsCount}/{profile.achievements?.length || 0} Unlocked
                     </span>
                   </div>
@@ -1259,14 +1251,14 @@ export default function PublicProfilePage({
                         key={badge.id}
                         className={`flex items-start gap-3.5 rounded-xl border p-4 transition-all ${
                           badge.unlocked
-                            ? 'border-white/[0.12] bg-[#0E0E12]/90 backdrop-blur-xl shadow-lg hover:border-amber-400/30'
+                            ? 'border-white/15 bg-[#0E0E12]/90 backdrop-blur-xl shadow-lg hover:border-white/25'
                             : 'border-white/[0.04] bg-[#080808]/90 opacity-45'
                         }`}
                       >
                         <div
                           className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border ${
                             badge.unlocked
-                              ? 'border-white/[0.14] bg-[#16161C] shadow-[0_0_15px_rgba(251,191,36,0.15)]'
+                              ? 'border-white/[0.14] bg-[#16161C] shadow-[0_0_15px_rgba(255,255,255,0.06)]'
                               : 'border-white/[0.05] bg-[#0C0C0C]'
                           }`}
                         >
@@ -1275,20 +1267,20 @@ export default function PublicProfilePage({
 
                         <div className="space-y-1 min-w-0 flex-1">
                           <div className="flex items-center justify-between gap-1.5">
-                            <span className="text-xs font-bold font-mono text-[#EDEDED] truncate">
+                            <span className="text-xs font-bold font-mono text-white truncate">
                               {badge.title}
                             </span>
                             {badge.unlocked ? (
-                              <span className="rounded-full bg-amber-400/15 border border-amber-400/30 px-2 py-0.2 text-[9px] font-mono font-semibold text-amber-400 shrink-0">
+                              <span className="rounded-full bg-white/[0.08] border border-white/15 px-2 py-0.2 text-[9px] font-mono font-semibold text-neutral-200 shrink-0">
                                 Unlocked
                               </span>
                             ) : (
-                              <span className="text-[9px] font-mono text-[#52525B] shrink-0">
+                              <span className="text-[9px] font-mono text-neutral-500 shrink-0">
                                 Locked
                               </span>
                             )}
                           </div>
-                          <p className="text-[11px] text-[#8A8F98] leading-snug">
+                          <p className="text-[11px] text-neutral-400 leading-snug">
                             {badge.description}
                           </p>
                         </div>

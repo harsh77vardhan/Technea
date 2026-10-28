@@ -1,5 +1,6 @@
 import hashlib
 import hmac
+import re
 import secrets
 import urllib.parse
 from datetime import datetime, timedelta, timezone
@@ -562,19 +563,38 @@ async def send_otp(
     db.add(otp_record)
     await db.commit()
 
-    success, error_msg = await email_service.send_otp_email(
-        to_email=email,
-        otp=otp,
-        expires_minutes=settings.OTP_EXPIRE_MINUTES,
-    )
+    try:
+        success, error_msg = await email_service.send_otp_email(
+            to_email=email,
+            otp=otp,
+            expires_minutes=settings.OTP_EXPIRE_MINUTES,
+        )
+    except Exception as exc:
+        await db.delete(otp_record)
+        await db.commit()
+        logger.error("[AUTH] Exception while sending OTP email to %s: %s", email, exc)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Failed to deliver verification email. Please check email settings or contact support.",
+        )
+
     if not success:
         # Remove the undelivered OTP record so cooldown doesn't block retry
         await db.delete(otp_record)
         await db.commit()
         logger.error("[AUTH] Failed to dispatch OTP to %s: %s", email, error_msg)
+
+        # Sanitize error message to prevent leaking internal credentials, secrets, or API keys
+        sanitized_msg = str(error_msg or "Service temporarily unavailable")
+        sanitized_msg = re.sub(r"re_[a-zA-Z0-9_\-\.]{8,}", "re_***", sanitized_msg)
+        sanitized_msg = re.sub(
+            r"(password|secret|key)=['\"][^'\"]+['\"]", r"\1=***", sanitized_msg, flags=re.IGNORECASE
+        )
+        sanitized_msg = re.sub(r"Bearer\s+[a-zA-Z0-9_\-\.]+", "Bearer ***", sanitized_msg, flags=re.IGNORECASE)
+
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"Failed to deliver verification email: {error_msg}. Please check email settings or contact support.",
+            detail=f"Failed to deliver verification email: {sanitized_msg}. Please check email settings or contact support.",
         )
 
     return OTPSentResponse(

@@ -400,7 +400,7 @@ export default function LearningBrowser({
                 <button
                   type="button"
                   onClick={handleRetry}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-white px-3.5 py-1.5 text-xs font-semibold text-black hover:bg-neutral-200 transition-colors cursor-pointer shadow-sm"
+                  className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg bg-white px-4 py-2 text-xs font-semibold text-black hover:bg-neutral-200 transition-colors cursor-pointer shadow-sm"
                 >
                   <RotateCcw className="h-3 w-3" />
                   <span>Retry Connection</span>
@@ -411,13 +411,13 @@ export default function LearningBrowser({
 
           {/* Fallback alternatives banner (Requirement 3) */}
           {!loading && !error && fallbackInfo.isFallback && paths.length > 0 && (
-            <div className="rounded-xl border border-amber-500/20 bg-amber-500/[0.05] p-3.5 mb-3 flex items-start gap-2.5 text-xs text-amber-200/90 animate-in fade-in duration-200">
-              <Sparkles className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+            <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3.5 mb-3 flex items-start gap-2.5 text-xs text-neutral-300 animate-in fade-in duration-200">
+              <Sparkles className="h-4 w-4 text-neutral-400 shrink-0 mt-0.5" />
               <div>
-                <p className="font-medium text-amber-200">
+                <p className="font-medium text-neutral-200">
                   We couldn&apos;t find an exact match.
                 </p>
-                <p className="text-amber-300/80 text-[11px] mt-0.5">
+                <p className="text-neutral-400 text-[11px] mt-0.5">
                   {fallbackInfo.message || 'Showing the closest learning paths instead.'}
                 </p>
               </div>

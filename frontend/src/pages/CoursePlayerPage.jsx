@@ -350,7 +350,7 @@ export default function CoursePlayerPage({
             <button
               type="button"
               onClick={onBack}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-medium text-neutral-300 hover:text-white hover:bg-white/[0.08] hover:border-white/20 transition-all cursor-pointer shrink-0"
+              className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.04] px-3.5 py-2 text-xs font-medium text-neutral-300 hover:text-white hover:bg-white/[0.08] hover:border-white/20 transition-all cursor-pointer shrink-0"
               title="Return to learning path"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
@@ -383,7 +383,7 @@ export default function CoursePlayerPage({
                 href={courseData.playlist_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hidden md:inline-flex items-center gap-1 rounded-md border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] font-mono text-neutral-300 hover:text-white hover:bg-white/[0.08] transition-colors"
+                className="hidden md:inline-flex min-h-[44px] items-center gap-1 rounded-md border border-white/10 bg-white/[0.04] px-3 py-2 text-[11px] font-mono text-neutral-300 hover:text-white hover:bg-white/[0.08] transition-colors"
                 title="View full playlist on YouTube"
               >
                 <span>Full Playlist</span>
@@ -394,13 +394,13 @@ export default function CoursePlayerPage({
             <button
               type="button"
               onClick={handleShare}
-              className="inline-flex items-center gap-1.5 rounded-md border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] font-medium text-neutral-300 hover:text-white hover:bg-white/[0.08] transition-colors cursor-pointer"
+              className="inline-flex min-h-[44px] items-center gap-1.5 rounded-md border border-white/10 bg-white/[0.04] px-3 py-2 text-[11px] font-medium text-neutral-300 hover:text-white hover:bg-white/[0.08] transition-colors cursor-pointer"
               title="Copy share link"
             >
               {copiedLink ? (
                 <>
-                  <Check className="h-3 w-3 text-emerald-400" />
-                  <span className="text-emerald-400">Copied</span>
+                  <Check className="h-3 w-3 text-white" />
+                  <span className="text-white">Copied</span>
                 </>
               ) : (
                 <>
@@ -419,7 +419,7 @@ export default function CoursePlayerPage({
         <section className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5 sm:p-6 space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 font-mono text-[10px] text-emerald-400 uppercase tracking-wider font-semibold">
+              <span className="rounded border border-white/10 bg-white/[0.04] px-2.5 py-0.5 font-mono text-[10px] text-neutral-300 uppercase tracking-wider font-semibold">
                 {platform}
               </span>
               <span className="rounded border border-white/10 bg-white/[0.04] px-2.5 py-0.5 font-mono text-[10px] text-neutral-300">
@@ -436,7 +436,7 @@ export default function CoursePlayerPage({
                 <span>{duration}</span>
               </div>
               <span>•</span>
-              <div className="flex items-center gap-1.5 text-emerald-400 font-semibold">
+              <div className="flex items-center gap-1.5 text-neutral-300 font-semibold">
                 <MonitorPlay className="h-3.5 w-3.5" />
                 <span>Embedded Player</span>
               </div>
@@ -487,7 +487,7 @@ export default function CoursePlayerPage({
             <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="space-y-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-[10px] text-emerald-400 font-semibold uppercase tracking-wider">
+                  <span className="font-mono text-[10px] text-neutral-400 font-semibold uppercase tracking-wider">
                     Lesson {activeLessonIndex + 1} of {lessons.length || 1}
                   </span>
                   {activeLesson?.duration && (
@@ -512,15 +512,15 @@ export default function CoursePlayerPage({
                   <button
                     type="button"
                     onClick={() => handleToggleComplete(activeLesson.id)}
-                    className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition-all cursor-pointer ${
+                    className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-lg px-3.5 py-2 text-xs font-medium transition-all cursor-pointer ${
                       completedLessonIds.includes(activeLesson.id)
-                        ? 'border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'
+                        ? 'border border-white/20 bg-white/10 text-white hover:bg-white/15'
                         : 'border border-white/10 bg-white/[0.04] text-neutral-300 hover:bg-white/[0.08] hover:text-white'
                     }`}
                   >
                     {completedLessonIds.includes(activeLesson.id) ? (
                       <>
-                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+                        <CheckCircle2 className="h-3.5 w-3.5 text-white" />
                         <span>Completed</span>
                       </>
                     ) : (
@@ -536,7 +536,7 @@ export default function CoursePlayerPage({
                   type="button"
                   onClick={handleNextLesson}
                   disabled={!hasNext}
-                  className={`inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-xs font-semibold transition-all cursor-pointer shadow-sm ${
+                  className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-semibold transition-all cursor-pointer shadow-sm ${
                     hasNext
                       ? 'bg-white text-black hover:bg-neutral-200 active:scale-95'
                       : 'bg-white/10 text-neutral-500 cursor-not-allowed'
@@ -554,7 +554,7 @@ export default function CoursePlayerPage({
                 type="button"
                 onClick={handlePreviousLesson}
                 disabled={!hasPrevious}
-                className={`inline-flex items-center gap-2 rounded-lg border border-white/10 px-4 py-2 text-xs font-medium transition-all ${
+                className={`inline-flex min-h-[44px] items-center gap-2 rounded-lg border border-white/10 px-4 py-2 text-xs font-medium transition-all ${
                   hasPrevious
                     ? 'text-neutral-300 hover:text-white hover:bg-white/[0.06] cursor-pointer'
                     : 'text-neutral-600 border-white/[0.04] cursor-not-allowed opacity-50'
@@ -572,7 +572,7 @@ export default function CoursePlayerPage({
                 type="button"
                 onClick={handleNextLesson}
                 disabled={!hasNext}
-                className={`inline-flex items-center gap-2 rounded-lg border border-white/10 px-4 py-2 text-xs font-medium transition-all ${
+                className={`inline-flex min-h-[44px] items-center gap-2 rounded-lg border border-white/10 px-4 py-2 text-xs font-medium transition-all ${
                   hasNext
                     ? 'text-neutral-300 hover:text-white hover:bg-white/[0.06] cursor-pointer'
                     : 'text-neutral-600 border-white/[0.04] cursor-not-allowed opacity-50'
@@ -590,7 +590,7 @@ export default function CoursePlayerPage({
             <div className="space-y-3 pb-3 border-b border-white/[0.08]">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <ListVideo className="h-4 w-4 text-emerald-400" />
+                  <ListVideo className="h-4 w-4 text-neutral-300" />
                   <h3 className="text-sm font-semibold text-white tracking-tight">
                     Course Curriculum
                   </h3>
@@ -604,11 +604,11 @@ export default function CoursePlayerPage({
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between text-[11px] font-mono text-neutral-400">
                   <span>Track Progress</span>
-                  <span className="text-emerald-400 font-semibold">{progressPercent}%</span>
+                  <span className="text-white font-semibold">{progressPercent}%</span>
                 </div>
                 <div className="h-1.5 w-full bg-white/[0.06] rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-300 rounded-full"
+                    className="h-full bg-white transition-all duration-300 rounded-full"
                     style={{ width: `${progressPercent}%` }}
                   />
                 </div>
@@ -630,7 +630,7 @@ export default function CoursePlayerPage({
                     onClick={() => setActiveLessonIndex(idx)}
                     className={`group relative rounded-xl border p-2.5 sm:p-3 flex items-center gap-3 transition-all cursor-pointer ${
                       isActive
-                        ? 'border-emerald-500/40 bg-emerald-500/[0.08] shadow-lg shadow-emerald-950/20'
+                        ? 'border-white/20 bg-white/[0.06] shadow-lg'
                         : 'border-white/[0.06] bg-white/[0.01] hover:border-white/20 hover:bg-white/[0.04]'
                     }`}
                   >
@@ -652,8 +652,8 @@ export default function CoursePlayerPage({
                       </div>
                       {/* Active Playing Indicator */}
                       {isActive && (
-                        <div className="absolute inset-0 bg-emerald-900/50 flex items-center justify-center">
-                          <Play className="h-4 w-4 fill-emerald-400 text-emerald-400 animate-pulse" />
+                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                          <Play className="h-4 w-4 fill-white text-white animate-pulse" />
                         </div>
                       )}
                     </div>
@@ -665,7 +665,7 @@ export default function CoursePlayerPage({
                           {String(idx + 1).padStart(2, '0')}
                         </span>
                         {isActive && (
-                          <span className="rounded bg-emerald-500/20 px-1.5 py-0.2 font-mono text-[9px] text-emerald-400 font-semibold">
+                          <span className="rounded bg-white/15 px-1.5 py-0.5 font-mono text-[9px] text-white font-semibold">
                             NOW PLAYING
                           </span>
                         )}
@@ -692,11 +692,11 @@ export default function CoursePlayerPage({
                         e.stopPropagation()
                         handleToggleComplete(lesson.id)
                       }}
-                      className="p-1 rounded text-neutral-500 hover:text-white transition-colors cursor-pointer shrink-0"
+                      className="flex h-9 w-9 items-center justify-center rounded text-neutral-500 hover:text-white transition-colors cursor-pointer shrink-0"
                       title={isCompleted ? 'Mark as incomplete' : 'Mark as completed'}
                     >
                       {isCompleted ? (
-                        <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                        <CheckCircle2 className="h-4 w-4 text-white" />
                       ) : (
                         <Circle className="h-4 w-4 text-neutral-600 group-hover:text-neutral-400" />
                       )}
@@ -785,7 +785,7 @@ export default function CoursePlayerPage({
                       )}
                     </div>
 
-                    <div className="pt-2 border-t border-white/[0.06] flex items-center justify-between text-xs font-semibold text-emerald-400">
+                    <div className="pt-2 border-t border-white/[0.06] flex items-center justify-between text-xs font-semibold text-white group-hover:text-neutral-200 transition-colors">
                       <span>Watch Course</span>
                       <ChevronRight className="h-3.5 w-3.5 group-hover:translate-x-1 transition-transform" />
                     </div>

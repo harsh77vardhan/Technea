@@ -33,7 +33,7 @@ export default function ProjectSpecModal({ project, isOpen, onClose }) {
           {/* Header */}
           <div className="flex items-start justify-between gap-4 pb-4 border-b border-white/[0.08]">
             <div className="space-y-1.5">
-              <span className="font-mono text-xs text-emerald-400 font-semibold uppercase tracking-wider">
+              <span className="font-mono text-xs text-neutral-400 font-semibold uppercase tracking-wider">
                 {project.milestone}
               </span>
               <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
@@ -44,7 +44,7 @@ export default function ProjectSpecModal({ project, isOpen, onClose }) {
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl border border-white/10 bg-white/[0.04] p-2 text-neutral-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+              className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] p-2 text-neutral-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
               aria-label="Close project brief"
             >
               <X className="h-4 w-4" />
@@ -60,7 +60,7 @@ export default function ProjectSpecModal({ project, isOpen, onClose }) {
               <Clock className="h-3 w-3 text-neutral-400" />
               <span>Est. Time: {project.buildTime}</span>
             </span>
-            <span className="rounded-md border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 px-2.5 py-1">
+            <span className="rounded-md border border-white/10 bg-white/[0.04] text-neutral-300 px-2.5 py-1">
               Portfolio Ready
             </span>
           </div>
@@ -84,7 +84,7 @@ export default function ProjectSpecModal({ project, isOpen, onClose }) {
               <div className="space-y-2 rounded-2xl border border-white/[0.08] bg-white/[0.02] p-4">
                 {project.deliverables.map((item, idx) => (
                   <div key={idx} className="flex items-start gap-2.5 text-xs text-neutral-300 font-light">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
+                    <CheckCircle2 className="h-4 w-4 text-white shrink-0 mt-0.5" />
                     <span>{item}</span>
                   </div>
                 ))}
@@ -120,7 +120,7 @@ export default function ProjectSpecModal({ project, isOpen, onClose }) {
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl bg-white px-5 py-2.5 text-xs font-semibold text-black hover:bg-neutral-200 transition-colors cursor-pointer shadow-md"
+              className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-white px-5 py-2.5 text-xs font-semibold text-black hover:bg-neutral-200 transition-colors cursor-pointer shadow-md"
             >
               Close Spec
             </button>

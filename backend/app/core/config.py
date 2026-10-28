@@ -70,6 +70,26 @@ class Settings(BaseSettings):
         "https://*.vercel.app",
     ]
 
+    @field_validator("EMAIL_FROM", mode="before")
+    @classmethod
+    def validate_email_from(cls, v: Any) -> str:
+        """Validate and clean sender address string, stripping whitespace and surrounding quotes."""
+        if not v:
+            return "Technea <onboarding@resend.dev>"
+        val = str(v).strip()
+        while (val.startswith('"') and val.endswith('"')) or (val.startswith("'") and val.endswith("'")):
+            val = val[1:-1].strip()
+        return val if val else "Technea <onboarding@resend.dev>"
+
+    @field_validator("SMTP_HOST", mode="before")
+    @classmethod
+    def validate_smtp_host(cls, v: Any) -> str | None:
+        """Strip whitespace from SMTP_HOST if provided."""
+        if v is None:
+            return None
+        val = str(v).strip()
+        return val if val else None
+
     @field_validator("FRONTEND_URL", mode="before")
     @classmethod
     def assemble_frontend_url(cls, v: Any) -> str:

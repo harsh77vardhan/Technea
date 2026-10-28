@@ -30,16 +30,16 @@ function TechnicalDetails({ error, errorInfo }) {
   }
 
   return (
-    <details className="group w-full rounded-xl border border-white/[0.08] bg-black/40 text-left overflow-hidden transition-all">
+    <details className="group w-full rounded-xl border border-[#1a1a1a] bg-[#0d0d0d] text-left overflow-hidden transition-all">
       <summary className="flex cursor-pointer items-center justify-between px-4 py-3 text-xs font-mono text-neutral-400 hover:text-white hover:bg-white/[0.03] transition-colors select-none">
         <div className="flex items-center gap-2">
-          <Terminal className="h-3.5 w-3.5 text-rose-400" />
+          <Terminal className="h-3.5 w-3.5 text-neutral-400" />
           <span>Diagnostic Telemetry & Trace</span>
         </div>
         <ChevronDown className="h-3.5 w-3.5 transition-transform duration-200 group-open:rotate-180 text-neutral-500" />
       </summary>
 
-      <div className="border-t border-white/[0.06] p-4 bg-[#0a0c10]/95 space-y-3">
+      <div className="border-t border-[#1a1a1a] p-4 bg-[#0A0A0A]/95 space-y-3">
         <div className="flex items-center justify-between">
           <span className="text-[10px] font-mono uppercase tracking-wider text-neutral-500">
             Error Signature
@@ -47,12 +47,12 @@ function TechnicalDetails({ error, errorInfo }) {
           <button
             type="button"
             onClick={handleCopy}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-white/[0.08] bg-white/[0.04] px-2.5 py-1 text-[11px] font-mono text-neutral-300 hover:text-white hover:bg-white/[0.08] transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-[#222] bg-[#0d0d0d] px-2.5 py-1 text-[11px] font-mono text-neutral-300 hover:text-white hover:border-[#444] transition-colors cursor-pointer"
           >
             {copied ? (
               <>
-                <Check className="h-3 w-3 text-emerald-400" />
-                <span className="text-emerald-400">Copied</span>
+                <Check className="h-3 w-3 text-neutral-200" />
+                <span className="text-neutral-200">Copied</span>
               </>
             ) : (
               <>
@@ -63,7 +63,7 @@ function TechnicalDetails({ error, errorInfo }) {
           </button>
         </div>
 
-        <pre className="max-h-56 overflow-auto rounded-lg bg-black/80 p-3 font-mono text-[11px] leading-relaxed text-rose-300/90 whitespace-pre-wrap break-all border border-rose-500/10">
+        <pre className="max-h-56 overflow-auto rounded-lg bg-black p-3 font-mono text-[11px] leading-relaxed text-neutral-300 whitespace-pre-wrap break-all border border-[#1a1a1a]">
           {errorText}
         </pre>
       </div>
@@ -138,9 +138,9 @@ export default class ErrorBoundary extends Component {
     // Compact layout for contained sections or modals
     if (compact) {
       return (
-        <div className="relative flex flex-col items-center justify-center rounded-2xl border border-rose-500/20 bg-[#0A0C10] p-6 text-center shadow-xl space-y-4 my-4 max-w-lg mx-auto">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-rose-500/30 bg-rose-950/30 text-rose-400 shadow-[0_0_20px_rgba(244,63,94,0.15)]">
-            <AlertTriangle className="h-6 w-6" />
+        <div className="relative flex flex-col items-center justify-center rounded-2xl border border-[#1a1a1a] bg-[#0A0A0A] p-6 text-center shadow-xl space-y-4 my-4 max-w-lg mx-auto">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-[#222] bg-[#0d0d0d] text-neutral-200 shadow-sm">
+            <AlertTriangle className="h-6 w-6 text-neutral-300" />
           </div>
 
           <div className="space-y-1">
@@ -164,7 +164,7 @@ export default class ErrorBoundary extends Component {
             <button
               type="button"
               onClick={this.handleReload}
-              className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-white/[0.12] bg-white/[0.04] px-4 py-2 text-xs font-semibold text-neutral-300 hover:text-white hover:bg-white/[0.08] transition-colors cursor-pointer"
+              className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-[#222] bg-[#0d0d0d] px-4 py-2 text-xs font-semibold text-neutral-300 hover:text-white hover:border-[#444] transition-colors cursor-pointer"
             >
               Reload Page
             </button>
@@ -191,19 +191,19 @@ export default class ErrorBoundary extends Component {
         />
 
         {/* Content Card */}
-        <div className="relative z-10 w-full max-w-xl rounded-2xl border border-white/[0.09] bg-[#090b10]/95 backdrop-blur-2xl p-6 sm:p-10 text-center shadow-[0_30px_100px_rgba(0,0,0,0.85)] space-y-6">
+        <div className="relative z-10 w-full max-w-xl rounded-2xl border border-[#1a1a1a] bg-[#0A0A0A]/95 backdrop-blur-2xl p-6 sm:p-10 text-center shadow-[0_30px_100px_rgba(0,0,0,0.85)] space-y-6">
           {/* Header Monogram & Alert Lockup */}
           <div className="flex items-center justify-center gap-3">
             <TechneaIcon size={44} />
-            <div className="flex h-11 w-11 items-center justify-center rounded-[10px] border border-rose-500/30 bg-rose-950/40 text-rose-400 shadow-[0_0_24px_rgba(244,63,94,0.2)]">
-              <AlertTriangle className="h-5 w-5" />
+            <div className="flex h-11 w-11 items-center justify-center rounded-[10px] border border-[#222] bg-[#0d0d0d] text-neutral-200 shadow-sm">
+              <AlertTriangle className="h-5 w-5 text-neutral-300" />
             </div>
           </div>
 
           {/* Title & Description */}
           <div className="space-y-2">
-            <div className="inline-flex items-center gap-1.5 rounded-full border border-rose-500/25 bg-rose-950/30 px-3 py-0.5 text-[10px] font-mono font-medium text-rose-300">
-              <span className="h-1.5 w-1.5 rounded-full bg-rose-400 animate-pulse" />
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-0.5 text-[10px] font-mono font-medium text-neutral-300">
+              <span className="h-1.5 w-1.5 rounded-full bg-neutral-400 animate-pulse" />
               <span>UNEXPECTED STATE DETECTED</span>
             </div>
 
@@ -231,7 +231,7 @@ export default class ErrorBoundary extends Component {
             <button
               type="button"
               onClick={this.handleReset}
-              className="w-full sm:w-auto inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-white/[0.12] bg-white/[0.04] px-5 py-2.5 text-xs font-semibold text-neutral-200 hover:text-white hover:bg-white/[0.08] transition-all cursor-pointer active:scale-95"
+              className="w-full sm:w-auto inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-[#222] bg-[#0d0d0d] px-5 py-2.5 text-xs font-semibold text-neutral-300 hover:text-white hover:border-[#444] transition-all cursor-pointer active:scale-95"
             >
               <span>Try Again</span>
             </button>
@@ -239,7 +239,7 @@ export default class ErrorBoundary extends Component {
             <button
               type="button"
               onClick={this.handleGoHome}
-              className="w-full sm:w-auto inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-white/[0.08] bg-transparent px-4 py-2.5 text-xs font-medium text-neutral-400 hover:text-neutral-200 hover:bg-white/[0.02] transition-colors cursor-pointer"
+              className="w-full sm:w-auto inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-[#222] bg-[#0d0d0d] px-4 py-2.5 text-xs font-medium text-neutral-300 hover:text-white hover:border-[#444] transition-colors cursor-pointer active:scale-95"
             >
               <Home className="h-3.5 w-3.5" />
               <span>Home</span>

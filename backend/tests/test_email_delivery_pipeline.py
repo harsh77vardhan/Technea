@@ -1,5 +1,6 @@
 """Comprehensive tests for Technea Email Delivery Pipeline, Resend API, SMTP Fallback, and Health Endpoint."""
 
+import logging
 import smtplib
 import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -364,3 +365,158 @@ async def test_health_check_email_fields_smtp():
     finally:
         settings.RESEND_API_KEY = orig_key
         settings.SMTP_HOST = orig_smtp
+
+
+# -----------------------------------------------------------------------------
+# 5. Resend 403 Test Mode Restriction & Sender Formatting Tests
+# -----------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_resend_403_test_mode_detection_without_smtp(caplog):
+    """Verify Resend 403 test mode logs warning and returns helpful, actionable error message."""
+    orig_key = settings.RESEND_API_KEY
+    orig_smtp = settings.SMTP_HOST
+    try:
+        settings.RESEND_API_KEY = "re_test_dummy_key"
+        settings.SMTP_HOST = None
+
+        mock_resp = MagicMock()
+        mock_resp.status_code = 403
+        mock_resp.is_success = False
+        mock_resp.text = (
+            '{"statusCode": 403, "message": "You can only send testing emails to your own email address (owner@example.com). '
+            'To send to other recipients, verify a custom domain at resend.com/domains.", "name": "validation_error"}'
+        )
+        mock_resp.headers = {"content-type": "application/json"}
+        mock_resp.json.return_value = {
+            "statusCode": 403,
+            "message": "You can only send testing emails to your own email address (owner@example.com)...",
+        }
+
+        with caplog.at_level(logging.WARNING):
+            with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
+                mock_post.return_value = mock_resp
+
+                success, error_msg = await email_service.send_otp_email(
+                    to_email="unregistered_user@example.com",
+                    otp="789012",
+                )
+
+                assert success is False
+                assert (
+                    error_msg
+                    == "Email provider is in sandbox/testing mode: sending is restricted to verified accounts. "
+                    "To send to all users in production, add and verify a custom domain in your Resend Dashboard "
+                    "and configure EMAIL_FROM, or provide SMTP credentials."
+                )
+                assert (
+                    "[EMAIL] Resend returned 403 (Test mode restriction: sending only allowed to registered account owner). "
+                    "Attempting SMTP fallback or providing actionable resolution."
+                ) in caplog.text
+    finally:
+        settings.RESEND_API_KEY = orig_key
+        settings.SMTP_HOST = orig_smtp
+
+
+@pytest.mark.asyncio
+async def test_resend_403_automatic_smtp_fallback():
+    """Verify that when Resend returns 403, email service automatically falls back to SMTP if configured."""
+    orig_key = settings.RESEND_API_KEY
+    orig_smtp_host = settings.SMTP_HOST
+    orig_smtp_port = settings.SMTP_PORT
+    try:
+        settings.RESEND_API_KEY = "re_test_key"
+        settings.SMTP_HOST = "smtp.fallback-mail.com"
+        settings.SMTP_PORT = 587
+        settings.SMTP_TLS = True
+        settings.SMTP_SSL = False
+
+        resend_403_resp = MagicMock()
+        resend_403_resp.status_code = 403
+        resend_403_resp.is_success = False
+        resend_403_resp.text = "You can only send testing emails to your own email address"
+        resend_403_resp.headers = {"content-type": "application/json"}
+
+        with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
+            mock_post.return_value = resend_403_resp
+
+            with patch("smtplib.SMTP") as mock_smtp_cls:
+                smtp_mock_instance = MagicMock()
+                mock_smtp_cls.return_value.__enter__.return_value = smtp_mock_instance
+
+                success, error_msg = await email_service.send_otp_email(
+                    to_email="external_recipient@technea.dev",
+                    otp="888222",
+                )
+                assert success is True
+                assert error_msg is None
+                assert smtp_mock_instance.sendmail.called
+                assert smtp_mock_instance.starttls.called
+    finally:
+        settings.RESEND_API_KEY = orig_key
+        settings.SMTP_HOST = orig_smtp_host
+        settings.SMTP_PORT = orig_smtp_port
+
+
+def test_sender_address_formatting_robustness():
+    """Verify _get_sender_address handles name+email, pure email, quotes, and whitespace cleanly."""
+    service = EmailService()
+
+    # Default fallback
+    assert service._get_sender_address("") == "Technea <onboarding@resend.dev>"
+    assert service._get_sender_address("   ") == "Technea <onboarding@resend.dev>"
+
+    # Standard "Name <email@domain.com>"
+    assert (
+        service._get_sender_address("Technea <onboarding@resend.dev>")
+        == "Technea <onboarding@resend.dev>"
+    )
+
+    # Pure email format
+    assert service._get_sender_address("noreply@technea.dev") == "noreply@technea.dev"
+    assert service._get_sender_address("  noreply@technea.dev  ") == "noreply@technea.dev"
+
+    # Excess quotes wrapping name or whole string
+    assert (
+        service._get_sender_address('"Technea" <onboarding@resend.dev>')
+        == "Technea <onboarding@resend.dev>"
+    )
+    assert (
+        service._get_sender_address('"Technea Support" <support@technea.dev>')
+        == "Technea Support <support@technea.dev>"
+    )
+    assert (
+        service._get_sender_address('  "Technea Team" <auth@technea.dev>  ')
+        == "Technea Team <auth@technea.dev>"
+    )
+    assert service._get_sender_address('"noreply@technea.dev"') == "noreply@technea.dev"
+    assert service._get_sender_address("'noreply@technea.dev'") == "noreply@technea.dev"
+
+
+@pytest.mark.asyncio
+async def test_send_otp_failure_masks_internal_credentials():
+    """Verify /auth/send-otp sanitizes internal API keys and secrets upon delivery error."""
+    test_email = f"sanitize_{uuid.uuid4().hex[:8]}@technea.dev"
+    transport = ASGITransport(app=app)
+
+    leaked_detail = "Resend error with key re_1234567890abcdef123 and password='super_secret_password'"
+    with patch.object(
+        email_service,
+        "send_otp_email",
+        return_value=(False, leaked_detail),
+    ):
+        async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+            response = await client.post("/auth/send-otp", json={"email": test_email})
+            assert response.status_code == 502
+            detail = response.json()["detail"]
+            assert "re_***" in detail
+            assert "re_1234567890abcdef123" not in detail
+            assert "password=***" in detail
+            assert "super_secret_password" not in detail
+
+    # Confirm OTP record is deleted
+    async with async_session_maker() as session:
+        result = await session.execute(select(EmailOTP).where(EmailOTP.email == test_email.lower()))
+        assert result.scalars().first() is None
+

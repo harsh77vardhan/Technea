@@ -11,6 +11,7 @@ from app.core.config import settings
 from app.core.logger import logger
 from app.db.session import get_db
 from app.schemas.common import HealthCheckResponse
+from app.services.email import email_service
 
 router = APIRouter(tags=["Health"])
 
@@ -33,7 +34,7 @@ def get_email_status() -> tuple[str, bool, str]:
     else:
         service = "unconfigured"
         configured = False
-    return service, configured, settings.EMAIL_FROM or ""
+    return service, configured, email_service._get_sender_address()
 
 
 @router.get(

@@ -184,22 +184,22 @@ export default function FeaturedCoursesSection({
                           toggleBookmark(course.id)
                         }}
                         aria-label={isBookmarked ? 'Remove bookmark' : 'Bookmark course'}
-                        className={`rounded-lg p-1.5 backdrop-blur-md border transition-all cursor-pointer ${
+                        className={`rounded-lg p-2 min-h-[36px] min-w-[36px] flex items-center justify-center backdrop-blur-md border transition-all cursor-pointer ${
                           isBookmarked
-                            ? 'bg-amber-500/20 border-amber-500/40 text-amber-400'
+                            ? 'bg-white/20 border-white/40 text-white'
                             : 'bg-black/60 border-white/15 text-neutral-400 hover:text-white hover:bg-black/80'
                         }`}
                       >
                         <Bookmark
-                          className={`h-3 w-3 ${isBookmarked ? 'fill-amber-400' : ''}`}
+                          className={`h-3.5 w-3.5 ${isBookmarked ? 'fill-white text-white' : ''}`}
                         />
                       </button>
                     </div>
 
                     {/* Bottom overlay: Rating & Duration */}
                     <div className="absolute bottom-2.5 left-2.5 right-2.5 flex items-center justify-between text-[11px] font-mono text-neutral-300 z-10 pointer-events-none">
-                      <div className="flex items-center gap-1 bg-black/70 backdrop-blur-md px-2 py-0.5 rounded-md text-amber-400 font-semibold border border-white/10">
-                        <Star className="h-3 w-3 fill-amber-400" />
+                      <div className="flex items-center gap-1 bg-black/70 backdrop-blur-md px-2 py-0.5 rounded-md text-neutral-200 font-semibold border border-white/10">
+                        <Star className="h-3 w-3 fill-neutral-300 text-neutral-300" />
                         <span>{rating}</span>
                       </div>
 
@@ -243,9 +243,9 @@ export default function FeaturedCoursesSection({
                       whileTap={{ scale: 0.99 }}
                       type="button"
                       onClick={() => onStartCourse(course)}
-                      className={`w-full inline-flex items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-xs font-semibold transition-all cursor-pointer ${
+                      className={`w-full inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-xs font-semibold transition-all cursor-pointer ${
                         isEnrolled
-                          ? 'bg-emerald-400 text-black'
+                          ? 'bg-white text-black ring-1 ring-white/50'
                           : 'bg-white text-black hover:bg-neutral-200 shadow-sm'
                       }`}
                     >

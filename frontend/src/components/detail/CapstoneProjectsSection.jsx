@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import { Clock, Terminal, ChevronRight } from 'lucide-react'
 import ProjectSpecModal from './ProjectSpecModal'
 
-export default function CapstoneProjectsSection({ projects = [], theme }) {
+export default function CapstoneProjectsSection({ projects = [] }) {
   const [activeProjectModal, setActiveProjectModal] = useState(null)
 
   return (
@@ -12,10 +12,7 @@ export default function CapstoneProjectsSection({ projects = [], theme }) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <span
-              className="h-2 w-2 rounded-full"
-              style={{ backgroundColor: theme.accentHue }}
-            />
+            <span className="h-2 w-2 rounded-full bg-white/80" />
             <h2 className="text-xs font-mono uppercase tracking-widest text-neutral-300 font-semibold">
               Real-World Capstone Projects
             </h2>
@@ -45,7 +42,7 @@ export default function CapstoneProjectsSection({ projects = [], theme }) {
             <div className="relative z-10 p-6 space-y-5">
               {/* Card Top: Milestone & Difficulty */}
               <div className="flex items-center justify-between gap-2">
-                <span className="font-mono text-[10px] uppercase tracking-wider text-emerald-400 font-semibold bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full">
+                <span className="font-mono text-[10px] uppercase tracking-wider text-neutral-300 font-semibold bg-white/[0.04] border border-white/10 px-2.5 py-0.5 rounded-full">
                   {proj.milestone}
                 </span>
 
@@ -58,9 +55,9 @@ export default function CapstoneProjectsSection({ projects = [], theme }) {
               <div className="rounded-xl border border-white/10 bg-black/60 p-4 font-mono text-[11px] text-neutral-400 space-y-2 relative overflow-hidden group/box">
                 <div className="flex items-center justify-between border-b border-white/[0.06] pb-2 text-[10px] text-neutral-500">
                   <div className="flex items-center gap-1.5">
-                    <span className="h-2 w-2 rounded-full bg-red-500/70" />
-                    <span className="h-2 w-2 rounded-full bg-yellow-500/70" />
-                    <span className="h-2 w-2 rounded-full bg-green-500/70" />
+                    <span className="h-2 w-2 rounded-full bg-white/20" />
+                    <span className="h-2 w-2 rounded-full bg-white/20" />
+                    <span className="h-2 w-2 rounded-full bg-white/20" />
                   </div>
                   <span className="flex items-center gap-1">
                     <Clock className="h-3 w-3 text-neutral-400" />
@@ -73,7 +70,7 @@ export default function CapstoneProjectsSection({ projects = [], theme }) {
                   <span className="truncate">$ build --milestone={idx + 1}</span>
                 </div>
 
-                <div className="text-[10px] text-emerald-400/90 font-mono">
+                <div className="text-[10px] text-neutral-400 font-mono">
                   ✓ Ready for local development
                 </div>
               </div>
@@ -118,7 +115,7 @@ export default function CapstoneProjectsSection({ projects = [], theme }) {
                 <button
                   type="button"
                   onClick={() => setActiveProjectModal(proj)}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-white/15 bg-white/[0.04] px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-white/10 hover:border-white/25 transition-all cursor-pointer shadow-sm group-hover:border-white/30"
+                  className="inline-flex min-h-[44px] items-center gap-1.5 rounded-xl border border-white/15 bg-white/[0.04] px-4 py-2 text-xs font-semibold text-white hover:bg-white/10 hover:border-white/25 transition-all cursor-pointer shadow-sm group-hover:border-white/30"
                 >
                   <span>View Project Spec</span>
                   <ChevronRight className="h-3.5 w-3.5 text-neutral-400 group-hover:text-white group-hover:translate-x-0.5 transition-transform" />

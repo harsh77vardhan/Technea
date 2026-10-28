@@ -432,11 +432,11 @@ export default function LearningPathDetailPage({
       {/* ── 2. SEGMENTED NAVIGATION TABS (Linear / Raycast Style) ─────────── */}
       <div className="sticky top-0 z-20 border-b border-white/[0.08] bg-[#08090d]/85 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4 py-3">
-          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+          <div data-lenis-prevent className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
             <button
               type="button"
               onClick={() => setActiveTab('all')}
-              className={`rounded-xl px-3.5 py-1.5 text-xs font-medium transition-all cursor-pointer whitespace-nowrap ${
+              className={`inline-flex min-h-[44px] items-center rounded-xl px-4 py-2 text-xs font-medium transition-all cursor-pointer whitespace-nowrap ${
                 activeTab === 'all'
                   ? 'bg-white text-black font-semibold shadow-sm'
                   : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
@@ -448,7 +448,7 @@ export default function LearningPathDetailPage({
             <button
               type="button"
               onClick={() => setActiveTab('roadmap')}
-              className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-medium transition-all cursor-pointer whitespace-nowrap ${
+              className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-medium transition-all cursor-pointer whitespace-nowrap ${
                 activeTab === 'roadmap'
                   ? 'bg-white text-black font-semibold shadow-sm'
                   : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
@@ -461,7 +461,7 @@ export default function LearningPathDetailPage({
             <button
               type="button"
               onClick={() => setActiveTab('courses')}
-              className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-medium transition-all cursor-pointer whitespace-nowrap ${
+              className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-medium transition-all cursor-pointer whitespace-nowrap ${
                 activeTab === 'courses'
                   ? 'bg-white text-black font-semibold shadow-sm'
                   : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
@@ -474,7 +474,7 @@ export default function LearningPathDetailPage({
             <button
               type="button"
               onClick={() => setActiveTab('projects')}
-              className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-medium transition-all cursor-pointer whitespace-nowrap ${
+              className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-medium transition-all cursor-pointer whitespace-nowrap ${
                 activeTab === 'projects'
                   ? 'bg-white text-black font-semibold shadow-sm'
                   : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
@@ -486,7 +486,7 @@ export default function LearningPathDetailPage({
           </div>
 
           <div className="hidden md:flex items-center gap-2 text-xs font-mono text-neutral-400 shrink-0">
-            <span className="h-2 w-2 rounded-full bg-emerald-400" />
+            <span className="h-2 w-2 rounded-full bg-white/80" />
             <span>Progress: {completedStepIds.length}/{journeySteps.length} milestones</span>
           </div>
         </div>

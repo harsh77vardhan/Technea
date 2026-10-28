@@ -62,12 +62,12 @@ export default function FollowButton({
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         disabled={isLoading}
-        className={`inline-flex items-center justify-center gap-1.5 rounded-[6px] font-mono font-medium transition-all cursor-pointer ${
+        className={`inline-flex items-center justify-center gap-1.5 rounded-xl font-mono font-medium transition-all cursor-pointer ${
           isSmall ? 'px-2.5 py-1 text-[11px]' : 'px-3.5 py-1.5 text-xs'
         } ${
           isHovered
             ? 'border border-red-500/40 bg-red-950/20 text-red-400 hover:bg-red-900/30'
-            : 'border border-[#262626] bg-[#121212] text-[#D4D4D4] hover:border-[#383838]'
+            : 'border border-[#222] bg-[#0d0d0d] text-neutral-300 hover:border-[#444] hover:text-white'
         } ${isLoading ? 'opacity-60 cursor-not-allowed' : ''}`}
       >
         {isLoading ? (
@@ -79,7 +79,7 @@ export default function FollowButton({
           </>
         ) : (
           <>
-            <UserCheck className="h-3 w-3 text-emerald-400" />
+            <UserCheck className="h-3 w-3 text-neutral-300" />
             <span>Following</span>
           </>
         )}
@@ -92,9 +92,9 @@ export default function FollowButton({
       type="button"
       onClick={handleToggle}
       disabled={isLoading}
-      className={`inline-flex items-center justify-center gap-1.5 rounded-[6px] font-mono font-bold transition-all cursor-pointer shadow-xs ${
+      className={`inline-flex items-center justify-center gap-1.5 rounded-xl font-mono font-semibold transition-all cursor-pointer shadow-sm ${
         isSmall ? 'px-2.5 py-1 text-[11px]' : 'px-4 py-1.5 text-xs'
-      } bg-[#EDEDED] text-[#050505] hover:bg-white active:scale-98 ${
+      } bg-white text-black hover:bg-neutral-200 active:scale-98 ${
         isLoading ? 'opacity-60 cursor-not-allowed' : ''
       }`}
     >

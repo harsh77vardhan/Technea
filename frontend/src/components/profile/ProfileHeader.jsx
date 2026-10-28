@@ -96,19 +96,19 @@ export default function ProfileHeader({
   return (
     <div className="w-full rounded-2xl border border-white/[0.08] bg-[#0D0D0D]/90 backdrop-blur-xl overflow-hidden shadow-2xl relative">
       {/* Futuristic Command Center Banner with Starfield Canvas Effect */}
-      <div className="h-32 sm:h-38 w-full bg-gradient-to-r from-[#070709] via-[#101014] to-[#0A0A0E] border-b border-white/[0.06] relative overflow-hidden">
+      <div className="h-32 sm:h-38 w-full bg-gradient-to-r from-[#050505] via-[#0d0d0d] to-[#070707] border-b border-white/[0.06] relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-white/[0.05] via-transparent to-transparent pointer-events-none" />
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
 
-        {/* Dynamic Ambient Glow Aura based on Developer Tier */}
+        {/* Dynamic Subtle Ambient Glow Aura */}
         <div
-          className={`absolute -top-16 left-8 sm:left-14 h-48 w-48 rounded-full bg-gradient-to-r ${tierConfig.gradient} opacity-25 blur-3xl pointer-events-none`}
+          className="absolute -top-16 left-8 sm:left-14 h-48 w-48 rounded-full bg-white/[0.03] blur-3xl pointer-events-none"
         />
 
         {/* Top Autonomous Network Telemetry Badge */}
         <div className="absolute top-3.5 right-4 sm:right-6 hidden sm:flex items-center gap-2 rounded-full border border-white/[0.08] bg-black/60 px-3 py-1 backdrop-blur-md">
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
-          <span className="text-[10px] font-mono tracking-wider uppercase text-[#8A8F98]">
+          <span className="h-1.5 w-1.5 rounded-full bg-neutral-300 animate-pulse shadow-[0_0_8px_rgba(255,255,255,0.6)]" />
+          <span className="text-[10px] font-mono tracking-wider uppercase text-neutral-400">
             TECHNEA // NODE ACTIVE
           </span>
         </div>
@@ -122,7 +122,7 @@ export default function ProfileHeader({
             <div className="relative group shrink-0 self-start sm:self-auto">
               {/* Outer dynamic ambient blur glow */}
               <div
-                className={`absolute -inset-1 rounded-full bg-gradient-to-r ${tierConfig.gradient} opacity-70 blur-md group-hover:opacity-100 transition-opacity duration-500`}
+                className={`absolute -inset-1 rounded-full bg-gradient-to-r ${tierConfig.gradient} opacity-50 blur-md group-hover:opacity-80 transition-opacity duration-500`}
               />
 
               {/* High-resolution circular avatar with developer level glow ring */}
@@ -146,29 +146,29 @@ export default function ProfileHeader({
 
             <div className="space-y-1.5 mb-1 min-w-0">
               <div className="flex items-center gap-2.5 flex-wrap">
-                <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight text-[#EDEDED] font-sans">
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight text-white font-sans">
                   {profile.full_name || profile.username}
                 </h1>
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-950/40 px-2.5 py-0.5 text-[10px] font-mono font-medium text-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.18)]">
-                  <ShieldCheck className="h-3 w-3" />
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-0.5 text-[10px] font-mono font-medium text-neutral-300">
+                  <ShieldCheck className="h-3 w-3 text-neutral-300" />
                   <span>Verified Developer</span>
                 </span>
-                <span className="inline-flex items-center gap-1 rounded-full border border-white/[0.08] bg-[#141414] px-2.5 py-0.5 text-[10px] font-mono text-[#8A8F98]">
-                  <Globe className="h-2.5 w-2.5 text-[#52525B]" />
+                <span className="inline-flex items-center gap-1 rounded-full border border-white/[0.08] bg-[#141414] px-2.5 py-0.5 text-[10px] font-mono text-neutral-400">
+                  <Globe className="h-2.5 w-2.5 text-neutral-500" />
                   <span>Public Identity</span>
                 </span>
               </div>
 
               <div className="flex items-center gap-2.5 flex-wrap">
-                <span className="text-xs sm:text-sm font-mono text-[#8A8F98]">
+                <span className="text-xs sm:text-sm font-mono text-neutral-400">
                   @{profile.username}
                 </span>
-                <span className="text-xs text-[#52525B]">•</span>
+                <span className="text-xs text-neutral-600">•</span>
                 {/* Engineering Tier Credential Badge */}
                 <span
                   className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-0.5 text-[11px] font-mono font-semibold tracking-wide ${tierConfig.pill}`}
                 >
-                  <Zap className="h-3 w-3 animate-pulse" />
+                  <Zap className="h-3 w-3 text-neutral-300" />
                   <span>{profile.developer_level}</span>
                 </span>
               </div>
@@ -184,9 +184,9 @@ export default function ProfileHeader({
                   whileHover={{ scale: 1.02, y: -1 }}
                   whileTap={{ scale: 0.97 }}
                   onClick={onEditProfile}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-white/[0.12] bg-[#161616] px-4 py-2 text-xs font-mono font-semibold text-[#EDEDED] hover:bg-[#202020] hover:border-white/[0.22] transition-all cursor-pointer shadow-sm"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-[#222] bg-[#0d0d0d] px-4 py-2 text-xs font-mono font-semibold text-neutral-300 hover:border-[#444] hover:text-white transition-colors cursor-pointer shadow-sm"
                 >
-                  <Pencil className="h-3.5 w-3.5 text-[#8A8F98]" />
+                  <Pencil className="h-3.5 w-3.5 text-neutral-400" />
                   <span>Edit Profile</span>
                 </motion.button>
                 <motion.button
@@ -194,9 +194,9 @@ export default function ProfileHeader({
                   whileHover={{ scale: 1.02, y: -1 }}
                   whileTap={{ scale: 0.97 }}
                   onClick={handleDashboardClick}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-white/[0.12] bg-[#121212] px-3.5 py-2 text-xs font-mono font-semibold text-[#D4D4D4] hover:text-white hover:bg-[#1A1A1A] hover:border-white/[0.24] transition-all cursor-pointer shadow-sm"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-[#222] bg-[#0d0d0d] px-3.5 py-2 text-xs font-mono font-semibold text-neutral-300 hover:text-white hover:border-[#444] transition-colors cursor-pointer shadow-sm"
                 >
-                  <LayoutDashboard className="h-3.5 w-3.5 text-cyan-400" />
+                  <LayoutDashboard className="h-3.5 w-3.5 text-neutral-300" />
                   <span>Dashboard</span>
                 </motion.button>
               </>
@@ -215,13 +215,13 @@ export default function ProfileHeader({
               whileHover={{ scale: 1.02, y: -1 }}
               whileTap={{ scale: 0.97 }}
               onClick={handleShare}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-white/[0.08] bg-[#121212] px-3 py-2 text-xs font-mono text-[#8A8F98] hover:text-[#EDEDED] hover:border-white/[0.18] transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-[#222] bg-[#0d0d0d] px-3 py-2 text-xs font-mono text-neutral-300 hover:text-white hover:border-[#444] transition-colors cursor-pointer"
               title="Share profile link"
             >
               {copiedShare ? (
                 <>
-                  <Check className="h-3.5 w-3.5 text-emerald-400" />
-                  <span className="text-emerald-400">Copied!</span>
+                  <Check className="h-3.5 w-3.5 text-white" />
+                  <span className="text-white">Copied!</span>
                 </>
               ) : (
                 <>
@@ -235,27 +235,27 @@ export default function ProfileHeader({
 
         {/* Bio with typographic hierarchy */}
         {profile.bio && (
-          <p className="mt-4 text-xs sm:text-sm text-[#CCCCCC] leading-relaxed max-w-3xl font-sans">
+          <p className="mt-4 text-xs sm:text-sm text-neutral-300 leading-relaxed max-w-3xl font-sans">
             {profile.bio}
           </p>
         )}
 
         {/* Metadata pills: Location, Joined date, Learning streak */}
-        <div className="mt-4 flex flex-wrap items-center gap-y-2 gap-x-5 text-xs text-[#8A8F98] font-mono">
+        <div className="mt-4 flex flex-wrap items-center gap-y-2 gap-x-5 text-xs text-neutral-400 font-mono">
           {profile.location && (
             <div className="flex items-center gap-1.5">
-              <MapPin className="h-3.5 w-3.5 text-[#52525B]" />
+              <MapPin className="h-3.5 w-3.5 text-neutral-500" />
               <span>{profile.location}</span>
             </div>
           )}
 
           <div className="flex items-center gap-1.5">
-            <Calendar className="h-3.5 w-3.5 text-[#52525B]" />
+            <Calendar className="h-3.5 w-3.5 text-neutral-500" />
             <span>Joined {profile.joined_date}</span>
           </div>
 
-          <div className="flex items-center gap-1.5 text-amber-400/90 font-medium">
-            <Flame className="h-3.5 w-3.5 text-amber-500 animate-pulse" />
+          <div className="flex items-center gap-1.5 text-neutral-300 font-medium">
+            <Flame className="h-3.5 w-3.5 text-neutral-300" />
             <span>{profile.learning_streak} Day Streak</span>
           </div>
         </div>
@@ -268,11 +268,11 @@ export default function ProfileHeader({
                 href={profile.github_url}
                 target="_blank"
                 rel="noreferrer noopener"
-                className="inline-flex items-center gap-1.5 rounded-md border border-white/[0.08] bg-[#111111]/90 px-2.5 py-1 text-[11px] font-mono text-[#8A8F98] hover:text-white hover:border-white/[0.22] hover:shadow-[0_0_12px_rgba(255,255,255,0.08)] transition-all"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-[#222] bg-[#0d0d0d] px-2.5 py-1 text-[11px] font-mono text-neutral-400 hover:text-white hover:border-[#444] transition-all"
               >
                 <GithubIcon className="h-3 w-3" />
                 <span>GitHub</span>
-                <ExternalLink className="h-2.5 w-2.5 text-[#52525B]" />
+                <ExternalLink className="h-2.5 w-2.5 text-neutral-500" />
               </a>
             )}
 
@@ -281,11 +281,11 @@ export default function ProfileHeader({
                 href={profile.linkedin_url}
                 target="_blank"
                 rel="noreferrer noopener"
-                className="inline-flex items-center gap-1.5 rounded-md border border-white/[0.08] bg-[#111111]/90 px-2.5 py-1 text-[11px] font-mono text-[#8A8F98] hover:text-[#0A66C2] hover:border-[#0A66C2]/50 hover:shadow-[0_0_14px_rgba(10,102,194,0.2)] transition-all"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-[#222] bg-[#0d0d0d] px-2.5 py-1 text-[11px] font-mono text-neutral-400 hover:text-white hover:border-[#444] transition-all"
               >
                 <LinkedinIcon className="h-3 w-3" />
                 <span>LinkedIn</span>
-                <ExternalLink className="h-2.5 w-2.5 text-[#52525B]" />
+                <ExternalLink className="h-2.5 w-2.5 text-neutral-500" />
               </a>
             )}
 
@@ -294,11 +294,11 @@ export default function ProfileHeader({
                 href={profile.portfolio_url || profile.website_url}
                 target="_blank"
                 rel="noreferrer noopener"
-                className="inline-flex items-center gap-1.5 rounded-md border border-white/[0.08] bg-[#111111]/90 px-2.5 py-1 text-[11px] font-mono text-[#8A8F98] hover:text-cyan-300 hover:border-cyan-500/40 hover:shadow-[0_0_14px_rgba(6,182,212,0.2)] transition-all"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-[#222] bg-[#0d0d0d] px-2.5 py-1 text-[11px] font-mono text-neutral-400 hover:text-white hover:border-[#444] transition-all"
               >
                 <Globe className="h-3 w-3" />
                 <span>{profile.portfolio_url ? 'Portfolio' : 'Website'}</span>
-                <ExternalLink className="h-2.5 w-2.5 text-[#52525B]" />
+                <ExternalLink className="h-2.5 w-2.5 text-neutral-500" />
               </a>
             )}
           </div>
@@ -309,32 +309,32 @@ export default function ProfileHeader({
           <button
             type="button"
             onClick={onOpenFollowers}
-            className="group flex items-center gap-1.5 text-xs font-mono text-[#8A8F98] hover:text-[#EDEDED] transition-colors cursor-pointer"
+            className="group flex items-center gap-1.5 text-xs font-mono text-neutral-400 hover:text-white transition-colors cursor-pointer"
           >
-            <span className="font-bold text-[#EDEDED] group-hover:underline">
+            <span className="font-bold text-white group-hover:underline">
               {profile.followers_count}
             </span>
             <span>Followers</span>
           </button>
 
-          <span className="text-[#52525B]">•</span>
+          <span className="text-neutral-600">•</span>
 
           <button
             type="button"
             onClick={onOpenFollowing}
-            className="group flex items-center gap-1.5 text-xs font-mono text-[#8A8F98] hover:text-[#EDEDED] transition-colors cursor-pointer"
+            className="group flex items-center gap-1.5 text-xs font-mono text-neutral-400 hover:text-white transition-colors cursor-pointer"
           >
-            <span className="font-bold text-[#EDEDED] group-hover:underline">
+            <span className="font-bold text-white group-hover:underline">
               {profile.following_count}
             </span>
             <span>Following</span>
           </button>
 
-          <span className="text-[#52525B]">•</span>
+          <span className="text-neutral-600">•</span>
 
-          <div className="flex items-center gap-1.5 text-xs font-mono text-[#8A8F98]">
-            <Sparkles className="h-3 w-3 text-amber-400" />
-            <span className="font-bold text-[#EDEDED]">{profile.xp_points}</span>
+          <div className="flex items-center gap-1.5 text-xs font-mono text-neutral-400">
+            <Sparkles className="h-3 w-3 text-neutral-400" />
+            <span className="font-bold text-white">{profile.xp_points}</span>
             <span>XP</span>
           </div>
         </div>

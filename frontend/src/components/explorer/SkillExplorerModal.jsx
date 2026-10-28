@@ -350,7 +350,7 @@ export default function SkillExplorerModal({ isOpen, onClose, onSelectPath, init
                 {roadmapSuccessMessage && (
                   <div className="rounded-2xl border border-white/20 bg-white/[0.08] backdrop-blur-xl p-4 text-white text-xs sm:text-sm font-medium shadow-xl transition-all animate-in fade-in">
                     <p className="flex items-center gap-2">
-                      <span className="inline-block h-2 w-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]" />
+                      <span className="inline-block h-2 w-2 rounded-full bg-emerald-400/90 animate-pulse" />
                       {roadmapSuccessMessage}
                     </p>
                   </div>
@@ -388,7 +388,7 @@ export default function SkillExplorerModal({ isOpen, onClose, onSelectPath, init
             fallback={
               <div className="min-h-screen w-full flex items-center justify-center bg-[#08090d] text-white">
                 <div className="flex flex-col items-center gap-3">
-                  <div className="h-10 w-10 rounded-full border-2 border-t-indigo-500 border-r-purple-500 border-b-transparent border-l-transparent animate-spin" />
+                  <div className="h-10 w-10 rounded-full border-2 border-white/20 border-t-white animate-spin" />
                   <span className="text-xs font-medium text-neutral-400 tracking-wider">Loading path details...</span>
                 </div>
               </div>
@@ -421,7 +421,7 @@ export default function SkillExplorerModal({ isOpen, onClose, onSelectPath, init
             fallback={
               <div className="min-h-screen w-full flex items-center justify-center bg-[#08090d] text-white">
                 <div className="flex flex-col items-center gap-3">
-                  <div className="h-10 w-10 rounded-full border-2 border-t-blue-500 border-r-indigo-500 border-b-transparent border-l-transparent animate-spin" />
+                  <div className="h-10 w-10 rounded-full border-2 border-white/20 border-t-white animate-spin" />
                   <span className="text-xs font-medium text-neutral-400 tracking-wider">Loading course player...</span>
                 </div>
               </div>

@@ -343,13 +343,13 @@ export default function ProfileEditor({
           transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
           className="relative z-10 w-full max-w-xl rounded-2xl border border-white/[0.08] bg-[#0A0A0A]/95 backdrop-blur-2xl shadow-2xl overflow-hidden my-auto flex flex-col max-h-[90vh]"
         >
-          {/* Futuristic Ambient Glow Accents */}
+          {/* Futuristic Subtle Ambient Studio Glow */}
           <div
-            className="pointer-events-none absolute -top-24 -left-24 h-64 w-64 rounded-full bg-blue-600/10 blur-3xl"
+            className="pointer-events-none absolute -top-24 -left-24 h-64 w-64 rounded-full bg-white/[0.02] blur-3xl"
             aria-hidden="true"
           />
           <div
-            className="pointer-events-none absolute -bottom-24 -right-24 h-64 w-64 rounded-full bg-purple-600/10 blur-3xl"
+            className="pointer-events-none absolute -bottom-24 -right-24 h-64 w-64 rounded-full bg-white/[0.02] blur-3xl"
             aria-hidden="true"
           />
 
@@ -390,8 +390,8 @@ export default function ProfileEditor({
                 onClick={() => setActiveTab('identity')}
                 className={`relative flex items-center gap-2 pb-3 px-2 text-xs font-mono font-medium transition-colors cursor-pointer ${
                   activeTab === 'identity'
-                    ? 'text-[#EDEDED]'
-                    : 'text-[#8A8F98] hover:text-[#EDEDED]'
+                    ? 'text-white font-bold'
+                    : 'text-neutral-400 hover:text-white'
                 }`}
               >
                 <User className="h-3.5 w-3.5" />
@@ -402,7 +402,7 @@ export default function ProfileEditor({
                 {activeTab === 'identity' && (
                   <motion.div
                     layoutId="activeTabUnderline"
-                    className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-blue-500 via-indigo-400 to-purple-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]"
+                    className="absolute bottom-0 left-0 right-0 h-[2px] bg-white shadow-[0_0_8px_rgba(255,255,255,0.4)]"
                     transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                   />
                 )}
@@ -413,8 +413,8 @@ export default function ProfileEditor({
                 onClick={() => setActiveTab('links')}
                 className={`relative flex items-center gap-2 pb-3 px-2 text-xs font-mono font-medium transition-colors cursor-pointer ${
                   activeTab === 'links'
-                    ? 'text-[#EDEDED]'
-                    : 'text-[#8A8F98] hover:text-[#EDEDED]'
+                    ? 'text-white font-bold'
+                    : 'text-neutral-400 hover:text-white'
                 }`}
               >
                 <Share2 className="h-3.5 w-3.5" />
@@ -422,7 +422,7 @@ export default function ProfileEditor({
                 {activeTab === 'links' && (
                   <motion.div
                     layoutId="activeTabUnderline"
-                    className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-blue-500 via-indigo-400 to-purple-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]"
+                    className="absolute bottom-0 left-0 right-0 h-[2px] bg-white shadow-[0_0_8px_rgba(255,255,255,0.4)]"
                     transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                   />
                 )}
@@ -481,9 +481,9 @@ export default function ProfileEditor({
                   {/* 1. Profile Photo Subsection */}
                   <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-4 sm:p-5 backdrop-blur-md">
                     <div className="flex flex-col sm:flex-row sm:items-center gap-5">
-                      {/* Prominent circular avatar with glowing border */}
+                      {/* Prominent circular avatar with refined border */}
                       <div className="relative group shrink-0 self-center sm:self-auto">
-                        <div className="relative h-20 w-20 sm:h-24 sm:w-24 rounded-full border-2 border-white/20 shadow-[0_0_20px_rgba(255,255,255,0.08),0_0_40px_rgba(59,130,246,0.12)] ring-4 ring-[#0A0A0A] bg-[#141414] overflow-hidden flex items-center justify-center">
+                        <div className="relative h-20 w-20 sm:h-24 sm:w-24 rounded-full border border-white/20 shadow-[0_0_20px_rgba(255,255,255,0.06)] ring-4 ring-[#0A0A0A] bg-[#141414] overflow-hidden flex items-center justify-center">
                           {avatarPreview && !previewError ? (
                             <img
                               src={getAvatarUrl(avatarPreview)}
@@ -542,7 +542,7 @@ export default function ProfileEditor({
                             type="button"
                             whileTap={{ scale: 0.96 }}
                             onClick={() => fileInputRef.current?.click()}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.05] px-3 py-1.5 text-xs font-mono font-medium text-[#EDEDED] hover:bg-white/[0.09] hover:border-white/20 transition-all cursor-pointer shadow-xs"
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-[#222] bg-[#0d0d0d] px-3.5 py-1.5 text-xs font-mono font-medium text-neutral-300 hover:border-[#444] hover:text-white transition-all cursor-pointer shadow-xs"
                           >
                             <Upload className="h-3.5 w-3.5" />
                             <span>{avatarPreview ? 'Change Photo' : 'Upload Image'}</span>
@@ -666,24 +666,24 @@ export default function ProfileEditor({
                         onClick={() => setVisibility('public')}
                         className={`flex items-start gap-3 p-3 rounded-xl border transition-all text-left cursor-pointer ${
                           visibility === 'public'
-                            ? 'border-emerald-500/40 bg-emerald-950/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]'
+                            ? 'border-white/30 bg-white/[0.06] text-white shadow-[0_0_15px_rgba(255,255,255,0.05)]'
                             : 'border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.04] opacity-70'
                         }`}
                       >
                         <div
                           className={`mt-0.5 p-1.5 rounded-lg ${
                             visibility === 'public'
-                              ? 'bg-emerald-500/20 text-emerald-400'
+                              ? 'bg-white/10 text-white'
                               : 'bg-white/[0.05] text-[#8A8F98]'
                           }`}
                         >
                           <Globe className="h-4 w-4" />
                         </div>
                         <div className="min-w-0">
-                          <span className="text-xs font-bold text-[#EDEDED] block">
+                          <span className="text-xs font-bold text-white block">
                             Public
                           </span>
-                          <span className="text-[11px] text-[#8A8F98] block leading-snug">
+                          <span className="text-[11px] text-neutral-400 block leading-snug">
                             Visible to entire developer community
                           </span>
                         </div>
@@ -694,24 +694,24 @@ export default function ProfileEditor({
                         onClick={() => setVisibility('private')}
                         className={`flex items-start gap-3 p-3 rounded-xl border transition-all text-left cursor-pointer ${
                           visibility === 'private'
-                            ? 'border-amber-500/40 bg-amber-950/20 shadow-[0_0_15px_rgba(245,158,11,0.1)]'
+                            ? 'border-white/30 bg-white/[0.06] text-white shadow-[0_0_15px_rgba(255,255,255,0.05)]'
                             : 'border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.04] opacity-70'
                         }`}
                       >
                         <div
                           className={`mt-0.5 p-1.5 rounded-lg ${
                             visibility === 'private'
-                              ? 'bg-amber-500/20 text-amber-400'
+                              ? 'bg-white/10 text-white'
                               : 'bg-white/[0.05] text-[#8A8F98]'
                           }`}
                         >
                           <Lock className="h-4 w-4" />
                         </div>
                         <div className="min-w-0">
-                          <span className="text-xs font-bold text-[#EDEDED] block">
+                          <span className="text-xs font-bold text-white block">
                             Private
                           </span>
-                          <span className="text-[11px] text-[#8A8F98] block leading-snug">
+                          <span className="text-[11px] text-neutral-400 block leading-snug">
                             Only visible to you
                           </span>
                         </div>
@@ -728,18 +728,18 @@ export default function ProfileEditor({
                   transition={{ duration: 0.18, ease: 'easeOut' }}
                   className="space-y-5"
                 >
-                  <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-4 text-xs font-mono text-[#8A8F98] leading-relaxed">
+                  <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-4 text-xs font-mono text-neutral-400 leading-relaxed">
                     Connect your public developer repositories, professional profiles, and portfolio website.
                   </div>
 
                   {/* GitHub URL */}
                   <div className="space-y-1.5">
-                    <label className="text-xs font-mono font-medium text-[#8A8F98] flex items-center gap-1.5">
-                      <GithubIcon className="h-3.5 w-3.5 text-[#EDEDED]" />
+                    <label className="text-xs font-mono font-medium text-neutral-400 flex items-center gap-1.5">
+                      <GithubIcon className="h-3.5 w-3.5 text-neutral-300" />
                       <span>GitHub Profile URL</span>
                     </label>
                     <div className="relative flex items-center">
-                      <div className="absolute left-3.5 flex items-center pointer-events-none text-[#8A8F98]">
+                      <div className="absolute left-3.5 flex items-center pointer-events-none text-neutral-500">
                         <GithubIcon className="h-4 w-4" />
                       </div>
                       <input
@@ -754,12 +754,12 @@ export default function ProfileEditor({
 
                   {/* LinkedIn URL */}
                   <div className="space-y-1.5">
-                    <label className="text-xs font-mono font-medium text-[#8A8F98] flex items-center gap-1.5">
-                      <LinkedinIcon className="h-3.5 w-3.5 text-[#0A66C2]" />
+                    <label className="text-xs font-mono font-medium text-neutral-400 flex items-center gap-1.5">
+                      <LinkedinIcon className="h-3.5 w-3.5 text-neutral-300" />
                       <span>LinkedIn Profile URL</span>
                     </label>
                     <div className="relative flex items-center">
-                      <div className="absolute left-3.5 flex items-center pointer-events-none text-[#8A8F98]">
+                      <div className="absolute left-3.5 flex items-center pointer-events-none text-neutral-500">
                         <LinkedinIcon className="h-4 w-4" />
                       </div>
                       <input
@@ -774,12 +774,12 @@ export default function ProfileEditor({
 
                   {/* Portfolio Website URL */}
                   <div className="space-y-1.5">
-                    <label className="text-xs font-mono font-medium text-[#8A8F98] flex items-center gap-1.5">
-                      <Globe className="h-3.5 w-3.5 text-emerald-400" />
+                    <label className="text-xs font-mono font-medium text-neutral-400 flex items-center gap-1.5">
+                      <Globe className="h-3.5 w-3.5 text-neutral-300" />
                       <span>Portfolio / Website URL</span>
                     </label>
                     <div className="relative flex items-center">
-                      <div className="absolute left-3.5 flex items-center pointer-events-none text-[#8A8F98]">
+                      <div className="absolute left-3.5 flex items-center pointer-events-none text-neutral-500">
                         <Globe className="h-4 w-4" />
                       </div>
                       <input
@@ -803,7 +803,7 @@ export default function ProfileEditor({
                 whileTap={{ scale: 0.95 }}
                 onClick={handleReset}
                 disabled={isSubmitting}
-                className="inline-flex items-center gap-1.5 text-xs font-mono text-[#8A8F98] hover:text-[#EDEDED] transition-colors cursor-pointer disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 text-xs font-mono text-neutral-400 hover:text-white transition-colors cursor-pointer disabled:opacity-50"
               >
                 <RotateCcw className="h-3.5 w-3.5" />
                 <span>Reset</span>
@@ -816,7 +816,7 @@ export default function ProfileEditor({
                   whileTap={{ scale: 0.96 }}
                   onClick={() => !isSubmitting && onClose?.()}
                   disabled={isSubmitting}
-                  className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-2 text-xs font-mono text-[#8A8F98] hover:text-[#EDEDED] hover:bg-white/[0.06] transition-all cursor-pointer disabled:opacity-50"
+                  className="rounded-xl border border-[#222] bg-[#0d0d0d] px-4 py-2 text-xs font-mono text-neutral-300 hover:text-white hover:border-[#444] transition-all cursor-pointer disabled:opacity-50"
                 >
                   Cancel
                 </motion.button>
@@ -827,16 +827,16 @@ export default function ProfileEditor({
                   whileHover={{ scale: isSubmitting || Boolean(usernameError) ? 1 : 1.02 }}
                   whileTap={{ scale: isSubmitting || Boolean(usernameError) ? 1 : 0.98 }}
                   disabled={isSubmitting || Boolean(usernameError)}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-[#EDEDED] px-5 py-2 text-xs font-mono font-bold text-[#0A0A0A] hover:bg-white transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(255,255,255,0.15)] active:shadow-none"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-white px-5 py-2 text-xs font-mono font-semibold text-black hover:bg-neutral-200 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
                 >
                   {isSubmitting ? (
                     <>
-                      <Loader2 className="h-3.5 w-3.5 animate-spin text-[#0A0A0A]" />
+                      <Loader2 className="h-3.5 w-3.5 animate-spin text-black" />
                       <span>Saving changes...</span>
                     </>
                   ) : (
                     <>
-                      <Check className="h-3.5 w-3.5 text-[#0A0A0A]" />
+                      <Check className="h-3.5 w-3.5 text-black" />
                       <span>Save Changes</span>
                     </>
                   )}

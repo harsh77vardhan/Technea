@@ -43,7 +43,7 @@ export default function SkillCard({ skill, isSelected, onSelect }) {
             <div
               className={`flex h-4 w-4 items-center justify-center rounded-full transition-all ${
                 isSelected
-                  ? 'bg-white text-black shadow-[0_0_10px_rgba(255,255,255,0.5)]'
+                  ? 'bg-white text-black shadow-xs'
                   : 'border border-white/20 group-hover:border-white/40'
               }`}
             >

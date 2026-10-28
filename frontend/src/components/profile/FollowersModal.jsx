@@ -95,25 +95,25 @@ export default function FollowersModal({
           transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
           onClick={(e) => e.stopPropagation()}
           data-lenis-prevent
-          className="relative w-full max-w-lg rounded-2xl border border-white/[0.08] bg-[#0A0A0E]/95 backdrop-blur-2xl shadow-[0_25px_80px_rgba(0,0,0,0.95)] overflow-hidden flex flex-col max-h-[85vh]"
+          className="relative w-full max-w-lg rounded-2xl border border-white/[0.08] bg-[#0A0A0A]/95 backdrop-blur-2xl shadow-[0_25px_80px_rgba(0,0,0,0.95)] overflow-hidden flex flex-col max-h-[85vh]"
         >
-          {/* Ambient Glow */}
-          <div className="pointer-events-none absolute -top-20 -right-20 h-52 w-52 rounded-full bg-cyan-500/10 blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-20 -left-20 h-52 w-52 rounded-full bg-purple-500/10 blur-3xl" />
+          {/* Subtle Ambient Studio Glow */}
+          <div className="pointer-events-none absolute -top-20 -right-20 h-52 w-52 rounded-full bg-white/[0.02] blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-20 -left-20 h-52 w-52 rounded-full bg-white/[0.02] blur-3xl" />
 
           {/* Header */}
           <div className="flex items-center justify-between border-b border-white/[0.06] px-6 py-4 shrink-0 bg-white/[0.01]">
             <div className="space-y-0.5">
               <div className="flex items-center gap-2">
-                <Users className="h-4 w-4 text-cyan-400" />
-                <h3 className="text-sm font-bold text-[#EDEDED] font-mono tracking-wide">
+                <Users className="h-4 w-4 text-neutral-300" />
+                <h3 className="text-sm font-bold text-white font-mono tracking-wide">
                   Developer Network
                 </h3>
-                <span className="text-xs font-mono text-cyan-400">
+                <span className="text-xs font-mono text-neutral-400">
                   @{username}
                 </span>
               </div>
-              <p className="text-[11px] text-[#8A8F98] font-mono">
+              <p className="text-[11px] text-neutral-400 font-mono">
                 Explore connected peer engineers and mentors across the network.
               </p>
             </div>
@@ -122,7 +122,7 @@ export default function FollowersModal({
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={onClose}
-              className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-[#8A8F98] hover:text-[#EDEDED] hover:bg-white/[0.05] transition-colors cursor-pointer"
+              className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-neutral-400 hover:text-white hover:bg-white/[0.05] transition-colors cursor-pointer"
               aria-label="Close"
             >
               <X className="h-4 w-4" />
@@ -137,14 +137,14 @@ export default function FollowersModal({
               className={`relative flex-1 py-3 text-xs font-mono font-medium transition-colors cursor-pointer text-center ${
                 activeTab === 'followers'
                   ? 'text-white font-bold'
-                  : 'text-[#8A8F98] hover:text-[#EDEDED]'
+                  : 'text-neutral-400 hover:text-white'
               }`}
             >
               <span>Followers ({followers.length})</span>
               {activeTab === 'followers' && (
                 <motion.div
                   layoutId="followersModalTabUnderline"
-                  className="absolute bottom-0 left-0 right-0 h-[2px] bg-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.8)]"
+                  className="absolute bottom-0 left-0 right-0 h-[2px] bg-white shadow-[0_0_8px_rgba(255,255,255,0.4)]"
                   transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                 />
               )}
@@ -155,14 +155,14 @@ export default function FollowersModal({
               className={`relative flex-1 py-3 text-xs font-mono font-medium transition-colors cursor-pointer text-center ${
                 activeTab === 'following'
                   ? 'text-white font-bold'
-                  : 'text-[#8A8F98] hover:text-[#EDEDED]'
+                  : 'text-neutral-400 hover:text-white'
               }`}
             >
               <span>Following ({following.length})</span>
               {activeTab === 'following' && (
                 <motion.div
                   layoutId="followersModalTabUnderline"
-                  className="absolute bottom-0 left-0 right-0 h-[2px] bg-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.8)]"
+                  className="absolute bottom-0 left-0 right-0 h-[2px] bg-white shadow-[0_0_8px_rgba(255,255,255,0.4)]"
                   transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                 />
               )}
@@ -172,13 +172,13 @@ export default function FollowersModal({
           {/* Search input */}
           <div className="p-4 border-b border-white/[0.06] bg-white/[0.01] shrink-0">
             <div className="relative flex items-center">
-              <Search className="absolute left-3.5 h-3.5 w-3.5 text-[#8A8F98] pointer-events-none" />
+              <Search className="absolute left-3.5 h-3.5 w-3.5 text-neutral-400 pointer-events-none" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={`Search ${activeTab} by name or handle...`}
-                className="w-full rounded-xl border border-white/[0.08] bg-black/60 pl-10 pr-3.5 py-2 text-xs text-[#EDEDED] placeholder-[#8A8F98]/50 focus:border-white/30 focus:outline-none focus:ring-1 focus:ring-white/20 font-mono transition-all"
+                className="w-full rounded-xl border border-white/[0.08] bg-black/60 pl-10 pr-3.5 py-2 text-xs text-white placeholder-neutral-500 focus:border-white/30 focus:outline-none focus:ring-1 focus:ring-white/20 font-mono transition-all"
               />
             </div>
           </div>
@@ -186,8 +186,8 @@ export default function FollowersModal({
           {/* User list */}
           <div className="flex-1 overflow-y-auto p-3 space-y-1.5">
             {isLoading ? (
-              <div className="py-14 text-center text-[#8A8F98] font-mono text-xs flex items-center justify-center gap-2.5">
-                <Loader2 className="h-4 w-4 animate-spin text-cyan-400" />
+              <div className="py-14 text-center text-neutral-400 font-mono text-xs flex items-center justify-center gap-2.5">
+                <Loader2 className="h-4 w-4 animate-spin text-white" />
                 <span>Loading developer network...</span>
               </div>
             ) : filteredList.length === 0 ? (

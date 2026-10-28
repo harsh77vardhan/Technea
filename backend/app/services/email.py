@@ -29,6 +29,34 @@ class EmailService:
         """Check if SMTP settings are configured."""
         return bool(settings.SMTP_HOST and settings.SMTP_HOST.strip())
 
+    def _get_sender_address(self, raw_sender: str | None = None) -> str:
+        """Validate and format sender address from settings.EMAIL_FROM or argument.
+
+        Supports both "Name <email@domain.com>" and "email@domain.com" formats.
+        Strips excess quotes or whitespace.
+        """
+        sender = raw_sender if raw_sender is not None else settings.EMAIL_FROM
+        if not sender or not str(sender).strip():
+            return "Technea <onboarding@resend.dev>"
+
+        cleaned = str(sender).strip()
+        while (cleaned.startswith('"') and cleaned.endswith('"')) or (
+            cleaned.startswith("'") and cleaned.endswith("'")
+        ):
+            cleaned = cleaned[1:-1].strip()
+
+        name, addr = parseaddr(cleaned)
+        name = name.strip().strip("'\"").strip()
+        addr = addr.strip().strip("<>'\"").strip()
+
+        if name and addr:
+            return f"{name} <{addr}>"
+        elif addr:
+            return addr
+        elif cleaned and "@" in cleaned:
+            return cleaned.strip("<>'\" ")
+        return "Technea <onboarding@resend.dev>"
+
     async def _send_smtp_email(
         self,
         to_email: str,
@@ -49,6 +77,7 @@ class EmailService:
         password = settings.SMTP_PASSWORD if settings.SMTP_PASSWORD else None
         use_tls = settings.SMTP_TLS
         use_ssl = settings.SMTP_SSL
+        sender = self._get_sender_address()
 
         logger.info(
             "[EMAIL] Attempting to send OTP email to %s via SMTP (%s:%d)",
@@ -60,14 +89,14 @@ class EmailService:
         def _smtp_worker() -> None:
             msg = MIMEMultipart("alternative")
             msg["Subject"] = subject
-            msg["From"] = settings.EMAIL_FROM
+            msg["From"] = sender
             msg["To"] = to_email
 
             plain_text = re.sub(r"<[^>]+>", "", html_body).strip()
             msg.attach(MIMEText(plain_text, "plain", "utf-8"))
             msg.attach(MIMEText(html_body, "html", "utf-8"))
 
-            sender_addr = parseaddr(settings.EMAIL_FROM)[1] or settings.EMAIL_FROM
+            sender_addr = parseaddr(sender)[1] or sender
 
             if use_ssl:
                 context = ssl.create_default_context()
@@ -121,14 +150,15 @@ class EmailService:
                 "Email delivery service is not configured in production (missing RESEND_API_KEY or SMTP credentials).",
             )
 
+        sender = self._get_sender_address()
         logger.info(
             "[EMAIL] Attempting to send OTP email to %s via Resend (from: %s)",
             to_email,
-            settings.EMAIL_FROM,
+            sender,
         )
 
         payload = {
-            "from": settings.EMAIL_FROM,
+            "from": sender,
             "to": [to_email],
             "subject": subject,
             "html": html_body,
@@ -147,21 +177,41 @@ class EmailService:
                 if response.is_success:
                     logger.info("[EMAIL] Email successfully delivered to %s via Resend.", to_email)
                     return (True, None)
-                else:
-                    error_msg = f"Resend API error {response.status_code}: {response.text}"
-                    logger.error("[EMAIL] %s", error_msg)
+
+                # Resend 403 Detection & Resiliency:
+                # When Resend returns HTTP 403 with testing domain restriction
+                if response.status_code == 403:
+                    logger.warning(
+                        "[EMAIL] Resend returned 403 (Test mode restriction: sending only allowed to registered account owner). "
+                        "Attempting SMTP fallback or providing actionable resolution."
+                    )
                     if self._is_smtp_configured():
                         logger.info("[EMAIL] Falling back to SMTP delivery for %s", to_email)
-                        return await self._send_smtp_email(to_email=to_email, subject=subject, html_body=html_body)
+                        return await self._send_smtp_email(
+                            to_email=to_email, subject=subject, html_body=html_body
+                        )
 
-                    detail_msg = response.text
-                    try:
-                        content_type = response.headers.get("content-type", "")
-                        if "application/json" in content_type:
-                            detail_msg = response.json().get("message", response.text)
-                    except Exception:
-                        pass
-                    return (False, f"Email provider error ({response.status_code}): {detail_msg}")
+                    helpful_error = (
+                        "Email provider is in sandbox/testing mode: sending is restricted to verified accounts. "
+                        "To send to all users in production, add and verify a custom domain in your Resend Dashboard "
+                        "and configure EMAIL_FROM, or provide SMTP credentials."
+                    )
+                    return (False, helpful_error)
+
+                error_msg = f"Resend API error {response.status_code}: {response.text}"
+                logger.error("[EMAIL] %s", error_msg)
+                if self._is_smtp_configured():
+                    logger.info("[EMAIL] Falling back to SMTP delivery for %s", to_email)
+                    return await self._send_smtp_email(to_email=to_email, subject=subject, html_body=html_body)
+
+                detail_msg = response.text
+                try:
+                    content_type = response.headers.get("content-type", "")
+                    if "application/json" in content_type:
+                        detail_msg = response.json().get("message", response.text)
+                except Exception:
+                    pass
+                return (False, f"Email provider error ({response.status_code}): {detail_msg}")
         except Exception as exc:
             logger.error("[EMAIL] Exception occurred while contacting Resend API for %s: %s", to_email, exc)
             if self._is_smtp_configured():

@@ -15,7 +15,7 @@ export default function ExplorerStickyFooter({
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
         {/* Selected Skill Info */}
         <div className="flex items-center gap-3">
-          <div className="hidden sm:flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white text-black shadow-[0_0_15px_rgba(255,255,255,0.25)]">
+          <div className="hidden sm:flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white text-black border border-white/20 shadow-xs">
             <CheckCircle2 className="h-4 w-4" />
           </div>
 
@@ -45,7 +45,7 @@ export default function ExplorerStickyFooter({
           <button
             type="button"
             onClick={onCancel}
-            className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2 text-xs font-medium text-neutral-300 transition-colors hover:border-white/20 hover:bg-white/[0.08] hover:text-white cursor-pointer"
+            className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2 text-xs font-medium text-neutral-300 transition-colors hover:border-white/20 hover:bg-white/[0.08] hover:text-white cursor-pointer"
           >
             Cancel
           </button>
@@ -53,7 +53,7 @@ export default function ExplorerStickyFooter({
           <button
             type="button"
             onClick={onBuildRoadmap}
-            className="group inline-flex items-center gap-2 rounded-xl bg-white px-5 py-2 text-xs font-semibold text-black shadow-[0_0_20px_rgba(255,255,255,0.2)] transition-all hover:bg-neutral-200 active:scale-[0.98] cursor-pointer"
+            className="group inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-white px-5 py-2 text-xs font-semibold text-black shadow-sm transition-all hover:bg-neutral-200 active:scale-[0.98] cursor-pointer"
           >
             <span>Build My Roadmap</span>
             <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />

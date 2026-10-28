@@ -22,8 +22,8 @@ export default function SpaceGardenAtmosphere() {
     if (!ctx) return
 
     let animationFrameId
-    let width = (canvas.width = canvas.offsetWidth)
-    let height = (canvas.height = canvas.offsetHeight)
+    let width = (canvas.width = canvas.offsetWidth || 300)
+    let height = (canvas.height = canvas.offsetHeight || 300)
 
     // Generate 175 stars across 3 distinct depth tiers for subtle parallax & richness
     const stars = []
@@ -77,8 +77,8 @@ export default function SpaceGardenAtmosphere() {
     // Resize observer
     const handleResize = () => {
       if (!canvas) return
-      width = canvas.width = canvas.offsetWidth
-      height = canvas.height = canvas.offsetHeight
+      width = canvas.width = canvas.offsetWidth || 300
+      height = canvas.height = canvas.offsetHeight || 300
     }
 
     const resizeObserver = new ResizeObserver(() => handleResize())

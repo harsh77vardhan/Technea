@@ -309,7 +309,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 15 }}
           transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-          className="relative z-10 w-full max-w-md overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0a0c10]/95 p-6 sm:p-8 backdrop-blur-2xl shadow-[0_25px_80px_-15px_rgba(0,0,0,0.9),0_0_0_1px_rgba(255,255,255,0.06)]"
+          className="relative z-10 w-full max-w-md overflow-hidden rounded-2xl border border-[#1a1a1a] bg-[#0A0A0A]/95 p-6 sm:p-8 backdrop-blur-2xl shadow-[0_25px_80px_-15px_rgba(0,0,0,0.9),0_0_0_1px_rgba(255,255,255,0.06)]"
         >
           {/* Subtle Ambient Studio Lighting */}
           <div
@@ -356,7 +356,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
 
           {/* Header */}
           <div className="relative text-center mb-6">
-            <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl border border-white/[0.12] bg-[#14151a] text-white shadow-sm">
+            <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl border border-[#222] bg-[#0d0d0d] text-white shadow-sm">
               {mode === 'otp-verify' ? (
                 <Shield className="h-5 w-5 text-neutral-200" />
               ) : mode === 'signup' ? (
@@ -405,7 +405,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
 
           {/* Mode Switcher Tabs: [Email Code] | [Password] | [Create Account] */}
           {mode !== 'forgot' && mode !== 'otp-verify' && (
-            <div className="relative flex rounded-xl bg-white/[0.04] p-1 border border-white/[0.06] mb-6">
+            <div className="relative flex rounded-xl bg-[#0d0d0d] p-1 border border-[#1a1a1a] mb-6">
               <button
                 type="button"
                 onClick={() => {
@@ -461,9 +461,9 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
               animate={{ opacity: 1, y: 0 }}
               role="alert"
               aria-live="polite"
-              className="mb-4 flex items-start gap-2.5 rounded-xl border border-red-500/25 bg-red-500/10 p-3 text-xs text-red-400 font-medium leading-relaxed break-words"
+              className="mb-4 flex items-start gap-2.5 rounded-xl border border-rose-500/20 bg-rose-950/20 p-3 text-xs text-rose-300 font-medium leading-relaxed break-words"
             >
-              <AlertCircle className="h-4 w-4 shrink-0 text-red-400 mt-0.5" />
+              <AlertCircle className="h-4 w-4 shrink-0 text-rose-400 mt-0.5" />
               <div className="flex-1 min-w-0 break-words">{error}</div>
             </motion.div>
           )}
@@ -475,7 +475,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
               animate={{ opacity: 1, y: 0 }}
               role="status"
               aria-live="polite"
-              className="mb-4 flex items-start gap-2.5 rounded-xl border border-emerald-500/25 bg-emerald-500/10 p-3 text-xs text-emerald-400 font-medium leading-relaxed break-words"
+              className="mb-4 flex items-start gap-2.5 rounded-xl border border-emerald-500/20 bg-emerald-950/20 p-3 text-xs text-emerald-300 font-medium leading-relaxed break-words"
             >
               <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400 mt-0.5" />
               <div className="flex-1 min-w-0 break-words">{successMsg}</div>
@@ -498,7 +498,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="name@example.com"
-                    className="w-full rounded-xl border border-white/[0.08] bg-white/[0.04] py-2.5 pl-10 pr-4 text-sm text-white placeholder-neutral-500 focus:border-white/20 focus:outline-none transition"
+                    className="w-full rounded-xl border border-[#222] bg-[#0d0d0d] py-2.5 pl-10 pr-4 text-sm text-white placeholder-neutral-500 focus:border-white/30 focus:outline-none focus:ring-1 focus:ring-white/10 transition"
                   />
                 </div>
               </div>
@@ -506,7 +506,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-black hover:bg-neutral-100 focus:outline-none transition cursor-pointer disabled:opacity-50"
+                className="w-full inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-black hover:bg-neutral-200 focus:outline-none transition cursor-pointer disabled:opacity-50"
               >
                 {loading ? (
                   <>
@@ -524,7 +524,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
               {/* Divider */}
               <div className="flex items-center gap-3 pt-1">
                 <div className="flex-1 h-px bg-[#1a1a1a]" />
-                <span className="text-[11px] text-[#555] font-mono">or</span>
+                <span className="text-[11px] text-neutral-500 font-mono">or</span>
                 <div className="flex-1 h-px bg-[#1a1a1a]" />
               </div>
 
@@ -533,7 +533,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
                 type="button"
                 onClick={handleGoogleLogin}
                 disabled={loading || googleLoading}
-                className="w-full inline-flex min-h-[44px] items-center justify-center gap-2.5 rounded-xl border border-[#1a1a1a] bg-[#0d0d0d] px-4 py-2.5 text-sm font-medium text-neutral-200 hover:border-[#333] hover:bg-[#141414] hover:text-white transition-all cursor-pointer disabled:opacity-50"
+                className="w-full inline-flex min-h-[44px] items-center justify-center gap-2.5 rounded-xl border border-[#222] bg-[#0d0d0d] px-4 py-2.5 text-sm font-medium text-neutral-300 hover:border-[#444] hover:bg-[#141414] hover:text-white transition-all cursor-pointer disabled:opacity-50"
               >
                 {googleLoading ? (
                   <>
@@ -586,7 +586,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
                     value={otp}
                     onChange={handleOtpChange}
                     placeholder="000000"
-                    className="w-full text-center font-mono text-2xl sm:text-3xl font-bold tracking-[0.4em] sm:tracking-[0.55em] py-3.5 px-4 rounded-xl border border-white/[0.12] bg-white/[0.04] text-white placeholder-neutral-600 focus:border-white/30 focus:bg-white/[0.06] focus:outline-none transition-all select-none disabled:opacity-60"
+                    className="w-full text-center font-mono text-2xl sm:text-3xl font-bold tracking-[0.4em] sm:tracking-[0.55em] py-3.5 px-4 rounded-xl border border-[#222] bg-[#0d0d0d] text-white placeholder-neutral-600 focus:border-white/40 focus:bg-[#121212] focus:ring-1 focus:ring-white/20 focus:outline-none transition-all select-none disabled:opacity-60"
                   />
                 </div>
               </div>
@@ -594,7 +594,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
               <button
                 type="submit"
                 disabled={loading || otp.length !== 6}
-                className="w-full inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-black hover:bg-neutral-100 focus:outline-none transition cursor-pointer disabled:opacity-50"
+                className="w-full inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-black hover:bg-neutral-200 focus:outline-none transition cursor-pointer disabled:opacity-50"
               >
                 {loading ? (
                   <>
@@ -663,14 +663,14 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="name@example.com"
-                    className="w-full rounded-xl border border-white/[0.08] bg-white/[0.04] py-2.5 pl-10 pr-4 text-sm text-white placeholder-neutral-500 focus:border-white/20 focus:outline-none transition"
+                    className="w-full rounded-xl border border-[#222] bg-[#0d0d0d] py-2.5 pl-10 pr-4 text-sm text-white placeholder-neutral-500 focus:border-white/30 focus:outline-none focus:ring-1 focus:ring-white/10 transition"
                   />
                 </div>
               </div>
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-black hover:bg-neutral-100 transition cursor-pointer disabled:opacity-50"
+                className="w-full inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-black hover:bg-neutral-200 transition cursor-pointer disabled:opacity-50"
               >
                 {loading ? (
                   <>
@@ -710,7 +710,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       placeholder="Alex Rivera"
-                      className="w-full rounded-xl border border-white/[0.08] bg-white/[0.04] py-2.5 pl-10 pr-4 text-sm text-white placeholder-neutral-500 focus:border-white/20 focus:outline-none transition"
+                      className="w-full rounded-xl border border-[#222] bg-[#0d0d0d] py-2.5 pl-10 pr-4 text-sm text-white placeholder-neutral-500 focus:border-white/30 focus:outline-none focus:ring-1 focus:ring-white/10 transition"
                     />
                   </div>
                 </div>
@@ -729,7 +729,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="name@example.com"
-                    className="w-full rounded-xl border border-white/[0.08] bg-white/[0.04] py-2.5 pl-10 pr-4 text-sm text-white placeholder-neutral-500 focus:border-white/20 focus:outline-none transition"
+                    className="w-full rounded-xl border border-[#222] bg-[#0d0d0d] py-2.5 pl-10 pr-4 text-sm text-white placeholder-neutral-500 focus:border-white/30 focus:outline-none focus:ring-1 focus:ring-white/10 transition"
                   />
                 </div>
               </div>
@@ -764,7 +764,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full rounded-xl border border-white/[0.08] bg-white/[0.04] py-2.5 pl-10 pr-4 text-sm text-white placeholder-neutral-500 focus:border-white/20 focus:outline-none transition"
+                    className="w-full rounded-xl border border-[#222] bg-[#0d0d0d] py-2.5 pl-10 pr-4 text-sm text-white placeholder-neutral-500 focus:border-white/30 focus:outline-none focus:ring-1 focus:ring-white/10 transition"
                   />
                 </div>
               </div>
@@ -775,7 +775,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
                   type="button"
                   onClick={handleGoogleLogin}
                   disabled={loading || googleLoading}
-                  className="w-full inline-flex min-h-[44px] items-center justify-center gap-2.5 rounded-xl border border-[#1a1a1a] bg-[#0d0d0d] px-4 py-2.5 text-sm font-medium text-neutral-200 hover:border-[#333] hover:bg-[#141414] hover:text-white transition-all cursor-pointer disabled:opacity-50"
+                  className="w-full inline-flex min-h-[44px] items-center justify-center gap-2.5 rounded-xl border border-[#222] bg-[#0d0d0d] px-4 py-2.5 text-sm font-medium text-neutral-300 hover:border-[#444] hover:bg-[#141414] hover:text-white transition-all cursor-pointer disabled:opacity-50"
                 >
                   {googleLoading ? (
                     <>
@@ -794,7 +794,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
                 
                 <div className="flex items-center gap-3">
                   <div className="flex-1 h-px bg-[#1a1a1a]" />
-                  <span className="text-[11px] text-[#444] font-mono">or</span>
+                  <span className="text-[11px] text-neutral-500 font-mono">or</span>
                   <div className="flex-1 h-px bg-[#1a1a1a]" />
                 </div>
               </div>
@@ -802,7 +802,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-black hover:bg-neutral-100 focus:outline-none transition cursor-pointer disabled:opacity-50 mt-2"
+                className="w-full inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-black hover:bg-neutral-200 focus:outline-none transition cursor-pointer disabled:opacity-50 mt-2"
               >
                 {loading ? (
                   <>

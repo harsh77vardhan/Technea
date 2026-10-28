@@ -133,16 +133,16 @@ export default function InteractiveRoadmap({
                 }
                 className={`absolute -left-[31px] sm:-left-[39px] top-4.5 flex h-7 w-7 items-center justify-center rounded-full border transition-all cursor-pointer z-10 ${
                   isCompleted
-                    ? 'border-emerald-500 bg-emerald-500 text-black'
+                    ? 'border-white bg-white text-black'
                     : isCurrentActive
-                    ? 'border-sky-400 bg-[#08090d] text-sky-400 ring-1 ring-sky-400/30'
+                    ? 'border-white bg-[#08090d] text-white ring-1 ring-white/30'
                     : 'border-white/15 bg-[#0a0c10] text-neutral-500 hover:border-white/40 hover:text-neutral-300'
                 }`}
               >
                 {isCompleted ? (
                   <Check className="h-4 w-4 stroke-[3]" />
                 ) : isCurrentActive ? (
-                  <span className="font-mono text-[10px] font-bold text-sky-400">{step.num}</span>
+                  <span className="font-mono text-[10px] font-bold text-white">{step.num}</span>
                 ) : isLocked ? (
                   <Lock className="h-3 w-3 text-neutral-500" />
                 ) : (
@@ -154,9 +154,9 @@ export default function InteractiveRoadmap({
               <div
                 className={`rounded-none border transition-all duration-300 overflow-hidden ${
                   isCompleted
-                    ? 'border-emerald-500/20 bg-emerald-500/[0.02]'
+                    ? 'border-white/20 bg-white/[0.04]'
                     : isCurrentActive
-                    ? 'border-sky-400/30 bg-white/[0.03]'
+                    ? 'border-white/30 bg-white/[0.03]'
                     : isLocked
                     ? 'border-white/[0.06] bg-white/[0.01] opacity-75'
                     : 'border-white/[0.08] bg-white/[0.02] hover:border-white/15 hover:bg-white/[0.03]'
@@ -175,7 +175,7 @@ export default function InteractiveRoadmap({
                       <h3
                         className={`text-sm sm:text-base font-semibold tracking-tight transition-colors truncate ${
                           isCompleted
-                            ? 'text-neutral-400 line-through decoration-emerald-500/50'
+                            ? 'text-neutral-400 line-through decoration-neutral-500'
                             : isCurrentActive
                             ? 'text-white'
                             : 'text-neutral-200 group-hover:text-white'
@@ -184,13 +184,13 @@ export default function InteractiveRoadmap({
                         {step.title}
                       </h3>
                       {isCompleted && (
-                        <span className="hidden sm:inline-flex items-center gap-1 font-mono text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                        <span className="hidden sm:inline-flex items-center gap-1 font-mono text-[10px] text-neutral-300 bg-white/[0.06] px-2 py-0.5 rounded-full border border-white/10">
                           <CheckCircle2 className="h-2.5 w-2.5" />
                           Done
                         </span>
                       )}
                       {isCurrentActive && (
-                        <span className="hidden sm:inline-flex items-center gap-1 font-mono text-[10px] text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded-full border border-sky-500/20">
+                        <span className="hidden sm:inline-flex items-center gap-1 font-mono text-[10px] text-white bg-white/10 px-2 py-0.5 rounded-full border border-white/20">
                           <Zap className="h-2.5 w-2.5" />
                           Current
                         </span>
@@ -241,8 +241,8 @@ export default function InteractiveRoadmap({
 
                       {/* Mini-Project Highlight */}
                       <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-3 flex items-center gap-2.5 text-xs text-neutral-300">
-                        <Terminal className="h-3.5 w-3.5 text-amber-400 shrink-0" />
-                        <span className="font-mono text-[11px] text-amber-300/90 font-medium shrink-0">Mini-Project:</span>
+                        <Terminal className="h-3.5 w-3.5 text-neutral-400 shrink-0" />
+                        <span className="font-mono text-[11px] text-neutral-300 font-medium shrink-0">Mini-Project:</span>
                         <span className="font-light truncate text-neutral-200">{meta.miniProject}</span>
                       </div>
 
@@ -265,7 +265,7 @@ export default function InteractiveRoadmap({
                         </div>
                       )}
 
-                      <div className="pt-2 flex items-center justify-between border-t border-white/[0.06]">
+                      <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-white/[0.06]">
                         <span className="text-[11px] font-mono text-neutral-500">
                           Estimated time: {meta.hours} • Hands-on lab
                         </span>
@@ -273,10 +273,10 @@ export default function InteractiveRoadmap({
                         <button
                           type="button"
                           onClick={() => onToggleStep(stepKey)}
-                          className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
+                          className={`inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl px-4 py-2 text-xs font-semibold transition-all cursor-pointer ${
                             isCompleted
                               ? 'border border-white/10 bg-white/[0.05] text-neutral-300 hover:bg-white/10'
-                              : 'bg-emerald-400 text-black hover:bg-emerald-300 shadow-sm'
+                              : 'bg-white text-black hover:bg-neutral-200 shadow-sm'
                           }`}
                         >
                           <Check className="h-3.5 w-3.5 stroke-[2.5]" />

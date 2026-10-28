@@ -164,14 +164,18 @@ function AppContent() {
     }
   }, [lenis])
 
-  // Pause smooth scroll when any modal is open to prevent background scroll bleed
+  // Pause smooth scroll and prevent background scroll bleed when any modal is open
   useEffect(() => {
-    if (!lenis) return
     if (isAnyModalOpen) {
-      lenis.stop()
+      if (lenis) lenis.stop()
+      document.body.style.overflow = 'hidden'
     } else {
-      lenis.start()
+      if (lenis) lenis.start()
+      document.body.style.overflow = ''
       ScrollTrigger.refresh()
+    }
+    return () => {
+      document.body.style.overflow = ''
     }
   }, [isAnyModalOpen, lenis])
 

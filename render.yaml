@@ -48,19 +48,19 @@ services:
       - key: GOOGLE_REDIRECT_URI
         value: "https://technea-backend.onrender.com/auth/google/callback"
       - key: RESEND_API_KEY
-        sync: false # Set your Resend API Key (re_...) in Render Dashboard
+        sync: false # Resend API Key (re_...) from Resend Dashboard for transactional emails
       - key: EMAIL_FROM
-        value: "Technea <onboarding@resend.dev>"
+        value: "Technea <onboarding@resend.dev>" # Configured sender address; update to "Technea <noreply@yourdomain.com>" once custom domain is verified
       - key: SMTP_HOST
-        sync: false # Optional SMTP host (e.g. smtp.gmail.com)
+        sync: false # Optional SMTP server hostname for fallback or direct delivery (e.g. smtp.gmail.com, email-smtp.us-east-1.amazonaws.com)
       - key: SMTP_PORT
-        value: "587"
+        value: "587" # SMTP port (587 for STARTTLS, 465 for SSL)
       - key: SMTP_USER
-        sync: false
+        sync: false # SMTP username / login account
       - key: SMTP_PASSWORD
-        sync: false
+        sync: false # SMTP password / app-specific password
       - key: SMTP_TLS
-        value: "true"
+        value: "true" # Enable STARTTLS encryption for SMTP
       - key: DB_POOL_SIZE
         value: "10"
       - key: DB_MAX_OVERFLOW
