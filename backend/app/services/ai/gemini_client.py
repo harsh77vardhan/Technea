@@ -146,7 +146,13 @@ class GeminiProvider(BaseAIProvider):
         prompt: str,
         conversation_history: list[dict[str, Any]] | None = None,
     ) -> list[dict[str, Any]]:
-        """Format history and prompt into Gemini contents schema."""
+        """Format history and prompt into Gemini contents schema.
+
+        Ensures the very last entry in contents is always:
+        {"role": "user", "parts": [{"text": prompt.strip()}]}
+        If the last item in conversation_history was already a user message matching prompt,
+        do not duplicate, but ensure the final turn is always role="user".
+        """
         contents: list[dict[str, Any]] = []
 
         if conversation_history:
@@ -170,20 +176,33 @@ class GeminiProvider(BaseAIProvider):
                 if parts:
                     contents.append({"role": role, "parts": parts})
 
-        # Append latest user prompt if present and not duplicate of the last entry
-        if prompt and prompt.strip():
-            clean_prompt = prompt.strip()
-            is_duplicate = False
-            if contents and contents[-1].get("role") == "user":
-                last_parts = contents[-1].get("parts", [])
-                if last_parts and last_parts[0].get("text") == clean_prompt:
+        clean_prompt = (prompt or "").strip()
+
+        # Check if the last item in contents is already a user message matching prompt
+        is_duplicate = False
+        if contents and contents[-1].get("role") == "user":
+            last_parts = contents[-1].get("parts", [])
+            if last_parts and isinstance(last_parts, list) and isinstance(last_parts[0], dict):
+                last_text = str(last_parts[0].get("text", "")).strip()
+                if last_text == clean_prompt:
                     is_duplicate = True
 
-            if not is_duplicate:
-                contents.append({
-                    "role": "user",
-                    "parts": [{"text": clean_prompt}],
-                })
+        if not is_duplicate:
+            contents.append({
+                "role": "user",
+                "parts": [{"text": clean_prompt}],
+            })
+
+        # Strict invariant: the very last entry in contents is ALWAYS role="user"
+        if not contents or contents[-1].get("role") != "user":
+            contents.append({
+                "role": "user",
+                "parts": [{"text": clean_prompt}],
+            })
+        elif contents[-1].get("role") == "user":
+            last_parts = contents[-1].get("parts", [])
+            if not last_parts or not isinstance(last_parts, list) or not isinstance(last_parts[0], dict) or str(last_parts[0].get("text", "")).strip() != clean_prompt:
+                contents[-1]["parts"] = [{"text": clean_prompt}]
 
         return contents
 
@@ -234,7 +253,7 @@ class GeminiProvider(BaseAIProvider):
             # If context is given without explicit system instruction, serialize context
             ctx_summary = ", ".join(
                 f"{k}: {v}" for k, v in context.items()
-                if v and k not in ("catalog_context", "technea_catalog_context", "matched_skills", "matched_paths", "matched_projects", "matched_courses", "user_progress")
+                if v and k not in ("catalog_context", "technea_catalog_context", "matched_skills", "matched_paths", "matched_projects", "matched_courses", "user_progress", "retrieved_resources_summary")
             )
             catalog_block = context.get("catalog_context") or context.get("technea_catalog_context")
             effective_system_instruction = f"Context: {ctx_summary}"
@@ -244,11 +263,10 @@ class GeminiProvider(BaseAIProvider):
             # Only append simple scalar items to avoid duplicating large catalog blocks
             ctx_summary = ", ".join(
                 f"{k}: {v}" for k, v in context.items()
-                if v and k not in ("catalog_context", "technea_catalog_context", "matched_skills", "matched_paths", "matched_projects", "matched_courses", "user_progress")
+                if v and k not in ("catalog_context", "technea_catalog_context", "matched_skills", "matched_paths", "matched_projects", "matched_courses", "user_progress", "retrieved_resources_summary")
             )
-            if ctx_summary:
+            if ctx_summary and "Session Context:" not in effective_system_instruction:
                 effective_system_instruction = f"{effective_system_instruction}\n\nSession Context: {ctx_summary}"
-
 
         if effective_system_instruction and effective_system_instruction.strip():
             payload["systemInstruction"] = {
@@ -265,6 +283,71 @@ class GeminiProvider(BaseAIProvider):
             "maxOutputTokens": int(max_output_tokens),
             "topP": float(top_p),
         }
+
+        # Extract structured debug metadata before calling Gemini
+        last_assistant_msg = "None"
+        if conversation_history:
+            for item in reversed(conversation_history):
+                if isinstance(item, dict):
+                    raw_role = str(item.get("role", "")).lower()
+                    if raw_role in ("assistant", "model", "system_reply"):
+                        parts = item.get("parts")
+                        if parts and isinstance(parts, list) and isinstance(parts[0], dict):
+                            last_assistant_msg = str(parts[0].get("text", "")).strip() or "None"
+                        else:
+                            last_assistant_msg = str(item.get("content") or item.get("text") or "").strip() or "None"
+                        break
+
+        ctx = context or {}
+        current_topic = (
+            ctx.get("current_topic")
+            or ctx.get("active_topic")
+            or ctx.get("topic")
+            or ctx.get("domain")
+            or ctx.get("classified_intent")
+        )
+        if not current_topic:
+            p_lower = (prompt or "").lower()
+            if "javascript" in p_lower or "js" in p_lower.split():
+                current_topic = "javascript"
+            elif "python" in p_lower:
+                current_topic = "python"
+            elif "react" in p_lower:
+                current_topic = "react"
+            else:
+                current_topic = "General"
+
+        retrieved_resources_summary = ctx.get("retrieved_resources_summary")
+        if not retrieved_resources_summary:
+            paths = len(ctx.get("matched_paths") or [])
+            projects = len(ctx.get("matched_projects") or [])
+            skills = len(ctx.get("matched_skills") or [])
+            courses = len(ctx.get("matched_courses") or [])
+            total = paths + projects + skills + courses
+            if total > 0:
+                retrieved_resources_summary = f"{paths} paths, {projects} projects, {skills} skills, {courses} courses"
+            elif ctx.get("catalog_context"):
+                retrieved_resources_summary = "Catalog context available"
+            else:
+                retrieved_resources_summary = "None"
+
+        # Required structured debug logging before calling Gemini
+        logger.info(
+            "\n--------------------------------\n"
+            "Latest User Message: %s\n"
+            "Conversation Length: %d\n"
+            "Last Assistant Message: %s\n"
+            "Prompt Token Count: %d\n"
+            "Current Topic: %s\n"
+            "Retrieved Resources: %s\n"
+            "--------------------------------",
+            prompt,
+            len(conversation_history or []),
+            last_assistant_msg,
+            len(prompt.split()),  # approximate or exact
+            current_topic,
+            retrieved_resources_summary,
+        )
 
         # Build REST endpoint URL
         endpoint_url = (

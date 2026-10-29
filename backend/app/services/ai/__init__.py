@@ -47,6 +47,7 @@ from app.services.ai.prompts import (
     PERSONA_PROFILES,
     TECHNEA_MENTOR_SYSTEM_PROMPT,
     build_system_prompt,
+    construct_prompt,
     classify_intent,
     get_behavioral_rule,
 )
@@ -120,6 +121,7 @@ __all__ = [
     "PERSONA_PROFILES",
     "DOMAIN_GUIDELINES",
     "build_system_prompt",
+    "construct_prompt",
     "classify_intent",
     "get_behavioral_rule",
     # Intent Constants

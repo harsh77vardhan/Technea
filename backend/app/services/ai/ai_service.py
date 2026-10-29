@@ -39,6 +39,7 @@ from app.services.ai.prompts import (
     INTENT_TIME_DATE,
     INTENT_WEEKLY_PLAN,
     build_system_prompt,
+    construct_prompt,
     classify_intent,
 )
 from app.services.ai.quiz_engine import QuizEngine, quiz_engine
@@ -91,6 +92,10 @@ class RuleBasedProvider(BaseAIProvider):
         t = text.lower()
         if "python" in t and not any(w in t for w in ["machine learning", "deep learning", "neural", "rag"]):
             return "python"
+        elif re.search(r"\b(?:golang|go)\b", t) and not any(w in t for w in ["django", "algorithm", "cargo", "mongodb"]):
+            return "go"
+        elif re.search(r"\brust\b", t):
+            return "rust"
         elif any(w in t for w in ["web", "html", "css", "javascript", "react", "frontend", "full stack", "next.js", "node", "typescript"]):
             return "web_development"
         elif any(w in t for w in ["ai", "machine learning", "ml", "deep learning", "neural", "llm", "rag", "pytorch", "gpt"]):
@@ -423,19 +428,46 @@ class RuleBasedProvider(BaseAIProvider):
                 ("Phase 4: Data Engineering Pipelines & ETL", "4-5 Weeks", "Automated pipelines, Parquet columnar storage, and Apache Airflow DAGs. Milestone: Production ETL pipeline with automated scheduling."),
                 ("Phase 5: Predictive Modeling & Machine Learning", "4 Weeks", "Supervised classification, regression, and model interpretability. Milestone: Production predictive analytics model."),
             ],
+            "go": [
+                ("Phase 1: Go Syntax & Core Foundations", "2-3 Weeks", "Variables, static typing, control flow, functions, pointers, arrays, slices, maps, and packages. Milestone: High-efficiency CLI tool."),
+                ("Phase 2: Structs, Methods & Interfaces", "3 Weeks", "Struct embedding, value vs pointer receivers, interfaces, polymorphism, and error handling idioms. Milestone: Extensible logging and data pipeline."),
+                ("Phase 3: Goroutines, Channels & Concurrency", "3-4 Weeks", "Goroutines, unbuffered/buffered channels, select statements, sync.WaitGroup, sync.Mutex, and context cancellation. Milestone: High-throughput concurrent web crawler."),
+                ("Phase 4: Standard Library & HTTP Microservices", "4 Weeks", "net/http server, REST routing, JSON encoding/decoding, middleware, and database/sql with PostgreSQL. Milestone: Production REST API microservice."),
+                ("Phase 5: Production Tooling, Testing & Deployment", "3 Weeks", "Unit & benchmark testing with testing package, pprof profiling, multi-stage Docker scratch build, and CI/CD. Milestone: High-performance containerized microservice."),
+            ],
+            "rust": [
+                ("Phase 1: Rust Foundations & Cargo Tooling", "2-3 Weeks", "Cargo, rustc, variables, mutability, scalar & compound types, functions, and control flow. Milestone: Interactive CLI tool."),
+                ("Phase 2: Ownership, Borrowing & Lifetimes", "3-4 Weeks", "Memory safety without a garbage collector, ownership rules, references, borrowing, slices, and lifetime annotations. Milestone: Safe in-memory cache data structure."),
+                ("Phase 3: Structs, Enums & Pattern Matching", "3 Weeks", "Custom structs, methods, enums with data, Option and Result types, pattern matching with match and if let. Milestone: Robust parser."),
+                ("Phase 4: Generics, Traits & Error Handling", "3-4 Weeks", "Trait definitions, trait bounds, generic data types, operator overloading, and custom error types. Milestone: Type-safe plugin system."),
+                ("Phase 5: Concurrency, Smart Pointers & Systems Projects", "4 Weeks", "Threads, message passing with channels, Mutex, Arc, Rc, RefCell, async with Tokio, and systems programming. Milestone: Concurrent network server."),
+            ],
+            "javascript": [
+                ("Phase 1: Foundations (Syntax, DOM, Events)", "2-3 Weeks", "Variables (let/const), data types, operators, conditionals, functions, DOM manipulation (querySelector, dynamic elements), and event listeners/handling. Milestone: Interactive Task Manager application."),
+                ("Phase 2: Modern JS (ES6+, Async/Await, Fetch)", "3 Weeks", "Arrow functions, destructuring, rest/spread operators, Promises, async/await asynchronous flow, and HTTP requests via Fetch API. Milestone: Live REST API Weather Dashboard."),
+                ("Phase 3: Advanced (Closures, Prototypes, Modules)", "3-4 Weeks", "Closures, lexical scope, prototypal inheritance, 'this' keyword binding, ES Modules (import/export), and the JavaScript Event Loop. Milestone: Modular custom state management library."),
+                ("Phase 4: Frameworks (React/Node)", "4-5 Weeks", "Frontend component architecture with React (Hooks, state, Context) and server-side JavaScript with Node.js & Express. Milestone: Production full-stack JavaScript application."),
+            ],
         }
 
         # Resolve curriculum track
         track_key = domain
-        if any(w in topic.lower() for w in ["ai engineer", "ai engineering", "machine learning", "deep learning"]) or domain == "ai_ml":
+        t_low = topic.lower()
+        if any(w in t_low for w in ["ai engineer", "ai engineering", "machine learning", "deep learning"]) or domain == "ai_ml":
             track_key = "ai_ml"
-        elif "python" in topic.lower() or domain == "python":
+        elif "python" in t_low or domain == "python":
             track_key = "python"
-        elif any(w in topic.lower() for w in ["cyber", "security", "hack"]) or domain == "cybersecurity":
+        elif any(w in t_low for w in ["go", "golang"]) or domain in ["go", "golang"]:
+            track_key = "go"
+        elif "rust" in t_low or domain == "rust":
+            track_key = "rust"
+        elif any(w in t_low for w in ["javascript", "js"]) or domain in ["javascript", "js"]:
+            track_key = "javascript"
+        elif any(w in t_low for w in ["cyber", "security", "hack"]) or domain == "cybersecurity":
             track_key = "cybersecurity"
-        elif any(w in topic.lower() for w in ["devops", "cloud", "docker", "kubernetes"]) or domain == "cloud_devops":
+        elif any(w in t_low for w in ["devops", "cloud", "docker", "kubernetes"]) or domain == "cloud_devops":
             track_key = "cloud_devops"
-        elif any(w in topic.lower() for w in ["data", "sql", "analytics"]) or domain == "data":
+        elif any(w in t_low for w in ["data", "sql", "analytics"]) or domain == "data":
             track_key = "data"
         elif track_key not in curricula:
             track_key = "web_development"
@@ -446,6 +478,12 @@ class RuleBasedProvider(BaseAIProvider):
             domain_title = "Python Programming"
         elif track_key == "ai_ml":
             domain_title = "AI Engineering"
+        elif track_key == "go":
+            domain_title = "Go (Golang) Engineering"
+        elif track_key == "rust":
+            domain_title = "Rust Systems Programming"
+        elif track_key == "javascript":
+            domain_title = "Modern JavaScript Development"
 
         intros = [
             f"### Engineering Roadmap: {domain_title} ({level})\n\n"
@@ -1102,11 +1140,32 @@ class RuleBasedProvider(BaseAIProvider):
     ) -> str:
         rng = random.Random(seed) if seed is not None else None
         p_clean = prompt.strip().rstrip("?")
-        topic = (context and context.get("active_topic")) or p_clean
+        p_lower = prompt.strip().lower()
+        clean_p = re.sub(r"[^\w\s]", "", p_lower).strip()
+
+        # Only use context.get("active_topic") if the prompt is an explicit single-word ellipsis ("why?", "explain")
+        is_single_word_ellipsis = clean_p in {"why", "explain", "how", "what", "elaborate", "clarify"} or p_lower in {"why?", "explain?", "how?", "what?"}
+        if is_single_word_ellipsis and context and context.get("active_topic"):
+            ctx_topic = str(context["active_topic"]).strip()
+            temporal_words = {"date", "time", "today", "day", "clock", "timezone"}
+            if not any(w in temporal_words for w in re.sub(r"[^\w\s]", "", ctx_topic.lower()).split()):
+                topic = ctx_topic
+            else:
+                topic = p_clean
+        else:
+            # Always extract topic from the LATEST user prompt, NOT a sticky context.get("active_topic")
+            extracted = re.sub(
+                r"^(?:can you\s+)?(?:please\s+)?(?:explain|teach me|what is an?|what are|what is|how to learn|how can i learn|how do i learn|guide for|tell me about|deep dive on|deep dive into|break down)\s+",
+                "",
+                p_clean,
+                flags=re.IGNORECASE,
+            ).strip()
+            topic = extracted if extracted else p_clean
+
         pref_lang = (context and context.get("preferred_language")) or "Python"
 
         # Specialized learning habits / study routine guidance
-        if any(w in prompt.lower() for w in ["study", "routine", "consistently", "how to learn", "habit"]):
+        if any(w in prompt.lower() for w in ["study", "routine", "consistently", "how to learn", "habit"]) and not any(lang in prompt.lower() for lang in ["python", "javascript", "react", "html", "css", "docker", "sql"]):
             return (
                 f"### 🎯 Learning Strategy & Study Habits: {topic[:60]}\n\n"
                 "To build deep technical competence without burnout, follow these three evidence-based engineering study principles:\n\n"
@@ -1378,6 +1437,83 @@ class RuleBasedProvider(BaseAIProvider):
             "- **Milestone**: Deploy a containerized Python service to production with automated tests running on every pull request."
         )
 
+    def _generate_javascript_learning_roadmap(self, seed: Any = None) -> str:
+        """Provide structured JavaScript learning roadmap response:
+        (Foundations: Syntax, DOM, Events -> Modern JS: ES6+, Async/Await, Fetch -> Advanced: Closures, Prototypes, Modules -> Frameworks: React/Node).
+        """
+        return (
+            "### Learning Roadmap: How to Master JavaScript\n\n"
+            "Here is the comprehensive 4-phase engineering roadmap to progress from fundamental syntax to modern full-stack development:\n\n"
+            "#### Phase 1: Foundations (Syntax, DOM, Events)\n"
+            "- **Syntax & Language Primitives**: Variables (`const`, `let`), data types (strings, numbers, booleans, objects, arrays), operators, conditionals (`if`/`else`, `switch`), loops (`for`, `while`, `for...of`), and functions.\n"
+            "- **DOM Manipulation**: Document Object Model hierarchy, selecting elements (`querySelector`, `querySelectorAll`), dynamic class and attribute manipulation, and inner content updates.\n"
+            "- **Events & User Interaction**: Event listeners (`addEventListener`), event propagation (bubbling and capturing), event delegation, and form handling with validation.\n"
+            "- **Milestone Project**: Build an interactive, dynamic Task Manager / To-Do application with local storage persistence and real-time DOM updates.\n\n"
+            "#### Phase 2: Modern JS (ES6+, Async/Await, Fetch)\n"
+            "- **Modern ES6+ Features**: Arrow functions, destructuring, template literals, default parameters, rest/spread operators (`...`), enhanced object literals, and optional chaining (`?.`).\n"
+            "- **Asynchronous Architecture**: Promises (`.then()`, `.catch()`, `.finally()`), `Promise.all()`, and clean asynchronous flow using `async`/`await` with `try`/`catch`.\n"
+            "- **HTTP & Fetch API**: Consuming RESTful APIs with `fetch()`, HTTP request methods (`GET`, `POST`, `PUT`, `DELETE`), headers, status codes, and parsing JSON payloads.\n"
+            "- **Milestone Project**: Build an asynchronous Weather Dashboard or GitHub Developer Explorer fetching live external REST API data with robust loading and error states.\n\n"
+            "#### Phase 3: Advanced (Closures, Prototypes, Modules)\n"
+            "- **Closures & Scope**: Lexical environment, execution context, call stack, closure mechanics, data privacy, and factory functions.\n"
+            "- **Prototypes & OOP**: Prototypal inheritance, prototype chain, `this` keyword binding (`call`, `apply`, `bind`), and ES6 `class` syntax.\n"
+            "- **Modules & Architecture**: ES Modules (`import`/`export`), CommonJS, module bundler concepts (Vite, Rollup), and the JavaScript Event Loop (microtasks vs macrotasks).\n"
+            "- **Milestone Project**: Build a lightweight, modular State Management library or custom Pub/Sub event bus from scratch without external dependencies.\n\n"
+            "#### Phase 4: Frameworks (React/Node)\n"
+            "- **Frontend Mastery with React**: Component hierarchy, JSX, reactive state (`useState`, `useReducer`), side effects (`useEffect`), Custom Hooks, and Context API.\n"
+            "- **Backend with Node.js & Express**: Node.js runtime fundamentals, building RESTful web services with Express, middleware pipelines, and database connectivity.\n"
+            "- **Tooling & Production Engineering**: Package management (`npm`/`pnpm`), modern build pipelines with Vite, static typing with TypeScript, and automated testing with Vitest/Jest.\n"
+            "- **Milestone Capstone**: Build and deploy a production Full-Stack Web Application featuring a React client, Node.js/Express API backend, and authenticated database operations."
+        )
+
+    def _generate_closures_response(
+        self,
+        context: dict[str, Any] | None = None,
+        seed: Any = None,
+    ) -> str:
+        """Provide a clear, pedagogical breakdown of closures in JavaScript."""
+        return (
+            "### Demystifying Closures: Mental Model & Practical Implementation\n\n"
+            "At its core, a **closure is a function that remembers and retains access to variables from its outer (lexical) scope, even after the outer function has finished executing.**\n\n"
+            "#### 1. Intuition & The Lexical Scope Mental Model\n"
+            "- In standard function execution, local variables are cleaned up when the function returns.\n"
+            "- When an inner function references variables from an enclosing function, the JavaScript engine keeps those variables allocated in a special closure scope on the heap.\n"
+            "- The inner function maintains a live reference to that scope, enabling **data encapsulation** and **private state**.\n\n"
+            "#### 2. Practical JavaScript Code Example: Private Counter State\n"
+            "```javascript\n"
+            "function createCounter(initialValue = 0) {\n"
+            "    // 'count' is private state encapsulated inside createCounter's lexical scope\n"
+            "    let count = initialValue;\n"
+            "\n"
+            "    return {\n"
+            "        increment() {\n"
+            "            count += 1;\n"
+            "            return count;\n"
+            "        },\n"
+            "        decrement() {\n"
+            "            count -= 1;\n"
+            "            return count;\n"
+            "        },\n"
+            "        getValue() {\n"
+            "            return count;\n"
+            "        }\n"
+            "    };\n"
+            "}\n"
+            "\n"
+            "// Usage Example\n"
+            "const counter = createCounter(10);\n"
+            "console.log(counter.increment()); // 11\n"
+            "console.log(counter.increment()); // 12\n"
+            "console.log(counter.getValue());  // 12\n"
+            "// console.log(count); // ReferenceError: count is private and inaccessible from outside!\n"
+            "```\n\n"
+            "#### 3. Common Production Use Cases:\n"
+            "1. **Data Privacy & Information Hiding**: Emulating private variables before JavaScript introduced native private class fields (`#privateField`).\n"
+            "2. **Function Factories & Currying**: Creating specialized utility functions (e.g., `const multiplyByTwo = createMultiplier(2)`).\n"
+            "3. **Event Listeners & Callbacks**: Preserving element or handler state inside asynchronous browser events and timers.\n\n"
+            "*Senior Note: Beware of memory leaks—holding unused references inside closures prevents the garbage collector from reclaiming memory!*"
+        )
+
     def _generate_playlist_recommendation_response(
         self,
         prompt: str,
@@ -1532,9 +1668,11 @@ class RuleBasedProvider(BaseAIProvider):
 
         matched_courses = (context.get("matched_courses", []) if context else [])
 
+        display_topic = "FastAPI & Backend" if "fastapi" in p else topic.title()
+
         lines = [
-            f"### 📚 Recommended Learning Resources & Playlists: {topic.title()}\n",
-            f"Here are the highest-quality authentic learning resources and structured playlists to master **{topic.title()}**:\n",
+            f"### 📚 Recommended Learning Resources & Playlists: {display_topic}\n",
+            f"Here are the highest-quality authentic learning resources and structured playlists to master **{display_topic}**:\n",
         ]
 
         # 1. Technea Resources First
@@ -1574,6 +1712,8 @@ class RuleBasedProvider(BaseAIProvider):
         p = prompt.strip().lower()
         if "oop" in p or "object" in p or "pattern" in p or "solid" in p:
             milestone = "Object-Oriented Design Patterns"
+        elif "sql" in p or "database" in p or "query" in p or "relational" in p:
+            milestone = "SQL & Relational Database Mastery"
         elif "api" in p or "rest" in p or "fastapi" in p:
             milestone = "Full-Stack API Design"
         elif "docker" in p or "kubernetes" in p or "devops" in p or "cloud" in p:
@@ -1610,8 +1750,8 @@ class RuleBasedProvider(BaseAIProvider):
             or classify_intent(effective_prompt)
         )
         ctx["classified_intent"] = intent
-        if memory_state.active_topic and not ctx.get("active_topic"):
-            ctx["active_topic"] = memory_state.active_topic
+        if "active_topic" in memory_state.context_updates and not ctx.get("active_topic"):
+            ctx["active_topic"] = memory_state.context_updates["active_topic"]
         if memory_state.user_corrections:
             ctx.setdefault("user_corrections", {}).update(memory_state.user_corrections)
             if "preferred_language" in memory_state.user_corrections and not ctx.get("preferred_language"):
@@ -1724,6 +1864,25 @@ class RuleBasedProvider(BaseAIProvider):
         has_react_hooks = ("react" in p and "hook" in p) or "react hooks" in p
         has_backend_arch = any(phrase in p for phrase in ["backend architecture", "build me a backend architecture", "software architecture", "system architecture", "microservice architecture"]) or intent == INTENT_CODING_ARCHITECTURE
         has_python_learning = ("how do i learn python" in p or "how to learn python" in p or "how can i learn python" in p or (("learn python" in p or "learning python" in p) and any(w in p for w in ["how", "start", "guide", "roadmap", "where"])))
+        has_javascript_learning = (
+            "how do i learn javascript" in p
+            or "how to learn javascript" in p
+            or "how can i learn javascript" in p
+            or "how do i learn js" in p
+            or "how to learn js" in p
+            or "how can i learn js" in p
+            or "learn javascript" in p
+            or "learning javascript" in p
+            or "learn js" in p
+            or "learning js" in p
+            or "javascript roadmap" in p
+            or "js roadmap" in p
+            or (("javascript" in p or "js" in p.split()) and any(w in p for w in ["how", "start", "guide", "roadmap", "where", "master", "curriculum", "study", "learn", "learning"]))
+        )
+        has_closures = any(phrase in p for phrase in ["closure", "closures", "explain closures", "what is a closure", "how do closures work"])
+        has_sql_quiz = ("sql" in p or "database" in p or "query" in p) and ("quiz" in p or "test" in p or intent in {INTENT_QUIZ, INTENT_REVISION})
+        has_go_roadmap = (re.search(r"\b(?:go|golang)\b", p) is not None) and any(w in p for w in ["roadmap", "curriculum", "learn", "how to", "guide"])
+        has_rust_roadmap = "rust" in p and any(w in p for w in ["roadmap", "curriculum", "learn", "how to", "guide"])
 
         has_recursion = any(w in p for w in ["recursion", "recursive"])
         has_async = any(w in p for w in ["async", "asyncio", "await", "concurrency"])
@@ -1752,14 +1911,24 @@ class RuleBasedProvider(BaseAIProvider):
         # Intent-driven dispatch
         if intent == INTENT_RESOURCE_SEARCH or has_playlist_request:
             res = self._generate_resource_search_response(prompt, domain=domain, context=context, seed=seed)
+        elif has_sql_quiz:
+            res = self._generate_quiz_response(domain="data", level=level, context=ctx, prompt=effective_prompt, seed=seed)
         elif intent == INTENT_QUIZ:
             res = self._generate_quiz_response(domain, level, context=context, prompt=prompt, seed=seed)
+        elif has_closures:
+            res = self._generate_closures_response(context=ctx, seed=seed)
         elif has_react_hooks:
             res = self._generate_react_hooks_response(seed=seed)
         elif has_backend_arch:
             res = self._generate_backend_architecture_response(seed=seed)
         elif has_python_learning:
             res = self._generate_python_learning_roadmap(seed=seed)
+        elif has_javascript_learning:
+            res = self._generate_javascript_learning_roadmap(seed=seed)
+        elif has_go_roadmap:
+            res = self._generate_roadmap_response(domain="go", level=level, topic="go", seed=seed)
+        elif has_rust_roadmap:
+            res = self._generate_roadmap_response(domain="rust", level=level, topic="rust", seed=seed)
         elif has_recursion or has_async:
             res = self._generate_coding_response(prompt, domain, level, seed=seed)
         elif has_debugging or str(intent) == "debugging":
@@ -1787,12 +1956,19 @@ class RuleBasedProvider(BaseAIProvider):
         elif intent in {INTENT_PROJECT_SUGGESTION, INTENT_PROJECT_RECOMMENDATION}:
             res = self._generate_project_response(domain, level, context=ctx, seed=seed)
         elif intent in {INTENT_ROADMAP_REQUEST, INTENT_ROADMAP_PLANNING}:
-            res = self._generate_roadmap_response(domain, level, topic=p, seed=seed)
+            if "javascript" in p or "js" in p:
+                res = self._generate_javascript_learning_roadmap(seed=seed)
+            else:
+                res = self._generate_roadmap_response(domain, level, topic=p, seed=seed)
         elif intent in {INTENT_CAREER_ADVICE, INTENT_CAREER_GUIDANCE}:
             res = self._generate_career_response(level, domain, seed=seed)
         elif intent == INTENT_LEARNING_ADVICE:
             if any(w in p for w in ["next", "start", "begin", "where do i", "what should i"]):
                 res = self._generate_next_step_response(domain, level, prompt=prompt, context=ctx, seed=seed)
+            elif "javascript" in p or "js" in p:
+                res = self._generate_javascript_learning_roadmap(seed=seed)
+            elif "python" in p:
+                res = self._generate_python_learning_roadmap(seed=seed)
             else:
                 res = self._generate_conceptual_response(prompt, domain, level, context=ctx, seed=seed)
         else:
@@ -1986,8 +2162,8 @@ class AIService:
             or classify_intent(effective_prompt)
         )
         ctx["classified_intent"] = effective_intent
-        if memory_state.active_topic and not ctx.get("active_topic"):
-            ctx["active_topic"] = memory_state.active_topic
+        if "active_topic" in memory_state.context_updates and not ctx.get("active_topic"):
+            ctx["active_topic"] = memory_state.context_updates["active_topic"]
         if memory_state.user_corrections:
             ctx.setdefault("user_corrections", {}).update(memory_state.user_corrections)
             if "preferred_language" in memory_state.user_corrections and not ctx.get("preferred_language"):
@@ -2007,21 +2183,83 @@ class AIService:
                 self.last_provider_used = "special_router"
                 return fast_response
 
-        # Synthesize system instruction if not explicitly provided
-        effective_system_prompt = system_instruction
-        if not effective_system_prompt:
-            learner_level = None
-            domain = None
-            if ctx:
-                learner_level = ctx.get("level") or ctx.get("learner_level")
-                domain = ctx.get("domain")
+        # Rebuild Prompt Construction: Every request must build a NEW prompt (NO caching)
+        learner_level = (ctx.get("level") or ctx.get("learner_level")) if ctx else None
+        domain = (ctx.get("domain") or ctx.get("active_topic")) if ctx else None
+        user_name = ctx.get("user_name") if ctx else None
 
-            effective_system_prompt = build_system_prompt(
-                learner_level=learner_level,
-                domain=domain,
-                context=ctx,
-                persona=persona,
-            )
+        effective_system_prompt = build_system_prompt(
+            learner_level=learner_level,
+            domain=domain,
+            context=ctx,
+            persona=persona,
+            user_name=user_name,
+            custom_instruction=system_instruction if system_instruction else None,
+        )
+
+        # Build structured debug logging metadata
+        last_assistant_msg = "None"
+        if conversation_history:
+            for item in reversed(conversation_history):
+                if isinstance(item, dict):
+                    raw_role = str(item.get("role", "")).lower()
+                    if raw_role in ("assistant", "model", "system_reply"):
+                        parts = item.get("parts")
+                        if parts and isinstance(parts, list) and isinstance(parts[0], dict):
+                            last_assistant_msg = str(parts[0].get("text", "")).strip() or "None"
+                        else:
+                            last_assistant_msg = str(item.get("content") or item.get("text") or "").strip() or "None"
+                        break
+
+        current_topic = (
+            ctx.get("current_topic")
+            or ctx.get("active_topic")
+            or ctx.get("topic")
+            or ctx.get("domain")
+            or ctx.get("classified_intent")
+        )
+        if not current_topic:
+            p_lower = (prompt or "").lower()
+            if "javascript" in p_lower or "js" in p_lower.split():
+                current_topic = "javascript"
+            elif "python" in p_lower:
+                current_topic = "python"
+            elif "react" in p_lower:
+                current_topic = "react"
+            else:
+                current_topic = "General"
+
+        retrieved_resources_summary = ctx.get("retrieved_resources_summary")
+        if not retrieved_resources_summary:
+            paths = len(ctx.get("matched_paths") or [])
+            projects = len(ctx.get("matched_projects") or [])
+            skills = len(ctx.get("matched_skills") or [])
+            courses = len(ctx.get("matched_courses") or [])
+            total = paths + projects + skills + courses
+            if total > 0:
+                retrieved_resources_summary = f"{paths} paths, {projects} projects, {skills} skills, {courses} courses"
+            elif ctx.get("catalog_context"):
+                retrieved_resources_summary = "Catalog context available"
+            else:
+                retrieved_resources_summary = "None"
+
+        # Structured debug block for visibility across both Gemini and fallback providers
+        logger.info(
+            "\n--------------------------------\n"
+            "Latest User Message: %s\n"
+            "Conversation Length: %d\n"
+            "Last Assistant Message: %s\n"
+            "Prompt Token Count: %d\n"
+            "Current Topic: %s\n"
+            "Retrieved Resources: %s\n"
+            "--------------------------------",
+            prompt,
+            len(conversation_history or []),
+            last_assistant_msg,
+            len(prompt.split()),  # approximate or exact
+            current_topic,
+            retrieved_resources_summary,
+        )
 
         # Attempt primary provider if configured
         if self.primary_provider.is_configured:

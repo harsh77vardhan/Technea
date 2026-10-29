@@ -892,6 +892,12 @@ def build_system_prompt(
 ) -> str:
     """Dynamically construct a contextual system prompt for the AI session.
 
+    Constructs fresh, structured prompt sections:
+    1. SYSTEM (Base persona, Server Date/Time, Flow Rules, Behavioral Rules, Intent Guidance, Guardrails, Memory Anchor Rule)
+    2. User Profile (Learner Name, Level, Goals, Preferred Language, Experience)
+    3. Learning Context (Active Roadmaps, Milestones, Completed Lessons, Projects, Streak)
+    4. Relevant Retrieved Data (Database Catalog Context, Matched Skills, Paths, Projects, Courses)
+
     Args:
         learner_level: Learner's current level (Absolute Beginner, Beginner, Intermediate, Advanced).
         domain: Primary domain key (e.g. web_development, python, ai_ml, cybersecurity).
@@ -903,13 +909,19 @@ def build_system_prompt(
     Returns:
         Structured system prompt string ready for LLM consumption.
     """
+    ctx = context or {}
     parts: list[str] = []
 
-    # 1. Base persona
-    selected_persona = PERSONA_PROFILES.get(persona or "mentor", TECHNEA_MENTOR_SYSTEM_PROMPT)
-    parts.append(selected_persona.strip())
+    # =========================================================================
+    # 1. SYSTEM
+    # =========================================================================
+    system_parts: list[str] = []
 
-    # Real-time Server Date & Time Injection
+    # 1.1 Base persona
+    selected_persona = PERSONA_PROFILES.get(persona or "mentor", TECHNEA_MENTOR_SYSTEM_PROMPT)
+    system_parts.append(selected_persona.strip())
+
+    # 1.2 Real-time Server Date & Time Injection
     now = datetime.now().astimezone()
     current_weekday = now.strftime("%A")
     current_date = now.strftime("%B %d, %Y")
@@ -929,56 +941,28 @@ def build_system_prompt(
         "- When asked about the day of the week, date, time, or year (e.g. 'what day is today?', 'what\'s the day today?', 'date?', 'what time is it?'), answer directly and accurately using the injected CURRENT SERVER DATE & TIME without hallucinating.\n"
         "- Never make up or hallucinate date or time."
     )
-    parts.append(server_time_block)
+    system_parts.append(server_time_block)
 
-    # Conversation Context & Flow Rules
+    # 1.3 Conversation Context & Flow Rules
     flow_rules = (
         "CONVERSATION CONTEXT & FLOW RULES:\n"
         "- You must ALWAYS answer the latest user message directly. Never let previous turns override or deflect from the latest prompt.\n"
         "- Never continue the previous assistant response or previous casual directives (e.g. 'just say hey back') unless explicitly requested by the user.\n"
         "- If the user previously had a casual exchange or greeting constraint, and now asks a new question, answer the new question completely and directly."
     )
-    parts.append(flow_rules)
+    system_parts.append(flow_rules)
 
-    # 2. Learner Profile & Name Calibration
-    resolved_name = user_name or (context.get("user_name") if context else None)
-    if resolved_name:
-        parts.append(f"LEARNER NAME: {resolved_name}")
-
-    if learner_level:
-        lvl = learner_level.strip().title()
-        level_instructions = {
-            "Absolute Beginner": (
-                "LEARNER PROFILE: Absolute Beginner (Zero prior coding experience). "
-                "Explain everything in plain English using simple metaphors. "
-                "Do not assume knowledge of command-line tools or programming primitives. "
-                "Provide step-by-step instructions with exact commands."
-            ),
-            "Beginner": (
-                "LEARNER PROFILE: Beginner (Familiar with basic concepts, learning application). "
-                "Reinforce good coding hygiene, explain syntax decisions clearly, and provide guided code examples."
-            ),
-            "Intermediate": (
-                "LEARNER PROFILE: Intermediate (Capable programmer, seeking design patterns and efficiency). "
-                "Skip elementary syntax tutorials. Emphasize software design patterns, clean architecture, edge cases, and testing."
-            ),
-            "Advanced": (
-                "LEARNER PROFILE: Advanced / Senior (Seeking architectural mastery). "
-                "Focus on distributed systems trade-offs, concurrency models, performance tuning, and scalability."
-            ),
-        }
-        parts.append(level_instructions.get(lvl, f"LEARNER PROFILE: {lvl} level."))
-
-    # 3. Domain Specific Guidance
-    if domain:
-        norm_domain = domain.lower().replace(" ", "_").replace("&", "").replace("-", "_")
+    # 1.4 Domain Specific Guidance
+    target_domain = domain or ctx.get("domain") or ctx.get("active_topic")
+    if target_domain:
+        norm_domain = str(target_domain).lower().replace(" ", "_").replace("&", "").replace("-", "_")
         for key, guide in DOMAIN_GUIDELINES.items():
             if key in norm_domain or norm_domain in key:
-                parts.append(f"DOMAIN CONTEXT: {guide}")
+                system_parts.append(f"DOMAIN CONTEXT: {guide}")
                 break
 
-    # 4. Classified Intent Awareness
-    classified_intent = (context.get("classified_intent") if context else None)
+    # 1.5 Classified Intent Awareness
+    classified_intent = ctx.get("classified_intent")
     if classified_intent:
         intent_guidelines = {
             INTENT_DAILY_GOAL: (
@@ -1040,12 +1024,18 @@ def build_system_prompt(
             INTENT_ROADMAP_PLANNING: (
                 "CURRENT INTENT: roadmap request / planning. "
                 "Provide progressive guidance: Current Phase -> This week's focus -> Practice project -> What comes next. "
-                "Do not dump a massive 5-phase curriculum all in one message. Sequence topics cleanly and avoid robotic framework labels."
+                "Do not dump a massive 5-phase curriculum all in one message. Sequence topics cleanly and avoid robotic framework labels. "
+                "When asked how to learn JavaScript, outline the rich 4-phase roadmap: "
+                "1. Foundations (Syntax, DOM, Events) -> 2. Modern JS (ES6+, Async/Await, Fetch) -> "
+                "3. Advanced (Closures, Prototypes, Modules) -> 4. Frameworks (React/Node)."
             ),
             INTENT_ROADMAP_REQUEST: (
                 "CURRENT INTENT: roadmap request / planning. "
                 "Provide progressive guidance: Current Phase -> This week's focus -> Practice project -> What comes next. "
-                "Do not dump a massive 5-phase curriculum all in one message. Sequence topics cleanly and avoid robotic framework labels."
+                "Do not dump a massive 5-phase curriculum all in one message. Sequence topics cleanly and avoid robotic framework labels. "
+                "When asked how to learn JavaScript, outline the rich 4-phase roadmap: "
+                "1. Foundations (Syntax, DOM, Events) -> 2. Modern JS (ES6+, Async/Await, Fetch) -> "
+                "3. Advanced (Closures, Prototypes, Modules) -> 4. Frameworks (React/Node)."
             ),
             INTENT_PROJECT_RECOMMENDATION: (
                 "CURRENT INTENT: project suggestion / recommendation. "
@@ -1081,7 +1071,8 @@ def build_system_prompt(
             ),
             INTENT_LEARNING_QUESTION: (
                 "CURRENT INTENT: learning question. "
-                "Provide structured, beginner-friendly learning guidance. Follow the strict output format: 1. Concept, 2. Simple explanation, 3. Example, 4. Practice, 5. Next step, 6. Relevant Technea resource (only when relevant)."
+                "Provide structured, beginner-friendly learning guidance. Follow the strict output format: 1. Concept, 2. Simple explanation, 3. Example, 4. Practice, 5. Next step, 6. Relevant Technea resource (only when relevant). "
+                "When asked how to learn JavaScript, generate a rich roadmap: Foundations (Syntax, DOM, Events) -> Modern JS (ES6+, Async/Await, Fetch) -> Advanced (Closures, Prototypes, Modules) -> Frameworks (React/Node)."
             ),
             INTENT_SIMPLE_QUESTION: (
                 "CURRENT INTENT: simple question / definition. "
@@ -1096,54 +1087,139 @@ def build_system_prompt(
                 "Answer directly and concisely with the exact current server date, weekday, year, or time using the CURRENT SERVER DATE & TIME block above. Never hallucinate date or time, and do not append catalog courses or roadmap items."
             ),
         }
-        parts.append(intent_guidelines.get(classified_intent, f"CURRENT INTENT: {classified_intent}"))
+        system_parts.append(intent_guidelines.get(classified_intent, f"CURRENT INTENT: {classified_intent}"))
 
-    # 5. User Level Guardrails
-    raw_lvl = learner_level or (context.get("level") if context else "") or ""
+    # 1.6 User Level Guardrails
+    raw_lvl = learner_level or ctx.get("level") or ""
     lvl_lower = str(raw_lvl).lower()
     if any(b in lvl_lower for b in ["beginner", "code initiate", "explorer", "novice", "absolute"]):
-        parts.append(
+        system_parts.append(
             "USER LEVEL GUARDRAIL:\n"
             "- The learner is at Beginner / Code Initiate level.\n"
             "- Prioritize: fundamentals, beginner paths, and immediate roadmap milestone.\n"
             "- AVOID recommending enterprise architecture, advanced distributed systems, production scaling, or advanced frameworks unless the user explicitly requests them."
         )
 
-    # 6. Injected Session Context & Mentor Memory
-    catalog_context = None
-    if context:
-        catalog_context = context.get("catalog_context") or context.get("technea_catalog_context")
-        ctx_lines = ["SESSION CONTEXT & PROGRESS:"]
-        for k, v in context.items():
-            if k in (
-                "user_name",
-                "catalog_context",
-                "technea_catalog_context",
-                "matched_skills",
-                "matched_paths",
-                "matched_projects",
-                "matched_courses",
-                "user_progress",
-                "classified_intent",
-            ):
-                continue
-            if v is not None and str(v).strip():
-                label = k.replace("_", " ").title()
-                ctx_lines.append(f"- {label}: {v}")
-        if len(ctx_lines) > 1:
-            parts.append("\n".join(ctx_lines))
-
-    # Injected Mentor Memory Anchor Rule
-    parts.append(
+    # 1.7 Mentor Memory Anchor Rule
+    system_parts.append(
         "MENTOR MEMORY ANCHOR RULE (AI MENTOR 2.0):\n"
         "- Strict rule: Never answer in a generic way when learner data exists!\n"
         "- Anchor every answer to their active milestone, preferred language, stated learning goal, and time availability.\n"
         "- When asked for daily goals, weekly plans, revision, or code help, calibrate explicitly to their current milestone."
     )
 
-    # 7. Database Catalog & Real Technea Platform Resources
+    # 1.8 Natural Recommendation Structure
+    system_parts.append(
+        "NATURAL RECOMMENDATION STRUCTURE:\n"
+        "Weave where the learner stands, what they should do next, why it comes next, and their practical practice project "
+        "naturally into conversational sentences. NEVER expose internal headers or bullet tags like "
+        "'Recommendation Framework:', 'Progression Priority Chain:', 'Current status:', or 'Expected outcome:'."
+    )
+
+    parts.append("\n\n".join(system_parts))
+
+    # =========================================================================
+    # 2. USER PROFILE
+    # =========================================================================
+    profile_parts: list[str] = ["### USER PROFILE"]
+    resolved_name = user_name or ctx.get("user_name")
+    if resolved_name:
+        profile_parts.append(f"LEARNER NAME: {resolved_name}")
+
+    if learner_level:
+        lvl = learner_level.strip().title()
+        level_instructions = {
+            "Absolute Beginner": (
+                "LEARNER PROFILE: Absolute Beginner (Zero prior coding experience). "
+                "Explain everything in plain English using simple metaphors. "
+                "Do not assume knowledge of command-line tools or programming primitives. "
+                "Provide step-by-step instructions with exact commands."
+            ),
+            "Beginner": (
+                "LEARNER PROFILE: Beginner (Familiar with basic concepts, learning application). "
+                "Reinforce good coding hygiene, explain syntax decisions clearly, and provide guided code examples."
+            ),
+            "Intermediate": (
+                "LEARNER PROFILE: Intermediate (Capable programmer, seeking design patterns and efficiency). "
+                "Skip elementary syntax tutorials. Emphasize software design patterns, clean architecture, edge cases, and testing."
+            ),
+            "Advanced": (
+                "LEARNER PROFILE: Advanced / Senior (Seeking architectural mastery). "
+                "Focus on distributed systems trade-offs, concurrency models, performance tuning, and scalability."
+            ),
+        }
+        profile_parts.append(level_instructions.get(lvl, f"LEARNER PROFILE: {lvl} level."))
+
+    # Scalar profile fields from context
+    profile_fields = [
+        ("current_skill_level", "Current Skill Level"),
+        ("learning_goal", "Learning Goal"),
+        ("preferred_language", "Preferred Language"),
+        ("time_available", "Time Available"),
+        ("interests", "Interests"),
+        ("bio", "Bio"),
+        ("xp", "XP Points"),
+    ]
+    for key, label in profile_fields:
+        val = ctx.get(key)
+        if val is not None and str(val).strip():
+            profile_parts.append(f"- {label}: {val}")
+
+    parts.append("\n".join(profile_parts))
+
+    # =========================================================================
+    # 3. LEARNING CONTEXT
+    # =========================================================================
+    learning_parts: list[str] = ["### LEARNING CONTEXT & PROGRESS"]
+    ctx_lines = ["SESSION CONTEXT & PROGRESS:"]
+    for k, v in ctx.items():
+        if k in (
+            "user_name",
+            "catalog_context",
+            "technea_catalog_context",
+            "matched_skills",
+            "matched_paths",
+            "matched_projects",
+            "matched_courses",
+            "user_progress",
+            "classified_intent",
+            "retrieved_resources_summary",
+            "current_topic",
+            "active_topic",
+            "level",
+            "current_skill_level",
+            "learning_goal",
+            "preferred_language",
+            "time_available",
+            "interests",
+            "bio",
+            "xp",
+        ):
+            continue
+        if v is not None and str(v).strip():
+            label = k.replace("_", " ").title()
+            ctx_lines.append(f"- {label}: {v}")
+
+    # Active Roadmaps & Progress
+    active_roadmaps = ctx.get("active_roadmaps")
+    if active_roadmaps:
+        ctx_lines.append(f"- Active Roadmaps: {active_roadmaps}")
+    completed_milestones = ctx.get("completed_milestones")
+    if completed_milestones is not None:
+        ctx_lines.append(f"- Completed Milestones: {completed_milestones}")
+
+    if len(ctx_lines) > 1:
+        learning_parts.append("\n".join(ctx_lines))
+
+    parts.append("\n".join(learning_parts))
+
+    # =========================================================================
+    # 4. RELEVANT RETRIEVED DATA
+    # =========================================================================
+    catalog_context = ctx.get("catalog_context") or ctx.get("technea_catalog_context")
     if catalog_context and str(catalog_context).strip():
         parts.append(
+            "### RELEVANT RETRIEVED DATA\n"
             f"{str(catalog_context).strip()}\n\n"
             "INSTRUCTION FOR TECHNEA CATALOG CONTEXT:\n"
             "- Reference the actual Technea learning paths, skills, and projects listed above when answering the learner.\n"
@@ -1151,16 +1227,75 @@ def build_system_prompt(
             "- If the learner has an active roadmap or milestone progress, acknowledge it and suggest concrete next steps."
         )
 
-    # 8. Natural Conversational Recommendation Structure
-    parts.append(
-        "NATURAL RECOMMENDATION STRUCTURE:\n"
-        "Weave where the learner stands, what they should do next, why it comes next, and their practical practice project "
-        "naturally into conversational sentences. NEVER expose internal headers or bullet tags like "
-        "'Recommendation Framework:', 'Progression Priority Chain:', 'Current status:', or 'Expected outcome:'."
-    )
-
-    # 9. Custom instructions
+    # =========================================================================
+    # 5. SPECIAL INSTRUCTIONS
+    # =========================================================================
     if custom_instruction and custom_instruction.strip():
         parts.append(f"SPECIAL INSTRUCTIONS:\n{custom_instruction.strip()}")
 
     return "\n\n".join(parts)
+
+
+def construct_prompt(
+    prompt: str,
+    conversation_history: list[dict[str, Any]] | None = None,
+    context: dict[str, Any] | None = None,
+    system_instruction: str | None = None,
+    persona: str | None = "mentor",
+    learner_level: str | None = None,
+    domain: str | None = None,
+    user_name: str | None = None,
+    custom_instruction: str | None = None,
+) -> str:
+    """Build a complete, structured prompt for a request.
+
+    Rebuilds fresh prompt structure:
+    SYSTEM
+    ↓
+    User Profile
+    ↓
+    Learning Context
+    ↓
+    Relevant Retrieved Data
+    ↓
+    Conversation History
+    ↓
+    LATEST USER MESSAGE
+    The latest user message MUST be the final message before calling Gemini (role="user").
+    """
+    ctx = context or {}
+    clean_prompt = (prompt or "").strip()
+
+    # 1. System + User Profile + Learning Context + Relevant Retrieved Data
+    system_part = system_instruction or build_system_prompt(
+        learner_level=learner_level or ctx.get("level") or ctx.get("learner_level"),
+        domain=domain or ctx.get("domain") or ctx.get("active_topic"),
+        context=ctx,
+        persona=persona,
+        custom_instruction=custom_instruction,
+        user_name=user_name or ctx.get("user_name"),
+    )
+
+    sections: list[str] = [system_part.strip()]
+
+    # 2. Conversation History
+    if conversation_history:
+        history_lines = ["### CONVERSATION HISTORY"]
+        for item in conversation_history:
+            if not isinstance(item, dict):
+                continue
+            raw_role = str(item.get("role", "user")).lower()
+            role_label = "Assistant" if raw_role in ("assistant", "model", "system_reply") else "User"
+            if "parts" in item and isinstance(item["parts"], list) and item["parts"]:
+                text_val = str(item["parts"][0].get("text", "")).strip()
+            else:
+                text_val = str(item.get("content") or item.get("text") or "").strip()
+            if text_val:
+                history_lines.append(f"{role_label}: {text_val}")
+        if len(history_lines) > 1:
+            sections.append("\n".join(history_lines))
+
+    # 3. LATEST USER MESSAGE (Always final turn)
+    sections.append(f"### LATEST USER MESSAGE\nUser: {clean_prompt}")
+
+    return "\n\n".join(sections)

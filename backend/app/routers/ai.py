@@ -524,11 +524,26 @@ async def chat_with_ai(
     now_server = datetime.now().astimezone()
     context["classified_intent"] = intent
     context["domain"] = domain
+    context["current_topic"] = domain
     context["current_date"] = now_server.strftime("%B %d, %Y")
     context["current_weekday"] = now_server.strftime("%A")
     context["current_year"] = now_server.strftime("%Y")
     context["current_time"] = now_server.strftime("%I:%M %p %Z").strip()
     context["current_timezone"] = now_server.tzname() or "UTC"
+
+    # Summarize retrieved resources for structured debug visibility
+    paths_count = len(retrieved.get("learning_paths", []))
+    skills_count = len(retrieved.get("skills", []))
+    projects_count = len(retrieved.get("projects", []))
+    courses_count = len(retrieved.get("courses", []))
+    if paths_count or skills_count or projects_count or courses_count:
+        context["retrieved_resources_summary"] = (
+            f"{paths_count} paths, {projects_count} projects, {skills_count} skills, {courses_count} courses"
+        )
+    elif retrieved.get("catalog_context"):
+        context["retrieved_resources_summary"] = "Catalog context available"
+    else:
+        context["retrieved_resources_summary"] = "None"
 
     # Call AI service orchestrator
     generated_text, provider_used = await ai_service.generate_chat_response(

@@ -300,3 +300,73 @@ async def test_rule_based_provider_rich_context():
     assert "Object-Oriented Design Patterns" in resp
     assert any(term in resp for term in ["Design Patterns", "Factory", "Encapsulation", "Polymorphism", "SRP", "Strategy"])
     assert "Question 1" in resp or "Quiz" in resp
+
+
+def test_memory_engine_temporal_queries_filtered():
+    """Verify temporal / date queries are completely filtered from topic memory."""
+    engine = MemoryEngine()
+
+    # User text temporal questions never yield topics
+    for q in [
+        "what is the date today?",
+        "what's the date today",
+        "what time is it?",
+        "date?",
+        "date",
+        "time",
+        "today's date",
+        "what day is today?",
+        "what is today",
+    ]:
+        topic = engine.extract_assistant_topic(assistant_text=None, user_text=q)
+        assert topic is None, f"Expected None for temporal query '{q}', got '{topic}'"
+
+    # Assistant temporal statements never yield topics
+    for a in [
+        "Today is Thursday.",
+        "### Server Date: October 29, 2026",
+        "### Today\n\nIt is Wednesday.",
+        "### The Date Today",
+    ]:
+        topic = engine.extract_assistant_topic(assistant_text=a, user_text=None)
+        assert topic is None, f"Expected None for temporal assistant text '{a}', got '{topic}'"
+
+
+def test_memory_engine_standalone_inquiry_does_not_inherit_previous_topic():
+    """Verify standalone new inquiry does not inherit or leak prior topic."""
+    engine = MemoryEngine()
+    history = [
+        {"role": "user", "content": "Explain React hooks"},
+        {"role": "assistant", "content": "### React Hooks Deep Dive\n\nHooks let functional components use state."},
+    ]
+
+    # Standalone technical question
+    state_docker = engine.analyze(history, "What is Docker?")
+    assert state_docker.active_topic == "Docker"
+    # Crucial: Standalone inquiry must NOT inject active_topic into context_updates
+    assert "active_topic" not in state_docker.context_updates
+
+    # Explicit ellipsis DOES inherit and populate context_updates
+    state_ellipsis = engine.analyze(history, "tell me more")
+    assert "React Hooks" in state_ellipsis.active_topic
+    assert "React Hooks" in state_ellipsis.context_updates.get("active_topic", "")
+
+
+@pytest.mark.asyncio
+async def test_reproduction_date_to_javascript_learning():
+    """Reproduction verification: date question followed by JavaScript inquiry.
+    
+    Must return a JavaScript learning roadmap, and MUST NOT contain 'The Date Today'.
+    """
+    service = AIService()
+    history = [
+        {"role": "user", "content": "what is the date today?"},
+        {"role": "assistant", "content": "Today is Thursday."},
+    ]
+    prompt = "How can I learn JavaScript?"
+    resp = await service.generate_chat_response(prompt, conversation_history=history)
+
+    assert "The Date Today" not in resp, "Leaked 'The Date Today' into response!"
+    assert "JavaScript" in resp, "Response should focus on JavaScript!"
+    assert "Roadmap" in resp or "Phase 1" in resp, "Response should be a JavaScript roadmap!"
+

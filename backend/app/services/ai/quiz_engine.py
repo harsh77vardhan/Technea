@@ -533,6 +533,128 @@ class QuizEngine:
                 },
             ],
         },
+        "sql": {
+            "Beginner": [
+                {
+                    "concept": "SQL Joins",
+                    "scenario": (
+                        "You need to fetch all registered users and their orders. Some users have not placed any "
+                        "orders yet, but they must still appear in the result set with NULL values for order columns."
+                    ),
+                    "question": "Which SQL JOIN clause should you use to preserve all rows from the users table?",
+                    "options": {
+                        "A": "INNER JOIN orders ON users.id = orders.user_id",
+                        "B": "LEFT JOIN orders ON users.id = orders.user_id",
+                        "C": "CROSS JOIN orders",
+                        "D": "RIGHT JOIN orders ON users.id = orders.user_id",
+                    },
+                    "correct_option": "B",
+                    "explanation": "A LEFT JOIN returns all records from the left table (users), and matched records from the right table (orders). Unmatched rows contain NULL.",
+                    "answering_tip": "💡 LEFT JOIN preserves all left-table records even when no matching foreign record exists.",
+                },
+                {
+                    "concept": "Aggregate Filtering",
+                    "scenario": (
+                        "You want to retrieve only the product categories that contain strictly more than 10 products in inventory."
+                    ),
+                    "question": "Which SQL clause is used to filter aggregated groups after a GROUP BY operation?",
+                    "options": {
+                        "A": "WHERE COUNT(*) > 10",
+                        "B": "HAVING COUNT(*) > 10",
+                        "C": "FILTER COUNT(*) > 10",
+                        "D": "LIMIT 10",
+                    },
+                    "correct_option": "B",
+                    "explanation": "HAVING filters groups created by GROUP BY based on aggregate conditions. WHERE filters individual rows before grouping.",
+                    "answering_tip": "💡 Remember: WHERE filters individual rows; HAVING filters grouped aggregates.",
+                },
+                {
+                    "concept": "Indexing & Query Performance",
+                    "scenario": (
+                        "Your database query `SELECT * FROM users WHERE email = 'dev@technea.io'` is performing a slow sequential scan across 5 million rows."
+                    ),
+                    "question": "How can you optimize this query for fast sub-millisecond lookup?",
+                    "options": {
+                        "A": "Add a B-Tree index on the `email` column",
+                        "B": "Convert the table to unlogged storage",
+                        "C": "Use a correlated subquery inside the WHERE clause",
+                        "D": "Replace single quotes with double quotes",
+                    },
+                    "correct_option": "A",
+                    "explanation": "A B-Tree index provides O(log n) logarithmic lookup time on the indexed column instead of an O(n) full table scan.",
+                    "answering_tip": "💡 B-Tree indexes provide fast logarithmic search for equality and range filters.",
+                },
+                {
+                    "concept": "ACID Transactions",
+                    "scenario": (
+                        "A funds transfer debits $100 from Account A and credits $100 to Account B. If the database crashes midway, no money should be lost or partially transferred."
+                    ),
+                    "question": "Which ACID property guarantees that all database operations in a transaction succeed or all fail together?",
+                    "options": {
+                        "A": "Atomicity",
+                        "B": "Consistency",
+                        "C": "Isolation",
+                        "D": "Durability",
+                    },
+                    "correct_option": "A",
+                    "explanation": "Atomicity ensures all statements in a transaction execute as an indivisible unit: either all succeed (COMMIT) or all roll back (ROLLBACK).",
+                    "answering_tip": "💡 Atomicity represents the 'all-or-nothing' principle of transactions.",
+                },
+            ],
+            "Intermediate": [
+                {
+                    "concept": "SQL Joins",
+                    "scenario": (
+                        "You need to fetch all registered users and their orders. Some users have not placed any "
+                        "orders yet, but they must still appear in the result set with NULL values for order columns."
+                    ),
+                    "question": "Which SQL JOIN clause should you use to preserve all rows from the users table?",
+                    "options": {
+                        "A": "INNER JOIN orders ON users.id = orders.user_id",
+                        "B": "LEFT JOIN orders ON users.id = orders.user_id",
+                        "C": "CROSS JOIN orders",
+                        "D": "RIGHT JOIN orders ON users.id = orders.user_id",
+                    },
+                    "correct_option": "B",
+                    "explanation": "A LEFT JOIN returns all records from the left table (users), and matched records from the right table (orders). Unmatched rows contain NULL.",
+                    "answering_tip": "💡 LEFT JOIN preserves all left-table records even when no matching foreign record exists.",
+                },
+                {
+                    "concept": "Aggregate Filtering",
+                    "scenario": (
+                        "You want to retrieve only the product categories that contain strictly more than 10 products in inventory."
+                    ),
+                    "question": "Which SQL clause is used to filter aggregated groups after a GROUP BY operation?",
+                    "options": {
+                        "A": "WHERE COUNT(*) > 10",
+                        "B": "HAVING COUNT(*) > 10",
+                        "C": "FILTER COUNT(*) > 10",
+                        "D": "LIMIT 10",
+                    },
+                    "correct_option": "B",
+                    "explanation": "HAVING filters groups created by GROUP BY based on aggregate conditions. WHERE filters individual rows before grouping.",
+                    "answering_tip": "💡 Remember: WHERE filters individual rows; HAVING filters grouped aggregates.",
+                },
+            ],
+            "Advanced": [
+                {
+                    "concept": "Indexing & Query Performance",
+                    "scenario": (
+                        "Your database query `SELECT * FROM users WHERE email = 'dev@technea.io'` is performing a slow sequential scan across 5 million rows."
+                    ),
+                    "question": "How can you optimize this query for fast sub-millisecond lookup?",
+                    "options": {
+                        "A": "Add a B-Tree index on the `email` column",
+                        "B": "Convert the table to unlogged storage",
+                        "C": "Use a correlated subquery inside the WHERE clause",
+                        "D": "Replace single quotes with double quotes",
+                    },
+                    "correct_option": "A",
+                    "explanation": "A B-Tree index provides O(log n) logarithmic lookup time on the indexed column instead of an O(n) full table scan.",
+                    "answering_tip": "💡 B-Tree indexes provide fast logarithmic search for equality and range filters.",
+                },
+            ],
+        },
     }
 
     @classmethod
@@ -540,6 +662,8 @@ class QuizEngine:
         """Detect the technical domain category from milestone or lesson text."""
         combined = f"{milestone} {lesson or ''}".lower()
 
+        if any(w in combined for w in ["sql", "database", "postgres", "mysql", "sqlite", "query", "relational"]):
+            return "sql"
         if any(w in combined for w in ["oop", "pattern", "design pattern", "object", "solid", "class", "encapsulation", "polymorphism", "inheritance"]):
             return "oop"
         if any(w in combined for w in ["api", "rest", "fastapi", "http", "jwt", "backend", "endpoint", "route", "crud"]):
