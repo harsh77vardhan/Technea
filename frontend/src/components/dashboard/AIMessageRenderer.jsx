@@ -312,11 +312,18 @@ function CodeBlock({ language, code }) {
  * with markdown formatting, syntax code blocks, copy-to-clipboard,
  * lists, headers, and clean paragraph spacing.
  */
-export default function AIMessageRenderer({ content, className = '' }) {
+export default function AIMessageRenderer({ content, className = '', theme = 'dark' }) {
   const rawText = typeof content === 'string' ? content : content?.text || ''
   if (!rawText) return null
 
+  const isLight = theme === 'light'
   const blocks = parseBlocks(rawText)
+
+  const header1Color = isLight ? 'text-[#0f172a]' : 'text-white'
+  const header23Color = isLight ? 'text-[#1e293b]' : 'text-[#EDEDED]'
+  const textColor = isLight ? 'text-[#334155]' : 'text-[#EDEDED]'
+  const bulletColor = isLight ? 'bg-[#94a3b8]' : 'bg-[#A1A1AA]'
+  const quoteColor = isLight ? 'text-[#475569] border-[#cbd5e1]' : 'text-[#A1A1AA] border-white/20'
 
   return (
     <div className={`ai-message-content space-y-2 text-left ${className}`}>
@@ -328,27 +335,27 @@ export default function AIMessageRenderer({ content, className = '' }) {
           case 'header': {
             if (block.level === 1) {
               return (
-                <h1 key={idx} className="text-base sm:text-lg font-bold text-white mt-4 mb-2 tracking-tight">
+                <h1 key={idx} className={`text-base sm:text-lg font-bold ${header1Color} mt-4 mb-2 tracking-tight`}>
                   {renderInline(block.content)}
                 </h1>
               )
             }
             if (block.level === 2) {
               return (
-                <h2 key={idx} className="text-sm sm:text-base font-bold text-[#EDEDED] mt-3.5 mb-1.5 tracking-tight">
+                <h2 key={idx} className={`text-sm sm:text-base font-bold ${header23Color} mt-3.5 mb-1.5 tracking-tight`}>
                   {renderInline(block.content)}
                 </h2>
               )
             }
             if (block.level === 3) {
               return (
-                <h3 key={idx} className="text-xs sm:text-sm font-semibold text-[#EDEDED] mt-3 mb-1">
+                <h3 key={idx} className={`text-xs sm:text-sm font-semibold ${header23Color} mt-3 mb-1`}>
                   {renderInline(block.content)}
                 </h3>
               )
             }
             return (
-              <h4 key={idx} className="text-xs font-semibold text-[#EDEDED] mt-2 mb-1">
+              <h4 key={idx} className={`text-xs font-semibold ${header23Color} mt-2 mb-1`}>
                 {renderInline(block.content)}
               </h4>
             )
@@ -358,8 +365,8 @@ export default function AIMessageRenderer({ content, className = '' }) {
             return (
               <ul key={idx} className="my-2 space-y-1.5 pl-0.5">
                 {block.items.map((item, itemIdx) => (
-                  <li key={itemIdx} className="flex items-start gap-2 text-xs sm:text-sm text-[#EDEDED] leading-relaxed">
-                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#A1A1AA] shrink-0 mt-2" aria-hidden="true" />
+                  <li key={itemIdx} className={`flex items-start gap-2 text-xs sm:text-sm ${textColor} leading-relaxed`}>
+                    <span className={`inline-block h-1.5 w-1.5 rounded-full ${bulletColor} shrink-0 mt-2`} aria-hidden="true" />
                     <span className="flex-1">{renderInline(item)}</span>
                   </li>
                 ))}
@@ -370,8 +377,8 @@ export default function AIMessageRenderer({ content, className = '' }) {
             return (
               <ol key={idx} className="my-2 space-y-1.5 pl-0.5">
                 {block.items.map((item, itemIdx) => (
-                  <li key={itemIdx} className="flex items-start gap-2 text-xs sm:text-sm text-[#EDEDED] leading-relaxed">
-                    <span className="font-mono text-[11px] font-semibold text-[#A1A1AA] shrink-0 min-w-[16px] text-right mt-0.5">
+                  <li key={itemIdx} className={`flex items-start gap-2 text-xs sm:text-sm ${textColor} leading-relaxed`}>
+                    <span className={`font-mono text-[11px] font-semibold ${isLight ? 'text-[#64748b]' : 'text-[#A1A1AA]'} shrink-0 min-w-[16px] text-right mt-0.5`}>
                       {itemIdx + 1}.
                     </span>
                     <span className="flex-1">{renderInline(item)}</span>
@@ -382,7 +389,7 @@ export default function AIMessageRenderer({ content, className = '' }) {
 
           case 'blockquote':
             return (
-              <blockquote key={idx} className="my-2.5 border-l-2 border-white/20 pl-3 py-1 text-xs sm:text-sm text-[#A1A1AA] italic">
+              <blockquote key={idx} className={`my-2.5 border-l-2 pl-3 py-1 text-xs sm:text-sm italic ${quoteColor}`}>
                 {renderInline(block.content)}
               </blockquote>
             )
@@ -390,7 +397,7 @@ export default function AIMessageRenderer({ content, className = '' }) {
           case 'paragraph':
           default:
             return (
-              <p key={idx} className="text-xs sm:text-sm text-[#EDEDED] leading-relaxed my-2 first:mt-0 last:mb-0">
+              <p key={idx} className={`text-xs sm:text-sm ${textColor} leading-relaxed my-2 first:mt-0 last:mb-0`}>
                 {renderInline(block.content)}
               </p>
             )

@@ -14,11 +14,12 @@ import { getAvatarUrl } from '../../services/api'
 /**
  * DashboardLeftSidebar
  *
- * Implements the left navigation sidebar matching `techneadashboardfinal1.png`:
- * - Brand logo: "T Technea"
+ * Implements the exact left navigation sidebar from `techneadashboardfinal1.png`:
+ * - Cool ice/slate background: #edf2f7
+ * - Brand logo: "T Technea" in bold black
  * - Vertical nav links: Overview, Roadmaps, Courses, Projects, AI Mentor, Portfolio, Settings
- *   (Overview has soft purple rounded capsule with glowing purple dot on right)
- * - User Profile Footer: Avatar, Name, "Lv 4 • 1,240 XP", Logout button
+ *   (Overview has soft lavender capsule #ded4f4 / #e0e7ff with glowing purple dot on right)
+ * - User Profile Footer: Avatar, Name "Harsh", "Lv 4 • 1,240 XP", Logout
  */
 function DashboardLeftSidebar({
   activeTab = 'overview',
@@ -54,10 +55,10 @@ function DashboardLeftSidebar({
       <div className="space-y-6">
         <div className="flex items-center gap-2.5 px-2 pt-1">
           {/* Technea 'T' Icon Mark */}
-          <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-white to-neutral-300 text-black font-black text-lg flex items-center justify-center shadow-[0_2px_12px_rgba(255,255,255,0.2)] shrink-0">
+          <div className="h-7 w-7 rounded-lg bg-[#111827] text-white font-extrabold text-sm flex items-center justify-center shadow-xs shrink-0">
             T
           </div>
-          <span className="text-lg font-black tracking-tight text-white font-mono">
+          <span className="text-base font-extrabold tracking-tight text-[#0f172a] font-sans">
             Technea
           </span>
         </div>
@@ -73,24 +74,24 @@ function DashboardLeftSidebar({
                 key={item.id}
                 type="button"
                 onClick={() => onSelectTab(item.id)}
-                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-mono font-medium transition-all duration-200 cursor-pointer ${
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-sans font-medium transition-all duration-200 cursor-pointer ${
                   isActive
-                    ? 'bg-violet-950/40 border border-violet-500/30 text-white font-semibold shadow-inner'
-                    : 'text-neutral-400 hover:text-white hover:bg-white/[0.04] border border-transparent'
+                    ? 'bg-[#ded4f4] text-[#1e1b4b] font-semibold border border-[#c7d2fe] shadow-xs'
+                    : 'text-[#475569] hover:text-[#0f172a] hover:bg-black/[0.04] border border-transparent'
                 }`}
               >
                 <div className="flex items-center gap-2.5">
                   <Icon
                     className={`h-4 w-4 ${
-                      isActive ? 'text-violet-300' : 'text-neutral-400'
+                      isActive ? 'text-[#4338ca]' : 'text-[#64748b]'
                     }`}
                   />
                   <span>{item.label}</span>
                 </div>
 
-                {/* Active Purple Indicator Dot matching screenshot */}
+                {/* Active Purple Indicator Dot matching reference image */}
                 {isActive && (
-                  <span className="h-2 w-2 rounded-full bg-violet-400 shadow-[0_0_8px_#a855f7]" />
+                  <span className="h-2 w-2 rounded-full bg-[#7c3aed] shadow-[0_0_6px_#7c3aed]" />
                 )}
               </button>
             )
@@ -99,10 +100,10 @@ function DashboardLeftSidebar({
       </div>
 
       {/* ──────────────── Bottom User Profile Card ──────────────── */}
-      <div className="border-t border-white/[0.08] pt-4 px-1 space-y-3 shrink-0">
+      <div className="border-t border-[#cbd5e1]/60 pt-4 px-1 space-y-3 shrink-0">
         <div className="flex items-center gap-3">
           {/* Avatar Thumbnail */}
-          <div className="h-9 w-9 rounded-full overflow-hidden border border-white/20 bg-neutral-800 shrink-0 flex items-center justify-center">
+          <div className="h-9 w-9 rounded-full overflow-hidden border border-[#cbd5e1] bg-white shrink-0 flex items-center justify-center shadow-xs">
             {avatarUrl ? (
               <img
                 src={avatarUrl}
@@ -113,7 +114,7 @@ function DashboardLeftSidebar({
                 }}
               />
             ) : (
-              <span className="text-xs font-mono font-bold text-white">
+              <span className="text-xs font-mono font-bold text-[#1e293b]">
                 {firstName.slice(0, 2).toUpperCase()}
               </span>
             )}
@@ -121,8 +122,8 @@ function DashboardLeftSidebar({
 
           {/* User Name & Level/XP */}
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-bold text-white truncate">{firstName}</p>
-            <p className="text-[11px] font-mono text-neutral-400 truncate">
+            <p className="text-xs font-bold text-[#0f172a] truncate">{firstName}</p>
+            <p className="text-[11px] font-mono text-[#64748b] truncate">
               Lv {computedLevel} • {displayXp} XP
             </p>
           </div>
@@ -132,7 +133,7 @@ function DashboardLeftSidebar({
         <button
           type="button"
           onClick={onLogout}
-          className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs font-mono text-neutral-400 hover:text-white hover:bg-white/[0.05] transition-colors cursor-pointer"
+          className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs font-mono text-[#64748b] hover:text-[#0f172a] hover:bg-black/[0.04] transition-colors cursor-pointer"
         >
           <LogOut className="h-3.5 w-3.5" />
           <span>Logout</span>

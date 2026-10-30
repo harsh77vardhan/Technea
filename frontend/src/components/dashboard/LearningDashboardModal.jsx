@@ -42,7 +42,6 @@ import {
   getAvatarUrl,
   getCourses,
 } from '../../services/api'
-import SpaceGardenAtmosphere from './SpaceGardenAtmosphere'
 import AIMessageRenderer from './AIMessageRenderer'
 import MemphisCornerDecorations from './MemphisCornerDecorations'
 import DashboardLeftSidebar from './DashboardLeftSidebar'
@@ -895,16 +894,21 @@ export default function LearningDashboardModal({
         data-lenis-prevent
         className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 overflow-y-auto overflow-x-hidden"
       >
-        {/* Deep Monochrome Backdrop */}
+        {/* Soft Neutral Canvas Backdrop matching techneadashboardfinal1.png */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
-          className="fixed inset-0 bg-black/90 backdrop-blur-md cursor-pointer"
+          className="fixed inset-0 bg-[#f5f6f2] backdrop-blur-md cursor-pointer"
         />
 
-        {/* Modal Shell — Hero Luxury Monochrome Glass Cockpit */}
+        {/* Authentic 4-Corner Memphis Accents from Hero.jsx */}
+        <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden="true">
+          <MemphisCornerDecorations />
+        </div>
+
+        {/* Modal Shell — Elevated Floating Cockpit matching techneadashboardfinal1.png */}
         <motion.div
           ref={modalRef}
           initial={{ opacity: 0, scale: 0.98, y: 16 }}
@@ -912,33 +916,27 @@ export default function LearningDashboardModal({
           exit={{ opacity: 0, scale: 0.98, y: 16 }}
           transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
           data-lenis-prevent
-          className="relative z-10 flex flex-col w-full max-w-[1520px] h-[95vh] max-h-[1050px] rounded-3xl border border-white/[0.12] bg-[#050505]/95 backdrop-blur-3xl shadow-[0_30px_120px_rgba(0,0,0,0.98)] overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent"
+          className="relative z-10 flex flex-col w-full max-w-[1520px] h-[95vh] max-h-[1050px] rounded-3xl border border-[#cbd5e1] bg-[#f8fafc] shadow-[0_24px_80px_rgba(15,23,42,0.12)] overflow-hidden"
         >
-          {/* Futuristic Immersive Cosmic Atmosphere & Starfield */}
-          {isOpen && <SpaceGardenAtmosphere />}
-
-          {/* Authentic 4-Corner Memphis Accents from Hero.jsx */}
-          <MemphisCornerDecorations />
-
           {/* ──────────────── Top Sleek Status & Telemetry Header ──────────────── */}
-          <header className="relative z-20 flex items-center justify-between border-b border-white/[0.08] bg-[#050505]/90 backdrop-blur-2xl px-4 sm:px-6 py-2.5 gap-3 shrink-0 shadow-[0_4px_24px_rgba(0,0,0,0.5)]">
+          <header className="relative z-20 flex items-center justify-between border-b border-[#e2e8f0] bg-white px-4 sm:px-6 py-2.5 gap-3 shrink-0 shadow-xs">
             {/* Left: System Status Pill */}
             <div className="flex items-center gap-2.5 min-w-0">
-              <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-1 shadow-inner">
+              <div className="flex items-center gap-2 rounded-xl border border-[#e2e8f0] bg-[#f8fafc] px-3 py-1 shadow-xs">
                 <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)]" />
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500 shadow-[0_0_8px_rgba(52,211,153,0.9)]" />
                 </span>
-                <span className="text-xs font-mono font-bold text-white tracking-wider">
+                <span className="text-xs font-mono font-bold text-[#0f172a] tracking-wider">
                   TECHNEA OS // v2.6.0
                 </span>
-                <span className="text-white/20 font-mono hidden sm:inline">|</span>
-                <span className="text-[10px] font-mono font-semibold text-emerald-400 uppercase tracking-widest hidden sm:inline">
+                <span className="text-[#cbd5e1] font-mono hidden sm:inline">|</span>
+                <span className="text-[10px] font-mono font-semibold text-emerald-600 uppercase tracking-widest hidden sm:inline">
                   STATUS: ONLINE
                 </span>
               </div>
 
-              <span className="rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-0.5 text-[9px] font-mono font-medium text-neutral-300 uppercase tracking-wider shrink-0 hidden sm:inline-block">
+              <span className="rounded-full border border-[#e2e8f0] bg-[#f1f5f9] px-2.5 py-0.5 text-[9px] font-mono font-medium text-[#475569] uppercase tracking-wider shrink-0 hidden sm:inline-block">
                 {developerLevel}
               </span>
             </div>
@@ -954,8 +952,8 @@ export default function LearningDashboardModal({
                     onClick={() => setActiveTab(tab.id)}
                     className={`px-2.5 py-1 rounded-lg text-xs font-mono shrink-0 transition-colors ${
                       isSelected
-                        ? 'bg-violet-600/30 text-white font-bold border border-violet-500/40'
-                        : 'text-neutral-400 hover:text-white'
+                        ? 'bg-[#ded4f4] text-[#1e1b4b] font-bold border border-[#c7d2fe]'
+                        : 'text-[#64748b] hover:text-[#0f172a]'
                     }`}
                   >
                     {tab.label}
@@ -967,14 +965,14 @@ export default function LearningDashboardModal({
             {/* Right: Quick Telemetry Strip & Close Button */}
             <div className="flex items-center gap-2 shrink-0">
               {/* XP Telemetry Pill */}
-              <div className="hidden sm:flex items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-1 text-xs font-mono text-neutral-200 shadow-inner">
-                <Zap className="h-3 w-3 text-white" />
+              <div className="hidden sm:flex items-center gap-1.5 rounded-xl border border-[#e2e8f0] bg-[#f8fafc] px-3 py-1 text-xs font-mono text-[#0f172a] shadow-xs">
+                <Zap className="h-3 w-3 text-[#7c3aed]" />
                 <span className="font-mono">{xpPoints} XP</span>
               </div>
 
               {/* Streak Pill */}
-              <div className="hidden sm:flex items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-1 text-xs font-mono text-neutral-200 shadow-inner">
-                <Flame className="h-3.5 w-3.5 text-amber-400 animate-pulse" />
+              <div className="hidden sm:flex items-center gap-1.5 rounded-xl border border-[#e2e8f0] bg-[#f8fafc] px-3 py-1 text-xs font-mono text-[#0f172a] shadow-xs">
+                <Flame className="h-3.5 w-3.5 text-amber-500 fill-amber-500" />
                 <span className="font-mono">{streakCount}d</span>
               </div>
 
@@ -982,7 +980,7 @@ export default function LearningDashboardModal({
               <button
                 type="button"
                 onClick={logout}
-                className="lg:hidden flex h-8 items-center gap-1 rounded-xl border border-white/[0.08] bg-white/[0.03] px-2.5 text-xs font-mono text-neutral-400 hover:text-white transition-colors cursor-pointer"
+                className="lg:hidden flex h-8 items-center gap-1 rounded-xl border border-[#e2e8f0] bg-white px-2.5 text-xs font-mono text-[#64748b] hover:text-[#0f172a] transition-colors cursor-pointer shadow-xs"
                 title="Sign out"
               >
                 <LogOut className="h-3 w-3" />
@@ -992,7 +990,7 @@ export default function LearningDashboardModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="flex h-8 w-8 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.08] text-neutral-400 hover:text-white transition-all duration-300 cursor-pointer"
+                className="flex h-8 w-8 items-center justify-center rounded-xl border border-[#cbd5e1] bg-white hover:bg-neutral-100 text-[#475569] hover:text-[#0f172a] transition-all duration-300 cursor-pointer shadow-xs"
                 aria-label="Close dashboard"
               >
                 <X className="h-4 w-4" />
@@ -1007,18 +1005,18 @@ export default function LearningDashboardModal({
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="absolute top-16 left-1/2 -translate-x-1/2 z-50 rounded-xl border border-white/20 bg-black/95 backdrop-blur-xl px-4 py-2 text-xs font-mono text-white shadow-[0_8px_32px_rgba(0,0,0,0.8)] flex items-center gap-2"
+                className="absolute top-16 left-1/2 -translate-x-1/2 z-50 rounded-xl border border-[#cbd5e1] bg-white px-4 py-2 text-xs font-mono text-[#0f172a] shadow-[0_8px_32px_rgba(15,23,42,0.15)] flex items-center gap-2"
               >
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
                 <span>{toastMessage}</span>
               </motion.div>
             )}
           </AnimatePresence>
 
           {/* ──────────────── 3-COLUMN COCKPIT (Matching techneadashboardfinal1.png) ──────────────── */}
-          <div className="relative z-10 flex-1 flex min-h-0 overflow-hidden">
+          <div className="relative z-10 flex-1 flex min-h-0 overflow-hidden bg-[#f8fafc]">
             {/* 1. Left Navigation Sidebar (240px) */}
-            <div className="w-56 xl:w-64 shrink-0 border-r border-white/[0.08] bg-[#070b13]/85 backdrop-blur-2xl p-4 hidden lg:flex flex-col justify-between">
+            <div className="w-56 xl:w-64 shrink-0 border-r border-[#e2e8f0] bg-[#edf2f7] p-4 hidden lg:flex flex-col justify-between">
               <DashboardLeftSidebar
                 activeTab={activeTab}
                 onSelectTab={(tabId) => setActiveTab(tabId)}
@@ -1031,7 +1029,7 @@ export default function LearningDashboardModal({
             {/* 2. Center Column: Main Operating Deck */}
             <main
               data-lenis-prevent
-              className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden bg-transparent p-4 sm:p-6 md:p-8 space-y-7 scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+              className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden bg-[#f8fafc] p-4 sm:p-6 md:p-8 space-y-7 scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
             >
             {loading ? (
               <div className="flex flex-col items-center justify-center h-96 space-y-3">
@@ -2258,7 +2256,7 @@ export default function LearningDashboardModal({
           </main>
 
           {/* 3. Right Column: Docked AI Mentor 2.0 Companion (320px) */}
-          <div className="w-72 xl:w-80 shrink-0 border-l border-white/[0.08] bg-[#070b13]/85 backdrop-blur-2xl p-4 hidden lg:flex flex-col justify-between">
+          <div className="w-72 xl:w-80 shrink-0 border-l border-[#e2e8f0] bg-[#edf2f7] p-4 hidden lg:flex flex-col justify-between">
             <DockedAIMentorCompanion
               messages={mentorMessages}
               isMentorTyping={isMentorTyping}
