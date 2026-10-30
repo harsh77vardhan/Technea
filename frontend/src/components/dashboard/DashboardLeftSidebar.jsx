@@ -8,19 +8,17 @@ import {
   Award,
   Settings,
   LogOut,
-  Zap,
 } from 'lucide-react'
 import { getAvatarUrl } from '../../services/api'
 
 /**
  * DashboardLeftSidebar
  *
- * Implements the full-screen left navigation sidebar matching Technea Hero's cinematic dark design language:
- * - Deep black glass panel: #090B10 with border-r border-white/[0.08]
- * - Brand logo: Glowing Technea icon mark + "Technea" in crisp white + "OS v2.6" badge
- * - Vertical nav links: Overview, Roadmaps, Courses, Projects, AI Mentor, Portfolio
- *   (Active tab has glowing dark glass capsule with ambient violet glow dot)
- * - User Profile Footer: Avatar, Name, "Lv 4 • 1,240 XP" with mini progress bar, and Logout action
+ * Implements the exact left navigation sidebar from `techneadashboardfinal1.png`:
+ * - Clean light background #f0f4f9 with subtle border-r #e2e8f0
+ * - Black rounded square 'T' icon + 'Technea' typography in #0f172a
+ * - Navigation links with active soft lavender pill #ded4f4 and purple dot indicator
+ * - Bottom user profile: avatar thumbnail, Harsh, "Lv 4 • 1,240 XP", and Logout
  */
 function DashboardLeftSidebar({
   activeTab = 'overview',
@@ -33,7 +31,6 @@ function DashboardLeftSidebar({
   const firstName = fullName.split(' ')[0]
   const avatarUrl = getAvatarUrl(user?.avatar_url)
 
-  // Calculate dynamic level from XP (e.g. 1240 XP => Lv 4)
   const computedLevel = Math.max(1, Math.floor(xpPoints / 300) + 1)
   const displayXp = xpPoints.toLocaleString()
 
@@ -50,30 +47,22 @@ function DashboardLeftSidebar({
   return (
     <nav
       aria-label="Dashboard Sidebar"
-      className="flex flex-col h-full justify-between gap-6"
+      className="flex flex-col h-full justify-between gap-6 bg-[#f0f4f9] text-[#0f172a] select-none p-1"
     >
       {/* ──────────────── Brand Logo & Header ──────────────── */}
       <div className="space-y-6">
-        <div className="flex items-center gap-3 px-2 pt-1">
-          {/* Technea Glowing 'T' Mark */}
-          <div className="relative">
-            <span className="absolute -inset-1 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 opacity-60 blur-xs" />
-            <div className="relative h-8 w-8 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 text-white font-extrabold text-sm flex items-center justify-center shadow-md shrink-0">
-              T
-            </div>
+        <div className="flex items-center gap-2.5 px-2 pt-1">
+          {/* Black rounded square 'T' */}
+          <div className="h-8 w-8 rounded-xl bg-black text-white font-extrabold text-sm flex items-center justify-center shadow-xs shrink-0 font-sans">
+            T
           </div>
-          <div className="flex flex-col">
-            <span className="text-base font-extrabold tracking-tight text-white font-sans">
-              Technea
-            </span>
-            <span className="text-[10px] font-mono tracking-widest uppercase text-indigo-400">
-              AI LEARNING OS
-            </span>
-          </div>
+          <span className="text-base font-extrabold tracking-tight text-[#0f172a] font-sans">
+            Technea
+          </span>
         </div>
 
         {/* ──────────────── Nav Menu List ──────────────── */}
-        <div className="space-y-1.5">
+        <div className="space-y-1">
           {navItems.map((item) => {
             const isActive =
               activeTab === item.id || (item.id === 'portfolio' && activeTab === 'profile')
@@ -84,24 +73,24 @@ function DashboardLeftSidebar({
                 key={item.id}
                 type="button"
                 onClick={() => onSelectTab(item.id)}
-                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-sans font-medium transition-all duration-200 cursor-pointer ${
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-sans font-medium transition-all duration-150 cursor-pointer ${
                   isActive
-                    ? 'bg-white/[0.08] text-white font-semibold border border-white/[0.14] shadow-[0_0_20px_rgba(99,102,241,0.20)]'
-                    : 'text-neutral-400 hover:text-white hover:bg-white/[0.04] border border-transparent'
+                    ? 'bg-[#ded4f4] text-[#1e1b4b] font-semibold shadow-xs'
+                    : 'text-[#64748b] hover:text-[#0f172a] hover:bg-[#e2e8f0]/50'
                 }`}
               >
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2.5">
                   <Icon
                     className={`h-4 w-4 transition-colors ${
-                      isActive ? 'text-indigo-400' : 'text-neutral-400'
+                      isActive ? 'text-[#7c3aed]' : 'text-[#64748b]'
                     }`}
                   />
                   <span>{item.label}</span>
                 </div>
 
-                {/* Active Glowing Violet Indicator Dot */}
+                {/* Active Purple Indicator Dot */}
                 {isActive && (
-                  <span className="h-2 w-2 rounded-full bg-indigo-500 shadow-[0_0_8px_#6366f1]" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#7c3aed]" />
                 )}
               </button>
             )
@@ -109,57 +98,44 @@ function DashboardLeftSidebar({
         </div>
       </div>
 
-      {/* ──────────────── Bottom User Profile & XP Telemetry Card ──────────────── */}
-      <div className="border-t border-white/[0.08] pt-4 px-1 space-y-3.5 shrink-0">
-        <div className="flex items-center gap-3">
-          {/* Avatar with Online Status */}
-          <div className="relative shrink-0">
-            <div className="h-10 w-10 rounded-full overflow-hidden border border-white/[0.14] bg-[#12151E] flex items-center justify-center shadow-xs">
-              {avatarUrl ? (
-                <img
-                  src={avatarUrl}
-                  alt={fullName}
-                  className="h-full w-full object-cover"
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none'
-                  }}
-                />
-              ) : (
-                <span className="text-xs font-mono font-bold text-white">
-                  {firstName.slice(0, 2).toUpperCase()}
-                </span>
-              )}
-            </div>
-            <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-500 border-2 border-[#090B10] shadow-[0_0_6px_rgba(52,211,153,0.8)]" />
+      {/* ──────────────── Bottom User Profile Card ──────────────── */}
+      <div className="pt-4 border-t border-[#e2e8f0] px-2 space-y-3 shrink-0">
+        <div className="flex items-center gap-2.5">
+          {/* Avatar Thumbnail */}
+          <div className="h-9 w-9 rounded-full overflow-hidden border border-[#cbd5e1] bg-white flex items-center justify-center shrink-0 shadow-xs">
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt={fullName}
+                className="h-full w-full object-cover"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none'
+                }}
+              />
+            ) : (
+              <span className="text-xs font-mono font-bold text-[#0f172a]">
+                {firstName.slice(0, 2).toUpperCase()}
+              </span>
+            )}
           </div>
 
           {/* User Name & Level */}
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-bold text-white truncate">{firstName}</p>
-            <div className="flex items-center gap-1.5 text-[11px] font-mono text-neutral-400">
-              <span>Lv {computedLevel}</span>
-              <span>•</span>
-              <span className="text-indigo-300 flex items-center gap-0.5">
-                <Zap className="h-2.5 w-2.5 fill-indigo-400 text-indigo-400" />
-                {displayXp} XP
-              </span>
-            </div>
+            <p className="text-xs font-bold text-[#0f172a] truncate">{firstName}</p>
+            <p className="text-[11px] font-mono text-[#64748b]">
+              Lv {computedLevel} • {displayXp} XP
+            </p>
           </div>
-        </div>
-
-        {/* Level XP Progress Bar */}
-        <div className="w-full bg-white/[0.08] h-1.5 rounded-full overflow-hidden">
-          <div className="bg-gradient-to-r from-blue-500 to-indigo-500 h-full rounded-full w-3/4 shadow-[0_0_8px_rgba(99,102,241,0.5)]" />
         </div>
 
         {/* Logout Button */}
         <button
           type="button"
           onClick={onLogout}
-          className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-mono text-neutral-400 hover:text-red-300 hover:bg-red-500/10 transition-colors cursor-pointer"
+          className="flex items-center gap-2 px-1 text-xs font-mono text-[#64748b] hover:text-[#0f172a] transition-colors cursor-pointer"
         >
           <LogOut className="h-3.5 w-3.5" />
-          <span>Sign Out</span>
+          <span>Logout</span>
         </button>
       </div>
     </nav>

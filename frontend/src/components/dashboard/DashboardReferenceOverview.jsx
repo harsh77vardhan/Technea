@@ -9,19 +9,19 @@ import {
   Code2,
   Rocket,
   Trophy,
+  Clock,
 } from 'lucide-react'
 
 /**
- * DashboardReferenceOverview
+ * DashboardReferenceOverview (Version 1.1 Refinement)
  *
- * Implements the exact center command deck from `techneadashboardfinal1.png`:
- * - Crisp, clean, calm futuristic workspace colors
- * - Pure white cards #ffffff with subtle borders #e2e8f0 and soft ambient shadow
- * - Bold dark typography #0f172a
- * - Solid black CTA "Resume Learning →"
- * - 4-node circuit track with glowing violet Active node "04"
- * - Soft lavender active milestone preview card #ede9fe
- * - Portfolio card with exact pastel tech tags (HTML, CSS, JS, React) and verified achievements
+ * Primary design reference: `techneadashboardfinal1.png`
+ * - Theme: Crisp, calm, futuristic workspace
+ * - Backgrounds: Pure white cards #ffffff with subtle borders #e2e8f0 and soft ambient shadow
+ * - Typography: Bold dark text #0f172a, subtle slate #64748b
+ * - Section 1: "TODAY'S LEARNING MISSION" with high-contrast "Resume Learning →" CTA
+ * - Section 2: "CONTINUE LEARNING & CURRENT ROADMAP" with 4-node circuit track & soft lavender card #ede9fe
+ * - Section 3: "PORTFOLIO PROJECTS & ACHIEVEMENTS" kept secondary, compact, and uncluttered
  */
 function DashboardReferenceOverview({
   user,
@@ -51,7 +51,7 @@ function DashboardReferenceOverview({
   const displayProgress = overallPercent > 0 ? overallPercent : 68
 
   return (
-    <div className="space-y-6 sm:space-y-7 pb-2">
+    <div className="space-y-6 sm:space-y-7 pb-2 select-none">
       {/* ──────────────── Top Greeting & Quick Telemetry Header ──────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1">
         <div>
@@ -114,7 +114,7 @@ function DashboardReferenceOverview({
           </div>
 
           {/* Actions on Left, Progress Bar on Right */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 pt-1 border-t border-[#f1f5f9]">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 pt-3 border-t border-[#f1f5f9]">
             {/* Action Buttons */}
             <div className="flex items-center gap-3">
               <button
@@ -146,9 +146,10 @@ function DashboardReferenceOverview({
                   className="h-full rounded-full bg-[#312e81]"
                 />
               </div>
-              <span className="text-[11px] font-mono text-[#64748b] tracking-wide">
-                Est. Time: 45m
-              </span>
+              <div className="flex items-center gap-1 text-[11px] font-mono text-[#64748b] tracking-wide">
+                <Clock className="h-3 w-3 text-[#94a3b8]" />
+                <span>Est. Time: 45m</span>
+              </div>
             </div>
           </div>
         </div>
