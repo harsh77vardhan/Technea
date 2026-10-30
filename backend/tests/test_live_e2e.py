@@ -126,8 +126,9 @@ async def run_live_e2e_tests():
         res = await client.get("/api/v1/learning-paths?limit=10")
         assert res.status_code == 200, f"Learning paths check failed: {res.status_code}"
         paths = res.json()
-        assert isinstance(paths, list) and len(paths) > 0
-        print(f"  ✓ GET /api/v1/learning-paths -> 200 OK ({len(paths)} paths returned, e.g. '{paths[0]['title']}')")
+        paths_list = paths["items"] if isinstance(paths, dict) and "items" in paths else paths
+        assert len(paths_list) > 0
+        print(f"  ✓ GET /api/v1/learning-paths -> 200 OK ({len(paths_list)} paths returned, e.g. '{paths_list[0]['title']}')")
         passed_tests += 1
 
         # 1.4 POST /api/v1/search

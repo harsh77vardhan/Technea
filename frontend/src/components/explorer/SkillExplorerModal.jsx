@@ -5,7 +5,7 @@ import FloatingKeywords from './FloatingKeywords'
 import LearningBrowser from './LearningBrowser'
 import ExplorerStickyFooter from './ExplorerStickyFooter'
 import { SKILLS } from '../../data/skills'
-import { getSkills } from '../../services/api'
+import { getSkills, getLearningPaths } from '../../services/api'
 
 const LearningPathDetailPage = lazy(() => import('../../pages/LearningPathDetailPage'))
 const CoursePlayerPage = lazy(() => import('../../pages/CoursePlayerPage'))
@@ -22,22 +22,28 @@ export default function SkillExplorerModal({ isOpen, onClose, onSelectPath, init
   const [isPanelVisible, setIsPanelVisible] = useState(false)
   const [roadmapSuccessMessage, setRoadmapSuccessMessage] = useState(null)
   const [apiSkills, setApiSkills] = useState([])
+  const [catalogRoadmaps, setCatalogRoadmaps] = useState([])
 
   const searchInputRef = useRef(null)
   const panelRef = useRef(null)
 
-  // Fetch skills from API for modal resolving
+  // Fetch skills and 100+ roadmaps dynamically from API
   useEffect(() => {
     let active = true
-    getSkills()
-      .then((data) => {
-        if (active && Array.isArray(data)) {
-          setApiSkills(data)
-        }
-      })
-      .catch((err) => {
-        console.warn('Could not fetch skills from API:', err.message)
-      })
+    Promise.allSettled([
+      getSkills(),
+      getLearningPaths({ limit: 250 }),
+    ]).then(([skillsRes, pathsRes]) => {
+      if (!active) return
+      if (skillsRes.status === 'fulfilled' && Array.isArray(skillsRes.value)) {
+        setApiSkills(skillsRes.value)
+      }
+      if (pathsRes.status === 'fulfilled' && Array.isArray(pathsRes.value)) {
+        setCatalogRoadmaps(pathsRes.value)
+      }
+    }).catch((err) => {
+      console.warn('Could not fetch catalog data:', err.message)
+    })
     return () => {
       active = false
     }
@@ -153,6 +159,20 @@ export default function SkillExplorerModal({ isOpen, onClose, onSelectPath, init
     }
 
     if (selectedSkillId) {
+      // First check dynamic catalog roadmaps
+      const foundRoadmap = catalogRoadmaps.find(
+        (r) => r.id === selectedSkillId || String(r.id) === String(selectedSkillId)
+      )
+      if (foundRoadmap) {
+        return {
+          id: foundRoadmap.id,
+          title: foundRoadmap.title,
+          category: foundRoadmap.category,
+          duration: foundRoadmap.duration || '4 Weeks',
+          level: foundRoadmap.level || foundRoadmap.difficulty || 'Beginner',
+        }
+      }
+
       const allSkills = apiSkills.length > 0 ? apiSkills : SKILLS
       const found = allSkills.find(
         (s) => s.id === selectedSkillId || String(s.id) === String(selectedSkillId)
@@ -179,7 +199,7 @@ export default function SkillExplorerModal({ isOpen, onClose, onSelectPath, init
     }
 
     return null
-  }, [selectedPathObject, selectedSkillId, submittedQuery, apiSkills])
+  }, [selectedPathObject, selectedSkillId, submittedQuery, apiSkills, catalogRoadmaps])
 
 
   const handleSelectLearningPath = (path) => {
@@ -296,6 +316,26 @@ export default function SkillExplorerModal({ isOpen, onClose, onSelectPath, init
                   inputRef={searchInputRef}
                   isCentered={true}
                 />
+
+                {/* Dynamic Quick Blueprint Filters from 100+ Catalog */}
+                <div className="flex flex-wrap items-center justify-center gap-1.5 pt-1">
+                  <span className="text-[10px] font-mono uppercase text-neutral-500 mr-1">
+                    Featured:
+                  </span>
+                  {(catalogRoadmaps.length > 0
+                    ? catalogRoadmaps.slice(0, 5).map((r) => r.title)
+                    : ['Python', 'Full-Stack', 'AI Agents', 'DevOps', 'Cybersecurity']
+                  ).map((tag) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => handleSelectKeyword(tag)}
+                      className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] text-neutral-300 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all cursor-pointer backdrop-blur-md"
+                    >
+                      {tag}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           ) : (

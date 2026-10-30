@@ -6,8 +6,19 @@ import {
   BookOpen,
   Layers,
   Code2,
+  CheckCircle2,
+  Briefcase,
+  Cpu,
+  Sparkles,
 } from 'lucide-react'
-import { getLearningPathById, getCourses, getSkills, getPathProgressApi, toggleStepProgressApi } from '../services/api'
+import {
+  getLearningPathById,
+  getCourses,
+  getSkills,
+  getPathProgressApi,
+  toggleStepProgressApi,
+  slugifyTitle,
+} from '../services/api'
 import { useAuth } from '../context/useAuth'
 import { getTrackTheme, getTrackProjects, getTrackMetrics } from '../utils/trackThemes'
 
@@ -16,6 +27,7 @@ import InteractiveRoadmap from '../components/detail/InteractiveRoadmap'
 import AILearningCompanionCard from '../components/detail/AILearningCompanionCard'
 import FeaturedCoursesSection from '../components/detail/FeaturedCoursesSection'
 import CapstoneProjectsSection from '../components/detail/CapstoneProjectsSection'
+import CuratedResourcesSection from '../components/detail/CuratedResourcesSection'
 import PathDetailSkeleton from '../components/detail/PathDetailSkeleton'
 import AbstractBackgroundGraphic from '../components/detail/AbstractBackgroundGraphic'
 
@@ -27,6 +39,279 @@ function isNumericId(val) {
   if (val === null || val === undefined || typeof val === 'boolean' || val === '') return false
   const num = Number(val)
   return Number.isInteger(num) && num > 0
+}
+
+function getRoadmapPrerequisites(path) {
+  if (path?.prerequisites && Array.isArray(path.prerequisites) && path.prerequisites.length > 0) {
+    return path.prerequisites
+  }
+  const level = (path?.level || path?.difficulty || 'Beginner').toLowerCase()
+  if (level.includes('advanced')) {
+    return [
+      'Proficiency in core language syntax and object-oriented or functional patterns',
+      'Understanding of data structures, algorithms, and time/space complexity',
+      'Experience with relational databases, RESTful APIs, and basic containerization',
+    ]
+  }
+  if (level.includes('intermediate')) {
+    return [
+      'Basic familiarity with programming logic (variables, loops, conditional branching)',
+      'Basic command line & terminal navigation (cd, ls, mkdir, git)',
+      'Comfort with basic code editors like VS Code',
+    ]
+  }
+  return [
+    'No prior programming experience required',
+    'Basic computer literacy and comfort navigating web browsers',
+    'Curiosity and motivation to build real-world software',
+  ]
+}
+
+function getCareerOutcomes(path) {
+  const title = (path?.title || '').toLowerCase()
+  const cat = (path?.category || '').toLowerCase()
+
+  if (title.includes('python') || cat.includes('programming')) {
+    return {
+      primaryRole: 'Software Engineer / Python Developer',
+      roles: ['Backend Engineer', 'Python Automation Developer', 'API Engineer', 'Software Developer'],
+      keyCompetencies: ['Algorithmic Thinking', 'Clean Modular Code', 'REST APIs', 'Unit Testing', 'Asynchronous Programming'],
+    }
+  }
+  if (title.includes('react') || title.includes('frontend') || cat.includes('web')) {
+    return {
+      primaryRole: 'Frontend / Full-Stack Engineer',
+      roles: ['React Frontend Architect', 'Full-Stack Developer', 'UI/UX Engineer', 'Web Applications Builder'],
+      keyCompetencies: ['Modern React & Hooks', 'Component Architecture', 'State Management', 'Responsive Design', 'API Integration'],
+    }
+  }
+  if (title.includes('ai') || title.includes('machine learning') || cat.includes('ai')) {
+    return {
+      primaryRole: 'AI & Machine Learning Practitioner',
+      roles: ['AI Systems Engineer', 'Machine Learning Specialist', 'LLM Application Developer', 'Data Scientist'],
+      keyCompetencies: ['Model Fine-Tuning', 'Prompt Architecture', 'Vector Search & RAG', 'PyTorch / Transformers', 'MLOps Pipelines'],
+    }
+  }
+  if (title.includes('cloud') || title.includes('devops') || cat.includes('cloud')) {
+    return {
+      primaryRole: 'Cloud & DevOps Platform Engineer',
+      roles: ['Site Reliability Engineer (SRE)', 'Cloud Solutions Architect', 'DevOps Specialist', 'Kubernetes Administrator'],
+      keyCompetencies: ['Container Orchestration', 'Infrastructure as Code', 'CI/CD Pipelines', 'Linux Systems Internals', 'Cloud Security'],
+    }
+  }
+  if (title.includes('data') || cat.includes('data')) {
+    return {
+      primaryRole: 'Data Engineer / Analytics Specialist',
+      roles: ['Data Pipeline Architect', 'Analytics Engineer', 'BI Developer', 'Database Specialist'],
+      keyCompetencies: ['SQL Mastery', 'ETL Pipelines', 'Data Warehousing', 'Data Modeling', 'Business Intelligence'],
+    }
+  }
+  if (title.includes('security') || cat.includes('cyber')) {
+    return {
+      primaryRole: 'Cybersecurity Analyst / Security Engineer',
+      roles: ['Security Operations Analyst', 'Application Security Engineer', 'Penetration Tester', 'DevSecOps Specialist'],
+      keyCompetencies: ['Vulnerability Assessment', 'Network Protocols', 'Secure Coding', 'Threat Modeling', 'Incident Response'],
+    }
+  }
+  return {
+    primaryRole: `${path?.title || 'Engineering'} Specialist`,
+    roles: ['Technical Lead', 'Software Engineer', 'Systems Architect', 'Solutions Consultant'],
+    keyCompetencies: ['System Architecture', 'Production Problem Solving', 'End-to-End Implementation', 'Technical Best Practices'],
+  }
+}
+
+function getTechStackForPath(path) {
+  const title = (path?.title || '').toLowerCase()
+  const cat = (path?.category || '').toLowerCase()
+  const concepts = Array.isArray(path?.related_concepts) ? path.related_concepts : []
+
+  const set = new Set()
+  if (title.includes('python') || cat.includes('programming')) {
+    set.add('Python 3.12')
+    set.add('FastAPI')
+    set.add('PyTest')
+    set.add('AsyncIO')
+    set.add('Pydantic')
+    set.add('Git & GitHub')
+  } else if (title.includes('react') || cat.includes('web')) {
+    set.add('React 19')
+    set.add('TypeScript')
+    set.add('Next.js')
+    set.add('Tailwind CSS')
+    set.add('Vite')
+    set.add('REST / GraphQL')
+  } else if (title.includes('ai') || cat.includes('ai')) {
+    set.add('Python')
+    set.add('PyTorch')
+    set.add('Hugging Face')
+    set.add('LangChain')
+    set.add('OpenAI / Gemini API')
+    set.add('Vector Databases')
+  } else if (title.includes('cloud') || cat.includes('devops')) {
+    set.add('Docker')
+    set.add('Kubernetes')
+    set.add('Linux CLI')
+    set.add('Terraform')
+    set.add('AWS / GCP')
+    set.add('GitHub Actions')
+  } else if (title.includes('data') || cat.includes('data')) {
+    set.add('PostgreSQL')
+    set.add('SQL')
+    set.add('Pandas')
+    set.add('Apache Spark')
+    set.add('dbt')
+    set.add('Airflow')
+  } else {
+    set.add('Git')
+    set.add('Terminal CLI')
+    set.add('Modern IDE (VS Code)')
+  }
+
+  concepts.slice(0, 4).forEach((c) => {
+    if (typeof c === 'string' && c.length < 24) set.add(c)
+  })
+
+  return Array.from(set)
+}
+
+function getCuratedResourcesForPath(path) {
+  const title = (path?.title || '').toLowerCase()
+  const category = (path?.category || '').toLowerCase()
+  const concepts = Array.isArray(path?.related_concepts) ? path.related_concepts.map((c) => String(c).toLowerCase()) : []
+
+  const resources = []
+
+  if (title.includes('python') || concepts.includes('python')) {
+    resources.push(
+      {
+        title: 'Official Python Documentation',
+        url: 'https://docs.python.org/3/',
+        type: 'Official Docs',
+        description: 'Complete Python language specification, standard library tutorial, and built-in functions reference.',
+        tags: ['Python 3', 'Standard Library', 'Core Syntax'],
+      },
+      {
+        title: 'Real Python Tutorials & Guides',
+        url: 'https://realpython.com/',
+        type: 'Verified Guide',
+        description: 'Practical, step-by-step programming walkthroughs from fundamentals to advanced asynchronous patterns.',
+        tags: ['Idiomatic Code', 'Tutorials'],
+      },
+      {
+        title: 'Python Developer Cheat Sheet',
+        url: 'https://perso.limsi.fr/pointal/_media/python:cours:mementopython3-english.pdf',
+        type: 'Cheat Sheet',
+        description: 'Quick reference sheet covering data structures, control flow, file I/O, and built-in functions.',
+        tags: ['Cheat Sheet', 'Quick Reference'],
+      }
+    )
+  }
+
+  if (title.includes('react') || concepts.includes('react') || category.includes('web')) {
+    resources.push(
+      {
+        title: 'React Official Documentation',
+        url: 'https://react.dev/',
+        type: 'Official Docs',
+        description: 'The official interactive React documentation with live sandboxes, component lifecycle, and hooks.',
+        tags: ['React', 'Hooks', 'Components'],
+      },
+      {
+        title: 'MDN Web Docs (Mozilla Developer Network)',
+        url: 'https://developer.mozilla.org/en-US/',
+        type: 'Official Docs',
+        description: 'The definitive web standard reference for JavaScript, HTML5, CSS3, Web APIs, and DOM manipulation.',
+        tags: ['JavaScript', 'Web APIs', 'Standards'],
+      },
+      {
+        title: 'Modern Frontend Architecture & Patterns',
+        url: 'https://www.patterns.dev/',
+        type: 'Architecture Guide',
+        description: 'Guide to design, performance, and component architecture patterns in modern web applications.',
+        tags: ['Architecture', 'Performance', 'Patterns'],
+      }
+    )
+  }
+
+  if (title.includes('ai') || title.includes('machine learning') || category.includes('ai') || concepts.includes('pytorch') || concepts.includes('llm')) {
+    resources.push(
+      {
+        title: 'PyTorch Official Documentation & Tutorials',
+        url: 'https://pytorch.org/tutorials/',
+        type: 'Official Docs',
+        description: 'Comprehensive deep learning guides covering tensors, neural networks, autograd, and CUDA execution.',
+        tags: ['PyTorch', 'Deep Learning', 'Tensors'],
+      },
+      {
+        title: 'Hugging Face Transformers Guide',
+        url: 'https://huggingface.co/docs/transformers/',
+        type: 'Official Docs',
+        description: 'State-of-the-art pretrained models, fine-tuning pipelines, and inference pipelines for LLMs and vision models.',
+        tags: ['LLMs', 'Transformers', 'Fine-tuning'],
+      },
+      {
+        title: 'Machine Learning Foundations',
+        url: 'https://www.deeplearning.ai/',
+        type: 'Curated Resource',
+        description: 'Industry-standard guidelines on structuring machine learning projects and optimizing error analysis.',
+        tags: ['MLOps', 'Model Evaluation'],
+      }
+    )
+  }
+
+  if (title.includes('cloud') || title.includes('devops') || title.includes('docker') || title.includes('kubernetes') || category.includes('cloud')) {
+    resources.push(
+      {
+        title: 'Docker Documentation & Getting Started',
+        url: 'https://docs.docker.com/',
+        type: 'Official Docs',
+        description: 'Containerization handbook, Dockerfile syntax reference, multi-stage builds, and Compose specs.',
+        tags: ['Containers', 'Docker', 'DevOps'],
+      },
+      {
+        title: 'Kubernetes Official Documentation',
+        url: 'https://kubernetes.io/docs/',
+        type: 'Official Docs',
+        description: 'Cluster orchestration reference, Pods, Deployments, Services, and production cloud architecture.',
+        tags: ['Kubernetes', 'Cloud Native', 'Orchestration'],
+      },
+      {
+        title: 'AWS Well-Architected Framework',
+        url: 'https://aws.amazon.com/architecture/well-architected/',
+        type: 'Architecture Guide',
+        description: 'Key principles for creating secure, high-performing, resilient, and efficient infrastructure.',
+        tags: ['Cloud Architecture', 'Security', 'Resilience'],
+      }
+    )
+  }
+
+  if (resources.length === 0) {
+    resources.push(
+      {
+        title: 'Developer Roadmap & Knowledge Base',
+        url: 'https://roadmap.sh',
+        type: 'Community Blueprint',
+        description: 'Community-driven visual blueprints, role guides, and skill trees for software engineers.',
+        tags: ['Roadmaps', 'Career Path'],
+      },
+      {
+        title: 'DevDocs API Documentation Aggregator',
+        url: 'https://devdocs.io/',
+        type: 'Documentation Hub',
+        description: 'Fast, offline-capable documentation browser combining 100+ programming language specifications.',
+        tags: ['API Reference', 'Cheat Sheets'],
+      },
+      {
+        title: 'GitHub Awesome Engineering Curations',
+        url: 'https://github.com/sindresorhus/awesome',
+        type: 'Open Source',
+        description: 'Curated collection of production libraries, battle-tested tools, and engineering frameworks.',
+        tags: ['Open Source', 'Libraries'],
+      }
+    )
+  }
+
+  return resources
 }
 
 export default function LearningPathDetailPage({
@@ -41,7 +326,7 @@ export default function LearningPathDetailPage({
   const [retryKey, setRetryKey] = useState(0)
 
   // Active section tab for navigation
-  const [activeTab, setActiveTab] = useState('all') // 'all' | 'roadmap' | 'courses' | 'projects'
+  const [activeTab, setActiveTab] = useState('all') // 'all' | 'roadmap' | 'courses' | 'projects' | 'resources'
 
   // Courses state
   const [courses, setCourses] = useState([])
@@ -50,18 +335,40 @@ export default function LearningPathDetailPage({
   const [coursesRetryKey, setCoursesRetryKey] = useState(0)
   const [enrolledCourseId, setEnrolledCourseId] = useState(null)
 
+  // Resolve identifier from prop or URL slug
+  const pathIdentifier = useMemo(() => {
+    if (path?.id) return path.id
+    if (path?.slug) return path.slug
+    if (typeof window !== 'undefined') {
+      const parts = window.location.pathname.split('/').filter(Boolean)
+      if (
+        window.location.pathname.startsWith('/path/') ||
+        window.location.pathname.startsWith('/paths/') ||
+        window.location.pathname.startsWith('/learning-path/') ||
+        window.location.pathname.startsWith('/learning-paths/') ||
+        window.location.pathname.startsWith('/roadmap/') ||
+        window.location.pathname.startsWith('/roadmaps/')
+      ) {
+        return parts[1] || null
+      }
+    }
+    return null
+  }, [path])
+
   // Use fetched details if available, otherwise passed path prop
   const currentPath = fetchedPath || path
-  const pathId = path?.id
   const hasSteps = Boolean(path?.roadmap_steps && path.roadmap_steps.length > 0)
 
-  // Fetch full learning path with steps if path was provided without steps
+  // Fetch full learning path with steps if path was provided without steps or as slug
   useEffect(() => {
-    if (!pathId || !isNumericId(pathId) || hasSteps) return
+    if (!pathIdentifier || hasSteps) return
 
     let isMounted = true
+    Promise.resolve().then(() => {
+      if (isMounted) setLoading(true)
+    })
 
-    getLearningPathById(pathId)
+    getLearningPathById(pathIdentifier)
       .then((data) => {
         if (isMounted && data) {
           setFetchedPath(data)
@@ -80,7 +387,18 @@ export default function LearningPathDetailPage({
     return () => {
       isMounted = false
     }
-  }, [pathId, hasSteps, retryKey])
+  }, [pathIdentifier, hasSteps, retryKey])
+
+  // Synchronize URL with clean slug
+  useEffect(() => {
+    if (currentPath?.title && typeof window !== 'undefined') {
+      const slug = slugifyTitle(currentPath.title)
+      const currentHref = window.location.pathname
+      if (slug && !currentHref.includes(slug)) {
+        window.history.replaceState({}, '', `/paths/${slug}`)
+      }
+    }
+  }, [currentPath?.title])
 
   // Fetch courses related to the current learning path
   useEffect(() => {
@@ -280,10 +598,64 @@ export default function LearningPathDetailPage({
 
   // Theming & generative project models
   const theme = useMemo(() => getTrackTheme(currentPath), [currentPath])
-  const projects = useMemo(() => getTrackProjects(currentPath), [currentPath])
+  const projects = useMemo(() => {
+    if (currentPath?.projects && Array.isArray(currentPath.projects) && currentPath.projects.length > 0) {
+      return currentPath.projects
+    }
+    return getTrackProjects(currentPath)
+  }, [currentPath])
   const metrics = useMemo(
     () => getTrackMetrics(currentPath, journeySteps.length, courses.length),
     [currentPath, journeySteps.length, courses.length]
+  )
+
+  const skillsCovered = useMemo(() => {
+    const list = []
+    if (Array.isArray(currentPath?.skills)) {
+      currentPath.skills.forEach((s) => {
+        if (typeof s === 'string') list.push(s)
+        else if (s?.name) list.push(s.name)
+      })
+    }
+    if (Array.isArray(currentPath?.related_concepts)) {
+      currentPath.related_concepts.forEach((c) => {
+        if (typeof c === 'string' && !list.includes(c)) list.push(c)
+      })
+    }
+    if (list.length === 0) {
+      const title = (currentPath?.title || '').toLowerCase()
+      if (title.includes('python')) {
+        return ['Python Syntax', 'Object-Oriented Programming', 'Data Structures', 'AsyncIO', 'REST APIs', 'Unit Testing']
+      }
+      if (title.includes('react') || title.includes('frontend')) {
+        return ['React 19', 'Hooks & State', 'TypeScript', 'Component Architecture', 'Tailwind CSS', 'Vite']
+      }
+      if (title.includes('cloud') || title.includes('devops')) {
+        return ['Docker', 'Kubernetes', 'CI/CD Pipelines', 'Linux Administration', 'Cloud Security']
+      }
+      return ['Core Syntax', 'Modular Design', 'Production Testing', 'System Architecture', 'Clean Code']
+    }
+    return list
+  }, [currentPath])
+
+  const prerequisites = useMemo(
+    () => getRoadmapPrerequisites(currentPath),
+    [currentPath]
+  )
+
+  const careerOutcomes = useMemo(
+    () => getCareerOutcomes(currentPath),
+    [currentPath]
+  )
+
+  const techStack = useMemo(
+    () => getTechStackForPath(currentPath),
+    [currentPath]
+  )
+
+  const curatedResources = useMemo(
+    () => getCuratedResourcesForPath(currentPath),
+    [currentPath]
   )
 
   const handleRetry = useCallback(() => {
@@ -483,6 +855,19 @@ export default function LearningPathDetailPage({
               <Code2 className="h-3.5 w-3.5" />
               <span>Capstones ({projects.length})</span>
             </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('resources')}
+              className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-medium transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === 'resources'
+                  ? 'bg-white text-black font-semibold shadow-sm'
+                  : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
+              }`}
+            >
+              <BookOpen className="h-3.5 w-3.5" />
+              <span>Resources ({curatedResources.length})</span>
+            </button>
           </div>
 
           <div className="hidden md:flex items-center gap-2 text-xs font-mono text-neutral-400 shrink-0">
@@ -495,8 +880,106 @@ export default function LearningPathDetailPage({
       {/* ── 3. MAIN CONTENT CONTAINER & STICKY SIDEBAR ─────────────────────── */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-start">
-          {/* LEFT COLUMN: Roadmap, Courses & Capstones (8 Cols) */}
+          {/* LEFT COLUMN: Blueprint Specs, Roadmap, Courses, Capstones & Resources (8 Cols) */}
           <div className="lg:col-span-8 space-y-12">
+            {/* Quick Blueprint Intelligence: Skills, Tech Stack, Prerequisites & Career Outcomes */}
+            <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 sm:p-7 backdrop-blur-md space-y-6">
+              <div className="flex items-center justify-between border-b border-white/[0.06] pb-4">
+                <div className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-white/80" />
+                  <h2 className="text-xs font-mono uppercase tracking-widest text-neutral-300 font-semibold">
+                    Curriculum Blueprint & Career Architecture
+                  </h2>
+                </div>
+                <span className="font-mono text-[10px] text-neutral-400 border border-white/10 bg-white/[0.04] px-2.5 py-1 rounded-full">
+                  {currentPath?.level || 'All Levels'}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Skills Covered */}
+                <div className="space-y-2.5">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-white">
+                    <Sparkles className="h-4 w-4 text-neutral-300" />
+                    <span>Skills Covered</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {skillsCovered.map((skill) => (
+                      <span
+                        key={skill}
+                        className="rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-1 text-xs text-neutral-300 font-mono hover:border-white/20 transition-colors"
+                      >
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Tech Stack */}
+                <div className="space-y-2.5">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-white">
+                    <Cpu className="h-4 w-4 text-neutral-300" />
+                    <span>Core Tech Stack</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {techStack.map((tech) => (
+                      <span
+                        key={tech}
+                        className="rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1 text-xs text-neutral-200 font-mono font-medium hover:border-white/25 transition-colors"
+                      >
+                        {tech}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Prerequisites */}
+                <div className="space-y-2.5">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-white">
+                    <CheckCircle2 className="h-4 w-4 text-neutral-300" />
+                    <span>Prerequisites</span>
+                  </div>
+                  <ul className="space-y-1.5 text-xs text-neutral-400">
+                    {prerequisites.map((prereq, idx) => (
+                      <li key={idx} className="flex items-start gap-2">
+                        <span className="mt-1 h-1.5 w-1.5 rounded-full bg-white/40 shrink-0" />
+                        <span>{prereq}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Career Outcomes */}
+                <div className="space-y-2.5">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-white">
+                    <Briefcase className="h-4 w-4 text-neutral-300" />
+                    <span>Career Outcomes & Target Roles</span>
+                  </div>
+                  <div className="rounded-xl border border-white/[0.08] bg-black/40 p-3.5 space-y-2.5">
+                    <div className="text-xs font-semibold text-white">
+                      {careerOutcomes.primaryRole}
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {careerOutcomes.roles.map((role) => (
+                        <span
+                          key={role}
+                          className="rounded border border-white/10 bg-white/[0.03] px-2 py-0.5 text-[10px] text-neutral-300 font-mono"
+                        >
+                          {role}
+                        </span>
+                      ))}
+                    </div>
+                    {careerOutcomes.keyCompetencies && careerOutcomes.keyCompetencies.length > 0 && (
+                      <div className="pt-1 border-t border-white/[0.06] text-[10px] text-neutral-400">
+                        <span className="text-neutral-500">Core Competencies: </span>
+                        {careerOutcomes.keyCompetencies.join(' • ')}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </section>
+
             {/* Interactive Timeline Roadmap */}
             {(activeTab === 'all' || activeTab === 'roadmap') && (
               <InteractiveRoadmap
@@ -528,17 +1011,60 @@ export default function LearningPathDetailPage({
                 theme={theme}
               />
             )}
+
+            {/* Curated Resources & Documentation */}
+            {(activeTab === 'all' || activeTab === 'resources') && (
+              <CuratedResourcesSection
+                resources={curatedResources}
+                trackTitle={currentPath?.title}
+              />
+            )}
           </div>
 
-          {/* RIGHT COLUMN: AI Learning Companion Card (4 Cols Sticky) */}
+          {/* RIGHT COLUMN: AI Learning Companion Card & Quick Specs (4 Cols Sticky) */}
           <aside className="lg:col-span-4 lg:sticky lg:top-20 self-start space-y-4">
             <AILearningCompanionCard
-              userName="Harsh"
-              pathTitle={currentPath?.title || 'Python Fundamentals'}
+              userName={user?.full_name?.split(' ')[0] || user?.username || 'Learner'}
+              pathTitle={currentPath?.title || 'Engineering Blueprint'}
               onAskMentor={() => {
                 // Placeholder for Phase 2 Gemini API integration
               }}
             />
+
+            {/* Blueprint Fast Spec Card */}
+            <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 backdrop-blur-md space-y-4">
+              <div className="flex items-center gap-2 border-b border-white/[0.06] pb-3">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                <h3 className="text-xs font-mono uppercase tracking-wider text-neutral-300 font-semibold">
+                  Track Specification
+                </h3>
+              </div>
+
+              <div className="space-y-3 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-neutral-400">Total Milestones</span>
+                  <span className="font-mono text-white font-medium">{journeySteps.length} Steps</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-neutral-400">Skill Level</span>
+                  <span className="font-mono text-white font-medium">{currentPath?.level || 'All Levels'}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-neutral-400">Estimated Duration</span>
+                  <span className="font-mono text-white font-medium">{currentPath?.duration || `${journeySteps.length * 4} Hours`}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-neutral-400">Primary Role</span>
+                  <span className="font-mono text-white font-medium text-right truncate max-w-[170px]" title={careerOutcomes.primaryRole}>
+                    {careerOutcomes.primaryRole}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-neutral-400">Capstone Projects</span>
+                  <span className="font-mono text-white font-medium">{projects.length} Real-world Challenges</span>
+                </div>
+              </div>
+            </div>
           </aside>
         </div>
       </main>

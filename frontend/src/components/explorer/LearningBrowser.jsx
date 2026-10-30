@@ -17,9 +17,40 @@ export default function LearningBrowser({
   const [aiIntent, setAiIntent] = useState(null)
   const [fallbackInfo, setFallbackInfo] = useState({ isFallback: false, message: null })
   const [activeFilters, setActiveFilters] = useState({
+    category: null,
     level: null,
     duration: null,
   })
+  const [availableCategories, setAvailableCategories] = useState([
+    'All',
+    'Programming',
+    'Web Development',
+    'AI & ML',
+    'Data',
+    'Cloud & DevOps',
+    'Cybersecurity',
+    'Mobile',
+    'Design',
+    'Business',
+  ])
+
+  // Dynamically load categories from real roadmaps catalog
+  useEffect(() => {
+    let active = true
+    getLearningPaths({ limit: 250 })
+      .then((data) => {
+        if (active && Array.isArray(data) && data.length > 0) {
+          const cats = new Set(data.map((d) => d.category).filter(Boolean))
+          if (cats.size > 0) {
+            setAvailableCategories(['All', ...Array.from(cats)])
+          }
+        }
+      })
+      .catch((err) => console.warn('Could not load dynamic categories:', err.message))
+    return () => {
+      active = false
+    }
+  }, [])
 
   // Fetch learning paths and process fuzzy/synonym/intent search with active filters
   useEffect(() => {
@@ -36,6 +67,7 @@ export default function LearningBrowser({
     const q = (submittedQuery || '').trim()
 
     const filterOptions = {
+      category: activeFilters.category && activeFilters.category !== 'All' ? activeFilters.category : undefined,
       level: activeFilters.level || undefined,
       duration: activeFilters.duration || undefined,
       limit: 250,
@@ -111,6 +143,10 @@ export default function LearningBrowser({
 
         if (hasActiveFilterSet) {
           resolvedPaths = resolvedPaths.filter((p) => {
+            if (activeFilters.category && activeFilters.category !== 'All') {
+              const cat = (p.category || '').toLowerCase()
+              if (!cat.includes(activeFilters.category.toLowerCase())) return false
+            }
             if (activeFilters.level && !p.level?.toLowerCase().includes(activeFilters.level.toLowerCase())) return false
             if (activeFilters.duration && p.duration !== activeFilters.duration) return false
             return true
@@ -129,7 +165,8 @@ export default function LearningBrowser({
           getLearningPaths({ q, ...filterOptions })
             .then((data) => {
               if (isMounted) {
-                setPaths(Array.isArray(data) ? data : [])
+                const items = Array.isArray(data) ? data : (data?.items || [])
+                setPaths(items)
                 setLoading(false)
               }
             })
@@ -172,6 +209,7 @@ export default function LearningBrowser({
 
   const handleResetFilters = () => {
     setActiveFilters({
+      category: null,
       level: null,
       duration: null,
     })
@@ -244,8 +282,38 @@ export default function LearningBrowser({
       <div className="flex-1 flex flex-col lg:flex-row gap-6 min-h-0 overflow-hidden pt-4">
         {/* LEFT FILTER PANEL (Fixed with its own vertical scroll) */}
         <aside className="w-full lg:w-56 shrink-0 h-auto lg:h-full lg:overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 pr-2 space-y-4">
-          {/* Level Filter */}
+          {/* Category Filter */}
           <div className="space-y-1.5">
+            <span className="font-mono text-[10px] uppercase tracking-wider text-neutral-500 font-semibold block">
+              Category
+            </span>
+            <div className="flex flex-wrap lg:flex-col gap-1.5">
+              {availableCategories.map((cat) => {
+                const isSelected =
+                  activeFilters.category === cat ||
+                  (!activeFilters.category && cat === 'All')
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() =>
+                      handleFilterToggle('category', cat === 'All' ? null : cat)
+                    }
+                    className={`text-left rounded-lg px-2.5 py-1 text-xs transition-all cursor-pointer truncate ${
+                      isSelected
+                        ? 'bg-white text-black font-semibold shadow-sm'
+                        : 'border border-white/10 bg-white/[0.02] text-neutral-400 hover:text-white hover:border-white/20'
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Level Filter */}
+          <div className="space-y-1.5 pt-3 border-t border-white/[0.06]">
             <span className="font-mono text-[10px] uppercase tracking-wider text-neutral-500 font-semibold block">
               Level
             </span>

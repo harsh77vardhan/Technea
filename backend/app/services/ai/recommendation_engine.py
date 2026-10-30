@@ -65,11 +65,13 @@ DOMAIN_STACKS: dict[str, set[str]] = {
         "typescript",
         "react",
         "next.js",
+        "nextjs",
         "node",
         "express",
         "tailwind",
         "rest",
         "api",
+        "graphql",
     },
     "cloud_devops": {
         "devops",
@@ -82,9 +84,149 @@ DOMAIN_STACKS: dict[str, set[str]] = {
         "bash",
         "aws",
         "gcp",
+        "azure",
         "terraform",
         "containers",
         "networking",
+        "helm",
+        "gitops",
+        "observability",
+        "prometheus",
+        "grafana",
+        "microservices",
+    },
+    "cloud": {
+        "cloud",
+        "cloud computing",
+        "devops",
+        "docker",
+        "kubernetes",
+        "k8s",
+        "aws",
+        "gcp",
+        "azure",
+        "terraform",
+        "containers",
+        "microservices",
+    },
+    "cybersecurity": {
+        "cybersecurity",
+        "cyber security",
+        "infosec",
+        "information security",
+        "ethical hacking",
+        "pentesting",
+        "penetration testing",
+        "red teaming",
+        "blue team",
+        "soc",
+        "soc analyst",
+        "network security",
+        "web security",
+        "owasp",
+        "linux security",
+        "cryptography",
+        "cloud security",
+        "devsecops",
+        "malware",
+        "malware analysis",
+        "reverse engineering",
+        "iam",
+        "security",
+        "firewall",
+        "wireshark",
+        "nmap",
+        "metasploit",
+        "zero trust",
+    },
+    "mobile": {
+        "mobile",
+        "ios",
+        "android",
+        "swift",
+        "swiftui",
+        "kotlin",
+        "apple",
+        "mobile development",
+        "mobile app",
+        "xcode",
+        "coroutines",
+    },
+    "rust": {
+        "rust",
+        "cargo",
+        "systems programming",
+        "memory safety",
+        "ownership",
+        "borrowing",
+        "lifetimes",
+        "tokio",
+        "concurrency",
+        "smart pointers",
+        "traits",
+    },
+    "go": {
+        "go",
+        "golang",
+        "goroutines",
+        "channels",
+        "concurrency",
+        "microservices",
+        "backend",
+        "docker",
+        "cloud",
+        "rest api",
+        "standard library",
+    },
+    "ai_agents": {
+        "ai agents",
+        "ai agent",
+        "autonomous agents",
+        "langgraph",
+        "crewai",
+        "multi-agent",
+        "agent",
+        "agents",
+        "autonomous workflows",
+        "tool use",
+        "llm",
+        "langchain",
+        "prompt engineering",
+    },
+    "llm_engineering": {
+        "llm",
+        "large language models",
+        "prompt engineering",
+        "fine-tuning",
+        "peft",
+        "lora",
+        "rag",
+        "retrieval augmented generation",
+        "vector database",
+        "chroma",
+        "embeddings",
+        "transformers",
+        "generative ai",
+        "genai",
+    },
+    "data_engineering": {
+        "data engineering",
+        "data engineer",
+        "etl",
+        "data pipelines",
+        "airflow",
+        "spark",
+        "hadoop",
+        "kafka",
+        "flink",
+        "dbt",
+        "data lake",
+        "data warehouse",
+        "snowflake",
+        "big data",
+        "sql",
+        "postgresql",
+        "pipeline",
     },
     "ai_ml": {
         "ai",
@@ -98,17 +240,24 @@ DOMAIN_STACKS: dict[str, set[str]] = {
         "rag",
         "computer vision",
         "python",
+        "scikit-learn",
+        "ai engineering",
     },
     "data": {
         "data",
         "sql",
         "postgres",
+        "postgresql",
         "analytics",
         "pandas",
         "database",
         "etl",
         "warehouse",
         "python",
+        "power bi",
+        "tableau",
+        "data science",
+        "bi",
     },
     "dsa": {
         "dsa",
@@ -185,29 +334,61 @@ class RecommendationEngine:
 
         combined_text = " ".join(candidates)
 
-        # Check DevOps / Cloud
-        if any(w in combined_text for w in ["devops", "docker", "kubernetes", "cloud", "ci/cd", "linux", "aws"]):
+        # 1. Cybersecurity (Check first before generic Linux or Cloud)
+        if any(w in combined_text for w in [
+            "cyber", "security", "infosec", "ethical hack", "hack", "pentest", "penetration test",
+            "owasp", "network security", "soc", "malware", "reverse engineer", "crypto", "encryption",
+            "vulnerability", "red team", "blue team"
+        ]):
+            return "cybersecurity"
+
+        # 2. AI Agents & Autonomous Workflows
+        if any(w in combined_text for w in ["ai agent", "ai agents", "autonomous agent", "autonomous agents", "langgraph", "crewai", "multi-agent", "agent orchestration"]):
+            return "ai_agents"
+
+        # 3. LLM Engineering
+        if any(w in combined_text for w in ["llm", "large language model", "fine-tuning", "prompt engineering", "rag", "peft", "lora", "genai", "generative ai"]):
+            return "llm_engineering"
+
+        # 4. Data Engineering
+        if any(w in combined_text for w in ["data engineering", "data engineer", "data pipeline", "etl", "airflow", "spark", "hadoop", "kafka", "dbt", "data warehouse", "snowflake"]):
+            return "data_engineering"
+
+        # 5. Mobile (Swift / iOS / Kotlin / Android)
+        if any(w in combined_text for w in ["swift", "ios", "kotlin", "android", "swiftui", "mobile"]):
+            return "mobile"
+
+        # 6. Rust
+        if any(w in combined_text for w in ["rust", "cargo", "systems programming", "memory safety"]):
+            return "rust"
+
+        # 7. Go
+        if any(w in combined_text for w in ["golang", "goroutine", "channels"]) or re.search(r"\bgo\b", combined_text):
+            return "go"
+
+        # 8. Cloud & DevOps
+        if any(w in combined_text for w in ["devops", "docker", "kubernetes", "k8s", "cloud", "ci/cd", "linux", "aws", "gcp", "azure", "terraform"]):
             return "cloud_devops"
 
-        # Check Python / OOP
-        if any(w in combined_text for w in ["python", "oop", "object-oriented", "design patterns"]):
-            return "python"
-
-        # Check React / Frontend
-        if any(w in combined_text for w in ["react", "frontend", "next.js", "tailwind", "html", "css", "javascript"]):
-            return "web_development"
-
-        # Check AI / ML
-        if any(w in combined_text for w in ["machine learning", "deep learning", "neural", "pytorch", "llm", "rag", "ai"]):
+        # 9. AI / ML
+        if any(w in combined_text for w in ["machine learning", "deep learning", "neural", "pytorch", "ai", "artificial intelligence", "computer vision", "nlp"]):
             return "ai_ml"
 
-        # Check DSA
-        if any(w in combined_text for w in ["dsa", "data structures", "algorithms", "leetcode"]):
+        # 10. DSA
+        if any(w in combined_text for w in ["dsa", "data structures", "algorithms", "leetcode", "neetcode"]):
             return "dsa"
 
-        # Check Data
-        if any(w in combined_text for w in ["sql", "data analytics", "etl", "database"]):
+        # 11. Data / SQL / Analytics
+        if any(w in combined_text for w in ["sql", "data analytics", "data science", "pandas", "bi", "tableau", "power bi", "database"]):
             return "data"
+
+        # 12. React / Frontend / Full Stack Web
+        if any(w in combined_text for w in ["react", "frontend", "next.js", "nextjs", "tailwind", "html", "css", "javascript", "backend", "full stack", "node", "express", "fastapi", "django"]):
+            return "web_development"
+
+        # 13. Python / OOP
+        if any(w in combined_text for w in ["python", "oop", "object-oriented", "design patterns"]):
+            return "python"
 
         return "python"
 

@@ -474,10 +474,11 @@ async def run_master_qa():
 
             r_paths = await client.get("/api/v1/learning-paths")
             paths_data = r_paths.json()
+            paths_list = paths_data["items"] if isinstance(paths_data, dict) and "items" in paths_data else paths_data
             record_test(
                 "GET /api/v1/learning-paths",
-                r_paths.status_code == 200 and isinstance(paths_data, list) and len(paths_data) > 0,
-                f"Learning Paths Count: {len(paths_data)}",
+                r_paths.status_code == 200 and isinstance(paths_list, list) and len(paths_list) > 0,
+                f"Learning Paths Count: {len(paths_list)}",
             )
         except Exception as e:
             record_test("Skills & Learning Paths", False, str(e))

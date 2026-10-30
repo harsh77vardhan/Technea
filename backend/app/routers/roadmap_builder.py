@@ -95,18 +95,47 @@ async def get_roadmap_catalog(
     q: str | None = None,
     category: str | None = None,
     level: str | None = None,
+    difficulty: str | None = None,
+    is_featured: bool | None = None,
+    tag: str | None = None,
     limit: int = 100,
+    skip: int = 0,
 ) -> list[LearningPathResponse]:
     """Retrieve curated roadmap catalog without requiring user authentication."""
-    paths, _, _ = await learning_path_service.get_multi_with_fallback(
+    diff = difficulty or level
+    paths, _ = await learning_path_service.get_paginated(
         db,
-        skip=0,
-        limit=limit,
+        page=(skip // limit) + 1 if limit > 0 else 1,
+        page_size=limit,
         q=q,
         category=category,
-        level=level,
+        difficulty=diff,
+        level=diff,
+        is_featured=is_featured,
+        tag=tag,
     )
     return [LearningPathResponse.model_validate(path) for path in paths]
+
+
+@router.get(
+    "/catalog/{slug_or_id}",
+    response_model=LearningPathResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Get curated roadmap catalog entry by slug or ID",
+    description="Retrieve a single curated roadmap by string slug or integer ID.",
+)
+async def get_roadmap_catalog_entry(
+    slug_or_id: str,
+    db: DatabaseDep,
+) -> LearningPathResponse:
+    """Retrieve a single curated roadmap by slug or ID."""
+    path = await learning_path_service.get_by_slug_or_id(db, slug_or_id=slug_or_id)
+    if not path:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Curated roadmap '{slug_or_id}' not found in catalog",
+        )
+    return LearningPathResponse.model_validate(path)
 
 
 @router.get(

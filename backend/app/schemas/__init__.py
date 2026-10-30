@@ -16,6 +16,7 @@ from app.schemas.course import (
 from app.schemas.learning_path import (
     LearningPathBase,
     LearningPathCreate,
+    LearningPathPaginationResponse,
     LearningPathResponse,
     LearningPathUpdate,
 )
@@ -23,6 +24,7 @@ from app.schemas.roadmap_step import (
     RoadmapStepBase,
     RoadmapStepCreate,
     RoadmapStepResponse,
+    RoadmapStepUpdate,
 )
 from app.schemas.skill import (
     SkillBase,

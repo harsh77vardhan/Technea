@@ -29,6 +29,7 @@ from app.services.ai.prompts import (
     INTENT_NEXT_STEP,
     INTENT_PROJECT_SUGGESTION,
     INTENT_REVISION,
+    INTENT_ROADMAP_PLANNING,
     INTENT_ROADMAP_REQUEST,
     INTENT_SIMPLE_QUESTION,
     INTENT_TIME_DATE,
@@ -50,16 +51,30 @@ def _infer_domain(message: str, context: dict[str, Any] | None = None) -> str:
         return str(context["domain"]).lower()
 
     t = message.lower()
-    if any(w in t for w in ["web", "html", "css", "javascript", "react", "frontend", "full stack", "next.js", "node", "vue", "tailwind", "backend", "fastapi"]):
-        return "web_development"
-    elif any(w in t for w in ["ai", "machine learning", "ml", "deep learning", "neural", "llm", "rag", "pytorch", "gpt", "model", "embedding", "agent"]):
-        return "ai_ml"
-    elif any(w in t for w in ["cyber", "hack", "security", "pentest", "owasp", "network", "linux", "wireshark", "port", "firewall"]):
+    if any(w in t for w in ["cyber", "hack", "security", "pentest", "owasp", "network security", "infosec", "wireshark", "port", "firewall"]):
         return "cybersecurity"
-    elif any(w in t for w in ["data", "sql", "analytics", "power bi", "pandas", "tableau", "warehouse", "etl"]):
-        return "data"
-    elif any(w in t for w in ["cloud", "devops", "docker", "kubernetes", "aws", "terraform", "ci/cd", "container"]):
+    elif any(w in t for w in ["ai agent", "ai agents", "autonomous agent", "crewai", "langgraph", "autogen"]):
+        return "ai_agents"
+    elif any(w in t for w in ["llm", "rag", "langchain", "llamaindex", "prompt engineering", "transformer", "fine-tuning", "vllm"]):
+        return "llm_engineering"
+    elif any(w in t for w in ["data engineering", "data engineer", "etl", "spark", "airflow", "kafka", "pyspark", "data pipeline"]):
+        return "data_engineering"
+    elif any(w in t for w in ["mobile", "ios", "android", "swift", "swiftui", "kotlin", "react native", "flutter"]):
+        return "mobile"
+    elif any(w in t for w in ["rust", "cargo", "tokio"]):
+        return "rust"
+    elif any(w in t for w in ["go", "golang", "goroutine"]):
+        return "go"
+    elif any(w in t for w in ["ai", "machine learning", "ml", "deep learning", "neural", "pytorch", "gpt", "model", "embedding", "agent"]):
+        return "ai_ml"
+    elif any(w in t for w in ["cloud", "devops", "docker", "kubernetes", "k8s", "aws", "terraform", "ci/cd", "container", "gcp"]):
         return "cloud_devops"
+    elif any(w in t for w in ["data", "sql", "analytics", "power bi", "pandas", "tableau", "warehouse", "polars"]):
+        return "data"
+    elif any(w in t for w in ["python", "fastapi", "django", "flask"]):
+        return "python"
+    elif any(w in t for w in ["web", "html", "css", "javascript", "react", "frontend", "full stack", "next.js", "node", "vue", "tailwind", "backend"]):
+        return "web_development"
     return "general_tech"
 
 
@@ -560,6 +575,7 @@ async def chat_with_ai(
         (
             intent in {
                 INTENT_ROADMAP_REQUEST,
+                INTENT_ROADMAP_PLANNING,
                 INTENT_NEXT_STEP,
                 INTENT_PROJECT_SUGGESTION,
                 INTENT_LEARNING_ADVICE,

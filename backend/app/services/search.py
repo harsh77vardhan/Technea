@@ -30,62 +30,111 @@ SYNONYMS: dict[str, list[str]] = {
     "ts": ["typescript"],
     "python": ["py", "python3", "cpython"],
     "py": ["python"],
-    "c++": ["cpp"],
+    "c++": ["cpp", "modern c++"],
     "cpp": ["c++"],
     "c#": ["csharp", ".net", "dotnet"],
-    "csharp": ["c#"],
-    "golang": ["go"],
-    "go": ["golang"],
-    "rust": ["rust lang"],
-    "kotlin": ["kt"],
-    "java": ["core java"],
+    "csharp": ["c#", "dotnet"],
+    "golang": ["go", "go language", "concurrent cloud backends"],
+    "go": ["golang", "go programming", "goroutines"],
+    "rust": ["rust lang", "rust programming", "systems programming", "memory safety"],
+    "kotlin": ["kt", "android kotlin", "kotlin lang", "android development"],
+    "swift": ["ios", "swiftui", "apple", "ios development", "mobile development"],
+    "ios": ["swift", "swiftui", "swift & ios", "mobile development", "apple"],
+    "swiftui": ["swift", "ios", "mobile development"],
+    "android": ["kotlin", "mobile development", "android development"],
+    "java": ["core java", "jdk", "jvm language"],
+    "bash": ["shell", "terminal", "shell scripting", "linux cli"],
+    "shell": ["bash", "shell scripting", "terminal automation"],
 
     # Web & Frameworks
-    "react": ["reactjs", "react.js"],
-    "reactjs": ["react"],
-    "next.js": ["nextjs", "next"],
-    "nextjs": ["next.js"],
-    "node.js": ["nodejs", "node"],
+    "react": ["reactjs", "react.js", "frontend"],
+    "reactjs": ["react", "frontend"],
+    "next.js": ["nextjs", "next", "full stack"],
+    "nextjs": ["next.js", "next", "react"],
+    "node.js": ["nodejs", "node", "express"],
     "node": ["node.js", "nodejs"],
     "nodejs": ["node.js"],
-    "html": ["html5"],
+    "fastapi": ["python api", "async api", "rest api"],
+    "django": ["django rest framework", "python web"],
+    "html": ["html5", "semantic web"],
     "css": ["css3", "tailwind", "tailwind css", "styling"],
+    "tailwind": ["tailwindcss", "tailwind css", "css"],
     "vue": ["vuejs", "vue.js"],
     "angular": ["angularjs"],
+    "graphql": ["apollo", "rest api", "graphql api"],
 
     # Data & AI
-    "sql": ["relational queries", "rdbms", "database queries"],
-    "postgresql": ["postgres", "pgsql"],
-    "mongodb": ["mongo", "nosql"],
-    "machine learning": ["ml", "scikit-learn"],
-    "ml": ["machine learning"],
-    "artificial intelligence": ["ai"],
-    "ai": ["artificial intelligence"],
+    "sql": ["relational queries", "rdbms", "database queries", "databases"],
+    "postgresql": ["postgres", "pgsql", "relational database"],
+    "postgres": ["postgresql", "pgsql"],
+    "mongodb": ["mongo", "nosql", "document database"],
+    "mongo": ["mongodb", "nosql"],
+    "machine learning": ["ml", "scikit-learn", "predictive modeling"],
+    "ml": ["machine learning", "scikit-learn", "ai"],
+    "artificial intelligence": ["ai", "machine learning", "deep learning"],
+    "ai": ["artificial intelligence", "machine learning", "ai engineering"],
+    "ai engineer": ["ai engineering", "artificial intelligence", "machine learning", "deep learning", "llm"],
+    "ai engineering": ["ai engineer", "artificial intelligence", "machine learning", "deep learning"],
+    "ai agent": ["ai agents", "autonomous agents", "langgraph", "crewai"],
+    "ai agents": ["ai agent", "autonomous workflows", "langgraph", "crewai", "multi-agent"],
+    "agent": ["ai agents", "autonomous agents", "langgraph"],
+    "agents": ["ai agents", "autonomous agents", "langgraph"],
     "deep learning": ["dl", "neural networks", "pytorch", "tensorflow"],
-    "dl": ["deep learning"],
+    "dl": ["deep learning", "neural networks"],
     "generative ai": ["genai", "llm", "large language models"],
-    "genai": ["generative ai", "llm"],
-    "llm": ["large language models", "generative ai"],
-    "nlp": ["natural language processing", "text analysis"],
-    "computer vision": ["cv", "vision ai"],
-    "cv": ["computer vision"],
+    "genai": ["generative ai", "llm", "large language models"],
+    "llm": ["large language models", "generative ai", "prompt engineering", "fine-tuning"],
+    "large language models": ["llm", "genai", "generative ai"],
+    "llm engineering": ["llm", "large language models", "prompt engineering", "fine-tuning", "peft", "lora"],
+    "prompt engineering": ["prompts", "in-context learning", "llm"],
+    "rag": ["retrieval augmented generation", "vector database", "embeddings"],
+    "nlp": ["natural language processing", "text analysis", "transformers"],
+    "computer vision": ["cv", "vision ai", "image recognition"],
+    "cv": ["computer vision", "vision ai"],
+    "data science": ["data scientist", "applied machine learning", "data analytics"],
+    "data analytics": ["data analysis", "business analytics", "data analyst", "bi"],
+    "data engineering": ["data engineer", "etl", "data pipelines", "data warehousing", "big data", "airflow"],
+    "data engineer": ["data engineering", "etl pipelines", "modern data stack", "big data"],
 
     # Cloud & DevOps
-    "docker": ["containers", "containerization"],
-    "kubernetes": ["k8s", "container orchestration"],
-    "k8s": ["kubernetes"],
-    "devops": ["ci/cd", "infrastructure as code"],
-    "aws": ["amazon web services"],
-    "gcp": ["google cloud platform"],
+    "docker": ["containers", "containerization", "docker compose"],
+    "kubernetes": ["k8s", "container orchestration", "helm", "cloud native"],
+    "k8s": ["kubernetes", "container orchestration", "cloud native"],
+    "devops": ["ci/cd", "infrastructure as code", "cloud engineering", "automation"],
+    "ci/cd": ["continuous integration", "github actions", "pipelines", "devops"],
+    "cloud": ["cloud computing", "aws", "gcp", "azure", "cloud native"],
+    "cloud computing": ["cloud", "cloud platforms", "aws", "gcp"],
+    "cloud native": ["cloud computing", "kubernetes", "k8s", "microservices"],
+    "aws": ["amazon web services", "cloud"],
+    "gcp": ["google cloud platform", "cloud"],
+    "azure": ["microsoft azure", "cloud"],
+    "terraform": ["iac", "infrastructure as code"],
+    "linux": ["unix", "bash", "linux administration", "sysadmin"],
 
-    # Security, Design & Others
-    "cybersecurity": ["infosec", "cyber security", "ethical hacking", "pentesting"],
+    # Cybersecurity & Defense
+    "cybersecurity": ["cyber security", "infosec", "information security", "ethical hacking", "pentesting", "security"],
+    "cyber security": ["cybersecurity", "infosec", "information security", "ethical hacking", "pentesting"],
+    "infosec": ["cybersecurity", "cyber security", "information security", "ethical hacking"],
+    "ethical hacking": ["pentesting", "penetration testing", "cybersecurity", "white hat", "ethical hacker"],
+    "pentesting": ["penetration testing", "ethical hacking", "cybersecurity", "red teaming"],
+    "penetration testing": ["pentesting", "ethical hacking", "cybersecurity", "vulnerability assessment"],
+    "red teaming": ["penetration testing", "offensive security", "ethical hacking"],
+    "blue team": ["soc analyst", "defensive security", "incident response"],
+    "soc": ["soc analyst", "security operations", "siem", "incident triage"],
+    "malware": ["malware analysis", "reverse engineering"],
+    "network security": ["firewalls", "packet analysis", "wireshark", "cybersecurity"],
+    "web security": ["owasp", "appsec", "application security", "web hacking"],
+    "owasp": ["web security", "application security", "appsec"],
+    "cryptography": ["crypto", "encryption", "pki"],
+
+    # Design & Media
     "ui": ["user interface", "ui design"],
     "ux": ["user experience", "ux design"],
     "ui design": ["ui", "user interface", "figma"],
     "ux design": ["ux", "user experience"],
     "figma": ["ui design", "figma design"],
     "video editing": ["video editor", "premiere pro", "davinci resolve"],
+    "mobile": ["mobile development", "swift", "ios", "kotlin", "android"],
 }
 
 # Nearby technologies for the separate "Related Learning Paths" section
@@ -101,21 +150,35 @@ RELATED_ECOSYSTEMS: dict[str, list[str]] = {
     "machine learning": ["deep learning", "python", "data science", "ai agents", "nlp"],
     "deep learning": ["machine learning", "computer vision", "nlp", "generative ai", "pytorch"],
     "generative ai": ["llm", "ai agents", "prompt engineering", "deep learning", "machine learning"],
+    "ai agents": ["generative ai", "llm", "python", "machine learning", "deep learning"],
+    "llm": ["generative ai", "ai agents", "deep learning", "prompt engineering", "python"],
     "docker": ["kubernetes", "devops", "cloud platforms", "linux"],
     "kubernetes": ["docker", "devops", "cloud platforms", "microservices"],
+    "k8s": ["docker", "devops", "cloud computing", "microservices"],
+    "cloud": ["cloud computing", "kubernetes", "docker", "aws", "gcp", "devops", "terraform"],
+    "cloud computing": ["kubernetes", "docker", "aws", "gcp", "devops", "terraform"],
     "sql": ["database design", "postgresql", "data analytics", "backend development"],
+    "data engineering": ["data science", "sql", "postgresql", "big data", "python"],
+    "cybersecurity": ["ethical hacking", "penetration testing", "network security", "linux security", "cloud security", "owasp"],
+    "pentesting": ["ethical hacking", "cybersecurity", "web security", "penetration testing"],
+    "swift": ["ios", "swiftui", "mobile development", "apple"],
+    "ios": ["swift", "swiftui", "mobile development", "apple"],
+    "rust": ["systems programming", "c++", "go", "linux", "concurrency"],
+    "go": ["cloud computing", "microservices", "docker", "kubernetes", "concurrency"],
     "ui design": ["ux design", "figma", "web design", "design systems"],
 }
 
 # Canonical keywords for fuzzy typo matching vocabulary
 CANONICAL_KEYWORDS = [
     "python", "javascript", "typescript", "java", "c++", "golang", "rust", "kotlin",
-    "html", "css", "react", "next.js", "node.js", "fastapi", "django", "tailwind",
-    "docker", "kubernetes", "terraform", "aws", "azure", "gcp", "linux", "bash",
-    "git", "devops", "sql", "postgresql", "mongodb", "data science", "data analytics",
-    "machine learning", "deep learning", "generative ai", "llm", "ai agents", "nlp",
-    "computer vision", "cybersecurity", "ethical hacking", "ui design", "ux design",
-    "figma", "video editing", "premiere pro", "davinci resolve", "product management",
+    "swift", "swiftui", "html", "css", "react", "next.js", "node.js", "fastapi", "django", "tailwind",
+    "docker", "kubernetes", "k8s", "terraform", "aws", "azure", "gcp", "linux", "bash",
+    "git", "devops", "cloud", "cloud computing", "sql", "postgresql", "mongodb", "data science", "data analytics",
+    "data engineering", "machine learning", "deep learning", "generative ai", "llm", "ai agents", "nlp",
+    "computer vision", "cybersecurity", "ethical hacking", "penetration testing", "pentesting", "infosec",
+    "network security", "web security", "devsecops", "cryptography", "malware analysis", "soc analyst",
+    "ui design", "ux design", "figma", "video editing", "premiere pro", "davinci resolve", "product management",
+    "microservices", "system design", "prompt engineering", "reinforcement learning",
 ]
 
 
@@ -166,7 +229,7 @@ class SearchEngine:
 
     @staticmethod
     def find_fuzzy_match(word: str, threshold: float = 0.82) -> str | None:
-        """Correct typos like 'pyhton' -> 'python' using SequenceMatcher."""
+        """Correct typos like 'pyhton' -> 'python' and 'swfit' -> 'swift' using SequenceMatcher and transposition checks."""
         w = word.lower().strip()
         if len(w) < 4:
             return None
@@ -178,6 +241,11 @@ class SearchEngine:
             if abs(len(w) - len(cand)) > 2:
                 continue
             ratio = SequenceMatcher(None, w, cand).ratio()
+            # Also check if sorted chars match for single-transposition typos (e.g. swfit -> swift)
+            if ratio < threshold and len(w) == len(cand) and sorted(w) == sorted(cand):
+                mismatches = sum(1 for a, b in zip(w, cand) if a != b)
+                if mismatches <= 2:
+                    ratio = 0.85
             if ratio >= threshold and ratio > best_ratio:
                 best_ratio = ratio
                 best_cand = cand
@@ -223,11 +291,13 @@ class SearchEngine:
         search_terms: list[str] | None = None,
         related_concepts: list[str] | None = None,
         description: str | None = None,
+        skills_covered: list[str] | None = None,
+        technology_stack: list[str] | None = None,
     ) -> float:
-        """Calculate weighted relevance score with strict hierarchical tiering (Requirement 7).
+        """Calculate weighted relevance score with strict hierarchical tiering.
 
         Priority order:
-        Exact title > Aliases > Tags > Keywords > Related concepts > Synonyms > Fuzzy matches
+        Exact title > Aliases > Category > Skills covered > Tech stack > Tags > Keywords > Related concepts > Synonyms > Description > Fuzzy matches
         """
         if not query or not query.strip():
             return 100.0
@@ -236,6 +306,7 @@ class SearchEngine:
         title_norm = (title or "").strip().lower()
         desc_norm = (description or "").strip().lower()
         skill_norm = (skill_name or "").strip().lower()
+        cat_norm = self.normalize(category or "").strip().lower()
 
         tag_list = [self.normalize(t).lower() for t in (tags or []) if t]
         kw_list = [self.normalize(k).lower() for k in (keywords or []) if k] + [
@@ -243,6 +314,8 @@ class SearchEngine:
         ]
         alias_list = [self.normalize(a).lower() for a in (aliases or []) if a]
         concept_list = [self.normalize(c).lower() for c in (related_concepts or []) if c]
+        sc_list = [self.normalize(s).lower() for s in (skills_covered or []) if s]
+        tech_list = [self.normalize(t).lower() for t in (technology_stack or []) if t]
         syn_list = [self.normalize(s).lower() for s in (synonyms or []) if s]
 
         score = 0.0
@@ -267,7 +340,31 @@ class SearchEngine:
         elif any(is_word_match(q, a) for a in alias_list):
             score += 300000.0
 
-        # Tier 3: Tags Match (100,000 to 150,000)
+        # Tier 3A: Category Match (250,000 to 350,000)
+        if q == cat_norm:
+            score += 350000.0
+        elif is_word_match(q, cat_norm):
+            score += 250000.0
+        elif len(q) >= 4 and q in cat_norm:
+            score += 150000.0
+
+        # Tier 3B: Skills Covered Match (90,000 to 200,000)
+        if any(q == sc for sc in sc_list):
+            score += 200000.0
+        elif any(is_word_match(q, sc) for sc in sc_list):
+            score += 140000.0
+        elif any(len(q) >= 4 and q in sc for sc in sc_list):
+            score += 90000.0
+
+        # Tier 3C: Technology Stack Match (85,000 to 180,000)
+        if any(q == tech for tech in tech_list):
+            score += 180000.0
+        elif any(is_word_match(q, tech) for tech in tech_list):
+            score += 130000.0
+        elif any(len(q) >= 4 and q in tech for tech in tech_list):
+            score += 85000.0
+
+        # Tier 3D: Tags Match (100,000 to 150,000)
         if any(q == t for t in tag_list):
             score += 150000.0
         elif any(is_word_match(q, t) for t in tag_list):
@@ -296,6 +393,15 @@ class SearchEngine:
             elif any(syn == a or is_word_match(syn, a) for a in alias_list):
                 score += 250000.0
                 break
+            elif syn == cat_norm or is_word_match(syn, cat_norm):
+                score += 220000.0
+                break
+            elif any(syn == sc or is_word_match(syn, sc) for sc in sc_list):
+                score += 110000.0
+                break
+            elif any(syn == tech or is_word_match(syn, tech) for tech in tech_list):
+                score += 100000.0
+                break
             elif any(syn == t or is_word_match(syn, t) for t in tag_list):
                 score += 80000.0
                 break
@@ -303,19 +409,40 @@ class SearchEngine:
                 score += 25000.0
                 break
 
-        # Tier 7: Fuzzy Matches (1,000)
+        # Tier 7: Description Match
+        if desc_norm:
+            if q == desc_norm or is_word_match(q, desc_norm):
+                score += 20000.0 if score == 0 else 500.0
+            elif len(q) >= 4 and q in desc_norm:
+                score += 12000.0 if score == 0 else 300.0
+            else:
+                desc_tokens_hit = sum(
+                    1 for tok in q.split() if len(tok) >= 3 and is_word_match(tok, desc_norm)
+                )
+                if desc_tokens_hit > 0:
+                    score += (5000.0 * desc_tokens_hit) if score == 0 else (100.0 * desc_tokens_hit)
+
+        # Tier 8: Fuzzy Matches
         for tok in q.split():
             if len(tok) >= 4:
+                matched_fuzzy = False
                 for word in title_norm.split():
                     if len(word) >= 4 and abs(len(tok) - len(word)) <= 2:
                         ratio = SequenceMatcher(None, tok, word).ratio()
                         if ratio >= 0.82:
                             score += 1000.0
+                            matched_fuzzy = True
                             break
-
-        # Subtle description match bonus if already matched
-        if score > 0 and q in desc_norm:
-            score += 50.0
+                if not matched_fuzzy:
+                    for sc in sc_list:
+                        for word in sc.split():
+                            if len(word) >= 4 and abs(len(tok) - len(word)) <= 2:
+                                if SequenceMatcher(None, tok, word).ratio() >= 0.82:
+                                    score += 800.0
+                                    matched_fuzzy = True
+                                    break
+                        if matched_fuzzy:
+                            break
 
         return score
 
@@ -415,18 +542,52 @@ class SearchEngine:
         # Score all paths
         scores: dict[int, float] = {}
         for path in all_paths:
+            # Aggregate skills_covered
+            raw_skills_cov = list(path.skills_covered or [])
+            if path.skill and path.skill.name and path.skill.name not in raw_skills_cov:
+                raw_skills_cov.append(path.skill.name)
+            for step in (path.roadmap_steps or []):
+                if step.title and step.title not in raw_skills_cov:
+                    raw_skills_cov.append(step.title)
+            for c in (path.related_concepts or []):
+                if c and c not in raw_skills_cov:
+                    raw_skills_cov.append(c)
+
+            # Aggregate technology_stack
+            raw_tech_stack = list(path.technology_stack or [])
+            if path.skill:
+                for t in (path.skill.tags or []):
+                    if t and t not in raw_tech_stack:
+                        raw_tech_stack.append(t)
+                for k in (path.skill.keywords or []):
+                    if k and k not in raw_tech_stack:
+                        raw_tech_stack.append(k)
+            for proj in (path.projects or []):
+                if isinstance(proj, dict):
+                    proj_techs = proj.get("technologies") or proj.get("tech_stack") or []
+                    for pt in proj_techs:
+                        if pt and pt not in raw_tech_stack:
+                            raw_tech_stack.append(pt)
+
+            # Aggregate tags
+            raw_tags = list(path.tags or [])
+            if not raw_tags and path.skill:
+                raw_tags.extend(path.skill.tags or [])
+
             s = self.score_item(
                 query=eff_query,
                 synonyms=synonyms,
                 title=path.title,
                 category=path.category,
                 skill_name=path.skill.name if path.skill else None,
-                tags=path.skill.tags if path.skill else [],
+                tags=raw_tags,
                 keywords=path.skill.keywords if path.skill else [],
                 aliases=path.skill.aliases if path.skill else [],
                 search_terms=path.search_terms or [],
                 related_concepts=path.related_concepts or [],
                 description=path.description,
+                skills_covered=raw_skills_cov,
+                technology_stack=raw_tech_stack,
             )
             scores[path.id] = s
 

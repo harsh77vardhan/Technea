@@ -96,8 +96,11 @@ async def seed_database(session: AsyncSession) -> None:
             learning_path = res.scalars().first()
 
             if not learning_path:
+                from app.services.learning_path import clean_slugify
+                path_title = path_data["title"]
                 learning_path = LearningPath(
-                    title=path_data["title"],
+                    title=path_title,
+                    slug=path_data.get("slug") or clean_slugify(path_title),
                     category=path_data["category"],
                     level=path_data["level"],
                     difficulty=path_data.get("difficulty", path_data["level"]),
@@ -105,6 +108,14 @@ async def seed_database(session: AsyncSession) -> None:
                     description=path_data.get("description"),
                     search_terms=path_data.get("search_terms", []),
                     related_concepts=path_data.get("related_concepts", []),
+                    skills_covered=path_data.get("skills_covered", []),
+                    prerequisites=path_data.get("prerequisites", []),
+                    career_outcomes=path_data.get("career_outcomes", []),
+                    technology_stack=path_data.get("technology_stack", path_data.get("tech_stack", [])),
+                    resources=path_data.get("resources", path_data.get("curated_resources", [])),
+                    tags=path_data.get("tags", []),
+                    is_featured=path_data.get("is_featured", False),
+                    popularity_rank=path_data.get("popularity_rank", 100),
                     projects=path_data.get("projects", []),
                     goal=path_data.get("goal", "Job"),
                     goals=path_data.get("goals", [path_data.get("goal", "Job")]),
@@ -118,6 +129,9 @@ async def seed_database(session: AsyncSession) -> None:
                 await session.flush()
                 new_paths += 1
             else:
+                from app.services.learning_path import clean_slugify
+                if not learning_path.slug:
+                    learning_path.slug = path_data.get("slug") or clean_slugify(learning_path.title)
                 learning_path.category = path_data["category"]
                 learning_path.level = path_data["level"]
                 learning_path.difficulty = path_data.get("difficulty", path_data["level"])
@@ -125,6 +139,16 @@ async def seed_database(session: AsyncSession) -> None:
                 learning_path.description = path_data.get("description", learning_path.description)
                 learning_path.search_terms = path_data.get("search_terms", learning_path.search_terms or [])
                 learning_path.related_concepts = path_data.get("related_concepts", learning_path.related_concepts or [])
+                learning_path.skills_covered = path_data.get("skills_covered", learning_path.skills_covered or [])
+                learning_path.prerequisites = path_data.get("prerequisites", learning_path.prerequisites or [])
+                learning_path.career_outcomes = path_data.get("career_outcomes", learning_path.career_outcomes or [])
+                learning_path.technology_stack = path_data.get("technology_stack", path_data.get("tech_stack", learning_path.technology_stack or []))
+                learning_path.resources = path_data.get("resources", path_data.get("curated_resources", learning_path.resources or []))
+                learning_path.tags = path_data.get("tags", learning_path.tags or [])
+                if "is_featured" in path_data:
+                    learning_path.is_featured = path_data["is_featured"]
+                if "popularity_rank" in path_data:
+                    learning_path.popularity_rank = path_data["popularity_rank"]
                 learning_path.projects = path_data.get("projects", learning_path.projects or [])
                 learning_path.goal = path_data.get("goal", learning_path.goal or "Job")
                 learning_path.goals = path_data.get("goals", learning_path.goals or ["Job"])
@@ -156,12 +180,20 @@ async def seed_database(session: AsyncSession) -> None:
                         step_number=step_num,
                         title=step_data["title"],
                         description=step_data.get("description"),
+                        topics=step_data.get("topics", step_data.get("topics_covered", [])),
+                        duration=step_data.get("duration"),
+                        project_idea=step_data.get("project_idea"),
+                        resources=step_data.get("resources", []),
                     )
                     session.add(step)
                     new_steps += 1
                 else:
                     step.title = step_data["title"]
                     step.description = step_data.get("description", step.description)
+                    step.topics = step_data.get("topics", step_data.get("topics_covered", step.topics or []))
+                    step.duration = step_data.get("duration", step.duration)
+                    step.project_idea = step_data.get("project_idea", step.project_idea)
+                    step.resources = step_data.get("resources", step.resources or [])
                     updated_steps += 1
 
             # -----------------------------------------------------------------

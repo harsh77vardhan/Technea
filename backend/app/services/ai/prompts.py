@@ -149,6 +149,9 @@ TECHNICAL_KEYWORDS: set[str] = {
     "exception", "syntax", "refactor", "debug", "debugging", "microservices", "architecture",
     "frontend", "backend", "fullstack", "roadmap", "milestone", "interview", "quiz", "revision",
     "career", "resume", "salary", "code", "coding", "binary search", "linked list", "trees",
+    "cybersecurity", "security", "hacking", "pentesting", "pentest", "rust", "go", "golang",
+    "swift", "ios", "android", "kotlin", "agent", "agents", "ai", "ml", "llm", "rag",
+    "data", "etl", "spark", "airflow", "kafka", "path", "tracks", "engineering", "engineer",
 }
 
 
@@ -531,12 +534,25 @@ def classify_intent(message: str, conversation_history: list[dict[str, Any]] | N
         "give me roadmap",
         "give me a roadmap",
         "give roadmap",
+        "recommend a roadmap",
+        "recommend roadmap",
+        "recommend a python roadmap",
+        "recommend python roadmap",
+        "recommend path",
+        "recommend a path",
         "roadmap",
         "curriculum",
         "learning path",
+        "learning paths",
+        "engineering path",
+        "career path",
         "study plan",
         "how to become",
+        "how do i become",
+        "how can i become",
         "i want to become",
+        "want to become",
+        "i want to learn",
         "path to become",
         "syllabus",
         "career track",
@@ -545,8 +561,20 @@ def classify_intent(message: str, conversation_history: list[dict[str, Any]] | N
         "ai engineering career",
         "i want ai engineer",
         "software engineer career",
+        "become an engineer",
+        "become an ai engineer",
+        "become a developer",
+        "become a software engineer",
+        "how to be an",
+        "how to be a",
     ]
-    if any(pat in m for pat in roadmap_patterns):
+    if (
+        any(pat in m for pat in roadmap_patterns)
+        or (
+            ("path" in clean_words or "roadmap" in clean_words or "curriculum" in clean_words)
+            and not (m.startswith("what is a file path") or "relative path" in m or "absolute path" in m or "file path" in m)
+        )
+    ):
         return INTENT_ROADMAP_PLANNING
 
     # 15. Simple Definitional Questions (Category 2)
@@ -1023,19 +1051,21 @@ def build_system_prompt(
             ),
             INTENT_ROADMAP_PLANNING: (
                 "CURRENT INTENT: roadmap request / planning. "
+                "Always check the RELEVANT RETRIEVED DATA section for authentic Technea roadmaps and learning paths. "
+                "When relevant roadmaps exist in Technea's catalog (e.g. for Cybersecurity, AI Engineering, Python, Cloud, Mobile, Rust, Go, Data Engineering), "
+                "explicitly feature and link to the authentic Technea roadmap using its markdown link format [Title](/learning-paths/{id}) and direct link, "
+                "outline its sequential milestone progression, and NEVER hallucinate fictional roadmaps or fall back to generic answers. "
                 "Provide progressive guidance: Current Phase -> This week's focus -> Practice project -> What comes next. "
-                "Do not dump a massive 5-phase curriculum all in one message. Sequence topics cleanly and avoid robotic framework labels. "
-                "When asked how to learn JavaScript, outline the rich 4-phase roadmap: "
-                "1. Foundations (Syntax, DOM, Events) -> 2. Modern JS (ES6+, Async/Await, Fetch) -> "
-                "3. Advanced (Closures, Prototypes, Modules) -> 4. Frameworks (React/Node)."
+                "Do not dump an unstructured raw list; sequence topics cleanly."
             ),
             INTENT_ROADMAP_REQUEST: (
                 "CURRENT INTENT: roadmap request / planning. "
+                "Always check the RELEVANT RETRIEVED DATA section for authentic Technea roadmaps and learning paths. "
+                "When relevant roadmaps exist in Technea's catalog (e.g. for Cybersecurity, AI Engineering, Python, Cloud, Mobile, Rust, Go, Data Engineering), "
+                "explicitly feature and link to the authentic Technea roadmap using its markdown link format [Title](/learning-paths/{id}) and direct link, "
+                "outline its sequential milestone progression, and NEVER hallucinate fictional roadmaps or fall back to generic answers. "
                 "Provide progressive guidance: Current Phase -> This week's focus -> Practice project -> What comes next. "
-                "Do not dump a massive 5-phase curriculum all in one message. Sequence topics cleanly and avoid robotic framework labels. "
-                "When asked how to learn JavaScript, outline the rich 4-phase roadmap: "
-                "1. Foundations (Syntax, DOM, Events) -> 2. Modern JS (ES6+, Async/Await, Fetch) -> "
-                "3. Advanced (Closures, Prototypes, Modules) -> 4. Frameworks (React/Node)."
+                "Do not dump an unstructured raw list; sequence topics cleanly."
             ),
             INTENT_PROJECT_RECOMMENDATION: (
                 "CURRENT INTENT: project suggestion / recommendation. "
@@ -1223,7 +1253,9 @@ def build_system_prompt(
             f"{str(catalog_context).strip()}\n\n"
             "INSTRUCTION FOR TECHNEA CATALOG CONTEXT:\n"
             "- Reference the actual Technea learning paths, skills, and projects listed above when answering the learner.\n"
-            "- Guide the user toward these real database resources by name.\n"
+            "- Always format Technea roadmaps as direct markdown links, e.g. [Title](/learning-paths/{id}) using the IDs from above.\n"
+            "- NEVER hallucinate fictional roadmaps or fall back to generic non-catalog advice when matching roadmaps exist in the catalog.\n"
+            "- Guide the user toward these real database resources with sequential milestone recommendations.\n"
             "- If the learner has an active roadmap or milestone progress, acknowledge it and suggest concrete next steps."
         )
 

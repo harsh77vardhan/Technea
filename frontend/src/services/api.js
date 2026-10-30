@@ -202,24 +202,129 @@ export async function getSkillRelationships(id) {
  * Fetch curated learning paths with their roadmap steps, supporting search & filters
  * @param {Object} [params]
  * @param {string} [params.q] - Optional search query with fuzzy and synonym matching
+ * Helper to generate URL-friendly slug from title
+ * @param {string} text
+ * @returns {string}
+ */
+export function slugifyTitle(text) {
+  if (!text || typeof text !== 'string') return ''
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/[\s_-]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
+/**
+ * Fetch learning paths with search, category/level filtering, and pagination
+ * @param {Object} [params]
+ * @param {string} [params.q] - Search query
  * @param {string} [params.category] - Optional domain filter
  * @param {string} [params.level] - Optional difficulty filter
+ * @param {boolean} [params.is_featured] - Optional featured filter
+ * @param {string} [params.tag] - Optional tag filter
+ * @param {number} [params.page] - Optional page number (1-based)
+ * @param {number} [params.page_size] - Optional page size
  * @param {number} [params.limit=250] - Pagination limit
+ * @param {number} [params.skip=0] - Pagination offset
  * @returns {Promise<Array>} List of learning path objects
  */
 export async function getLearningPaths(params = {}) {
   const query = new URLSearchParams()
   if (params.q) query.append('q', params.q)
-  if (params.category) query.append('category', params.category)
-  if (params.level) query.append('level', params.level)
+  if (params.category && params.category !== 'All' && params.category !== 'all') query.append('category', params.category)
+  if (params.level && params.level !== 'All' && params.level !== 'all') query.append('level', params.level)
+  if (params.is_featured !== undefined) query.append('is_featured', String(params.is_featured))
+  if (params.tag) query.append('tag', params.tag)
   if (params.duration) query.append('duration', params.duration)
   if (params.goal) query.append('goal', params.goal)
   if (params.style) query.append('style', params.style)
   if (params.language) query.append('language', params.language)
-  if (params.limit) query.append('limit', String(params.limit))
-  else query.append('limit', '250')
+
+  // Handle pagination (page, page_size, skip, limit)
+  if (params.page && params.page_size) {
+    const pageNum = Math.max(1, parseInt(params.page, 10) || 1)
+    const pageSize = Math.max(1, parseInt(params.page_size, 10) || 20)
+    query.append('skip', String((pageNum - 1) * pageSize))
+    query.append('limit', String(pageSize))
+    query.append('page', String(pageNum))
+    query.append('page_size', String(pageSize))
+  } else if (params.limit) {
+    query.append('limit', String(params.limit))
+    if (params.skip) query.append('skip', String(params.skip))
+  } else {
+    query.append('limit', '250')
+  }
+
   const queryString = query.toString() ? `?${query.toString()}` : ''
   return request(`/learning-paths${queryString}`)
+}
+
+/**
+ * Fetch featured roadmaps
+ * @returns {Promise<Array>} List of featured learning paths
+ */
+export async function getFeaturedRoadmapsApi() {
+  try {
+    const res = await request('/learning-paths/featured')
+    if (Array.isArray(res) && res.length > 0) return res
+  } catch (err) {
+    console.warn('Backend /learning-paths/featured fallback:', err.message)
+  }
+  return getLearningPaths({ limit: 12 })
+}
+
+/**
+ * Fetch recommended roadmaps
+ * @returns {Promise<Array>} List of recommended learning paths
+ */
+export async function getRecommendedRoadmapsApi() {
+  try {
+    const res = await request('/learning-paths/recommended')
+    if (Array.isArray(res) && res.length > 0) return res
+  } catch (err) {
+    console.warn('Backend /learning-paths/recommended fallback:', err.message)
+  }
+  return getLearningPaths({ limit: 8 })
+}
+
+/**
+ * Fetch roadmap catalog with search and filters, querying /roadmaps/catalog or /learning-paths
+ * @param {Object} [params]
+ * @returns {Promise<Array>}
+ */
+export async function getRoadmapCatalogApi(params = {}) {
+  const query = new URLSearchParams()
+  if (params.q) query.append('q', params.q)
+  if (params.category && params.category !== 'All' && params.category !== 'all') query.append('category', params.category)
+  if (params.level && params.level !== 'All' && params.level !== 'all') query.append('level', params.level)
+  if (params.duration) query.append('duration', params.duration)
+  if (params.goal) query.append('goal', params.goal)
+  if (params.tag) query.append('tag', params.tag)
+  if (params.is_featured !== undefined) query.append('is_featured', String(params.is_featured))
+
+  if (params.page && params.page_size) {
+    const pageNum = Math.max(1, parseInt(params.page, 10) || 1)
+    const pageSize = Math.max(1, parseInt(params.page_size, 10) || 20)
+    query.append('skip', String((pageNum - 1) * pageSize))
+    query.append('limit', String(pageSize))
+  } else if (params.limit) {
+    query.append('limit', String(params.limit))
+  } else {
+    query.append('limit', '250')
+  }
+
+  const queryString = query.toString() ? `?${query.toString()}` : ''
+
+  try {
+    const res = await request(`/roadmaps/catalog${queryString}`)
+    if (Array.isArray(res) && res.length > 0) return res
+  } catch (err) {
+    console.warn('/roadmaps/catalog fallback to /learning-paths:', err.message)
+  }
+
+  return getLearningPaths(params)
 }
 
 /**
@@ -263,15 +368,53 @@ export async function analyzeIntent(prompt) {
 }
 
 /**
- * Fetch a single learning path with its ordered roadmap steps
- * @param {number|string} id - Learning path identifier
- * @returns {Promise<Object>}
+ * Fetch a single learning path with its ordered roadmap steps by numeric ID or string slug
+ * @param {number|string} slugOrId - Learning path identifier (ID or slug)
+ * @returns {Promise<Object>} Full learning path object with roadmap_steps
  */
-export async function getLearningPathById(id) {
-  if (!isNumericId(id)) {
-    throw new Error(`Invalid learning path ID: ${id}`)
+export async function getLearningPathById(slugOrId) {
+  if (!slugOrId && slugOrId !== 0) {
+    throw new Error('A valid learning path ID or slug is required')
   }
-  return request(`/learning-paths/${id}`)
+
+  // 1. If numeric ID (e.g. 10 or "10")
+  if (isNumericId(slugOrId)) {
+    return request(`/learning-paths/${slugOrId}`)
+  }
+
+  // 2. String slug (e.g. "python-fundamentals" or "full-stack-web-development")
+  const slugStr = String(slugOrId).trim()
+  try {
+    const directRes = await request(`/learning-paths/${encodeURIComponent(slugStr)}`)
+    if (directRes && (directRes.id || directRes.title)) {
+      return directRes
+    }
+  } catch (err) {
+    console.warn(`Direct slug lookup fallback for '${slugStr}':`, err.message)
+  }
+
+  // 3. Fallback: Search all learning paths to find matching title or slug
+  const allPaths = await getLearningPaths({ limit: 300 })
+  const targetNorm = slugStr.toLowerCase().replace(/[^a-z0-9]/g, '')
+
+  const matched = (allPaths || []).find((p) => {
+    if (String(p.id) === slugStr) return true
+    const pSlug = slugifyTitle(p.title)
+    if (pSlug === slugStr.toLowerCase()) return true
+    const pNorm = (p.title || '').toLowerCase().replace(/[^a-z0-9]/g, '')
+    if (pNorm === targetNorm) return true
+    return false
+  })
+
+  if (matched && isNumericId(matched.id)) {
+    return request(`/learning-paths/${matched.id}`)
+  }
+
+  if (matched) {
+    return matched
+  }
+
+  throw new Error(`Learning path with ID or slug '${slugOrId}' not found`)
 }
 
 /**
@@ -948,6 +1091,10 @@ export default {
   getSkillRelationships,
   getLearningPaths,
   getLearningPathById,
+  getFeaturedRoadmapsApi,
+  getRecommendedRoadmapsApi,
+  getRoadmapCatalogApi,
+  slugifyTitle,
   getCourses,
   getCourseById,
   getCourseLessons,

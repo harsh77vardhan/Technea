@@ -146,6 +146,54 @@ async def run_auth_migrations(engine) -> None:
         logger.warning("Auth startup migration warning (continuing startup): %s", exc)
 
 
+async def run_roadmap_schema_migrations(engine) -> None:
+    """Ensure learning_paths and roadmap_steps have all rich roadmap catalog columns."""
+    learning_path_cols = [
+        ("slug", "ALTER TABLE learning_paths ADD COLUMN IF NOT EXISTS slug VARCHAR(255)"),
+        ("skills_covered", "ALTER TABLE learning_paths ADD COLUMN IF NOT EXISTS skills_covered JSON DEFAULT '[]'::json"),
+        ("prerequisites", "ALTER TABLE learning_paths ADD COLUMN IF NOT EXISTS prerequisites JSON DEFAULT '[]'::json"),
+        ("career_outcomes", "ALTER TABLE learning_paths ADD COLUMN IF NOT EXISTS career_outcomes JSON DEFAULT '[]'::json"),
+        ("tech_stack", "ALTER TABLE learning_paths ADD COLUMN IF NOT EXISTS tech_stack JSON DEFAULT '[]'::json"),
+        ("tags", "ALTER TABLE learning_paths ADD COLUMN IF NOT EXISTS tags JSON DEFAULT '[]'::json"),
+        ("curated_resources", "ALTER TABLE learning_paths ADD COLUMN IF NOT EXISTS curated_resources JSON DEFAULT '[]'::json"),
+        ("is_featured", "ALTER TABLE learning_paths ADD COLUMN IF NOT EXISTS is_featured BOOLEAN DEFAULT FALSE"),
+        ("popularity_rank", "ALTER TABLE learning_paths ADD COLUMN IF NOT EXISTS popularity_rank INTEGER"),
+    ]
+
+    step_cols = [
+        ("topics_covered", "ALTER TABLE roadmap_steps ADD COLUMN IF NOT EXISTS topics_covered JSON DEFAULT '[]'::json"),
+        ("duration", "ALTER TABLE roadmap_steps ADD COLUMN IF NOT EXISTS duration VARCHAR(100)"),
+    ]
+
+    try:
+        async with engine.begin() as conn:
+            dialect_name = conn.dialect.name
+            if dialect_name == "postgresql":
+                for _, alter_query in learning_path_cols:
+                    await conn.execute(text(alter_query))
+                for _, alter_query in step_cols:
+                    await conn.execute(text(alter_query))
+                await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_learning_paths_slug ON learning_paths(slug);"))
+                await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_learning_paths_is_featured ON learning_paths(is_featured);"))
+                await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_learning_paths_popularity_rank ON learning_paths(popularity_rank);"))
+            else:
+                for col_name, _ in learning_path_cols:
+                    try:
+                        col_type = "BOOLEAN DEFAULT 0" if col_name == "is_featured" else ("INTEGER" if col_name == "popularity_rank" else ("TEXT" if col_name == "slug" else "JSON"))
+                        await conn.execute(text(f"ALTER TABLE learning_paths ADD COLUMN {col_name} {col_type}"))
+                    except Exception:
+                        pass
+                for col_name, _ in step_cols:
+                    try:
+                        col_type = "TEXT" if col_name == "duration" else "JSON"
+                        await conn.execute(text(f"ALTER TABLE roadmap_steps ADD COLUMN {col_name} {col_type}"))
+                    except Exception:
+                        pass
+        logger.info("Roadmap schema columns verified/migrated successfully.")
+    except Exception as exc:
+        logger.warning("Roadmap schema migration warning (continuing): %s", exc)
+
+
 async def seed_initial_catalog_if_needed() -> None:
     """Check if skills table has records; if empty, seed the initial catalog idempotently."""
     try:
@@ -306,7 +354,14 @@ async def init_db() -> None:
     logger.info("Starting database initialization check...")
     await migrate_database()
     await run_auth_migrations(engine)
+    await run_roadmap_schema_migrations(engine)
     await seed_initial_catalog_if_needed()
+    try:
+        from app.db.seed_roadmaps_100 import seed_100_roadmaps
+        async with async_session_maker() as session:
+            await seed_100_roadmaps(session)
+    except Exception as exc:
+        logger.warning("Error running seed_100_roadmaps: %s", exc)
     await seed_achievements()
     logger.info("Database initialization completed successfully.")
 

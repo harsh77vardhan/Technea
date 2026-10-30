@@ -383,6 +383,7 @@ class RuleBasedProvider(BaseAIProvider):
         domain: str,
         level: str,
         topic: str = "",
+        context: dict[str, Any] | None = None,
         seed: Any = None,
     ) -> str:
         curricula = {
@@ -407,6 +408,20 @@ class RuleBasedProvider(BaseAIProvider):
                 ("Phase 4: LLMs, Transformers & RAG Systems", "4-5 Weeks", "Attention mechanisms, vector databases (Chroma/Pinecone), embedding retrieval, and prompt engineering. Milestone: Production RAG question-answering assistant."),
                 ("Phase 5: Autonomous AI Agents & Production Capstone", "4 Weeks", "LangChain/LangGraph agent orchestration, tool execution loops, and streaming API endpoints. Milestone: Autonomous multi-tool coding agent."),
             ],
+            "ai_agents": [
+                ("Phase 1: Agentic Foundations & Tool Execution", "3 Weeks", "ReAct framework, function calling, tool binding loops, and structured output parsing. Milestone: Autonomous research assistant agent."),
+                ("Phase 2: Multi-Agent Orchestration & State Graphs", "4 Weeks", "LangGraph state machines, supervisor agent patterns, routing, and message passing. Milestone: Multi-agent software development squad."),
+                ("Phase 3: Agent Memory & Vector Retrieval Systems", "3-4 Weeks", "Short-term vs long-term episodic memory, vector databases (Chroma/Pinecone), and hybrid retrieval. Milestone: Knowledge base agent with conversational memory."),
+                ("Phase 4: Agent Evaluation, Safety & Observability", "3 Weeks", "Guardrails, hallucination benchmarking, human-in-the-loop review, and LangSmith tracing. Milestone: Evaluated production agent system."),
+                ("Phase 5: Autonomous Deployment & Real-Time Tooling", "4 Weeks", "FastAPI streaming endpoints, asynchronous execution loops, Dockerization, and persistent state. Milestone: Autonomous code self-healing service."),
+            ],
+            "llm_engineering": [
+                ("Phase 1: LLM Foundations & Prompt Engineering", "2-3 Weeks", "Transformers intuition, tokenization, context windows, few-shot prompting, and structured schemas. Milestone: Automated prompt evaluation harness."),
+                ("Phase 2: Production Retrieval-Augmented Generation (RAG)", "4 Weeks", "Document chunking, dense embeddings, vector indexing, reranking, and hybrid search. Milestone: Production enterprise RAG assistant."),
+                ("Phase 3: Fine-Tuning & Model Adaptation", "4-5 Weeks", "LoRA, QLoRA, PEFT, dataset formatting, and supervised instruction tuning. Milestone: Domain-specialized fine-tuned model."),
+                ("Phase 4: High-Performance Model Serving", "3 Weeks", "vLLM, Ollama, quantization (AWQ/GGUF), KV-cache optimization, and streaming tokens. Milestone: High-throughput inference server."),
+                ("Phase 5: LLMOps, Guardrails & Evaluation", "3-4 Weeks", "Hallucination metrics, output validation (NeMo Guardrails), and CI/CD for prompts. Milestone: Production LLM gateway with monitoring."),
+            ],
             "cybersecurity": [
                 ("Phase 1: Computing Fundamentals & Linux Mastery", "3 Weeks", "Linux CLI navigation, process permissions, bash scripting, and system security fundamentals. Milestone: Hardened Linux server setup."),
                 ("Phase 2: Computer Networking & Packet Analysis", "4 Weeks", "TCP/IP 3-way handshake, OSI layers, DNS, and Wireshark traffic inspection. Milestone: Network traffic inspection report."),
@@ -427,6 +442,20 @@ class RuleBasedProvider(BaseAIProvider):
                 ("Phase 3: Business Intelligence & Dashboarding", "3 Weeks", "Interactive dashboards using Power BI / Tableau and storytelling metrics. Milestone: Executive KPI reporting dashboard."),
                 ("Phase 4: Data Engineering Pipelines & ETL", "4-5 Weeks", "Automated pipelines, Parquet columnar storage, and Apache Airflow DAGs. Milestone: Production ETL pipeline with automated scheduling."),
                 ("Phase 5: Predictive Modeling & Machine Learning", "4 Weeks", "Supervised classification, regression, and model interpretability. Milestone: Production predictive analytics model."),
+            ],
+            "data_engineering": [
+                ("Phase 1: Advanced SQL & Data Warehousing", "3-4 Weeks", "Complex joins, window functions, indexing, partitioning, and star/snowflake dimensional schemas. Milestone: Production relational data warehouse."),
+                ("Phase 2: Distributed Processing with Python & PySpark", "4 Weeks", "PySpark DataFrames, lazy evaluation, resilient distributed datasets, and Parquet columnar optimization. Milestone: Distributed log transformation pipeline."),
+                ("Phase 3: Orchestration & Workflow Scheduling (Airflow)", "3-4 Weeks", "Apache Airflow DAG design, operators, sensors, backfilling, and failure alerts. Milestone: Production multi-source automated ETL pipeline."),
+                ("Phase 4: Streaming Architecture & Event Brokers (Kafka)", "4 Weeks", "Kafka brokers, topics, consumer groups, Pub/Sub patterns, and real-time stream transformation. Milestone: Real-time event streaming pipeline."),
+                ("Phase 5: Cloud Lakehouse & Data Reliability", "4 Weeks", "dbt transformation modeling, data quality tests (Great Expectations), and cloud warehouse (Snowflake/BigQuery). Milestone: End-to-end lakehouse platform."),
+            ],
+            "mobile": [
+                ("Phase 1: Mobile UI & Reactive State Foundations", "3 Weeks", "Declarative UI (SwiftUI or Jetpack Compose / React Native), component layouts, and reactive state. Milestone: Interactive mobile dashboard."),
+                ("Phase 2: Networking, REST APIs & Offline Storage", "3-4 Weeks", "Asynchronous HTTP clients, JSON deserialization, local caching (Room / CoreData / SQLite). Milestone: Live offline-first news & weather app."),
+                ("Phase 3: Native Device Capabilities & Permissions", "3 Weeks", "Camera integration, GPS location services, push notifications, and background tasks. Milestone: Geolocation activity tracker."),
+                ("Phase 4: Architecture & State Management", "4 Weeks", "MVVM / Clean Architecture, dependency injection, repository pattern, and unit testing. Milestone: Full-featured mobile e-commerce client."),
+                ("Phase 5: Performance Profiling & App Store Release", "3 Weeks", "Memory/battery profiling, automated CI/CD build pipelines, and App Store / Google Play distribution. Milestone: Production-ready published mobile app."),
             ],
             "go": [
                 ("Phase 1: Go Syntax & Core Foundations", "2-3 Weeks", "Variables, static typing, control flow, functions, pointers, arrays, slices, maps, and packages. Milestone: High-efficiency CLI tool."),
@@ -453,7 +482,15 @@ class RuleBasedProvider(BaseAIProvider):
         # Resolve curriculum track
         track_key = domain
         t_low = topic.lower()
-        if any(w in t_low for w in ["ai engineer", "ai engineering", "machine learning", "deep learning"]) or domain == "ai_ml":
+        if any(w in t_low for w in ["ai agent", "ai agents", "autonomous agent", "crewai", "langgraph"]) or domain == "ai_agents":
+            track_key = "ai_agents"
+        elif any(w in t_low for w in ["llm", "rag", "langchain", "prompt engineering"]) or domain == "llm_engineering":
+            track_key = "llm_engineering"
+        elif any(w in t_low for w in ["data engineering", "data engineer", "etl", "spark", "airflow"]) or domain == "data_engineering":
+            track_key = "data_engineering"
+        elif any(w in t_low for w in ["mobile", "ios", "swift", "android", "kotlin"]) or domain == "mobile":
+            track_key = "mobile"
+        elif any(w in t_low for w in ["ai engineer", "ai engineering", "machine learning", "deep learning"]) or domain == "ai_ml":
             track_key = "ai_ml"
         elif "python" in t_low or domain == "python":
             track_key = "python"
@@ -463,7 +500,7 @@ class RuleBasedProvider(BaseAIProvider):
             track_key = "rust"
         elif any(w in t_low for w in ["javascript", "js"]) or domain in ["javascript", "js"]:
             track_key = "javascript"
-        elif any(w in t_low for w in ["cyber", "security", "hack"]) or domain == "cybersecurity":
+        elif any(w in t_low for w in ["cyber", "security", "hack", "pentest"]) or domain == "cybersecurity":
             track_key = "cybersecurity"
         elif any(w in t_low for w in ["devops", "cloud", "docker", "kubernetes"]) or domain == "cloud_devops":
             track_key = "cloud_devops"
@@ -478,12 +515,43 @@ class RuleBasedProvider(BaseAIProvider):
             domain_title = "Python Programming"
         elif track_key == "ai_ml":
             domain_title = "AI Engineering"
+        elif track_key == "ai_agents":
+            domain_title = "Autonomous AI Agents"
+        elif track_key == "llm_engineering":
+            domain_title = "LLM & Generative AI Engineering"
+        elif track_key == "data_engineering":
+            domain_title = "Data Engineering"
+        elif track_key == "mobile":
+            domain_title = "Mobile Application Development"
         elif track_key == "go":
             domain_title = "Go (Golang) Engineering"
         elif track_key == "rust":
             domain_title = "Rust Systems Programming"
         elif track_key == "javascript":
             domain_title = "Modern JavaScript Development"
+        elif track_key == "cybersecurity":
+            domain_title = "Cybersecurity & Ethical Hacking"
+        elif track_key == "cloud_devops":
+            domain_title = "Cloud & DevOps Engineering"
+
+        # Check for real matching Technea learning path in catalog context
+        top_path = None
+        if context and context.get("matched_paths"):
+            top_path = context["matched_paths"][0]
+
+        catalog_banner = ""
+        if top_path:
+            direct_link = top_path.get("direct_link") or f"/learning-paths/{top_path.get('id', '')}"
+            est = top_path.get("estimated_hours") or top_path.get("duration") or "Structured Curriculum"
+            step_count = top_path.get("step_count")
+            step_str = f" across {step_count} sequential milestones" if step_count else ""
+            desc = top_path.get("description", "")
+            desc_str = f"\n*{desc}*\n" if desc else ""
+            catalog_banner = (
+                f"### Technea Learning Path: [{top_path['title']}]({direct_link})\n"
+                f"Enroll and track your verified progress in Technea's official curriculum: "
+                f"**[{top_path['title']}]({direct_link})** ({est}{step_str}).\n{desc_str}\n"
+            )
 
         intros = [
             f"### Engineering Roadmap: {domain_title} ({level})\n\n"
@@ -492,12 +560,21 @@ class RuleBasedProvider(BaseAIProvider):
             f"Here is a practical path tailored for the **{level}** stage to build lasting capability in **{domain_title}**:",
             f"### Phased Curriculum Roadmap: {domain_title} ({level})\n\n"
             f"To achieve deep proficiency in **{domain_title}**, follow this sequential progression starting with your current phase:",
+            f"### Architecture Track: {domain_title} ({level})\n\n"
+            f"Here is your structured technical trajectory for mastering **{domain_title}** systematically:",
+            f"### Mastery Blueprint: {domain_title} ({level})\n\n"
+            f"Accelerate your learning velocity in **{domain_title}** with this phased milestone plan:",
+            f"### Professional Learning Progression: {domain_title} ({level})\n\n"
+            f"Follow this structured roadmap to build production competency in **{domain_title}**:",
         ]
 
         action_tips = [
             "*Mentor Note: Complete each milestone before jumping ahead. Building small, verified projects produces 10x deeper retention than skimming syntax.*",
             "*Mentor Note: Commit your code daily to GitHub. A consistent commit history shows disciplined engineering habits to future employers.*",
             "*Mentor Note: When you encounter errors in any phase, embrace the debugging process—reading stack traces is a core senior skill.*",
+            "*Mentor Note: Focus on writing clean, readable code with automated tests early on. Code is read far more often than it is written.*",
+            "*Mentor Note: Build a public portfolio with your capstone deliverables. Demonstrable working software speaks louder than certifications.*",
+            "*Mentor Note: Pair your theoretical milestone progress with daily deliberate practice in your local development environment.*",
         ]
 
         rng = random.Random(seed) if seed is not None else None
@@ -508,7 +585,11 @@ class RuleBasedProvider(BaseAIProvider):
         p1_concepts = p1_desc.split("Milestone:")[0].strip().rstrip(".")
         p1_project = p1_desc.split("Milestone:")[1].strip() if "Milestone:" in p1_desc else "Milestone deliverable"
 
-        lines = [
+        lines = []
+        if catalog_banner:
+            lines.append(catalog_banner)
+
+        lines.extend([
             self._choose(intros, rng=rng),
             "\n\n",
             f"#### 1. Current Phase: {p1_title} *(Estimated Duration: {p1_duration})*\n",
@@ -523,7 +604,7 @@ class RuleBasedProvider(BaseAIProvider):
             "#### 4. What Comes Next\n",
             f"Once you complete Phase 1 and push your project deliverable, your immediate next phase is **{p2_title}** (*{p2_duration}*).\n\n",
             "**Upcoming Roadmap Progression**:\n",
-        ]
+        ])
 
         for idx, (title, duration, desc) in enumerate(steps[1:], 2):
             short_desc = desc.split(".")[0].strip()
@@ -1406,10 +1487,24 @@ class RuleBasedProvider(BaseAIProvider):
             "- **Observability**: Instrument distributed tracing and export Prometheus metrics to track p99 latency, request throughput, and error rates."
         )
 
-    def _generate_python_learning_roadmap(self, seed: Any = None) -> str:
+    def _generate_python_learning_roadmap(self, seed: Any = None, context: dict[str, Any] | None = None) -> str:
         """Provide structured learning roadmap response (Foundations -> Data Structures -> Hands-on Projects -> Web/Data -> Production testing)."""
+        banner = ""
+        if context and context.get("matched_paths"):
+            lp = context["matched_paths"][0]
+            direct_link = lp.get("direct_link") or f"/learning-paths/{lp.get('id', '')}"
+            est = lp.get("estimated_hours") or lp.get("duration") or "Curated Track"
+            step_str = f" across {lp['step_count']} sequential milestones" if lp.get("step_count") else ""
+            desc = lp.get("description", "")
+            desc_str = f"\n*{desc}*\n" if desc else ""
+            banner = (
+                f"### Technea Learning Path: [{lp['title']}]({direct_link})\n"
+                f"Enroll and track your verified progress in Technea's official curriculum: "
+                f"**[{lp['title']}]({direct_link})** ({est}{step_str}).\n{desc_str}\n\n"
+            )
+
         return (
-            "### Learning Roadmap: How to Master Python\n\n"
+            f"{banner}### Learning Roadmap: How to Master Python\n\n"
             "Here is the structured 5-phase engineering roadmap to progress from fundamental syntax to production-ready software development:\n\n"
             "#### 1. Foundations (Weeks 1–3)\n"
             "- **Core Syntax & Primitives**: Variables, dynamic typing, primitive data types (integers, floats, strings, booleans), and operators.\n"
@@ -1437,12 +1532,26 @@ class RuleBasedProvider(BaseAIProvider):
             "- **Milestone**: Deploy a containerized Python service to production with automated tests running on every pull request."
         )
 
-    def _generate_javascript_learning_roadmap(self, seed: Any = None) -> str:
+    def _generate_javascript_learning_roadmap(self, seed: Any = None, context: dict[str, Any] | None = None) -> str:
         """Provide structured JavaScript learning roadmap response:
         (Foundations: Syntax, DOM, Events -> Modern JS: ES6+, Async/Await, Fetch -> Advanced: Closures, Prototypes, Modules -> Frameworks: React/Node).
         """
+        banner = ""
+        if context and context.get("matched_paths"):
+            lp = context["matched_paths"][0]
+            direct_link = lp.get("direct_link") or f"/learning-paths/{lp.get('id', '')}"
+            est = lp.get("estimated_hours") or lp.get("duration") or "Curated Track"
+            step_str = f" across {lp['step_count']} sequential milestones" if lp.get("step_count") else ""
+            desc = lp.get("description", "")
+            desc_str = f"\n*{desc}*\n" if desc else ""
+            banner = (
+                f"### Technea Learning Path: [{lp['title']}]({direct_link})\n"
+                f"Enroll and track your verified progress in Technea's official curriculum: "
+                f"**[{lp['title']}]({direct_link})** ({est}{step_str}).\n{desc_str}\n\n"
+            )
+
         return (
-            "### Learning Roadmap: How to Master JavaScript\n\n"
+            f"{banner}### Learning Roadmap: How to Master JavaScript\n\n"
             "Here is the comprehensive 4-phase engineering roadmap to progress from fundamental syntax to modern full-stack development:\n\n"
             "#### Phase 1: Foundations (Syntax, DOM, Events)\n"
             "- **Syntax & Language Primitives**: Variables (`const`, `let`), data types (strings, numbers, booleans, objects, arrays), operators, conditionals (`if`/`else`, `switch`), loops (`for`, `while`, `for...of`), and functions.\n"
@@ -1922,13 +2031,13 @@ class RuleBasedProvider(BaseAIProvider):
         elif has_backend_arch:
             res = self._generate_backend_architecture_response(seed=seed)
         elif has_python_learning:
-            res = self._generate_python_learning_roadmap(seed=seed)
+            res = self._generate_python_learning_roadmap(seed=seed, context=ctx)
         elif has_javascript_learning:
-            res = self._generate_javascript_learning_roadmap(seed=seed)
+            res = self._generate_javascript_learning_roadmap(seed=seed, context=ctx)
         elif has_go_roadmap:
-            res = self._generate_roadmap_response(domain="go", level=level, topic="go", seed=seed)
+            res = self._generate_roadmap_response(domain="go", level=level, topic="go", context=ctx, seed=seed)
         elif has_rust_roadmap:
-            res = self._generate_roadmap_response(domain="rust", level=level, topic="rust", seed=seed)
+            res = self._generate_roadmap_response(domain="rust", level=level, topic="rust", context=ctx, seed=seed)
         elif has_recursion or has_async:
             res = self._generate_coding_response(prompt, domain, level, seed=seed)
         elif has_debugging or str(intent) == "debugging":
@@ -1957,18 +2066,22 @@ class RuleBasedProvider(BaseAIProvider):
             res = self._generate_project_response(domain, level, context=ctx, seed=seed)
         elif intent in {INTENT_ROADMAP_REQUEST, INTENT_ROADMAP_PLANNING}:
             if "javascript" in p or "js" in p:
-                res = self._generate_javascript_learning_roadmap(seed=seed)
+                res = self._generate_javascript_learning_roadmap(seed=seed, context=ctx)
             else:
-                res = self._generate_roadmap_response(domain, level, topic=p, seed=seed)
+                res = self._generate_roadmap_response(domain, level, topic=p, context=ctx, seed=seed)
         elif intent in {INTENT_CAREER_ADVICE, INTENT_CAREER_GUIDANCE}:
             res = self._generate_career_response(level, domain, seed=seed)
         elif intent == INTENT_LEARNING_ADVICE:
             if any(w in p for w in ["next", "start", "begin", "where do i", "what should i"]):
                 res = self._generate_next_step_response(domain, level, prompt=prompt, context=ctx, seed=seed)
+            elif any(w in p for w in ["roadmap", "path", "curriculum", "become", "track"]) or (
+                any(w in p for w in ["how do i", "how to", "i want to learn", "want to learn"]) and not any(w in p for w in ["why", "what is", "explain"])
+            ):
+                res = self._generate_roadmap_response(domain, level, topic=p, context=ctx, seed=seed)
             elif "javascript" in p or "js" in p:
-                res = self._generate_javascript_learning_roadmap(seed=seed)
+                res = self._generate_javascript_learning_roadmap(seed=seed, context=ctx)
             elif "python" in p:
-                res = self._generate_python_learning_roadmap(seed=seed)
+                res = self._generate_python_learning_roadmap(seed=seed, context=ctx)
             else:
                 res = self._generate_conceptual_response(prompt, domain, level, context=ctx, seed=seed)
         else:
@@ -2056,12 +2169,13 @@ class RuleBasedProvider(BaseAIProvider):
 
         cat_items: list[str] = []
         if paths:
-            lp = paths[0]
-            step_info = f", {lp['step_count']} sequential milestones" if lp.get("step_count") else ""
-            cat_items.append(
-                f"**Technea Learning Path**: **{lp['title']}** "
-                f"({lp.get('estimated_hours', 'Curated Roadmap')}{step_info})"
-            )
+            for lp in paths[:2]:
+                step_info = f", {lp['step_count']} sequential milestones" if lp.get("step_count") else ""
+                direct_link = lp.get("direct_link") or f"/learning-paths/{lp.get('id', '')}"
+                cat_items.append(
+                    f"**Technea Learning Path**: [{lp['title']}]({direct_link}) "
+                    f"({lp.get('estimated_hours') or lp.get('duration') or 'Curated Roadmap'}{step_info}) — [View Roadmap]({direct_link})"
+                )
         if projects:
             p = projects[0]
             stack = ", ".join(p.get("tech_stack", [])[:3]) if p.get("tech_stack") else "Modern Stack"

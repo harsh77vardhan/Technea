@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, func
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, JSON, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -40,6 +40,24 @@ class RoadmapStep(Base):
     description: Mapped[str | None] = mapped_column(
         Text,
         nullable=True,
+    )
+    topics: Mapped[list[str] | None] = mapped_column(
+        JSON,
+        nullable=True,
+        default=list,
+    )
+    duration: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+    )
+    project_idea: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+    resources: Mapped[list[dict] | None] = mapped_column(
+        JSON,
+        nullable=True,
+        default=list,
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

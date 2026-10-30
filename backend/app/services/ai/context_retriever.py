@@ -33,30 +33,58 @@ logger = logging.getLogger("technea.ai.context_retriever")
 
 # Common domain concept phrases to match multi-word technical concepts first
 DOMAIN_CONCEPTS: list[str] = [
-    "full stack",
-    "fullstack",
-    "machine learning",
-    "deep learning",
+    # Multi-word engineering & domain roles
+    "ai engineer",
+    "ai engineering",
+    "ai agent",
+    "ai agents",
+    "autonomous agent",
+    "autonomous agents",
+    "multi-agent",
+    "llm engineering",
+    "large language models",
+    "prompt engineering",
+    "data engineering",
+    "data engineer",
     "data science",
     "data analytics",
-    "web development",
     "cloud computing",
     "cloud devops",
+    "cloud engineering",
+    "cloud native",
+    "cloud security",
+    "devsecops",
     "ethical hacking",
-    "cyber security",
-    "cybersecurity",
-    "system design",
-    "systems programming",
+    "penetration testing",
+    "network security",
+    "web security",
+    "linux security",
+    "incident response",
+    "soc analyst",
+    "malware analysis",
+    "reverse engineering",
+    "full stack",
+    "fullstack",
+    "web development",
     "front end",
     "frontend",
     "back end",
     "backend",
-    "devops",
-    "artificial intelligence",
-    "microservices",
+    "machine learning",
+    "deep learning",
     "computer vision",
     "natural language processing",
     "mobile development",
+    "ios development",
+    "android development",
+    "systems programming",
+    "competitive programming",
+    "cyber security",
+    "cybersecurity",
+    "system design",
+    "microservices",
+    "devops",
+    "artificial intelligence",
 ]
 
 # Single-token technical keywords
@@ -66,6 +94,7 @@ TECH_KEYWORDS: set[str] = {
     "fastapi",
     "docker",
     "kubernetes",
+    "k8s",
     "sql",
     "postgres",
     "postgresql",
@@ -93,6 +122,11 @@ TECH_KEYWORDS: set[str] = {
     "golang",
     "go",
     "rust",
+    "swift",
+    "swiftui",
+    "ios",
+    "android",
+    "kotlin",
     "graphql",
     "rest",
     "api",
@@ -103,12 +137,29 @@ TECH_KEYWORDS: set[str] = {
     "kafka",
     "rabbitmq",
     "security",
+    "cybersecurity",
+    "pentesting",
+    "infosec",
+    "devsecops",
+    "owasp",
+    "siem",
     "mlops",
     "bash",
     "shell",
     "testing",
     "pytest",
     "data",
+    "ai",
+    "ml",
+    "llm",
+    "rag",
+    "agent",
+    "agents",
+    "spark",
+    "airflow",
+    "snowflake",
+    "dbt",
+    "terraform",
 }
 
 # English stop words to filter out when extracting general query tokens
@@ -124,8 +175,48 @@ STOP_WORDS: set[str] = {
     "these", "those", "am", "is", "are", "was", "were", "be", "been", "being", "have",
     "has", "had", "having", "do", "does", "did", "doing", "get", "got", "getting",
     "start", "started", "starting", "learn", "learning", "tell", "show", "please",
-    "help", "recommend", "best", "way", "guide", "roadmap", "project", "projects",
+    "help", "recommend", "best", "way", "guide", "roadmap", "roadmaps", "project", "projects",
     "skill", "skills", "course", "courses", "path", "paths", "want", "like", "need",
+    "become", "becoming", "became", "career", "engineer", "engineering", "developer", "development",
+}
+
+# Domain synonym expansion map for AI Context Retriever
+RETRIEVER_SYNONYMS: dict[str, list[str]] = {
+    "k8s": ["kubernetes", "container orchestration"],
+    "kubernetes": ["k8s", "container orchestration"],
+    "ml": ["machine learning", "scikit-learn"],
+    "machine learning": ["ml", "scikit-learn"],
+    "ai": ["artificial intelligence", "ai engineering", "machine learning"],
+    "artificial intelligence": ["ai", "machine learning"],
+    "ai engineer": ["ai engineering", "artificial intelligence", "machine learning", "deep learning"],
+    "ai engineering": ["ai engineer", "artificial intelligence", "machine learning", "deep learning"],
+    "ai agent": ["ai agents", "autonomous agents"],
+    "ai agents": ["ai agent", "autonomous agents", "langgraph", "crewai"],
+    "agent": ["ai agents", "autonomous agents"],
+    "agents": ["ai agents", "autonomous agents"],
+    "pentesting": ["penetration testing", "ethical hacking", "cybersecurity"],
+    "penetration testing": ["pentesting", "ethical hacking", "cybersecurity"],
+    "ethical hacking": ["penetration testing", "pentesting", "cybersecurity"],
+    "infosec": ["cybersecurity", "cyber security"],
+    "cyber security": ["cybersecurity", "infosec", "ethical hacking"],
+    "cybersecurity": ["cyber security", "ethical hacking", "infosec"],
+    "ios": ["swift", "swiftui", "mobile development"],
+    "swift": ["ios", "swiftui", "mobile development"],
+    "swiftui": ["swift", "ios", "mobile development"],
+    "android": ["kotlin", "mobile development"],
+    "kotlin": ["android", "mobile development"],
+    "nextjs": ["next.js", "next", "react"],
+    "next.js": ["nextjs", "react"],
+    "golang": ["go"],
+    "go": ["golang"],
+    "rust": ["systems programming", "rust lang"],
+    "cloud": ["cloud computing", "devops", "aws", "gcp"],
+    "cloud computing": ["cloud", "devops", "aws", "gcp"],
+    "devops": ["ci/cd", "docker", "kubernetes"],
+    "data engineering": ["data engineer", "etl", "data pipelines", "big data"],
+    "data engineer": ["data engineering", "etl"],
+    "llm": ["large language models", "generative ai", "prompt engineering"],
+    "large language models": ["llm", "generative ai"],
 }
 
 # Advanced topics that must be hidden from Beginner / Code Initiate users unless explicitly requested
@@ -159,13 +250,13 @@ class ContextRetriever:
     """
 
     def extract_keywords(self, query: str) -> list[str]:
-        """Extract multi-word domain concepts and technical keywords from a query string.
+        """Extract multi-word domain concepts, technical keywords, and synonym expansions from a query string.
 
         Args:
             query: Raw user query or prompt.
 
         Returns:
-            List of prioritized technical concepts and keywords.
+            List of prioritized technical concepts and keywords with synonym expansions.
         """
         if not query or not query.strip():
             return []
@@ -186,14 +277,43 @@ class ContextRetriever:
             if clean_w in TECH_KEYWORDS and clean_w not in extracted:
                 extracted.append(clean_w)
 
-        # 3. If no technical keywords were found, extract salient non-stopword tokens (len >= 3)
+        # 3. Direct checks for key aliases & abbreviations
+        alias_checks = [
+            ("k8s", "kubernetes"),
+            ("ml", "machine learning"),
+            ("pentesting", "penetration testing"),
+            ("ios", "swift"),
+            ("nextjs", "next.js"),
+            ("agent", "ai agents"),
+            ("agents", "ai agents"),
+            ("ai", "artificial intelligence"),
+            ("llm", "large language models"),
+            ("golang", "go"),
+        ]
+        for trigger, canonical in alias_checks:
+            pattern = r"(?:\b|_)" + re.escape(trigger) + r"(?:\b|_)"
+            if re.search(pattern, q):
+                if trigger not in extracted:
+                    extracted.append(trigger)
+                if canonical not in extracted:
+                    extracted.append(canonical)
+
+        # 4. If no technical keywords were found, extract salient non-stopword tokens (len >= 3)
         if not extracted:
             for w in words:
                 clean_w = w.strip(".,;:?!")
                 if len(clean_w) >= 3 and clean_w not in STOP_WORDS and clean_w not in extracted:
                     extracted.append(clean_w)
 
-        return extracted
+        # 5. Expand synonyms for all extracted terms
+        expanded: list[str] = list(extracted)
+        for term in extracted:
+            syns = RETRIEVER_SYNONYMS.get(term, [])
+            for s in syns:
+                if s not in expanded:
+                    expanded.append(s)
+
+        return expanded
 
     def _extract_anchor_keywords(
         self,
@@ -355,6 +475,10 @@ class ContextRetriever:
             filters.append(LearningPath.description.ilike(pat))
             filters.append(cast(LearningPath.search_terms, String).ilike(pat))
             filters.append(cast(LearningPath.related_concepts, String).ilike(pat))
+            filters.append(cast(LearningPath.skills_covered, String).ilike(pat))
+            filters.append(cast(LearningPath.technology_stack, String).ilike(pat))
+            filters.append(cast(LearningPath.tags, String).ilike(pat))
+            filters.append(cast(LearningPath.slug, String).ilike(pat))
 
         exclusion_filters = []
         for bl in ["%blender%", "%3d design%", "%3d modeling%", "%business analytics%", "%accounting%", "%financial analysis%"]:
@@ -383,7 +507,8 @@ class ContextRetriever:
 
         results: list[dict[str, Any]] = []
         for lp, step_count in rows:
-            slug = slugify(lp.title)
+            slug = lp.slug or slugify(lp.title)
+            direct_link = f"/learning-paths/{lp.id}"
             results.append({
                 "id": lp.id,
                 "title": lp.title,
@@ -394,6 +519,10 @@ class ContextRetriever:
                 "duration": lp.duration or "4-6 Weeks",
                 "step_count": int(step_count or 0),
                 "description": lp.description or "",
+                "skills_covered": lp.skills_covered or [],
+                "technology_stack": lp.technology_stack or [],
+                "direct_link": direct_link,
+                "url": direct_link,
             })
         return results
 
@@ -428,6 +557,11 @@ class ContextRetriever:
                 exclusion_filters.append(func.coalesce(Course.title, "").notilike(bl))
 
         title_like = or_(*[Course.title.ilike(f"%{kw}%") for kw in effective_kws])
+        lvl_order = case(
+            (Course.difficulty.ilike("%beginner%"), 0),
+            (Course.difficulty.ilike("%intermediate%"), 1),
+            else_=2,
+        )
 
         stmt = (
             select(Course)
@@ -435,6 +569,7 @@ class ContextRetriever:
             .where(*exclusion_filters)
             .order_by(
                 case((title_like, 0), else_=1),
+                lvl_order,
                 Course.title,
             )
             .limit(limit)
@@ -999,10 +1134,18 @@ class ContextRetriever:
         if learning_paths:
             lines.append("\n#### 🗺️ Technea Learning Paths & Interactive Roadmaps:")
             for lp in learning_paths:
+                direct_url = f"/learning-paths/{lp['id']}"
+                step_str = f", Steps: {lp['step_count']}" if lp.get("step_count") else ""
                 lines.append(
-                    f"- **{lp['title']}** (Slug: `{lp['slug']}`, Level: {lp['level']}, "
-                    f"Duration: {lp['estimated_hours']}, Steps: {lp['step_count']})"
+                    f"- **[{lp['title']}]({direct_url})** (Direct Link: `{direct_url}`, Slug: `{lp['slug']}`, Level: {lp['level']}, "
+                    f"Duration: {lp['estimated_hours']}{step_str})"
                 )
+                if lp.get("skills_covered"):
+                    sc_preview = ", ".join(lp["skills_covered"][:5])
+                    lines.append(f"  Skills Covered: {sc_preview}")
+                if lp.get("technology_stack"):
+                    tech_preview = ", ".join(lp["technology_stack"][:5])
+                    lines.append(f"  Tech Stack: {tech_preview}")
                 if lp.get("description"):
                     lines.append(f"  Description: {lp['description'][:140]}...")
 
@@ -1053,6 +1196,7 @@ class ContextRetriever:
             active = user_progress["active_roadmaps"][0]
             cur_m = active.get("current_milestone_title")
             action_title = f"Continue Roadmap: {active['title']} ({cur_m})" if cur_m else f"Continue Roadmap: {active['title']}"
+            direct_url = f"/learning-paths/{active['id']}"
             actions.append({
                 "action_type": "view_roadmap",
                 "title": action_title,
@@ -1062,6 +1206,8 @@ class ContextRetriever:
                     "current_step": active["current_step"],
                     "current_milestone_title": cur_m,
                     "slug": slugify(active["title"]),
+                    "url": direct_url,
+                    "direct_link": direct_url,
                     "status": "active",
                 },
             })
@@ -1074,6 +1220,7 @@ class ContextRetriever:
                 active_domain = recommendation_engine._infer_active_domain({"user_progress": user_progress})
                 if not recommendation_engine.is_item_relevant(lp, active_domain, set()):
                     continue
+            direct_url = f"/learning-paths/{lp['id']}"
             actions.append({
                 "action_type": "view_roadmap",
                 "title": f"Explore Roadmap: {lp['title']}",
@@ -1082,6 +1229,8 @@ class ContextRetriever:
                     "path_id": lp["id"],
                     "title": lp["title"],
                     "level": lp["level"],
+                    "url": direct_url,
+                    "direct_link": direct_url,
                 },
             })
 

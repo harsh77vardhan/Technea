@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, JSON, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, JSON, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -99,6 +99,54 @@ class LearningPath(Base):
         ForeignKey("skills.id", ondelete="SET NULL"),
         nullable=True,
         index=True,
+    )
+    slug: Mapped[str | None] = mapped_column(
+        String(255),
+        unique=True,
+        index=True,
+        nullable=True,
+    )
+    skills_covered: Mapped[list[str] | None] = mapped_column(
+        JSON,
+        nullable=True,
+        default=list,
+    )
+    prerequisites: Mapped[list[str] | None] = mapped_column(
+        JSON,
+        nullable=True,
+        default=list,
+    )
+    career_outcomes: Mapped[list[str] | None] = mapped_column(
+        JSON,
+        nullable=True,
+        default=list,
+    )
+    technology_stack: Mapped[list[str] | None] = mapped_column(
+        JSON,
+        nullable=True,
+        default=list,
+    )
+    resources: Mapped[list[dict] | None] = mapped_column(
+        JSON,
+        nullable=True,
+        default=list,
+    )
+    tags: Mapped[list[str] | None] = mapped_column(
+        JSON,
+        nullable=True,
+        default=list,
+    )
+    is_featured: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        index=True,
+        nullable=False,
+    )
+    popularity_rank: Mapped[int] = mapped_column(
+        Integer,
+        default=100,
+        index=True,
+        nullable=False,
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

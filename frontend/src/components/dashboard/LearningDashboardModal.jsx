@@ -28,6 +28,7 @@ import {
   Play,
   Code2,
   ShieldCheck,
+  Search,
 } from 'lucide-react'
 import { useAuth } from '../../context/useAuth'
 import {
@@ -41,6 +42,7 @@ import {
   getUserProfileApi,
   getAvatarUrl,
   getCourses,
+  getRoadmapCatalogApi,
 } from '../../services/api'
 import AIMessageRenderer from './AIMessageRenderer'
 import MemphisCornerDecorations from './MemphisCornerDecorations'
@@ -306,6 +308,13 @@ export default function LearningDashboardModal({
   const [courseFilter, setCourseFilter] = useState('all') // 'all' | 'in_progress' | 'completed' | 'catalog'
   const [editingGithubProject, setEditingGithubProject] = useState(null)
   const [githubUrlInput, setGithubUrlInput] = useState('')
+
+  // Roadmap Catalog State (100+ Roadmaps)
+  const [catalogRoadmaps, setCatalogRoadmaps] = useState([])
+  const catalogLoading = loading && catalogRoadmaps.length === 0
+  const [roadmapSearchQuery, setRoadmapSearchQuery] = useState('')
+  const [roadmapCategoryFilter, setRoadmapCategoryFilter] = useState('All')
+  const [roadmapDifficultyFilter, setRoadmapDifficultyFilter] = useState('All')
 
   // Derived user details & learning context
   const fullName = user?.full_name || user?.email?.split('@')[0] || 'Harsh'
@@ -640,6 +649,7 @@ export default function LearningDashboardModal({
           myProjsData,
           profileRes,
           coursesRes,
+          catalogRes,
         ] = await Promise.allSettled([
           getDashboardSummaryApi(),
           getMyRoadmapsApi(),
@@ -648,6 +658,7 @@ export default function LearningDashboardModal({
           getMyProjectsApi(),
           getUserProfileApi(),
           getCourses(),
+          getRoadmapCatalogApi({ limit: 250 }),
         ])
 
         if (isMounted) {
@@ -684,6 +695,9 @@ export default function LearningDashboardModal({
           }
           if (coursesRes.status === 'fulfilled' && Array.isArray(coursesRes.value)) {
             setAllCourses(coursesRes.value)
+          }
+          if (catalogRes.status === 'fulfilled' && Array.isArray(catalogRes.value)) {
+            setCatalogRoadmaps(catalogRes.value)
           }
           setLoading(false)
         }
@@ -871,6 +885,179 @@ export default function LearningDashboardModal({
     }
     return []
   }, [enrolledPaths, allCourses])
+
+  // Roadmap Categories & Difficulties presets
+  const ROADMAP_CATEGORIES = [
+    'All',
+    'Programming',
+    'Web Development',
+    'AI / ML',
+    'Data',
+    'Cloud & DevOps',
+    'Cybersecurity',
+    'Mobile',
+    'Career',
+    'Design',
+  ]
+
+  const ROADMAP_DIFFICULTIES = [
+    'All',
+    'Beginner',
+    'Intermediate',
+    'Advanced',
+  ]
+
+  const matchesRoadmapCategory = (roadmapCategory, selected) => {
+    if (selected === 'All') return true
+    const cat = (roadmapCategory || '').toLowerCase()
+    if (selected === 'AI / ML') {
+      return (
+        cat.includes('ai') ||
+        cat.includes('ml') ||
+        cat.includes('machine learning') ||
+        cat.includes('intelligence') ||
+        cat.includes('nlp') ||
+        cat.includes('deep learning')
+      )
+    }
+    if (selected === 'Web Development') {
+      return (
+        cat.includes('web') ||
+        cat.includes('frontend') ||
+        cat.includes('backend') ||
+        cat.includes('full-stack') ||
+        cat.includes('full stack') ||
+        cat.includes('react')
+      )
+    }
+    if (selected === 'Cloud & DevOps') {
+      return (
+        cat.includes('cloud') ||
+        cat.includes('devops') ||
+        cat.includes('docker') ||
+        cat.includes('kubernetes') ||
+        cat.includes('aws') ||
+        cat.includes('azure') ||
+        cat.includes('gcp') ||
+        cat.includes('linux') ||
+        cat.includes('infrastructure')
+      )
+    }
+    if (selected === 'Data') {
+      return (
+        cat.includes('data') ||
+        cat.includes('analytics') ||
+        cat.includes('database') ||
+        cat.includes('sql') ||
+        cat.includes('pipeline')
+      )
+    }
+    if (selected === 'Programming') {
+      return (
+        cat.includes('programming') ||
+        cat.includes('python') ||
+        cat.includes('javascript') ||
+        cat.includes('typescript') ||
+        cat.includes('c++') ||
+        cat.includes('java') ||
+        cat.includes('rust') ||
+        cat.includes('golang') ||
+        cat.includes('algorithms')
+      )
+    }
+    if (selected === 'Cybersecurity') {
+      return (
+        cat.includes('cyber') ||
+        cat.includes('security') ||
+        cat.includes('pentest') ||
+        cat.includes('ethical') ||
+        cat.includes('infosec')
+      )
+    }
+    if (selected === 'Mobile') {
+      return (
+        cat.includes('mobile') ||
+        cat.includes('ios') ||
+        cat.includes('android') ||
+        cat.includes('flutter') ||
+        cat.includes('react native') ||
+        cat.includes('swift')
+      )
+    }
+    if (selected === 'Design') {
+      return (
+        cat.includes('design') ||
+        cat.includes('ui') ||
+        cat.includes('ux') ||
+        cat.includes('figma') ||
+        cat.includes('product design')
+      )
+    }
+    if (selected === 'Career') {
+      return (
+        cat.includes('career') ||
+        cat.includes('business') ||
+        cat.includes('product') ||
+        cat.includes('interview') ||
+        cat.includes('system design') ||
+        cat.includes('management')
+      )
+    }
+    return cat.includes(selected.toLowerCase())
+  }
+
+  // On-demand fetch if roadmaps tab opened and catalogRoadmaps is empty
+  useEffect(() => {
+    let active = true
+    if (activeTab === 'roadmaps' && catalogRoadmaps.length === 0) {
+      getRoadmapCatalogApi({ limit: 250 })
+        .then((data) => {
+          if (active && Array.isArray(data)) setCatalogRoadmaps(data)
+        })
+        .catch((err) => console.warn('Could not load roadmap catalog:', err))
+    }
+    return () => {
+      active = false
+    }
+  }, [activeTab, catalogRoadmaps.length])
+
+  const filteredCatalogRoadmaps = useMemo(() => {
+    const q = (roadmapSearchQuery || '').trim().toLowerCase()
+    return catalogRoadmaps.filter((rm) => {
+      // Category filter
+      if (!matchesRoadmapCategory(rm.category, roadmapCategoryFilter)) {
+        return false
+      }
+      // Difficulty filter
+      if (roadmapDifficultyFilter !== 'All') {
+        const lvl = (rm.level || rm.difficulty || '').toLowerCase()
+        if (!lvl.includes(roadmapDifficultyFilter.toLowerCase())) {
+          return false
+        }
+      }
+      // Search query
+      if (q) {
+        const titleMatch = (rm.title || '').toLowerCase().includes(q)
+        const descMatch = (rm.description || '').toLowerCase().includes(q)
+        const catMatch = (rm.category || '').toLowerCase().includes(q)
+        const termsMatch =
+          Array.isArray(rm.search_terms) &&
+          rm.search_terms.some((t) => String(t).toLowerCase().includes(q))
+        const conceptsMatch =
+          Array.isArray(rm.related_concepts) &&
+          rm.related_concepts.some((c) => String(c).toLowerCase().includes(q))
+        if (!titleMatch && !descMatch && !catMatch && !termsMatch && !conceptsMatch) {
+          return false
+        }
+      }
+      return true
+    })
+  }, [catalogRoadmaps, roadmapCategoryFilter, roadmapDifficultyFilter, roadmapSearchQuery])
+
+  const handleExploreCatalogRoadmap = (roadmap) => {
+    onClose()
+    onSelectPath(roadmap)
+  }
 
   if (!isOpen) return null
 
@@ -1066,7 +1253,7 @@ export default function LearningDashboardModal({
                   </motion.div>
                 )}
 
-                {/* ══════════════ TAB 2: ROADMAPS (CAREER BLUEPRINTS) ══════════════ */}
+                {/* ══════════════ TAB 2: ROADMAPS (CAREER BLUEPRINTS & 100+ CATALOG) ══════════════ */}
                 {activeTab === 'roadmaps' && (
                   <motion.div
                     key="roadmaps"
@@ -1074,148 +1261,365 @@ export default function LearningDashboardModal({
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-                    className="space-y-6"
+                    className="space-y-8"
                   >
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/[0.08] pb-4">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h2 className="text-lg font-bold text-white tracking-tight">
-                            Your Career Roadmaps
-                          </h2>
-                          <span className="rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-0.5 text-[10px] font-mono text-neutral-300">
-                            {savedRoadmaps.length} Custom Blueprints
-                          </span>
+                    {/* ── 1. YOUR SAVED ROADMAPS (PRESERVED AT TOP) ── */}
+                    <div className="space-y-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/[0.08] pb-4">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h2 className="text-lg font-bold text-white tracking-tight">
+                              Your Saved Roadmaps
+                            </h2>
+                            <span className="rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-0.5 text-[10px] font-mono text-neutral-300">
+                              {savedRoadmaps.length} Custom Blueprints
+                            </span>
+                          </div>
+                          <p className="text-xs text-neutral-400 mt-0.5">
+                            AI-synthesized blueprints and personalized curriculum tailored to your specific career trajectory.
+                          </p>
                         </div>
-                        <p className="text-xs text-neutral-400 mt-0.5">
-                          AI-generated blueprints and enrolled catalog journeys tailored to your career trajectory.
-                        </p>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenRoadmapBuilder()}
+                          className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-white px-4 py-2 text-xs font-semibold text-black hover:bg-neutral-200 transition-all duration-300 cursor-pointer shadow-[0_2px_10px_rgba(255,255,255,0.1)] hover:shadow-[0_0_16px_rgba(255,255,255,0.2)] shrink-0"
+                        >
+                          <Sparkles className="h-3.5 w-3.5" />
+                          <span>Build New Roadmap</span>
+                        </button>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => handleOpenRoadmapBuilder()}
-                        className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-white px-4 py-2 text-xs font-semibold text-black hover:bg-neutral-200 transition-all duration-300 cursor-pointer shadow-[0_2px_10px_rgba(255,255,255,0.1)] hover:shadow-[0_0_16px_rgba(255,255,255,0.2)]"
-                      >
-                        <Sparkles className="h-3.5 w-3.5" />
-                        <span>Build New Roadmap</span>
-                      </button>
+
+                      {/* Saved AI Roadmaps List */}
+                      {savedRoadmaps.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {savedRoadmaps.map((roadmap) => {
+                            const progress = roadmap.progress_percent || 0
+                            const completedCount =
+                              roadmap.completed_milestone_ids?.length || 0
+
+                            return (
+                              <div
+                                key={roadmap.id}
+                                className="relative overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent rounded-2xl sm:rounded-3xl border border-white/[0.1] bg-[#050505]/90 backdrop-blur-3xl p-5 sm:p-6 hover:border-white/[0.2] hover:shadow-[0_12px_40px_rgba(0,0,0,0.7)] transition-all duration-300 shadow-[0_8px_32px_rgba(0,0,0,0.6)] flex flex-col justify-between group"
+                              >
+                                <div className="space-y-2.5">
+                                  <div className="flex items-center justify-between">
+                                    <span className="rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-0.5 text-[9px] font-mono text-neutral-300 uppercase tracking-wider">
+                                      {roadmap.target_role || 'Career Blueprint'}
+                                    </span>
+                                    <span className="text-[10px] font-mono text-neutral-400">
+                                      {roadmap.estimated_duration || '18 Weeks'}
+                                    </span>
+                                  </div>
+
+                                  <h4 className="text-sm sm:text-base font-bold text-white truncate group-hover:text-neutral-200 transition-colors">
+                                    {roadmap.title}
+                                  </h4>
+                                  <p className="text-xs text-neutral-400 line-clamp-2">
+                                    Goal: &quot;{roadmap.goal}&quot;
+                                  </p>
+                                </div>
+
+                                <div className="mt-4 pt-3.5 border-t border-white/[0.06] space-y-2.5">
+                                  <div className="flex items-center justify-between text-[11px] font-mono text-neutral-400">
+                                    <span>{completedCount} milestones completed</span>
+                                    <span className="text-white font-bold">
+                                      {progress}%
+                                    </span>
+                                  </div>
+                                  <MinimalProgressBar percent={progress} height={3} />
+
+                                  <div className="pt-2 flex justify-end">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleOpenRoadmapBuilder(roadmap.goal)}
+                                      className="inline-flex min-h-[44px] sm:min-h-[36px] items-center gap-1.5 rounded-xl bg-white text-black font-semibold px-4 py-1.5 text-xs hover:bg-neutral-200 transition-all duration-300 cursor-pointer shadow-[0_2px_10px_rgba(255,255,255,0.1)] hover:shadow-[0_0_16px_rgba(255,255,255,0.2)]"
+                                    >
+                                      <span>Open Roadmap</span>
+                                      <ArrowRight className="h-3 w-3" />
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      ) : (
+                        <div className="relative overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent rounded-2xl border border-white/[0.08] bg-[#050505]/70 backdrop-blur-2xl p-6 text-center space-y-2.5 shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
+                          <Bookmark className="h-6 w-6 text-neutral-500 mx-auto" />
+                          <h4 className="text-xs font-bold text-white">
+                            No AI Career Roadmaps Generated Yet
+                          </h4>
+                          <p className="text-[11px] text-neutral-400 max-w-sm mx-auto">
+                            Design a custom roadmap based on your current knowledge and target role.
+                          </p>
+                          <div className="pt-1">
+                            <button
+                              type="button"
+                              onClick={() => handleOpenRoadmapBuilder()}
+                              className="inline-flex min-h-[36px] items-center gap-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white px-3.5 py-1.5 text-xs font-semibold border border-white/10 transition-all cursor-pointer"
+                            >
+                              <Sparkles className="h-3 w-3" />
+                              <span>Launch Roadmap Builder</span>
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
-                    {/* Saved AI Roadmaps List */}
-                    {savedRoadmaps.length > 0 ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {savedRoadmaps.map((roadmap) => {
-                          const progress = roadmap.progress_percent || 0
-                          const completedCount =
-                            roadmap.completed_milestone_ids?.length || 0
+                    {/* ── 2. HERO-QUALITY TECHNEA ROADMAP CATALOG (100+ ROADMAPS) ── */}
+                    <div className="space-y-5 pt-4 border-t border-white/[0.08]">
+                      {/* Section Header */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div>
+                          <div className="flex items-center gap-2.5">
+                            <h2 className="text-lg font-bold text-white tracking-tight">
+                              Engineering Roadmaps & Career Blueprints
+                            </h2>
+                            <span className="rounded-full border border-sky-500/20 bg-sky-500/10 px-2.5 py-0.5 text-[10px] font-mono text-sky-300">
+                              {catalogRoadmaps.length > 0 ? `${catalogRoadmaps.length} Roadmaps` : '100+ Roadmaps'}
+                            </span>
+                          </div>
+                          <p className="text-xs text-neutral-400 mt-0.5">
+                            Explore comprehensive step-by-step engineering curricula, career paths, and technical blueprints.
+                          </p>
+                        </div>
+                      </div>
 
-                          return (
-                            <div
-                              key={roadmap.id}
-                              className="relative overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent rounded-2xl sm:rounded-3xl border border-white/[0.1] bg-[#050505]/90 backdrop-blur-3xl p-5 sm:p-6 hover:border-white/[0.2] hover:shadow-[0_12px_40px_rgba(0,0,0,0.7)] transition-all duration-300 shadow-[0_8px_32px_rgba(0,0,0,0.6)] flex flex-col justify-between group"
+                      {/* Search Bar & Instant Filtering Controls */}
+                      <div className="space-y-3">
+                        <div className="relative">
+                          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400 pointer-events-none" />
+                          <input
+                            type="text"
+                            value={roadmapSearchQuery}
+                            onChange={(e) => setRoadmapSearchQuery(e.target.value)}
+                            placeholder="Search 100+ roadmaps, domains, or skills (e.g. Python, Full-Stack, Docker, Machine Learning)..."
+                            className="w-full min-h-[44px] rounded-xl border border-white/10 bg-[#0a0a0f]/90 pl-10 pr-10 py-2.5 text-xs sm:text-sm text-white placeholder-neutral-500 focus:border-white/30 focus:outline-none focus:ring-1 focus:ring-white/20 transition-all"
+                          />
+                          {roadmapSearchQuery && (
+                            <button
+                              type="button"
+                              onClick={() => setRoadmapSearchQuery('')}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-neutral-400 hover:text-white transition-colors cursor-pointer"
+                              aria-label="Clear search"
                             >
-                              <div className="space-y-2.5">
-                                <div className="flex items-center justify-between">
-                                  <span className="rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-0.5 text-[9px] font-mono text-neutral-300 uppercase tracking-wider">
-                                    {roadmap.target_role || 'Career Blueprint'}
-                                  </span>
-                                  <span className="text-[10px] font-mono text-neutral-400">
-                                    {roadmap.estimated_duration || '18 Weeks'}
-                                  </span>
-                                </div>
+                              <X className="h-3.5 w-3.5" />
+                            </button>
+                          )}
+                        </div>
 
-                                <h4 className="text-sm sm:text-base font-bold text-white truncate group-hover:text-neutral-200 transition-colors">
-                                  {roadmap.title}
-                                </h4>
-                                <p className="text-xs text-neutral-400 line-clamp-2">
-                                  Goal: &quot;{roadmap.goal}&quot;
-                                </p>
+                        {/* Category Filter Pills (Scrollable) */}
+                        <div
+                          data-lenis-prevent
+                          className="flex items-center gap-1.5 overflow-x-auto pb-1.5 scrollbar-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                        >
+                          {ROADMAP_CATEGORIES.map((cat) => {
+                            const isSelected = roadmapCategoryFilter === cat
+                            return (
+                              <button
+                                key={cat}
+                                type="button"
+                                onClick={() => setRoadmapCategoryFilter(cat)}
+                                className={`inline-flex min-h-[32px] items-center rounded-lg px-3 py-1 text-xs font-medium transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                                  isSelected
+                                    ? 'bg-white text-black font-semibold shadow-sm'
+                                    : 'border border-white/10 bg-white/[0.02] text-neutral-400 hover:text-white hover:border-white/20'
+                                }`}
+                              >
+                                {cat}
+                              </button>
+                            )
+                          })}
+                        </div>
+
+                        {/* Difficulty & Status Bar */}
+                        <div className="flex flex-wrap items-center justify-between gap-3 pt-1 text-xs">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-mono text-[10px] uppercase text-neutral-500 font-semibold mr-1">
+                              Difficulty:
+                            </span>
+                            {ROADMAP_DIFFICULTIES.map((diff) => {
+                              const isSelected = roadmapDifficultyFilter === diff
+                              return (
+                                <button
+                                  key={diff}
+                                  type="button"
+                                  onClick={() => setRoadmapDifficultyFilter(diff)}
+                                  className={`rounded-md px-2.5 py-0.5 text-[11px] font-mono transition-all cursor-pointer ${
+                                    isSelected
+                                      ? 'bg-white/20 text-white font-semibold border border-white/30'
+                                      : 'border border-white/5 bg-white/[0.02] text-neutral-400 hover:text-neutral-200'
+                                  }`}
+                                >
+                                  {diff}
+                                </button>
+                              )
+                            })}
+                          </div>
+
+                          <div className="flex items-center gap-3">
+                            <span className="font-mono text-[11px] text-neutral-400">
+                              Showing {filteredCatalogRoadmaps.length} of {catalogRoadmaps.length || '100+'} roadmaps
+                            </span>
+                            {(roadmapSearchQuery || roadmapCategoryFilter !== 'All' || roadmapDifficultyFilter !== 'All') && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setRoadmapSearchQuery('')
+                                  setRoadmapCategoryFilter('All')
+                                  setRoadmapDifficultyFilter('All')
+                                }}
+                                className="inline-flex items-center gap-1 text-[11px] text-neutral-400 hover:text-white transition-colors cursor-pointer"
+                              >
+                                <RotateCcw className="h-3 w-3" />
+                                <span>Reset filters</span>
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Grid of Roadmap Cards */}
+                      {catalogLoading && catalogRoadmaps.length === 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {[1, 2, 3, 4, 5, 6].map((idx) => (
+                            <div
+                              key={idx}
+                              className="rounded-2xl border border-white/[0.08] bg-[#07080c]/60 p-5 space-y-3 animate-pulse"
+                            >
+                              <div className="flex justify-between items-center">
+                                <div className="h-4 w-20 bg-white/10 rounded" />
+                                <div className="h-4 w-14 bg-white/10 rounded" />
                               </div>
+                              <div className="h-5 w-3/4 bg-white/10 rounded" />
+                              <div className="h-10 w-full bg-white/5 rounded" />
+                              <div className="h-8 w-full bg-white/10 rounded" />
+                            </div>
+                          ))}
+                        </div>
+                      ) : filteredCatalogRoadmaps.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {filteredCatalogRoadmaps.map((roadmap) => {
+                            const stepsCount =
+                              roadmap.roadmap_steps?.length ||
+                              (Array.isArray(roadmap.projects) ? roadmap.projects.length * 2 : 6)
+                            const level = roadmap.level || roadmap.difficulty || 'Beginner'
+                            const isBeginner = level.toLowerCase().includes('beginner')
+                            const isAdvanced = level.toLowerCase().includes('advanced')
+                            const skillsTags = (
+                              roadmap.related_concepts ||
+                              roadmap.search_terms ||
+                              []
+                            ).slice(0, 3)
 
-                              <div className="mt-4 pt-3.5 border-t border-white/[0.06] space-y-2.5">
-                                <div className="flex items-center justify-between text-[11px] font-mono text-neutral-400">
-                                  <span>{completedCount} milestones completed</span>
-                                  <span className="text-white font-bold">
-                                    {progress}%
-                                  </span>
+                            return (
+                              <div
+                                key={roadmap.id}
+                                className="relative overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent rounded-2xl border border-white/[0.08] bg-[#07080c]/90 backdrop-blur-2xl p-5 hover:border-white/[0.22] hover:shadow-[0_12px_40px_rgba(0,0,0,0.7)] transition-all duration-300 flex flex-col justify-between group"
+                              >
+                                <div className="space-y-3">
+                                  {/* Badge & Duration Row */}
+                                  <div className="flex items-center justify-between gap-2">
+                                    <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-0.5 text-[9px] font-mono text-neutral-300 uppercase tracking-wider truncate">
+                                      {roadmap.category || 'Engineering'}
+                                    </span>
+                                    <div className="flex items-center gap-1.5 shrink-0">
+                                      <span
+                                        className={`rounded-full border px-2 py-0.5 text-[9px] font-mono font-medium ${
+                                          isBeginner
+                                            ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300'
+                                            : isAdvanced
+                                            ? 'border-purple-500/20 bg-purple-500/10 text-purple-300'
+                                            : 'border-sky-500/20 bg-sky-500/10 text-sky-300'
+                                        }`}
+                                      >
+                                        {level}
+                                      </span>
+                                      <span className="text-[10px] font-mono text-neutral-400">
+                                        {roadmap.duration || '4-6 Weeks'}
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  {/* Title & Description */}
+                                  <div>
+                                    <h4 className="text-sm sm:text-base font-bold text-white group-hover:text-neutral-200 transition-colors line-clamp-1">
+                                      {roadmap.title}
+                                    </h4>
+                                    <p className="text-xs text-neutral-400 line-clamp-2 mt-1 leading-relaxed">
+                                      {roadmap.description || 'Comprehensive step-by-step curriculum and technical foundations.'}
+                                    </p>
+                                  </div>
+
+                                  {/* Skills Tags */}
+                                  {skillsTags.length > 0 && (
+                                    <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                                      {skillsTags.map((tag) => (
+                                        <span
+                                          key={tag}
+                                          className="rounded-md border border-white/5 bg-white/[0.03] px-2 py-0.5 text-[10px] font-mono text-neutral-400"
+                                        >
+                                          {tag}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
                                 </div>
-                                <MinimalProgressBar percent={progress} height={3} />
 
-                                <div className="pt-2 flex justify-end">
+                                {/* Footer & Action Button */}
+                                <div className="mt-4 pt-3.5 border-t border-white/[0.06] flex items-center justify-between gap-3">
+                                  <span className="text-[11px] font-mono text-neutral-400">
+                                    {stepsCount} Milestones
+                                  </span>
+
                                   <button
                                     type="button"
-                                    onClick={() => handleOpenRoadmapBuilder(roadmap.goal)}
-                                    className="inline-flex min-h-[44px] sm:min-h-[36px] items-center gap-1.5 rounded-xl bg-white text-black font-semibold px-4 py-1.5 text-xs hover:bg-neutral-200 transition-all duration-300 cursor-pointer shadow-[0_2px_10px_rgba(255,255,255,0.1)] hover:shadow-[0_0_16px_rgba(255,255,255,0.2)]"
+                                    onClick={() => handleExploreCatalogRoadmap(roadmap)}
+                                    className="inline-flex min-h-[34px] items-center gap-1.5 rounded-xl bg-white text-black font-semibold px-3.5 py-1.5 text-xs hover:bg-neutral-200 transition-all duration-300 cursor-pointer shadow-[0_2px_10px_rgba(255,255,255,0.1)] hover:shadow-[0_0_16px_rgba(255,255,255,0.2)] shrink-0"
                                   >
-                                    <span>Open Roadmap</span>
+                                    <span>Explore Roadmap</span>
                                     <ArrowRight className="h-3 w-3" />
                                   </button>
                                 </div>
                               </div>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    ) : (
-                      <div className="relative overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent rounded-2xl sm:rounded-3xl border border-white/[0.08] bg-[#050505]/90 backdrop-blur-3xl p-8 sm:p-10 text-center space-y-3.5 shadow-[0_8px_32px_rgba(0,0,0,0.6)]">
-                        <Bookmark className="h-8 w-8 text-neutral-500 mx-auto" />
-                        <h4 className="text-sm font-bold text-white">
-                          No AI Career Roadmaps Generated Yet
-                        </h4>
-                        <p className="text-xs text-neutral-400 max-w-sm mx-auto">
-                          Tell Technea what you want to become (e.g. Full Stack Developer, AI Systems Engineer) and synthesize your personalized curriculum.
-                        </p>
-                        <div className="pt-2">
-                          <button
-                            type="button"
-                            onClick={() => handleOpenRoadmapBuilder()}
-                            className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-white px-5 py-2 text-xs font-semibold text-black hover:bg-neutral-200 transition-all duration-300 cursor-pointer shadow-[0_2px_10px_rgba(255,255,255,0.1)] hover:shadow-[0_0_16px_rgba(255,255,255,0.2)]"
-                          >
-                            <Sparkles className="h-3.5 w-3.5" />
-                            <span>Launch Roadmap Builder</span>
-                          </button>
+                            )
+                          })}
                         </div>
-                      </div>
-                    )}
-
-                    {/* Catalog Enrolled Journeys */}
-                    {enrolledPaths.length > 0 && (
-                      <div className="space-y-3 pt-4 border-t border-white/[0.06]">
-                        <h3 className="text-xs font-mono uppercase tracking-wider text-neutral-400 flex items-center gap-2">
-                          <Layers className="h-3.5 w-3.5" />
-                          <span>Catalog Enrolled Journeys ({enrolledPaths.length})</span>
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                          {enrolledPaths.map((path) => (
-                            <div
-                              key={path.id}
-                              className="flex min-h-[44px] items-center justify-between rounded-xl border border-white/[0.08] bg-black/40 backdrop-blur-md p-4 hover:border-white/[0.18] hover:bg-black/60 transition-all duration-300 cursor-pointer group"
+                      ) : (
+                        <div className="rounded-2xl border border-white/[0.08] bg-[#07080c]/60 p-8 text-center space-y-3">
+                          <Compass className="h-8 w-8 text-neutral-500 mx-auto" />
+                          <h4 className="text-sm font-bold text-white">
+                            No Roadmaps Found
+                          </h4>
+                          <p className="text-xs text-neutral-400 max-w-sm mx-auto">
+                            No catalog blueprints match your current filter or search criteria.
+                          </p>
+                          <div className="pt-2 flex justify-center gap-2">
+                            <button
+                              type="button"
                               onClick={() => {
-                                onClose()
-                                onSelectPath(path)
+                                setRoadmapSearchQuery('')
+                                setRoadmapCategoryFilter('All')
+                                setRoadmapDifficultyFilter('All')
                               }}
+                              className="inline-flex min-h-[36px] items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-1.5 text-xs font-semibold text-white hover:bg-white/[0.08] transition-all cursor-pointer"
                             >
-                              <div className="min-w-0 pr-3">
-                                <span className="text-[10px] font-mono text-neutral-400 block">
-                                  {path.category}
-                                </span>
-                                <h5 className="text-xs font-bold text-white truncate">
-                                  {path.title}
-                                </h5>
-                                <span className="text-[10px] text-neutral-400 font-mono">
-                                  {path.completed_steps_count} / {path.total_steps_count} milestones
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-2 shrink-0">
-                                <span className="text-xs font-mono font-bold text-white">
-                                  {path.progress_percent}%
-                                </span>
-                                <ArrowRight className="h-3.5 w-3.5 text-neutral-400 group-hover:translate-x-0.5 transition-transform" />
-                              </div>
-                            </div>
-                          ))}
+                              <RotateCcw className="h-3 w-3" />
+                              <span>Reset Filters</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleOpenRoadmapBuilder(roadmapSearchQuery)}
+                              className="inline-flex min-h-[36px] items-center gap-1.5 rounded-xl bg-white text-black px-4 py-1.5 text-xs font-semibold hover:bg-neutral-200 transition-all cursor-pointer"
+                            >
+                              <Sparkles className="h-3 w-3" />
+                              <span>Generate with AI</span>
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </motion.div>
                 )}
 
