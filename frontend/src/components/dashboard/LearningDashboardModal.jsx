@@ -24,9 +24,6 @@ import {
   Edit3,
   RotateCcw,
   Activity,
-  Terminal,
-  Radio,
-  Clock,
   BookOpen,
   Play,
   Code2,
@@ -36,7 +33,6 @@ import { useAuth } from '../../context/useAuth'
 import {
   getDashboardSummaryApi,
   getMyRoadmapsApi,
-  toggleDailyTaskApi,
   getProjectsApi,
   getRecommendedProjectsApi,
   getMyProjectsApi,
@@ -48,6 +44,10 @@ import {
 } from '../../services/api'
 import SpaceGardenAtmosphere from './SpaceGardenAtmosphere'
 import AIMessageRenderer from './AIMessageRenderer'
+import MemphisCornerDecorations from './MemphisCornerDecorations'
+import DashboardLeftSidebar from './DashboardLeftSidebar'
+import DashboardReferenceOverview from './DashboardReferenceOverview'
+import DockedAIMentorCompanion from './DockedAIMentorCompanion'
 
 let messageCounter = 1000
 function getNextMentorMsgId() {
@@ -124,41 +124,6 @@ function GithubIcon({ className = 'h-3 w-3' }) {
 }
 
 /* ─────────────────────────────────────────
-   Animated counter component
-───────────────────────────────────────── */
-function useAnimatedNumber(target, duration = 800) {
-  const [value, setValue] = useState(0)
-  const rafRef = useRef(null)
-
-  useEffect(() => {
-    const start = performance.now()
-    const from = 0
-
-    const tick = (now) => {
-      const elapsed = now - start
-      const progress = Math.min(elapsed / duration, 1)
-      const eased = 1 - Math.pow(1 - progress, 4)
-      setValue(Math.round(from + (target - from) * eased))
-      if (progress < 1) {
-        rafRef.current = requestAnimationFrame(tick)
-      }
-    }
-
-    rafRef.current = requestAnimationFrame(tick)
-    return () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current)
-    }
-  }, [target, duration])
-
-  return value
-}
-
-function AnimatedStat({ value, suffix = '' }) {
-  const animated = useAnimatedNumber(value)
-  return <span>{animated}{suffix}</span>
-}
-
-/* ─────────────────────────────────────────
    Minimal Hairline Progress Bar
 ───────────────────────────────────────── */
 function MinimalProgressBar({ percent = 0, delay = 0, height = 3, className = '' }) {
@@ -176,827 +141,6 @@ function MinimalProgressBar({ percent = 0, delay = 0, height = 3, className = ''
       >
         <div className="absolute right-0 top-0 bottom-0 w-2 bg-white blur-[2px] opacity-75" />
       </motion.div>
-    </div>
-  )
-}
-
-/* ─────────────────────────────────────────
-   Overview Subcomponent 1: Orbital Progression Circle
-───────────────────────────────────────── */
-function OrbitalProgressGauge({
-  percent = 0,
-  level = 'Code Initiate',
-  completedMilestones = 0,
-  completedLessons = 0,
-}) {
-  const radius = 58
-  const strokeWidth = 8
-  const circumference = 2 * Math.PI * radius
-  const safePercent = Math.min(Math.max(percent || 0, 0), 100)
-  const offset = circumference - (safePercent / 100) * circumference
-
-  return (
-    <div className="relative overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent rounded-2xl sm:rounded-3xl border border-white/[0.1] bg-[#050505]/90 backdrop-blur-3xl p-5 sm:p-6 shadow-[0_8px_32px_rgba(0,0,0,0.6)] flex flex-col justify-between h-full group hover:border-white/25 transition-all duration-300">
-      {/* Gauge Header */}
-      <div className="flex items-center justify-between border-b border-white/[0.06] pb-3 mb-2">
-        <div className="flex items-center gap-2">
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-60" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-white shadow-[0_0_8px_rgba(255,255,255,0.9)]" />
-          </span>
-          <span className="text-[10px] font-mono uppercase tracking-widest text-neutral-300 font-semibold">
-            ORBITAL PROGRESSION
-          </span>
-        </div>
-        <span className="text-[9px] font-mono text-neutral-500 uppercase tracking-wider">
-          MASTERY GAUGE
-        </span>
-      </div>
-
-      {/* SVG Circular Dial */}
-      <div className="relative flex items-center justify-center my-2 sm:my-3">
-        <div className="relative h-40 w-40 sm:h-44 sm:w-44 flex items-center justify-center">
-          <svg className="h-full w-full -rotate-90 transform" viewBox="0 0 160 160">
-            <defs>
-              <linearGradient id="orbitalMonochromeGlow" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#737373" />
-                <stop offset="60%" stopColor="#d4d4d4" />
-                <stop offset="100%" stopColor="#ffffff" />
-              </linearGradient>
-              <filter id="orbitalSpecularGlow" x="-20%" y="-20%" width="140%" height="140%">
-                <feGaussianBlur stdDeviation="3.5" result="blur" />
-                <feComposite in="SourceGraphic" in2="blur" operator="over" />
-              </filter>
-            </defs>
-
-            {/* Background concentric reference rings */}
-            <circle
-              cx="80"
-              cy="80"
-              r={radius + 12}
-              fill="none"
-              stroke="rgba(255, 255, 255, 0.04)"
-              strokeWidth="1"
-              strokeDasharray="3 4"
-            />
-            <circle
-              cx="80"
-              cy="80"
-              r={radius}
-              fill="none"
-              stroke="rgba(255, 255, 255, 0.08)"
-              strokeWidth={strokeWidth}
-            />
-
-            {/* Glowing animated progress stroke */}
-            <motion.circle
-              cx="80"
-              cy="80"
-              r={radius}
-              fill="none"
-              stroke="url(#orbitalMonochromeGlow)"
-              strokeWidth={strokeWidth}
-              strokeDasharray={circumference}
-              initial={{ strokeDashoffset: circumference }}
-              animate={{ strokeDashoffset: offset }}
-              transition={{ duration: 1.4, ease: [0.16, 1, 0.3, 1] }}
-              strokeLinecap="round"
-              filter="url(#orbitalSpecularGlow)"
-            />
-          </svg>
-
-          {/* Center Telemetry Display */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-2">
-            <span className="text-[9px] font-mono uppercase tracking-widest text-neutral-400 font-medium">
-              MASTERY
-            </span>
-            <div className="text-3xl sm:text-4xl font-extrabold text-white font-mono tracking-tight my-0.5 drop-shadow-[0_0_12px_rgba(255,255,255,0.4)]">
-              <AnimatedStat value={safePercent} suffix="%" />
-            </div>
-            <span className="text-[9px] font-mono text-neutral-300 font-semibold px-2 py-0.5 rounded-full border border-white/10 bg-white/[0.04] truncate max-w-[120px]">
-              {level}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Micro Telemetry Indicators */}
-      <div className="pt-3 border-t border-white/[0.06] grid grid-cols-2 gap-2 text-center font-mono">
-        <div className="rounded-xl border border-white/[0.06] bg-black/60 p-2">
-          <span className="text-xs font-bold text-white block">
-            <AnimatedStat value={completedMilestones} />
-          </span>
-          <span className="text-[9px] text-neutral-400 uppercase tracking-wider">
-            Milestones
-          </span>
-        </div>
-        <div className="rounded-xl border border-white/[0.06] bg-black/60 p-2">
-          <span className="text-xs font-bold text-white block">
-            <AnimatedStat value={completedLessons} />
-          </span>
-          <span className="text-[9px] text-neutral-400 uppercase tracking-wider">
-            Lesson Units
-          </span>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-/* ─────────────────────────────────────────
-   Overview Subcomponent 2: Active Mission Directive Launchpad
-───────────────────────────────────────── */
-function ActiveMissionLaunchpad({
-  currentPath,
-  onEngage,
-}) {
-  const currentTitle = currentPath?.title || 'Python Fundamentals & System Architecture'
-  const nextStepTitle = currentPath?.next_step_title || 'Object Oriented Architecture & Design Patterns'
-  const category = currentPath?.category || 'CORE ENGINEERING'
-  const duration = currentPath?.duration || '12-14 WEEKS'
-  const progressPercent = currentPath?.progress_percent ?? 80
-
-  return (
-    <div className="relative overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent rounded-2xl sm:rounded-3xl border border-white/[0.12] bg-[#050505]/90 backdrop-blur-3xl p-5 sm:p-6 shadow-[0_8px_32px_rgba(0,0,0,0.6)] flex flex-col justify-between h-full group hover:border-white/25 transition-all duration-300">
-      {/* Header telemetry status */}
-      <div className="flex items-center justify-between border-b border-white/[0.06] pb-3">
-        <div className="flex items-center gap-2">
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)]" />
-          </span>
-          <span className="text-[10px] font-mono uppercase tracking-widest text-emerald-400 font-semibold">
-            DIRECTIVE STATUS: ENGAGED
-          </span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-0.5 text-[9px] font-mono text-neutral-300 uppercase">
-            {category}
-          </span>
-          <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[9px] font-mono text-neutral-400 uppercase hidden sm:inline-block">
-            {duration}
-          </span>
-        </div>
-      </div>
-
-      {/* Main Directive Info */}
-      <div className="my-4 space-y-3">
-        <div>
-          <span className="text-[10px] font-mono uppercase tracking-widest text-neutral-400 block mb-1">
-            CURRENT TARGET DIRECTIVE
-          </span>
-          <h3 className="text-lg sm:text-xl font-bold text-white tracking-tight leading-snug group-hover:text-neutral-200 transition-colors">
-            {nextStepTitle}
-          </h3>
-          <p className="text-xs font-mono text-neutral-400 mt-1">
-            Active milestone in <span className="text-neutral-200 font-medium">{currentTitle}</span>
-          </p>
-        </div>
-
-        {/* Milestone Progress Bar */}
-        <div className="space-y-1.5 pt-1">
-          <div className="flex items-center justify-between text-xs font-mono">
-            <span className="text-neutral-400">Milestone Progress</span>
-            <span className="text-white font-bold font-mono">
-              {progressPercent}% Complete
-            </span>
-          </div>
-          <div className="h-2 w-full overflow-hidden bg-white/[0.06] rounded-full relative">
-            <motion.div
-              className="h-full bg-gradient-to-r from-neutral-400 via-neutral-100 to-white rounded-full relative shadow-[0_0_12px_rgba(255,255,255,0.7)]"
-              initial={{ width: 0 }}
-              animate={{ width: `${progressPercent}%` }}
-              transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
-            >
-              <div className="absolute right-0 top-0 bottom-0 w-2 bg-white blur-[2px] opacity-90" />
-            </motion.div>
-          </div>
-        </div>
-      </div>
-
-      {/* High-Impact CTA button */}
-      <div className="pt-3 border-t border-white/[0.06] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-        <span className="text-[10px] font-mono text-neutral-400 flex items-center gap-1.5">
-          <Clock className="h-3 w-3 text-neutral-300" />
-          <span>EST. TIME: ~45 MIN DIRECTIVE</span>
-        </span>
-
-        <button
-          type="button"
-          onClick={onEngage}
-          className="min-h-[44px] inline-flex items-center justify-center gap-2 rounded-xl bg-white px-5 py-2.5 text-xs font-bold text-black hover:bg-neutral-200 transition-all duration-300 cursor-pointer shadow-[0_2px_14px_rgba(255,255,255,0.2)] hover:shadow-[0_0_24px_rgba(255,255,255,0.4)] group/btn shrink-0"
-        >
-          <span>RESUME NEXT MILESTONE</span>
-          <ArrowRight className="h-4 w-4 group-hover/btn:translate-x-1 transition-transform" />
-        </button>
-      </div>
-    </div>
-  )
-}
-
-/* ─────────────────────────────────────────
-   Overview Subcomponent 3: Avionics Telemetry Grid
-───────────────────────────────────────── */
-function AvionicsTelemetryGrid({
-  completedMilestones = 0,
-  completedTasksCount = 0,
-  totalTasks = 3,
-  completedProjectsCount = 0,
-  streakCount = 1,
-}) {
-  const animatedMilestones = useAnimatedNumber(completedMilestones)
-  const animatedProjects = useAnimatedNumber(completedProjectsCount)
-  const animatedStreak = useAnimatedNumber(streakCount)
-
-  const items = [
-    {
-      label: 'VERIFIED MILESTONES',
-      value: animatedMilestones,
-      suffix: '',
-      subtext: '+2 This Week // 100% Integrity',
-      icon: Target,
-      iconColor: 'text-white',
-      badgeColor: 'border-white/20 bg-white/[0.05] text-white',
-    },
-    {
-      label: 'DAILY VELOCITY',
-      value: `${completedTasksCount}/${totalTasks}`,
-      suffix: '',
-      subtext: "Today's Flight Cadence",
-      icon: Zap,
-      iconColor: 'text-emerald-400',
-      badgeColor: 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300',
-    },
-    {
-      label: 'CODE BUILDS',
-      value: animatedProjects || 1,
-      suffix: ' Repos',
-      subtext: 'Production Deliverables',
-      icon: FolderGit2,
-      iconColor: 'text-neutral-200',
-      badgeColor: 'border-white/15 bg-white/[0.04] text-neutral-200',
-    },
-    {
-      label: 'STREAK MULTIPLIER',
-      value: animatedStreak,
-      suffix: 'x Ignition',
-      subtext: `${streakCount} Active Days`,
-      icon: Flame,
-      iconColor: 'text-amber-400',
-      badgeColor: 'border-amber-500/20 bg-amber-500/10 text-amber-300',
-    },
-  ]
-
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 h-full">
-      {items.map((it, idx) => {
-        const IconComponent = it.icon
-        return (
-          <div
-            key={idx}
-            className="relative overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/15 before:to-transparent rounded-2xl border border-white/[0.08] bg-[#050505]/90 backdrop-blur-3xl p-4 sm:p-4.5 flex flex-col justify-between hover:border-white/[0.2] hover:bg-black/60 transition-all duration-300 group shadow-[0_8px_32px_rgba(0,0,0,0.6)]"
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-[9px] font-mono uppercase tracking-widest text-neutral-400">
-                {it.label}
-              </span>
-              <div className={`p-1.5 rounded-lg border ${it.badgeColor}`}>
-                <IconComponent className={`h-3.5 w-3.5 ${it.iconColor}`} />
-              </div>
-            </div>
-
-            <div className="my-2">
-              <div className="text-2xl sm:text-3xl font-extrabold text-white font-mono tracking-tight group-hover:text-neutral-100 transition-colors">
-                {it.value}
-                {it.suffix}
-              </div>
-            </div>
-
-            <div className="pt-2 border-t border-white/[0.05] flex items-center justify-between text-[10px] font-mono text-neutral-400">
-              <span className="truncate">{it.subtext}</span>
-            </div>
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
-/* ─────────────────────────────────────────
-   Overview Subcomponent 4: Quick Actions Bar
-───────────────────────────────────────── */
-function QuickActionsBar({
-  onResumeMilestone,
-  onBuildRoadmap,
-  onDailyChallenge,
-  onAskMentor,
-  onBrowseCatalog,
-}) {
-  const actions = [
-    {
-      label: 'Resume Milestone',
-      icon: Play,
-      onClick: onResumeMilestone,
-      primary: true,
-      hint: 'Jump into active lesson',
-    },
-    {
-      label: 'Build AI Roadmap',
-      icon: Sparkles,
-      onClick: onBuildRoadmap,
-      primary: false,
-      hint: 'Synthesize custom curriculum',
-    },
-    {
-      label: 'Daily Challenge',
-      icon: Target,
-      onClick: onDailyChallenge,
-      primary: false,
-      hint: 'Complete today flight tasks',
-    },
-    {
-      label: 'Ask AI Mentor 2.0',
-      icon: Bot,
-      onClick: onAskMentor,
-      primary: false,
-      hint: 'Context-synced coaching',
-    },
-    {
-      label: 'Browse Catalog',
-      icon: Compass,
-      onClick: onBrowseCatalog,
-      primary: false,
-      hint: 'Explore all engineering tracks',
-    },
-  ]
-
-  return (
-    <div className="relative overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent rounded-2xl sm:rounded-3xl border border-white/[0.1] bg-[#050505]/90 backdrop-blur-3xl p-4 sm:p-5 shadow-[0_8px_32px_rgba(0,0,0,0.6)]">
-      <div className="flex items-center justify-between mb-3 border-b border-white/[0.06] pb-2.5">
-        <div className="flex items-center gap-2">
-          <Zap className="h-4 w-4 text-white" />
-          <span className="text-xs font-mono font-bold uppercase tracking-wider text-white">
-            QUICK ACTIONS DECK
-          </span>
-        </div>
-        <span className="text-[10px] font-mono text-neutral-400 hidden sm:inline">
-          High-Velocity Operations
-        </span>
-      </div>
-
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
-        {actions.map((act, i) => {
-          const Icon = act.icon
-          return (
-            <button
-              key={i}
-              type="button"
-              onClick={act.onClick}
-              className={`min-h-[48px] rounded-xl border p-3 flex flex-col justify-between text-left transition-all duration-300 cursor-pointer group ${
-                act.primary
-                  ? 'border-white/30 bg-white text-black hover:bg-neutral-200 shadow-[0_2px_14px_rgba(255,255,255,0.2)] hover:shadow-[0_0_20px_rgba(255,255,255,0.4)]'
-                  : 'border-white/[0.08] bg-white/[0.03] text-white hover:border-white/25 hover:bg-white/[0.07]'
-              }`}
-            >
-              <div className="flex items-center justify-between mb-1">
-                <Icon className={`h-4 w-4 ${act.primary ? 'text-black' : 'text-neutral-300 group-hover:text-white transition-colors'}`} />
-                <ArrowRight className={`h-3 w-3 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all ${act.primary ? 'text-black' : 'text-white'}`} />
-              </div>
-              <div>
-                <span className={`text-xs font-bold font-mono block ${act.primary ? 'text-black' : 'text-white'}`}>
-                  {act.label}
-                </span>
-                <span className={`text-[9px] font-mono truncate block mt-0.5 ${act.primary ? 'text-neutral-800' : 'text-neutral-400'}`}>
-                  {act.hint}
-                </span>
-              </div>
-            </button>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
-/* ─────────────────────────────────────────
-   Overview Subcomponent 5: Conductive Circuit Progression Map
-───────────────────────────────────────── */
-function CircuitProgressionMap({ currentPath, onEngage }) {
-  const activeMilestone = currentPath?.next_step_title || 'Object Oriented Architecture & Design Patterns'
-
-  const circuitNodes = [
-    {
-      step: '01',
-      title: 'Language Syntax & Primitives',
-      category: 'RUNTIME FOUNDATIONS',
-      status: 'completed',
-    },
-    {
-      step: '02',
-      title: 'Data Structures & Algorithms',
-      category: 'CORE COMPUTATION',
-      status: 'completed',
-    },
-    {
-      step: '03',
-      title: activeMilestone,
-      category: 'ACTIVE MISSION DIRECTIVE',
-      status: 'active',
-    },
-    {
-      step: '04',
-      title: 'Asynchronous I/O & Microservice APIs',
-      category: 'DISTRIBUTED SYSTEMS',
-      status: 'upcoming',
-    },
-    {
-      step: '05',
-      title: 'Cloud Orchestration & CI/CD Telemetry',
-      category: 'PRODUCTION RELEASE',
-      status: 'upcoming',
-    },
-  ]
-
-  return (
-    <div className="relative overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent rounded-2xl sm:rounded-3xl border border-white/[0.1] bg-[#050505]/90 backdrop-blur-3xl p-5 sm:p-7 shadow-[0_8px_32px_rgba(0,0,0,0.6)] space-y-5">
-      {/* Circuit Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/[0.06] pb-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <Activity className="h-4 w-4 text-white" />
-            <h3 className="text-base sm:text-lg font-bold text-white tracking-tight">
-              Conductive Circuit Progression Map
-            </h3>
-            <span className="rounded-full border border-white/20 bg-white/[0.05] px-2 py-0.5 text-[9px] font-mono text-neutral-300">
-              LIVE TELEMETRY
-            </span>
-          </div>
-          <p className="text-xs text-neutral-400 mt-0.5">
-            Interconnected milestone circuit tracing completed competencies into active directives.
-          </p>
-        </div>
-        <div className="text-right hidden sm:block">
-          <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-widest block">
-            CIRCUIT TOPOLOGY
-          </span>
-          <span className="text-xs font-mono text-neutral-300">
-            5 Milestone Nodes Synchronized
-          </span>
-        </div>
-      </div>
-
-      {/* Visual Circuit Timeline Track */}
-      <div className="relative pt-2 pb-2">
-        <div className="overflow-x-auto pb-4 scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-          <div className="min-w-[720px] relative">
-            {/* The Conductive Trace Line */}
-            <div className="absolute top-[26px] left-8 right-8 h-[2px] bg-white/[0.08] z-0">
-              {/* Completed part of trace */}
-              <div className="h-full w-1/2 bg-gradient-to-r from-emerald-400 via-neutral-200 to-white shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
-            </div>
-
-            {/* Circuit Nodes */}
-            <div className="grid grid-cols-5 gap-3 relative z-10">
-              {circuitNodes.map((node) => {
-                const isCompleted = node.status === 'completed'
-                const isActive = node.status === 'active'
-
-                return (
-                  <div
-                    key={node.step}
-                    onClick={() => {
-                      if (isActive || isCompleted) onEngage()
-                    }}
-                    className={`flex flex-col items-center text-center p-3.5 rounded-2xl border transition-all duration-300 cursor-pointer ${
-                      isActive
-                        ? 'border-white/50 bg-white/[0.08] shadow-[0_0_24px_rgba(255,255,255,0.25)] ring-1 ring-white/40'
-                        : isCompleted
-                        ? 'border-emerald-500/20 bg-emerald-950/15 hover:border-emerald-500/40'
-                        : 'border-white/[0.06] bg-black/40 opacity-70 hover:opacity-100 hover:border-white/20'
-                    }`}
-                  >
-                    {/* Node Solder Pad / Pulsing Beacon */}
-                    <div className="relative mb-3 flex items-center justify-center">
-                      {isActive && (
-                        <span className="animate-ping absolute h-8 w-8 rounded-full bg-white opacity-60" />
-                      )}
-                      <div
-                        className={`relative h-8 w-8 rounded-full flex items-center justify-center text-xs font-mono font-bold transition-transform duration-300 ${
-                          isActive
-                            ? 'bg-white text-black shadow-[0_0_16px_rgba(255,255,255,0.9)] scale-110'
-                            : isCompleted
-                            ? 'bg-emerald-500/20 border border-emerald-400/60 text-emerald-300 shadow-[0_0_8px_rgba(16,185,129,0.5)]'
-                            : 'bg-black/60 border border-white/20 text-neutral-400'
-                        }`}
-                      >
-                        {isCompleted ? (
-                          <Check className="h-4 w-4 text-emerald-400 stroke-[2.5]" />
-                        ) : (
-                          node.step
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Node Status Badge */}
-                    <span
-                      className={`text-[8px] font-mono uppercase tracking-widest px-2 py-0.5 rounded-full mb-1.5 ${
-                        isActive
-                          ? 'bg-white/20 text-white font-bold border border-white/40 animate-pulse'
-                          : isCompleted
-                          ? 'bg-emerald-500/10 text-emerald-400 font-semibold border border-emerald-500/20'
-                          : 'bg-white/[0.04] text-neutral-400 border border-white/[0.06]'
-                      }`}
-                    >
-                      {isActive ? 'ACTIVE DIRECTIVE' : isCompleted ? 'VERIFIED' : 'QUEUED'}
-                    </span>
-
-                    {/* Node Title & Category */}
-                    <div className="space-y-0.5">
-                      <span className="text-[9px] font-mono text-neutral-400 uppercase tracking-wider block">
-                        {node.category}
-                      </span>
-                      <h4
-                        className={`text-xs font-bold leading-tight ${
-                          isActive ? 'text-white' : isCompleted ? 'text-neutral-200' : 'text-neutral-400'
-                        }`}
-                      >
-                        {node.title}
-                      </h4>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-/* ─────────────────────────────────────────
-   Overview Subcomponent 6: Floating Neural AI Copilot Command Bar
-───────────────────────────────────────── */
-function FloatingNeuralCopilotBar({
-  mentorInput,
-  setMentorInput,
-  onSubmit,
-  isMentorTyping,
-  onChipClick,
-  copilotInputRef,
-}) {
-  const chips = [
-    'What should I learn next based on my roadmaps?',
-    'How do I build full-stack projects that get hired?',
-    'Review my learning progression & velocity',
-    'Explain Python async/await and concurrency',
-  ]
-
-  return (
-    <div className="relative overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent rounded-2xl sm:rounded-3xl border border-white/[0.1] bg-[#050505]/90 backdrop-blur-3xl p-5 sm:p-6 shadow-[0_8px_32px_rgba(0,0,0,0.6)] space-y-4">
-      {/* Copilot Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Bot className="h-4 w-4 text-white" />
-          <h3 className="text-sm font-bold text-white tracking-tight font-mono">
-            NEURAL COPILOT COMMAND BAR
-          </h3>
-          <span className="text-neutral-500 font-mono text-xs hidden sm:inline">•</span>
-          <span className="text-[10px] font-mono text-neutral-400 hidden sm:inline">
-            Direct Autonomous Interface
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 text-[9px] font-mono text-emerald-400 font-semibold">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            REASONING ONLINE
-          </span>
-        </div>
-      </div>
-
-      {/* Monospace Prompt Bar */}
-      <form onSubmit={onSubmit} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
-        <div className="relative flex-1 w-full">
-          <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-neutral-400">
-            <Terminal className="h-4 w-4 text-neutral-300" />
-          </div>
-          <input
-            ref={copilotInputRef}
-            type="text"
-            value={mentorInput}
-            onChange={(e) => setMentorInput(e.target.value)}
-            placeholder="Ask Technea AI anything... ⌘K"
-            className="w-full min-h-[46px] rounded-xl border border-white/[0.1] bg-black/60 pl-10 pr-16 py-2.5 text-xs sm:text-sm text-white placeholder-neutral-500 focus:border-white/40 focus:ring-1 focus:ring-white/20 focus:outline-none font-mono transition-all duration-300 shadow-inner"
-          />
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none hidden sm:flex items-center gap-1 border border-white/10 bg-white/[0.04] px-1.5 py-0.5 rounded text-[9px] font-mono text-neutral-400">
-            <span>⌘K</span>
-          </div>
-        </div>
-
-        <button
-          type="submit"
-          disabled={!mentorInput.trim() || isMentorTyping}
-          className={`min-h-[46px] inline-flex items-center justify-center gap-2 rounded-xl px-6 py-2.5 text-xs font-bold transition-all duration-300 shrink-0 cursor-pointer ${
-            mentorInput.trim() && !isMentorTyping
-              ? 'bg-white text-black hover:bg-neutral-200 shadow-[0_2px_12px_rgba(255,255,255,0.15)] hover:shadow-[0_0_20px_rgba(255,255,255,0.3)]'
-              : 'bg-white/[0.03] text-neutral-500 border border-white/[0.06] cursor-not-allowed'
-          }`}
-        >
-          <span>Query Copilot</span>
-          <Send className="h-3.5 w-3.5" />
-        </button>
-      </form>
-
-      {/* Quick Prompt Chips */}
-      <div className="pt-1 flex flex-wrap items-center gap-2">
-        <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-wider flex items-center gap-1 mr-1">
-          <Sparkles className="h-3 w-3 text-neutral-300" />
-          <span>Quick Prompts:</span>
-        </span>
-        {chips.map((chip, idx) => (
-          <button
-            key={idx}
-            type="button"
-            onClick={() => onChipClick(chip)}
-            className="inline-flex min-h-[34px] items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] hover:border-white/30 hover:bg-white/[0.08] hover:text-white px-3 py-1 text-xs text-neutral-300 font-mono transition-all duration-300 cursor-pointer shadow-xs"
-          >
-            <span className="text-white">↳</span>
-            <span>{chip}</span>
-          </button>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-/* ─────────────────────────────────────────
-   Overview Subcomponent 7: Daily Flight Tracker
-───────────────────────────────────────── */
-function DailyFlightTracker({
-  weeklyHistory = [],
-  streakCount = 1,
-  tasks = [],
-  onToggleTask,
-}) {
-  const defaultDays = [
-    { day_name: 'Mon', is_active: true, completed_tasks_count: 2 },
-    { day_name: 'Tue', is_active: true, completed_tasks_count: 3 },
-    { day_name: 'Wed', is_active: true, completed_tasks_count: 1 },
-    { day_name: 'Thu', is_active: true, completed_tasks_count: 2 },
-    { day_name: 'Fri', is_active: true, completed_tasks_count: 3 },
-    { day_name: 'Sat', is_active: true, completed_tasks_count: 2 },
-    { day_name: 'Sun', is_active: false, completed_tasks_count: 0 },
-  ]
-  const days = weeklyHistory.length === 7 ? weeklyHistory : defaultDays
-  const completedTasksCount = tasks.filter((t) => t.done).length
-
-  return (
-    <div className="relative overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent rounded-2xl sm:rounded-3xl border border-white/[0.08] bg-[#050505]/90 backdrop-blur-3xl p-5 sm:p-7 shadow-[0_8px_32px_rgba(0,0,0,0.6)] space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/[0.06] pb-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <Radio className="h-4 w-4 text-amber-400" />
-            <h3 className="text-base sm:text-lg font-bold text-white tracking-tight">
-              Daily Flight Tracker & Checklist
-            </h3>
-          </div>
-          <p className="text-xs text-neutral-400 mt-0.5">
-            Maintain daily coding cadence and synchronize verified completion telemetry.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 rounded-full border border-amber-500/20 bg-amber-500/10 px-3 py-1 font-mono text-xs text-amber-300 font-bold">
-            <Flame className="h-3.5 w-3.5 text-amber-400 animate-pulse" />
-            <span>{streakCount}d Ignition Velocity</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left: Interactive Checklist Goals (7 cols) */}
-        <div className="lg:col-span-7 space-y-3">
-          <div className="flex items-center justify-between text-xs font-mono text-neutral-400 mb-1">
-            <span className="uppercase tracking-wider">Today&apos;s Flight Objectives</span>
-            <span className="text-white font-semibold">
-              {completedTasksCount} / {tasks.length} Complete
-            </span>
-          </div>
-
-          <div className="space-y-2.5">
-            {tasks.map((task) => (
-              <button
-                key={task.id}
-                type="button"
-                role="checkbox"
-                aria-checked={task.done}
-                aria-label={`Task: ${task.text}, ${task.done ? 'completed' : 'incomplete'}`}
-                onClick={() => onToggleTask(task.id)}
-                className={`w-full min-h-[46px] flex items-center justify-between rounded-xl border px-4 py-3 text-left text-xs transition-all duration-300 cursor-pointer ${
-                  task.done
-                    ? 'border-emerald-500/20 bg-emerald-950/10 text-neutral-400'
-                    : 'border-white/[0.08] bg-black/40 text-neutral-200 hover:border-white/[0.2] hover:text-white'
-                }`}
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <span
-                    className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-[4px] border transition-all ${
-                      task.done
-                        ? 'border-emerald-400 bg-emerald-500/20 text-emerald-300 shadow-[0_0_8px_rgba(52,211,153,0.6)]'
-                        : 'border-white/25 bg-white/[0.04]'
-                    }`}
-                  >
-                    {task.done && <Check className="h-2.5 w-2.5 stroke-[3]" />}
-                  </span>
-                  <span
-                    className={`truncate font-mono text-xs ${
-                      task.done ? 'line-through text-neutral-400' : 'text-neutral-200 font-medium'
-                    }`}
-                  >
-                    {task.text}
-                  </span>
-                </div>
-
-                <span
-                  className={`text-[9px] font-mono px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0 ${
-                    task.done
-                      ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                      : 'bg-white/[0.04] text-neutral-400'
-                  }`}
-                >
-                  {task.done ? 'DONE' : 'PENDING'}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Right: Circular 7-Day Radar Gauge (5 cols) */}
-        <div className="lg:col-span-5 rounded-2xl border border-white/[0.08] bg-black/40 p-5 space-y-4">
-          <div className="flex items-center justify-between text-xs font-mono">
-            <span className="text-[10px] uppercase tracking-widest text-neutral-400 font-semibold">
-              7-Day Radar Velocity
-            </span>
-            <span className="text-emerald-400 text-xs font-mono flex items-center gap-1">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              Active Cadence
-            </span>
-          </div>
-
-          {/* 7-Day Circular Radar Nodes */}
-          <div className="grid grid-cols-7 gap-1.5 pt-1">
-            {days.map((day, idx) => {
-              const isToday = idx === days.length - 1
-              return (
-                <div
-                  key={day.date || idx}
-                  className={`rounded-xl border p-2 text-center flex flex-col items-center justify-between gap-2 transition-all ${
-                    isToday
-                      ? 'border-white/30 bg-white/[0.08] shadow-[0_2px_16px_rgba(255,255,255,0.08)] ring-1 ring-white/20'
-                      : day.is_active
-                      ? 'border-emerald-500/20 bg-emerald-950/15'
-                      : 'border-white/[0.06] bg-white/[0.02]'
-                  }`}
-                >
-                  <span
-                    className={`text-[9px] font-mono uppercase tracking-wider ${
-                      isToday ? 'text-white font-bold' : 'text-neutral-400'
-                    }`}
-                  >
-                    {day.day_name?.slice(0, 3)}
-                  </span>
-
-                  {/* Circular Radar Indicator */}
-                  <div className="relative flex items-center justify-center my-0.5">
-                    {isToday && (
-                      <span className="animate-ping absolute h-4 w-4 rounded-full bg-white opacity-40" />
-                    )}
-                    <div
-                      className={`h-3 w-3 rounded-full transition-all ${
-                        isToday
-                          ? 'bg-white shadow-[0_0_10px_rgba(255,255,255,0.9)] ring-2 ring-white/30'
-                          : day.is_active
-                          ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]'
-                          : 'bg-white/10'
-                      }`}
-                      title={`${day.completed_tasks_count || 0} tasks finished`}
-                    />
-                  </div>
-
-                  <span className="text-[9px] font-mono text-neutral-400">
-                    {day.completed_tasks_count > 0 ? `${day.completed_tasks_count}` : '—'}
-                  </span>
-                </div>
-              )
-            })}
-          </div>
-
-          <div className="pt-2 border-t border-white/[0.06] flex items-center justify-between text-[10px] font-mono text-neutral-400">
-            <span>WEEKLY CONSISTENCY</span>
-            <span className="text-white font-semibold">100% Target Met</span>
-          </div>
-        </div>
-      </div>
     </div>
   )
 }
@@ -1266,12 +410,6 @@ export default function LearningDashboardModal({
   const [isShareModalOpen, setIsShareModalOpen] = useState(false)
   const [copiedLink, setCopiedLink] = useState(false)
 
-  // Interactive Checklist State
-  const [tasks, setTasks] = useState([
-    { id: 'lesson', text: 'Complete one lesson', done: true },
-    { id: 'milestone', text: 'Finish one milestone', done: false },
-    { id: 'build', text: 'Build something in code', done: false },
-  ])
 
   const showToast = (msg) => {
     setToastMessage(msg)
@@ -1279,35 +417,6 @@ export default function LearningDashboardModal({
     toastTimeoutRef.current = setTimeout(() => {
       setToastMessage(null)
     }, 3000)
-  }
-
-  // Toggle Daily Goal Task
-  const toggleTask = async (id) => {
-    const targetTask = tasks.find((t) => t.id === id)
-    if (!targetTask) return
-    const nextDone = !targetTask.done
-
-    setTasks((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, done: nextDone } : t))
-    )
-
-    try {
-      const updated = await toggleDailyTaskApi({
-        task_id: String(id),
-        is_completed: nextDone,
-      })
-      if (updated?.today_checklist) {
-        setTasks(
-          updated.today_checklist.map((item) => ({
-            id: item.id,
-            text: item.label,
-            done: item.completed,
-          }))
-        )
-      }
-    } catch (e) {
-      console.warn('Failed to sync daily task toggle:', e)
-    }
   }
 
   // Project Actions
@@ -1545,15 +654,6 @@ export default function LearningDashboardModal({
         if (isMounted) {
           if (dashData.status === 'fulfilled') {
             setDashboardData(dashData.value)
-            if (dashData.value.daily_activity?.today_checklist?.length > 0) {
-              setTasks(
-                dashData.value.daily_activity.today_checklist.map((item) => ({
-                  id: item.id,
-                  text: item.label,
-                  done: item.completed,
-                }))
-              )
-            }
           }
           if (roadmapsData.status === 'fulfilled' && Array.isArray(roadmapsData.value)) {
             setSavedRoadmaps(roadmapsData.value)
@@ -1667,7 +767,6 @@ export default function LearningDashboardModal({
     }
   }
 
-  const completedTasksCount = tasks.filter((t) => t.done).length
 
   // Achievement Status Calculations
   const hasLinkedGithub = useMemo(() => {
@@ -1813,122 +912,87 @@ export default function LearningDashboardModal({
           exit={{ opacity: 0, scale: 0.98, y: 16 }}
           transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
           data-lenis-prevent
-          className="relative z-10 flex flex-col w-full max-w-7xl h-[94vh] max-h-[1020px] rounded-3xl border border-white/[0.12] bg-[#050505]/95 backdrop-blur-3xl shadow-[0_30px_120px_rgba(0,0,0,0.98)] overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent"
+          className="relative z-10 flex flex-col w-full max-w-[1520px] h-[95vh] max-h-[1050px] rounded-3xl border border-white/[0.12] bg-[#050505]/95 backdrop-blur-3xl shadow-[0_30px_120px_rgba(0,0,0,0.98)] overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent"
         >
           {/* Futuristic Immersive Cosmic Atmosphere & Starfield */}
           {isOpen && <SpaceGardenAtmosphere />}
 
-          {/* ──────────────── Top Header Bar (VisionOS Floating Telemetry Header) ──────────────── */}
-          <header className="relative z-20 flex flex-col xl:flex-row xl:items-center justify-between border-b border-white/[0.08] bg-[#050505]/90 backdrop-blur-2xl px-4 sm:px-6 py-3.5 gap-3.5 shrink-0 shadow-[0_4px_24px_rgba(0,0,0,0.5)]">
-            {/* Left: Technea OS System Status Badge */}
-            <div className="flex items-center justify-between xl:justify-start gap-3 min-w-0">
-              <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-                {/* System Status Pill */}
-                <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-1.5 shadow-inner">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)]" />
-                  </span>
-                  <span className="text-xs font-mono font-bold text-white tracking-wider">
-                    TECHNEA OS // v2.6.0
-                  </span>
-                  <span className="text-white/20 font-mono hidden sm:inline">|</span>
-                  <span className="text-[10px] font-mono font-semibold text-emerald-400 uppercase tracking-widest hidden sm:inline">
-                    STATUS: ONLINE
-                  </span>
-                </div>
+          {/* Authentic 4-Corner Memphis Accents from Hero.jsx */}
+          <MemphisCornerDecorations />
 
-                {/* User Developer Level Badge */}
-                <span className="rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1 text-[9px] font-mono font-medium text-neutral-300 uppercase tracking-wider shrink-0 hidden sm:inline-block">
-                  {developerLevel}
+          {/* ──────────────── Top Sleek Status & Telemetry Header ──────────────── */}
+          <header className="relative z-20 flex items-center justify-between border-b border-white/[0.08] bg-[#050505]/90 backdrop-blur-2xl px-4 sm:px-6 py-2.5 gap-3 shrink-0 shadow-[0_4px_24px_rgba(0,0,0,0.5)]">
+            {/* Left: System Status Pill */}
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-1 shadow-inner">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)]" />
+                </span>
+                <span className="text-xs font-mono font-bold text-white tracking-wider">
+                  TECHNEA OS // v2.6.0
+                </span>
+                <span className="text-white/20 font-mono hidden sm:inline">|</span>
+                <span className="text-[10px] font-mono font-semibold text-emerald-400 uppercase tracking-widest hidden sm:inline">
+                  STATUS: ONLINE
                 </span>
               </div>
 
-              {/* Mobile-only Close Button */}
-              <div className="flex items-center gap-1.5 xl:hidden">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.03] text-neutral-400 hover:text-white hover:border-white/20 hover:bg-white/[0.06] transition-all duration-300 cursor-pointer"
-                  aria-label="Close dashboard"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
+              <span className="rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-0.5 text-[9px] font-mono font-medium text-neutral-300 uppercase tracking-wider shrink-0 hidden sm:inline-block">
+                {developerLevel}
+              </span>
             </div>
 
-            {/* Center: Floating VisionOS Segmented Pill Bar (7 Tabs) */}
-            <nav
-              role="tablist"
-              aria-label="Dashboard views"
-              data-lenis-prevent
-              className="rounded-2xl border border-white/10 bg-white/[0.03] p-1.5 backdrop-blur-2xl flex items-center overflow-x-auto max-w-full scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden shrink-0 shadow-inner"
-            >
+            {/* Mobile Nav Tabs (visible only on screens < lg) */}
+            <div className="flex lg:hidden items-center gap-1 overflow-x-auto max-w-[55%] scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden py-1">
               {navTabs.map((tab) => {
                 const isSelected = activeTab === tab.id || (tab.id === 'portfolio' && activeTab === 'profile')
-                const TabIcon = tab.icon
                 return (
                   <button
                     key={tab.id}
                     type="button"
-                    role="tab"
-                    aria-selected={isSelected}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`rounded-xl px-3 sm:px-3.5 py-2 sm:py-1.5 min-h-[44px] sm:min-h-[38px] flex items-center justify-center gap-1.5 text-xs font-mono transition-all duration-300 cursor-pointer shrink-0 ${
+                    className={`px-2.5 py-1 rounded-lg text-xs font-mono shrink-0 transition-colors ${
                       isSelected
-                        ? 'bg-white/[0.14] text-white font-semibold shadow-inner border border-white/20'
-                        : 'text-neutral-400 hover:text-white hover:bg-white/[0.05] border border-transparent'
+                        ? 'bg-violet-600/30 text-white font-bold border border-violet-500/40'
+                        : 'text-neutral-400 hover:text-white'
                     }`}
                   >
-                    {TabIcon && (
-                      <TabIcon className={`h-3.5 w-3.5 ${isSelected ? 'text-white' : 'text-neutral-400'}`} />
-                    )}
-                    <span>{tab.label}</span>
-                    {tab.badge !== null && (
-                      <span
-                        className={`rounded-full px-1.5 text-[9px] font-mono ${
-                          isSelected ? 'bg-white/25 text-white font-bold' : 'bg-white/10 text-neutral-300'
-                        }`}
-                      >
-                        {tab.badge}
-                      </span>
-                    )}
+                    {tab.label}
                   </button>
                 )
               })}
-            </nav>
+            </div>
 
-            {/* Right: Telemetry Strip (XP + Streak + Sign Out + Close) */}
-            <div className="hidden xl:flex items-center gap-2 shrink-0">
+            {/* Right: Quick Telemetry Strip & Close Button */}
+            <div className="flex items-center gap-2 shrink-0">
               {/* XP Telemetry Pill */}
-              <div className="flex items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-xs font-mono text-neutral-200 shadow-inner">
+              <div className="hidden sm:flex items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-1 text-xs font-mono text-neutral-200 shadow-inner">
                 <Zap className="h-3 w-3 text-white" />
                 <span className="font-mono">{xpPoints} XP</span>
               </div>
 
-              {/* Streak Ignition Pill */}
-              <div className="flex items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-xs font-mono text-neutral-200 shadow-inner">
+              {/* Streak Pill */}
+              <div className="hidden sm:flex items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-1 text-xs font-mono text-neutral-200 shadow-inner">
                 <Flame className="h-3.5 w-3.5 text-amber-400 animate-pulse" />
                 <span className="font-mono">{streakCount}d</span>
               </div>
 
-              {/* Sign Out */}
+              {/* Sign Out (Mobile only) */}
               <button
                 type="button"
                 onClick={logout}
-                className="flex min-h-[44px] sm:min-h-[38px] items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.06] px-3 py-1.5 text-xs font-mono text-neutral-400 hover:text-white transition-all duration-300 cursor-pointer"
-                title="Sign out of account"
-                aria-label="Sign out of account"
+                className="lg:hidden flex h-8 items-center gap-1 rounded-xl border border-white/[0.08] bg-white/[0.03] px-2.5 text-xs font-mono text-neutral-400 hover:text-white transition-colors cursor-pointer"
+                title="Sign out"
               >
                 <LogOut className="h-3 w-3" />
-                <span>Sign Out</span>
               </button>
 
               {/* Close Modal */}
               <button
                 type="button"
                 onClick={onClose}
-                className="flex min-h-[44px] min-w-[44px] sm:min-h-[38px] sm:min-w-[38px] items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.06] text-neutral-400 hover:text-white transition-all duration-300 cursor-pointer"
+                className="flex h-8 w-8 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.08] text-neutral-400 hover:text-white transition-all duration-300 cursor-pointer"
                 aria-label="Close dashboard"
               >
                 <X className="h-4 w-4" />
@@ -1951,8 +1015,24 @@ export default function LearningDashboardModal({
             )}
           </AnimatePresence>
 
-          {/* ──────────────── Scrollable Dashboard Canvas ──────────────── */}
-          <div data-lenis-prevent className="relative z-10 flex-1 overflow-y-auto overflow-x-hidden bg-transparent p-4 sm:p-6 md:p-8 space-y-7">
+          {/* ──────────────── 3-COLUMN COCKPIT (Matching techneadashboardfinal1.png) ──────────────── */}
+          <div className="relative z-10 flex-1 flex min-h-0 overflow-hidden">
+            {/* 1. Left Navigation Sidebar (240px) */}
+            <div className="w-56 xl:w-64 shrink-0 border-r border-white/[0.08] bg-[#070b13]/85 backdrop-blur-2xl p-4 hidden lg:flex flex-col justify-between">
+              <DashboardLeftSidebar
+                activeTab={activeTab}
+                onSelectTab={(tabId) => setActiveTab(tabId)}
+                user={user}
+                xpPoints={xpPoints}
+                onLogout={logout}
+              />
+            </div>
+
+            {/* 2. Center Column: Main Operating Deck */}
+            <main
+              data-lenis-prevent
+              className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden bg-transparent p-4 sm:p-6 md:p-8 space-y-7 scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+            >
             {loading ? (
               <div className="flex flex-col items-center justify-center h-96 space-y-3">
                 <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/10 border-t-white" />
@@ -1966,7 +1046,7 @@ export default function LearningDashboardModal({
               </div>
             ) : (
               <AnimatePresence mode="wait">
-                {/* ══════════════ TAB 1: OVERVIEW (AI ENGINEERING COMMAND DECK) ══════════════ */}
+                {/* ══════════════ TAB 1: OVERVIEW (MATCHING REFERENCE techneadashboardfinal1.png) ══════════════ */}
                 {activeTab === 'overview' && (
                   <motion.div
                     key="overview"
@@ -1974,136 +1054,17 @@ export default function LearningDashboardModal({
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-                    className="space-y-6 sm:space-y-7"
                   >
-                    {/* ── SECTION 1: Hero Command Header ── */}
-                    <div className="relative overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent rounded-2xl sm:rounded-3xl border border-white/[0.12] bg-[#050505]/95 backdrop-blur-3xl p-6 sm:p-8 shadow-[0_8px_32px_rgba(0,0,0,0.6)] flex flex-col md:flex-row md:items-center justify-between gap-6 group hover:border-white/20 transition-all duration-300">
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <span className="relative flex h-2 w-2">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)]" />
-                          </span>
-                          <span className="text-[10px] font-mono uppercase tracking-widest text-neutral-400 font-semibold">
-                            TECHNEA COMMAND CENTER // COCKPIT ACTIVE
-                          </span>
-                          <span className="text-white/20">•</span>
-                          <span className="rounded-full border border-white/10 bg-white/[0.03] px-2 py-0.5 text-[9px] font-mono text-neutral-300 uppercase">
-                            {developerLevel}
-                          </span>
-                        </div>
-
-                        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white uppercase drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)]">
-                          WELCOME BACK, {firstName}
-                        </h1>
-
-                        <div className="flex items-center gap-2 text-xs sm:text-sm font-mono text-neutral-400">
-                          <span className="text-white font-semibold">ACTIVE MISSION:</span>
-                          <span className="text-white font-bold uppercase tracking-wider">
-                            {currentPath?.title || 'PYTHON FULL STACK DEVELOPER'}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-col min-[420px]:flex-row items-stretch min-[420px]:items-center gap-3 shrink-0">
-                        <button
-                          type="button"
-                          onClick={() => handleOpenRoadmapBuilder()}
-                          className="min-h-[44px] inline-flex items-center justify-center gap-2 bg-white text-black font-bold rounded-xl hover:bg-neutral-200 transition-all duration-300 px-5 py-2.5 text-xs cursor-pointer shadow-[0_2px_16px_rgba(255,255,255,0.2)] hover:shadow-[0_0_24px_rgba(255,255,255,0.4)]"
-                        >
-                          <Sparkles className="h-4 w-4" />
-                          <span>Build My Roadmap</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleExploreSkills()}
-                          className="min-h-[44px] inline-flex items-center justify-center gap-2 border border-white/[0.12] bg-white/[0.03] text-neutral-200 hover:text-white hover:bg-white/[0.08] hover:border-white/25 rounded-xl transition-all duration-300 px-5 py-2.5 text-xs cursor-pointer shadow-inner"
-                        >
-                          <Compass className="h-4 w-4" />
-                          <span>Browse Catalog</span>
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* ── SECTION 2: Quick Actions Bar ── */}
-                    <QuickActionsBar
-                      onResumeMilestone={handleResumeMilestone}
-                      onBuildRoadmap={() => handleOpenRoadmapBuilder()}
-                      onDailyChallenge={() => {
-                        showToast("Navigated to today's flight objectives")
-                        const el = document.getElementById('daily-flight-tracker')
-                        el?.scrollIntoView({ behavior: 'smooth' })
-                      }}
-                      onAskMentor={() => setActiveTab('mentor')}
-                      onBrowseCatalog={() => handleExploreSkills()}
-                    />
-
-                    {/* ── SECTION 3: Spatial Instrument Deck (3-Column Layout) ── */}
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
-                      {/* Left: Orbital Progression Circle (3 cols) */}
-                      <div className="lg:col-span-3">
-                        <OrbitalProgressGauge
-                          percent={overallPercent}
-                          level={developerLevel}
-                          completedMilestones={completedMilestones}
-                          completedLessons={completedLessons}
-                        />
-                      </div>
-
-                      {/* Center: Active Mission Directive Launchpad (5 cols) */}
-                      <div className="lg:col-span-5">
-                        <ActiveMissionLaunchpad
-                          currentPath={currentPath}
-                          onEngage={handleResumeMilestone}
-                        />
-                      </div>
-
-                      {/* Right: Avionics Telemetry Grid (4 cols) */}
-                      <div className="lg:col-span-4">
-                        <AvionicsTelemetryGrid
-                          completedMilestones={completedMilestones}
-                          completedTasksCount={completedTasksCount}
-                          totalTasks={tasks.length}
-                          completedProjectsCount={completedProjectsCount}
-                          streakCount={streakCount}
-                        />
-                      </div>
-                    </div>
-
-                    {/* ── SECTION 4: Conductive Circuit Progression Map ── */}
-                    <CircuitProgressionMap
+                    <DashboardReferenceOverview
+                      user={user}
                       currentPath={currentPath}
-                      onEngage={handleResumeMilestone}
+                      overallPercent={overallPercent}
+                      streakCount={streakCount}
+                      onResumeMilestone={handleResumeMilestone}
+                      onLaunchWorkspace={() => handleExploreSkills(currentPath?.title)}
+                      onShare={() => setIsShareModalOpen(true)}
+                      onNavigateTab={(tab) => setActiveTab(tab)}
                     />
-
-                    {/* ── SECTION 5: Floating Neural AI Copilot Command Bar ── */}
-                    <FloatingNeuralCopilotBar
-                      mentorInput={mentorInput}
-                      setMentorInput={setMentorInput}
-                      onSubmit={(e) => {
-                        e.preventDefault()
-                        const q = mentorInput.trim()
-                        if (!q || isMentorTyping) return
-                        handleSendMentorMessage(q)
-                        setActiveTab('mentor')
-                      }}
-                      isMentorTyping={isMentorTyping}
-                      onChipClick={(chip) => {
-                        handleSendMentorMessage(chip)
-                        setActiveTab('mentor')
-                      }}
-                      copilotInputRef={copilotInputRef}
-                    />
-
-                    {/* ── SECTION 6: Daily Flight Tracker ── */}
-                    <div id="daily-flight-tracker">
-                      <DailyFlightTracker
-                        weeklyHistory={dailyActivity?.weekly_history || []}
-                        streakCount={streakCount}
-                        tasks={tasks}
-                        onToggleTask={toggleTask}
-                      />
-                    </div>
                   </motion.div>
                 )}
 
@@ -3223,9 +2184,89 @@ export default function LearningDashboardModal({
                     </div>
                   </motion.div>
                 )}
+
+                {/* ══════════════ TAB 8: SETTINGS & ENVIRONMENT PREFERENCES ══════════════ */}
+                {activeTab === 'settings' && (
+                  <motion.div
+                    key="settings"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                    className="space-y-6"
+                  >
+                    <div className="relative overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent rounded-2xl sm:rounded-3xl border border-white/[0.1] bg-[#050505]/95 backdrop-blur-3xl p-6 sm:p-7 space-y-6 shadow-[0_8px_32px_rgba(0,0,0,0.6)]">
+                      <div className="flex items-center justify-between border-b border-white/[0.08] pb-4">
+                        <div>
+                          <h3 className="text-lg font-bold text-white">Developer Environment Settings</h3>
+                          <p className="text-xs text-neutral-400 font-mono mt-0.5">
+                            Configure telemetry, AI Mentor preferences, and account credentials.
+                          </p>
+                        </div>
+                        <span className="rounded-full border border-emerald-500/20 bg-emerald-950/20 px-3 py-1 text-xs font-mono text-emerald-400">
+                          ● Environment Healthy
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="rounded-xl border border-white/[0.08] bg-black/40 p-4 space-y-2">
+                          <span className="text-xs font-bold text-white font-mono block">Account Profile</span>
+                          <p className="text-xs text-neutral-300">Name: {fullName}</p>
+                          <p className="text-xs text-neutral-400 font-mono">Email: {userEmail}</p>
+                          <p className="text-xs text-neutral-400 font-mono">Tier: {developerLevel} ({xpPoints} XP)</p>
+                        </div>
+
+                        <div className="rounded-xl border border-white/[0.08] bg-black/40 p-4 space-y-2">
+                          <span className="text-xs font-bold text-white font-mono block">AI Mentor 2.0 Engine</span>
+                          <p className="text-xs text-neutral-300">Architecture: Intent Classification + Context Sync</p>
+                          <p className="text-xs text-neutral-400 font-mono">Status: Connected to Gemini 2.5 Flash</p>
+                          <button
+                            type="button"
+                            onClick={handleClearMentorChat}
+                            className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-mono text-neutral-300 hover:text-white hover:bg-white/[0.08] transition-colors cursor-pointer"
+                          >
+                            <RotateCcw className="h-3 w-3" />
+                            <span>Reset Mentor Context Cache</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="pt-4 border-t border-white/[0.06] flex items-center justify-between">
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab('overview')}
+                          className="inline-flex items-center gap-2 rounded-xl border border-white/[0.1] bg-white/[0.03] px-4 py-2 text-xs font-mono text-neutral-300 hover:text-white cursor-pointer transition-colors"
+                        >
+                          <ArrowRight className="h-3 w-3 rotate-180" />
+                          <span>Return to Dashboard</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={logout}
+                          className="inline-flex items-center gap-1.5 rounded-xl border border-red-500/20 bg-red-950/20 px-4 py-2 text-xs font-mono text-red-300 hover:bg-red-900/30 cursor-pointer transition-colors"
+                        >
+                          <LogOut className="h-3 w-3" />
+                          <span>Sign Out</span>
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
               </AnimatePresence>
             )}
+          </main>
+
+          {/* 3. Right Column: Docked AI Mentor 2.0 Companion (320px) */}
+          <div className="w-72 xl:w-80 shrink-0 border-l border-white/[0.08] bg-[#070b13]/85 backdrop-blur-2xl p-4 hidden lg:flex flex-col justify-between">
+            <DockedAIMentorCompanion
+              messages={mentorMessages}
+              isMentorTyping={isMentorTyping}
+              onSendMessage={handleSendMentorMessage}
+              onResetSession={handleClearMentorChat}
+            />
           </div>
+        </div>
 
           {/* ══════════════ MODAL: LINK GITHUB REPOSITORY ══════════════ */}
           {editingGithubProject && (
