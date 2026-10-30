@@ -241,13 +241,14 @@ function AppContent() {
   }
 
   const isHomeRoute = currentPath === '/' || currentPath === '' || currentPath === '/home'
+  const isDashboardRoute = currentPath === '/dashboard'
   const isDirectModalRoute =
-    currentPath === '/dashboard' ||
     currentPath === '/explore' ||
     currentPath === '/roadmap'
 
   const isKnownRoute =
     isHomeRoute ||
+    isDashboardRoute ||
     isDirectModalRoute ||
     isProfileRoute ||
     isCourseRoute ||
@@ -257,6 +258,7 @@ function AppContent() {
     isAuthCallbackRoute ||
     isSetupProfileRoute
   const isSpecialRoute =
+    isDashboardRoute ||
     isProfileRoute ||
     isCourseRoute ||
     isPathRoute ||
@@ -360,6 +362,24 @@ function AppContent() {
             />
           </Suspense>
         </ErrorBoundary>
+      ) : isDashboardRoute ? (
+        <ErrorBoundary title="Dashboard encountered an error">
+          <Suspense fallback={<SleekRouteLoadingFallback />}>
+            <LearningDashboardModal
+              isOpen={true}
+              isFullScreen={true}
+              onClose={() => {
+                closeDashboard()
+                window.history.pushState({}, '', '/')
+                setCurrentPath('/')
+                setCurrentSearch('')
+                window.dispatchEvent(new PopStateEvent('popstate'))
+              }}
+              onSelectPath={handleSelectPathFromDashboard}
+              onOpenExplorer={handleOpenExplorerFromDashboard}
+            />
+          </Suspense>
+        </ErrorBoundary>
       ) : isHomeRoute || isDirectModalRoute ? (
         <ErrorBoundary title="Homepage encountered an error">
           <Navbar />
@@ -395,12 +415,13 @@ function AppContent() {
         </ErrorBoundary>
       )}
 
-      {/* Global Learning Dashboard Modal */}
-      {isDashboardOpen && (
+      {/* Global Learning Dashboard Modal (when opened as modal outside /dashboard) */}
+      {isDashboardOpen && !isDashboardRoute && (
         <ErrorBoundary compact title="Dashboard temporarily unavailable">
           <Suspense fallback={<SleekModalLoadingFallback />}>
             <LearningDashboardModal
               isOpen={isDashboardOpen}
+              isFullScreen={true}
               onClose={closeDashboard}
               onSelectPath={handleSelectPathFromDashboard}
               onOpenExplorer={handleOpenExplorerFromDashboard}

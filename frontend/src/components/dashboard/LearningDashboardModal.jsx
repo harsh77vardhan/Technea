@@ -47,7 +47,7 @@ import {
 import AIMessageRenderer from './AIMessageRenderer'
 import MemphisCornerDecorations from './MemphisCornerDecorations'
 import DashboardLeftSidebar from './DashboardLeftSidebar'
-import DashboardReferenceOverview from './DashboardReferenceOverview'
+import DashboardVisualOverview from './DashboardVisualOverview'
 import DockedAIMentorCompanion from './DockedAIMentorCompanion'
 
 let messageCounter = 1000
@@ -272,10 +272,11 @@ function AchievementMedallion({
    Main Dashboard Modal Component (Spatial Learning OS)
 ───────────────────────────────────────── */
 export default function LearningDashboardModal({
-  isOpen,
+  isOpen = true,
   onClose,
   onSelectPath = () => {},
   onOpenExplorer = () => {},
+  isFullScreen = true,
 }) {
   const { user, logout, openRoadmapBuilder } = useAuth()
   const [dashboardData, setDashboardData] = useState(null)
@@ -617,16 +618,29 @@ export default function LearningDashboardModal({
   }
 
   const handleExploreSkills = (skill) => {
-    onClose()
+    if (!isFullScreen && onClose) onClose()
     onOpenExplorer(skill)
   }
 
   const handleResumeMilestone = () => {
-    onClose()
     if (currentPath) {
-      onSelectPath(currentPath)
+      if (currentPath.slug || currentPath.id) {
+        window.history.pushState({}, '', `/learning-paths/${currentPath.slug || currentPath.id}`)
+        window.dispatchEvent(new PopStateEvent('popstate'))
+      } else {
+        onSelectPath(currentPath)
+      }
     } else {
       openRoadmapBuilder()
+    }
+  }
+
+  const handleAskMentor = (promptText) => {
+    setActiveTab('mentor')
+    if (promptText) {
+      setTimeout(() => {
+        handleSendMentorMessage(promptText)
+      }, 150)
     }
   }
 
@@ -1073,156 +1087,162 @@ export default function LearningDashboardModal({
   ]
 
   return (
-    <AnimatePresence>
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label="Technea Autonomous Spatial Learning OS"
-        data-lenis-prevent
-        className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 overflow-y-auto overflow-x-hidden"
-      >
-        {/* Soft Neutral Canvas Backdrop matching techneadashboardfinal1.png */}
+    <div
+      role="main"
+      aria-label="Technea Autonomous Spatial Learning OS"
+      data-lenis-prevent
+      className={
+        isFullScreen
+          ? 'fixed inset-0 z-50 w-full h-screen min-h-screen flex flex-col bg-[#050505] text-[#EDEDED] overflow-hidden select-none'
+          : 'fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 overflow-y-auto overflow-x-hidden'
+      }
+    >
+      {/* Soft Backdrop when in modal mode */}
+      {!isFullScreen && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
-          className="fixed inset-0 bg-[#f5f6f2] backdrop-blur-md cursor-pointer"
+          className="fixed inset-0 bg-black/80 backdrop-blur-md cursor-pointer"
         />
+      )}
 
-        {/* Authentic 4-Corner Memphis Accents from Hero.jsx */}
-        <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden="true">
-          <MemphisCornerDecorations />
-        </div>
+      {/* Authentic 4-Corner Memphis Accents from Hero.jsx */}
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden opacity-25" aria-hidden="true">
+        <MemphisCornerDecorations />
+      </div>
 
-        {/* Modal Shell — Elevated Floating Cockpit matching techneadashboardfinal1.png */}
-        <motion.div
-          ref={modalRef}
-          initial={{ opacity: 0, scale: 0.98, y: 16 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.98, y: 16 }}
-          transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
-          data-lenis-prevent
-          className="relative z-10 flex flex-col w-full max-w-[1520px] h-[95vh] max-h-[1050px] rounded-3xl border border-[#cbd5e1] bg-[#f8fafc] shadow-[0_24px_80px_rgba(15,23,42,0.12)] overflow-hidden"
-        >
-          {/* ──────────────── Top Sleek Status & Telemetry Header ──────────────── */}
-          <header className="relative z-20 flex items-center justify-between border-b border-[#e2e8f0] bg-white px-4 sm:px-6 py-2.5 gap-3 shrink-0 shadow-xs">
-            {/* Left: System Status Pill */}
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="flex items-center gap-2 rounded-xl border border-[#e2e8f0] bg-[#f8fafc] px-3 py-1 shadow-xs">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500 shadow-[0_0_8px_rgba(52,211,153,0.9)]" />
-                </span>
-                <span className="text-xs font-mono font-bold text-[#0f172a] tracking-wider">
-                  TECHNEA OS // v2.6.0
-                </span>
-                <span className="text-[#cbd5e1] font-mono hidden sm:inline">|</span>
-                <span className="text-[10px] font-mono font-semibold text-emerald-600 uppercase tracking-widest hidden sm:inline">
-                  STATUS: ONLINE
-                </span>
-              </div>
-
-              <span className="rounded-full border border-[#e2e8f0] bg-[#f1f5f9] px-2.5 py-0.5 text-[9px] font-mono font-medium text-[#475569] uppercase tracking-wider shrink-0 hidden sm:inline-block">
-                {developerLevel}
+      {/* Dashboard Shell — Full screen application or modal */}
+      <div
+        ref={modalRef}
+        data-lenis-prevent
+        className={
+          isFullScreen
+            ? 'relative z-10 flex flex-col w-full h-full bg-[#050505] overflow-hidden'
+            : 'relative z-10 flex flex-col w-full max-w-[1520px] h-[95vh] max-h-[1050px] rounded-3xl border border-white/[0.12] bg-[#0A0D14]/95 shadow-[0_24px_80px_rgba(0,0,0,0.8)] overflow-hidden'
+        }
+      >
+        {/* ──────────────── Top Sleek Status & Telemetry Header ──────────────── */}
+        <header className="relative z-20 flex items-center justify-between border-b border-white/[0.08] bg-[#090B10]/95 backdrop-blur-2xl px-4 sm:px-6 py-3 gap-3 shrink-0 shadow-md">
+          {/* Left: System Status Pill */}
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="flex items-center gap-2 rounded-xl border border-white/[0.10] bg-white/[0.04] px-3 py-1 shadow-xs">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500 shadow-[0_0_8px_rgba(52,211,153,0.9)]" />
+              </span>
+              <span className="text-xs font-mono font-bold text-white tracking-wider">
+                TECHNEA OS // v2.6.0
+              </span>
+              <span className="text-white/20 font-mono hidden sm:inline">|</span>
+              <span className="text-[10px] font-mono font-semibold text-emerald-400 uppercase tracking-widest hidden sm:inline">
+                STATUS: ONLINE
               </span>
             </div>
 
-            {/* Mobile Nav Tabs (visible only on screens < lg) */}
-            <div className="flex lg:hidden items-center gap-1 overflow-x-auto max-w-[55%] scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden py-1">
-              {navTabs.map((tab) => {
-                const isSelected = activeTab === tab.id || (tab.id === 'portfolio' && activeTab === 'profile')
-                return (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-mono shrink-0 transition-colors ${
-                      isSelected
-                        ? 'bg-[#ded4f4] text-[#1e1b4b] font-bold border border-[#c7d2fe]'
-                        : 'text-[#64748b] hover:text-[#0f172a]'
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                )
-              })}
+            <span className="rounded-full border border-white/[0.10] bg-white/[0.03] px-2.5 py-0.5 text-[9px] font-mono font-medium text-neutral-400 uppercase tracking-wider shrink-0 hidden sm:inline-block">
+              {developerLevel}
+            </span>
+          </div>
+
+          {/* Mobile Nav Tabs (visible only on screens < lg) */}
+          <div className="flex lg:hidden items-center gap-1 overflow-x-auto max-w-[55%] scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden py-1">
+            {navTabs.map((tab) => {
+              const isSelected = activeTab === tab.id || (tab.id === 'portfolio' && activeTab === 'profile')
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-mono shrink-0 transition-colors ${
+                    isSelected
+                      ? 'bg-indigo-600/30 text-indigo-300 font-bold border border-indigo-500/40 shadow-xs'
+                      : 'text-neutral-400 hover:text-white'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              )
+            })}
+          </div>
+
+          {/* Right: Quick Telemetry Strip */}
+          <div className="flex items-center gap-2 shrink-0">
+            {/* XP Telemetry Pill */}
+            <div className="hidden sm:flex items-center gap-1.5 rounded-xl border border-white/[0.10] bg-white/[0.04] px-3 py-1 text-xs font-mono text-white shadow-xs">
+              <Zap className="h-3 w-3 text-indigo-400 fill-indigo-400" />
+              <span className="font-mono">{xpPoints} XP</span>
             </div>
 
-            {/* Right: Quick Telemetry Strip & Close Button */}
-            <div className="flex items-center gap-2 shrink-0">
-              {/* XP Telemetry Pill */}
-              <div className="hidden sm:flex items-center gap-1.5 rounded-xl border border-[#e2e8f0] bg-[#f8fafc] px-3 py-1 text-xs font-mono text-[#0f172a] shadow-xs">
-                <Zap className="h-3 w-3 text-[#7c3aed]" />
-                <span className="font-mono">{xpPoints} XP</span>
-              </div>
+            {/* Streak Pill */}
+            <div className="hidden sm:flex items-center gap-1.5 rounded-xl border border-white/[0.10] bg-white/[0.04] px-3 py-1 text-xs font-mono text-white shadow-xs">
+              <Flame className="h-3.5 w-3.5 text-amber-400 fill-amber-400" />
+              <span className="font-mono">{streakCount}d</span>
+            </div>
 
-              {/* Streak Pill */}
-              <div className="hidden sm:flex items-center gap-1.5 rounded-xl border border-[#e2e8f0] bg-[#f8fafc] px-3 py-1 text-xs font-mono text-[#0f172a] shadow-xs">
-                <Flame className="h-3.5 w-3.5 text-amber-500 fill-amber-500" />
-                <span className="font-mono">{streakCount}d</span>
-              </div>
+            {/* Sign Out (Mobile only) */}
+            <button
+              type="button"
+              onClick={logout}
+              className="lg:hidden flex h-8 items-center gap-1 rounded-xl border border-white/[0.10] bg-white/[0.04] px-2.5 text-xs font-mono text-neutral-400 hover:text-white transition-colors cursor-pointer shadow-xs"
+              title="Sign out"
+            >
+              <LogOut className="h-3 w-3" />
+            </button>
 
-              {/* Sign Out (Mobile only) */}
-              <button
-                type="button"
-                onClick={logout}
-                className="lg:hidden flex h-8 items-center gap-1 rounded-xl border border-[#e2e8f0] bg-white px-2.5 text-xs font-mono text-[#64748b] hover:text-[#0f172a] transition-colors cursor-pointer shadow-xs"
-                title="Sign out"
-              >
-                <LogOut className="h-3 w-3" />
-              </button>
-
-              {/* Close Modal */}
+            {/* Close Modal (ONLY when not isFullScreen) */}
+            {!isFullScreen && onClose && (
               <button
                 type="button"
                 onClick={onClose}
-                className="flex h-8 w-8 items-center justify-center rounded-xl border border-[#cbd5e1] bg-white hover:bg-neutral-100 text-[#475569] hover:text-[#0f172a] transition-all duration-300 cursor-pointer shadow-xs"
+                className="flex h-8 w-8 items-center justify-center rounded-xl border border-white/[0.12] bg-white/[0.04] hover:bg-white/[0.10] text-neutral-400 hover:text-white transition-all duration-300 cursor-pointer shadow-xs"
                 aria-label="Close dashboard"
               >
                 <X className="h-4 w-4" />
               </button>
-            </div>
-          </header>
-
-          {/* Toast Banner */}
-          <AnimatePresence>
-            {toastMessage && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="absolute top-16 left-1/2 -translate-x-1/2 z-50 rounded-xl border border-[#cbd5e1] bg-white px-4 py-2 text-xs font-mono text-[#0f172a] shadow-[0_8px_32px_rgba(15,23,42,0.15)] flex items-center gap-2"
-              >
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
-                <span>{toastMessage}</span>
-              </motion.div>
             )}
-          </AnimatePresence>
+          </div>
+        </header>
 
-          {/* ──────────────── 3-COLUMN COCKPIT (Matching techneadashboardfinal1.png) ──────────────── */}
-          <div className="relative z-10 flex-1 flex min-h-0 overflow-hidden bg-[#f8fafc]">
-            {/* 1. Left Navigation Sidebar (240px) */}
-            <div className="w-56 xl:w-64 shrink-0 border-r border-[#e2e8f0] bg-[#edf2f7] p-4 hidden lg:flex flex-col justify-between">
-              <DashboardLeftSidebar
-                activeTab={activeTab}
-                onSelectTab={(tabId) => setActiveTab(tabId)}
-                user={user}
-                xpPoints={xpPoints}
-                onLogout={logout}
-              />
-            </div>
-
-            {/* 2. Center Column: Main Operating Deck */}
-            <main
-              data-lenis-prevent
-              className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden bg-[#f8fafc] p-4 sm:p-6 md:p-8 space-y-7 scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+        {/* Toast Banner */}
+        <AnimatePresence>
+          {toastMessage && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="absolute top-16 left-1/2 -translate-x-1/2 z-50 rounded-xl border border-white/[0.12] bg-[#0A0D14] px-4 py-2 text-xs font-mono text-white shadow-[0_8px_32px_rgba(0,0,0,0.8)] flex items-center gap-2"
             >
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+              <span>{toastMessage}</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ──────────────── COCKPIT BODY ──────────────── */}
+        <div className="relative z-10 flex-1 flex min-h-0 overflow-hidden bg-[#050505]">
+          {/* 1. Left Navigation Sidebar (240px) */}
+          <div className="w-56 xl:w-64 shrink-0 border-r border-white/[0.08] bg-[#090B10]/95 backdrop-blur-2xl p-4 hidden lg:flex flex-col justify-between">
+            <DashboardLeftSidebar
+              activeTab={activeTab}
+              onSelectTab={(tabId) => setActiveTab(tabId)}
+              user={user}
+              xpPoints={xpPoints}
+              onLogout={logout}
+            />
+          </div>
+
+          {/* 2. Main Operating Deck */}
+          <main
+            data-lenis-prevent
+            className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden bg-[#050505] p-4 sm:p-6 md:p-8 space-y-7 scrollbar-thin scrollbar-thumb-white/10"
+          >
             {loading ? (
               <div className="flex flex-col items-center justify-center h-96 space-y-3">
-                <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/10 border-t-white" />
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-indigo-500/20 border-t-indigo-500" />
                 <p className="text-xs text-neutral-400 font-mono">
-                  Loading your engineering workspace…
+                  Synchronizing Technea OS workspace…
                 </p>
               </div>
             ) : error ? (
@@ -1231,7 +1251,7 @@ export default function LearningDashboardModal({
               </div>
             ) : (
               <AnimatePresence mode="wait">
-                {/* ══════════════ TAB 1: OVERVIEW (MATCHING REFERENCE techneadashboardfinal1.png) ══════════════ */}
+                {/* ══════════════ TAB 1: OVERVIEW (VISUAL, BEGINNER-FRIENDLY LEARNING WORKSPACE) ══════════════ */}
                 {activeTab === 'overview' && (
                   <motion.div
                     key="overview"
@@ -1240,15 +1260,17 @@ export default function LearningDashboardModal({
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
                   >
-                    <DashboardReferenceOverview
+                    <DashboardVisualOverview
                       user={user}
                       currentPath={currentPath}
                       overallPercent={overallPercent}
                       streakCount={streakCount}
+                      xpPoints={xpPoints}
                       onResumeMilestone={handleResumeMilestone}
                       onLaunchWorkspace={() => handleExploreSkills(currentPath?.title)}
                       onShare={() => setIsShareModalOpen(true)}
                       onNavigateTab={(tab) => setActiveTab(tab)}
+                      onAskMentor={handleAskMentor}
                     />
                   </motion.div>
                 )}
@@ -2872,8 +2894,7 @@ export default function LearningDashboardModal({
               </div>
             </div>
           )}
-        </motion.div>
       </div>
-    </AnimatePresence>
+    </div>
   )
 }

@@ -42,10 +42,18 @@ export function AuthProvider({ children }) {
 
   const openDashboard = useCallback(() => {
     setIsDashboardOpen(true)
+    if (typeof window !== 'undefined' && window.location.pathname !== '/dashboard') {
+      window.history.pushState({}, '', '/dashboard')
+      window.dispatchEvent(new PopStateEvent('popstate'))
+    }
   }, [])
 
   const closeDashboard = useCallback(() => {
     setIsDashboardOpen(false)
+    if (typeof window !== 'undefined' && window.location.pathname === '/dashboard') {
+      window.history.pushState({}, '', '/')
+      window.dispatchEvent(new PopStateEvent('popstate'))
+    }
   }, [])
 
   const openRoadmapBuilder = useCallback((initialGoal = '') => {
@@ -206,6 +214,10 @@ export function AuthProvider({ children }) {
       setTokenState(null)
       setUser(null)
       closeDashboard()
+      if (typeof window !== 'undefined' && window.location.pathname !== '/') {
+        window.history.pushState({}, '', '/')
+        window.dispatchEvent(new PopStateEvent('popstate'))
+      }
     }
   }, [closeDashboard])
 

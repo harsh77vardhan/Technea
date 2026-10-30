@@ -8,18 +8,19 @@ import {
   Award,
   Settings,
   LogOut,
+  Zap,
 } from 'lucide-react'
 import { getAvatarUrl } from '../../services/api'
 
 /**
  * DashboardLeftSidebar
  *
- * Implements the exact left navigation sidebar from `techneadashboardfinal1.png`:
- * - Cool ice/slate background: #edf2f7
- * - Brand logo: "T Technea" in bold black
- * - Vertical nav links: Overview, Roadmaps, Courses, Projects, AI Mentor, Portfolio, Settings
- *   (Overview has soft lavender capsule #ded4f4 / #e0e7ff with glowing purple dot on right)
- * - User Profile Footer: Avatar, Name "Harsh", "Lv 4 • 1,240 XP", Logout
+ * Implements the full-screen left navigation sidebar matching Technea Hero's cinematic dark design language:
+ * - Deep black glass panel: #090B10 with border-r border-white/[0.08]
+ * - Brand logo: Glowing Technea icon mark + "Technea" in crisp white + "OS v2.6" badge
+ * - Vertical nav links: Overview, Roadmaps, Courses, Projects, AI Mentor, Portfolio
+ *   (Active tab has glowing dark glass capsule with ambient violet glow dot)
+ * - User Profile Footer: Avatar, Name, "Lv 4 • 1,240 XP" with mini progress bar, and Logout action
  */
 function DashboardLeftSidebar({
   activeTab = 'overview',
@@ -51,22 +52,31 @@ function DashboardLeftSidebar({
       aria-label="Dashboard Sidebar"
       className="flex flex-col h-full justify-between gap-6"
     >
-      {/* ──────────────── Brand Logo ──────────────── */}
+      {/* ──────────────── Brand Logo & Header ──────────────── */}
       <div className="space-y-6">
-        <div className="flex items-center gap-2.5 px-2 pt-1">
-          {/* Technea 'T' Icon Mark */}
-          <div className="h-7 w-7 rounded-lg bg-[#111827] text-white font-extrabold text-sm flex items-center justify-center shadow-xs shrink-0">
-            T
+        <div className="flex items-center gap-3 px-2 pt-1">
+          {/* Technea Glowing 'T' Mark */}
+          <div className="relative">
+            <span className="absolute -inset-1 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 opacity-60 blur-xs" />
+            <div className="relative h-8 w-8 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 text-white font-extrabold text-sm flex items-center justify-center shadow-md shrink-0">
+              T
+            </div>
           </div>
-          <span className="text-base font-extrabold tracking-tight text-[#0f172a] font-sans">
-            Technea
-          </span>
+          <div className="flex flex-col">
+            <span className="text-base font-extrabold tracking-tight text-white font-sans">
+              Technea
+            </span>
+            <span className="text-[10px] font-mono tracking-widest uppercase text-indigo-400">
+              AI LEARNING OS
+            </span>
+          </div>
         </div>
 
         {/* ──────────────── Nav Menu List ──────────────── */}
-        <div className="space-y-1">
+        <div className="space-y-1.5">
           {navItems.map((item) => {
-            const isActive = activeTab === item.id || (item.id === 'portfolio' && activeTab === 'profile')
+            const isActive =
+              activeTab === item.id || (item.id === 'portfolio' && activeTab === 'profile')
             const Icon = item.icon
 
             return (
@@ -76,22 +86,22 @@ function DashboardLeftSidebar({
                 onClick={() => onSelectTab(item.id)}
                 className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-sans font-medium transition-all duration-200 cursor-pointer ${
                   isActive
-                    ? 'bg-[#ded4f4] text-[#1e1b4b] font-semibold border border-[#c7d2fe] shadow-xs'
-                    : 'text-[#475569] hover:text-[#0f172a] hover:bg-black/[0.04] border border-transparent'
+                    ? 'bg-white/[0.08] text-white font-semibold border border-white/[0.14] shadow-[0_0_20px_rgba(99,102,241,0.20)]'
+                    : 'text-neutral-400 hover:text-white hover:bg-white/[0.04] border border-transparent'
                 }`}
               >
-                <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-3">
                   <Icon
-                    className={`h-4 w-4 ${
-                      isActive ? 'text-[#4338ca]' : 'text-[#64748b]'
+                    className={`h-4 w-4 transition-colors ${
+                      isActive ? 'text-indigo-400' : 'text-neutral-400'
                     }`}
                   />
                   <span>{item.label}</span>
                 </div>
 
-                {/* Active Purple Indicator Dot matching reference image */}
+                {/* Active Glowing Violet Indicator Dot */}
                 {isActive && (
-                  <span className="h-2 w-2 rounded-full bg-[#7c3aed] shadow-[0_0_6px_#7c3aed]" />
+                  <span className="h-2 w-2 rounded-full bg-indigo-500 shadow-[0_0_8px_#6366f1]" />
                 )}
               </button>
             )
@@ -99,44 +109,57 @@ function DashboardLeftSidebar({
         </div>
       </div>
 
-      {/* ──────────────── Bottom User Profile Card ──────────────── */}
-      <div className="border-t border-[#cbd5e1]/60 pt-4 px-1 space-y-3 shrink-0">
+      {/* ──────────────── Bottom User Profile & XP Telemetry Card ──────────────── */}
+      <div className="border-t border-white/[0.08] pt-4 px-1 space-y-3.5 shrink-0">
         <div className="flex items-center gap-3">
-          {/* Avatar Thumbnail */}
-          <div className="h-9 w-9 rounded-full overflow-hidden border border-[#cbd5e1] bg-white shrink-0 flex items-center justify-center shadow-xs">
-            {avatarUrl ? (
-              <img
-                src={avatarUrl}
-                alt={fullName}
-                className="h-full w-full object-cover"
-                onError={(e) => {
-                  e.currentTarget.style.display = 'none'
-                }}
-              />
-            ) : (
-              <span className="text-xs font-mono font-bold text-[#1e293b]">
-                {firstName.slice(0, 2).toUpperCase()}
-              </span>
-            )}
+          {/* Avatar with Online Status */}
+          <div className="relative shrink-0">
+            <div className="h-10 w-10 rounded-full overflow-hidden border border-white/[0.14] bg-[#12151E] flex items-center justify-center shadow-xs">
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt={fullName}
+                  className="h-full w-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none'
+                  }}
+                />
+              ) : (
+                <span className="text-xs font-mono font-bold text-white">
+                  {firstName.slice(0, 2).toUpperCase()}
+                </span>
+              )}
+            </div>
+            <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-500 border-2 border-[#090B10] shadow-[0_0_6px_rgba(52,211,153,0.8)]" />
           </div>
 
-          {/* User Name & Level/XP */}
+          {/* User Name & Level */}
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-bold text-[#0f172a] truncate">{firstName}</p>
-            <p className="text-[11px] font-mono text-[#64748b] truncate">
-              Lv {computedLevel} • {displayXp} XP
-            </p>
+            <p className="text-xs font-bold text-white truncate">{firstName}</p>
+            <div className="flex items-center gap-1.5 text-[11px] font-mono text-neutral-400">
+              <span>Lv {computedLevel}</span>
+              <span>•</span>
+              <span className="text-indigo-300 flex items-center gap-0.5">
+                <Zap className="h-2.5 w-2.5 fill-indigo-400 text-indigo-400" />
+                {displayXp} XP
+              </span>
+            </div>
           </div>
+        </div>
+
+        {/* Level XP Progress Bar */}
+        <div className="w-full bg-white/[0.08] h-1.5 rounded-full overflow-hidden">
+          <div className="bg-gradient-to-r from-blue-500 to-indigo-500 h-full rounded-full w-3/4 shadow-[0_0_8px_rgba(99,102,241,0.5)]" />
         </div>
 
         {/* Logout Button */}
         <button
           type="button"
           onClick={onLogout}
-          className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs font-mono text-[#64748b] hover:text-[#0f172a] hover:bg-black/[0.04] transition-colors cursor-pointer"
+          className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-mono text-neutral-400 hover:text-red-300 hover:bg-red-500/10 transition-colors cursor-pointer"
         >
           <LogOut className="h-3.5 w-3.5" />
-          <span>Logout</span>
+          <span>Sign Out</span>
         </button>
       </div>
     </nav>
