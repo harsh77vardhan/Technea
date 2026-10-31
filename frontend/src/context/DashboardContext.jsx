@@ -18,6 +18,14 @@ import {
   updateProjectStatusApi,
   sendAiChatApi,
 } from '../services/api'
+import {
+  isDevAuthBypass,
+  DEV_MOCK_ROADMAP,
+  DEV_MOCK_SUMMARY,
+  DEV_MOCK_DAILY_ACTIVITY,
+  DEV_MOCK_CATALOG,
+  DEV_MOCK_PROJECTS,
+} from './devMockData'
 
 export function DashboardProvider({ children }) {
   const { user, logout } = useAuth()
@@ -26,17 +34,17 @@ export function DashboardProvider({ children }) {
   const [activeTab, setActiveTab] = useState('overview')
 
   // Telemetry & Metrics
-  const [summaryData, setSummaryData] = useState(null)
-  const [dailyActivity, setDailyActivity] = useState(null)
+  const [summaryData, setSummaryData] = useState(() => (isDevAuthBypass ? DEV_MOCK_SUMMARY : null))
+  const [dailyActivity, setDailyActivity] = useState(() => (isDevAuthBypass ? DEV_MOCK_DAILY_ACTIVITY : null))
   const [achievements, setAchievements] = useState([])
-  const [savedRoadmaps, setSavedRoadmaps] = useState([])
-  const [catalogRoadmaps, setCatalogRoadmaps] = useState([])
-  const [recommendedProjects, setRecommendedProjects] = useState([])
-  const [myProjects, setMyProjects] = useState([])
-  const [isLoading, setIsLoading] = useState(true)
+  const [savedRoadmaps, setSavedRoadmaps] = useState(() => (isDevAuthBypass ? [DEV_MOCK_ROADMAP] : []))
+  const [catalogRoadmaps, setCatalogRoadmaps] = useState(() => (isDevAuthBypass ? DEV_MOCK_CATALOG : []))
+  const [recommendedProjects, setRecommendedProjects] = useState(() => (isDevAuthBypass ? DEV_MOCK_PROJECTS : []))
+  const [myProjects, setMyProjects] = useState(() => (isDevAuthBypass ? DEV_MOCK_PROJECTS : []))
+  const [isLoading, setIsLoading] = useState(() => (isDevAuthBypass ? false : true))
 
   // Active Roadmap Selection (Single Source of Truth)
-  const [activeRoadmap, setActiveRoadmap] = useState(null)
+  const [activeRoadmap, setActiveRoadmap] = useState(() => (isDevAuthBypass ? DEV_MOCK_ROADMAP : null))
 
   // Toast notification system
   const [toast, setToast] = useState(null)
@@ -84,6 +92,10 @@ export function DashboardProvider({ children }) {
   // Consolidated data refresh function
   const refreshDashboard = useCallback(async (force = true) => {
     if (!user) return
+    if (isDevAuthBypass) {
+      setIsLoading(false)
+      return
+    }
 
     // Serve from cache if fresh and not forced
     const now = Date.now()
@@ -145,6 +157,7 @@ export function DashboardProvider({ children }) {
 
   // Initial load
   useEffect(() => {
+    if (isDevAuthBypass) return
     let isMounted = true
 
     const loadInitialData = async () => {
@@ -186,6 +199,7 @@ export function DashboardProvider({ children }) {
 
   // Lazy-load roadmap catalog only when user navigates to 'roadmaps' tab
   useEffect(() => {
+    if (isDevAuthBypass) return
     if (activeTab === 'roadmaps' && catalogRoadmaps.length === 0) {
       let isSubscribed = true
       getRoadmapCatalogApi({ limit: 12 })
@@ -206,6 +220,11 @@ export function DashboardProvider({ children }) {
   const switchActiveRoadmap = useCallback(
     async (target) => {
       if (!target) return
+      if (isDevAuthBypass) {
+        setActiveRoadmap(target)
+        showToast(`Active roadmap switched to: ${target.title}`, 'success')
+        return
+      }
       try {
         if (target.roadmap_data !== undefined || target.goal !== undefined) {
           // AI Generated Roadmap
@@ -230,6 +249,22 @@ export function DashboardProvider({ children }) {
   // Toggle Daily Task Checklist
   const toggleDailyTask = useCallback(
     async (taskId, isCompleted) => {
+      if (isDevAuthBypass) {
+        setDailyActivity((prev) => {
+          const currentTasks = new Set(prev?.completed_tasks || [])
+          if (isCompleted) currentTasks.add(taskId)
+          else currentTasks.delete(taskId)
+          return {
+            ...prev,
+            completed_tasks: Array.from(currentTasks),
+            earned_today_xp: Math.max(0, (prev?.earned_today_xp || 50) + (isCompleted ? 10 : -10)),
+          }
+        })
+        if (isCompleted) {
+          showToast('Daily task checked off! +10 XP', 'success')
+        }
+        return
+      }
       try {
         const updated = await toggleDailyTaskApi({ task_id: taskId, is_completed: isCompleted })
         setDailyActivity(updated)
@@ -246,6 +281,12 @@ export function DashboardProvider({ children }) {
   // Toggle Lesson Progress with Automatic Cascading
   const completeLesson = useCallback(
     async (courseId, lessonId, isCompleted = true) => {
+      if (isDevAuthBypass) {
+        if (isCompleted) {
+          showToast('Lesson completed! Progress synchronized • +20 XP', 'success')
+        }
+        return { success: true }
+      }
       try {
         const res = await toggleLessonProgressApi({
           course_id: courseId,
@@ -268,6 +309,12 @@ export function DashboardProvider({ children }) {
   // Toggle Milestone Progress
   const toggleMilestone = useCallback(
     async (roadmapId, milestoneId, isCompleted) => {
+      if (isDevAuthBypass) {
+        if (isCompleted) {
+          showToast('Milestone achieved! Next mission unlocked • +50 XP', 'success')
+        }
+        return { success: true }
+      }
       try {
         const updated = await toggleRoadmapMilestoneApi(roadmapId, {
           milestone_id: milestoneId,
@@ -289,6 +336,10 @@ export function DashboardProvider({ children }) {
   // Update Project Status
   const updateProject = useCallback(
     async (projectId, status, githubUrl) => {
+      if (isDevAuthBypass) {
+        showToast(`Project updated: ${status.replace('_', ' ')}`, 'success')
+        return { id: projectId, status, github_url: githubUrl }
+      }
       try {
         const payload = { status }
         if (githubUrl !== undefined) payload.github_url = githubUrl
@@ -475,6 +526,22 @@ export function DashboardProvider({ children }) {
       setMentorMessages((prev) => [...prev, userMsg])
       setIsMentorTyping(true)
 
+      if (isDevAuthBypass) {
+        setTimeout(() => {
+          const devReply = {
+            id: `msg-${Date.now() + 1}`,
+            sender: 'mentor',
+            content: `I am synchronized with your active roadmap "${activeRoadmapNormalized?.title || 'Full Stack Developer Roadmap'}" and current milestone "${todayMission.lesson_title}". How would you like to proceed with object-oriented architecture patterns today?`,
+            suggestions: ['Explain Factory vs Strategy pattern', 'Show me code example in TypeScript', 'Quiz me on SOLID principles'],
+            related_actions: [],
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          }
+          setMentorMessages((prev) => [...prev, devReply])
+          setIsMentorTyping(false)
+        }, 500)
+        return
+      }
+
       try {
         const historyPayload = mentorMessages
           .filter((m) => m.id !== 'init-1')
@@ -513,7 +580,7 @@ export function DashboardProvider({ children }) {
         setIsMentorTyping(false)
       }
     },
-    [mentorMessages, aiMentorContext]
+    [mentorMessages, aiMentorContext, activeRoadmapNormalized?.title, todayMission.lesson_title]
   )
 
   const resetMentorSession = useCallback(() => {

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { AuthContext } from './AuthContextDef'
+import { isDevAuthBypass, DEV_MOCK_USER } from './devMockData'
 import {
   getAuthToken,
   setAuthToken,
@@ -20,9 +21,9 @@ import {
 } from '../services/api'
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null)
-  const [token, setTokenState] = useState(() => getAuthToken())
-  const [isLoading, setIsLoading] = useState(true)
+  const [user, setUser] = useState(() => (isDevAuthBypass ? DEV_MOCK_USER : null))
+  const [token, setTokenState] = useState(() => (isDevAuthBypass ? 'dev-bypass-token' : getAuthToken()))
+  const [isLoading, setIsLoading] = useState(() => (isDevAuthBypass ? false : true))
 
   // Global Auth & Dashboard modal controls
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
@@ -110,6 +111,10 @@ export function AuthProvider({ children }) {
 
   // Initial authentication rehydration on mount
   useEffect(() => {
+    if (isDevAuthBypass) {
+      return
+    }
+
     let isMounted = true
 
     const rehydrateSession = async () => {
@@ -205,6 +210,18 @@ export function AuthProvider({ children }) {
 
   // Logout handler
   const logout = useCallback(async () => {
+    if (isDevAuthBypass) {
+      setAuthToken(null)
+      setTokenState(null)
+      setUser(null)
+      closeDashboard()
+      if (typeof window !== 'undefined' && window.location.pathname !== '/') {
+        window.history.pushState({}, '', '/')
+        window.dispatchEvent(new PopStateEvent('popstate'))
+      }
+      return
+    }
+
     try {
       await logoutApi()
     } catch {
@@ -223,6 +240,9 @@ export function AuthProvider({ children }) {
 
   // Refresh current user data from server
   const refreshUser = useCallback(async () => {
+    if (isDevAuthBypass) {
+      return DEV_MOCK_USER
+    }
     try {
       const userData = await getCurrentUserApi()
       if (userData) {

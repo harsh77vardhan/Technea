@@ -16,7 +16,6 @@ import { useDashboard } from '../context/useDashboard'
 import DashboardLeftSidebar from '../components/dashboard/DashboardLeftSidebar'
 import DashboardReferenceOverview from '../components/dashboard/DashboardReferenceOverview'
 import DockedAIMentorCompanion from '../components/dashboard/DockedAIMentorCompanion'
-import MemphisCornerDecorations from '../components/dashboard/MemphisCornerDecorations'
 
 const FloatingAIMentorCompanion = lazy(() =>
   import('../components/dashboard/FloatingAIMentorCompanion')
@@ -69,9 +68,6 @@ export default function DashboardPage({
 
   return (
     <div className="relative w-full h-screen min-h-screen flex flex-col lg:flex-row bg-[#0e0d0c] text-[#faf6ee] overflow-hidden select-none">
-      {/* Technea Cybernetic Memphis Corner Technical Anchors in Warm Burnt Orange Palette */}
-      <MemphisCornerDecorations />
-
       {/* Subtle background warm burnt orange nebulae */}
       <div className="pointer-events-none absolute -top-40 -left-40 h-96 w-96 rounded-full bg-[#c25e2e]/8 blur-[140px]" />
       <div className="pointer-events-none absolute -bottom-40 -right-40 h-96 w-96 rounded-full bg-[#d97b48]/6 blur-[140px]" />

@@ -8,6 +8,7 @@ import { DashboardProvider } from './context/DashboardContext'
 
 gsap.registerPlugin(ScrollTrigger)
 import { useAuth } from './context/useAuth'
+import { isDevAuthBypass } from './context/devMockData'
 import Navbar from './components/layout/Navbar'
 import LandingPage from './pages/LandingPage'
 import Footer from './components/layout/Footer'
@@ -130,9 +131,20 @@ function AppContent() {
     }
   }, [currentPath, user, openRoadmapBuilder])
 
+  const devAutoRedirectRef = useRef(false)
+  // Dev auth bypass: auto-redirect directly from root to /dashboard on initial localhost load
+  useEffect(() => {
+    if (isDevAuthBypass && !devAutoRedirectRef.current && (currentPath === '/' || currentPath === '')) {
+      devAutoRedirectRef.current = true
+      window.history.replaceState({}, '', '/dashboard')
+      setCurrentPath('/dashboard')
+      window.dispatchEvent(new PopStateEvent('popstate'))
+    }
+  }, [currentPath])
+
   // Route guard: Redirect unauthenticated visits to /dashboard back to home with auth modal prompt
   useEffect(() => {
-    if (!isAuthLoading && !user && currentPath === '/dashboard') {
+    if (!isDevAuthBypass && !isAuthLoading && !user && currentPath === '/dashboard') {
       window.history.replaceState({}, '', '/?open_auth=true')
       window.dispatchEvent(new PopStateEvent('popstate'))
       openAuthModal()
