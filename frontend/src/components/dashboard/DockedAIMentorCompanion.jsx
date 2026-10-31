@@ -23,8 +23,10 @@ function DockedAIMentorCompanion({
     isMentorTyping,
     sendMentorMessage,
     resetMentorSession,
+    theme,
   } = useDashboard()
 
+  const isLight = theme === 'light'
   const [inputText, setInputText] = useState('')
   const [activeView, setActiveView] = useState('context') // 'context' | 'chat'
   const chatScrollRef = useRef(null)
@@ -83,7 +85,11 @@ function DockedAIMentorCompanion({
     <aside
       aria-label="AI Technical Mentor"
       data-lenis-prevent="true"
-      className="flex flex-col h-full justify-between bg-[#141312] border-l border-[#262320] text-[#faf6ee] select-none p-6 relative overflow-hidden"
+      className={`flex flex-col h-full justify-between border-l select-none p-6 relative overflow-hidden transition-colors duration-300 ${
+        isLight
+          ? 'bg-[#f0e9dc] border-[#ded4be] text-[#181614]'
+          : 'bg-[#141312] border-[#262320] text-[#faf6ee]'
+      }`}
     >
       {/* ──────────────── TOP HEADER ──────────────── */}
       <div className="space-y-6">
@@ -103,25 +109,27 @@ function DockedAIMentorCompanion({
 
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold text-[#faf6ee] tracking-tight">
+                <span className={`text-sm font-semibold tracking-tight ${isLight ? 'text-[#181614]' : 'text-[#faf6ee]'}`}>
                   AI Mentor
                 </span>
                 <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-[#c25e2e]/15 border border-[#c25e2e]/30 text-[#e87a48]">
                   2.0
                 </span>
               </div>
-              <p className="text-xs text-[#a8a199] font-normal mt-0.5">
+              <p className={`text-xs font-normal mt-0.5 ${isLight ? 'text-[#6e665d]' : 'text-[#a8a199]'}`}>
                 Aware of your current lesson
               </p>
             </div>
           </div>
 
           {/* Top Right Controls: Minimize & Expand */}
-          <div className="flex items-center gap-1 text-[#a8a199] pt-0.5">
+          <div className={`flex items-center gap-1 pt-0.5 ${isLight ? 'text-[#7a7268]' : 'text-[#a8a199]'}`}>
             <button
               type="button"
               onClick={onMinimize}
-              className="p-1 rounded-md hover:text-[#faf6ee] hover:bg-[#faf6ee]/5 transition-colors cursor-pointer"
+              className={`p-1 rounded-md transition-colors cursor-pointer ${
+                isLight ? 'hover:text-[#181614] hover:bg-[#181614]/5' : 'hover:text-[#faf6ee] hover:bg-[#faf6ee]/5'
+              }`}
               title="Minimize panel"
             >
               <Minus className="h-3.5 w-3.5" />
@@ -129,7 +137,9 @@ function DockedAIMentorCompanion({
             <button
               type="button"
               onClick={onExpand}
-              className="p-1 rounded-md hover:text-[#faf6ee] hover:bg-[#faf6ee]/5 transition-colors cursor-pointer"
+              className={`p-1 rounded-md transition-colors cursor-pointer ${
+                isLight ? 'hover:text-[#181614] hover:bg-[#181614]/5' : 'hover:text-[#faf6ee] hover:bg-[#faf6ee]/5'
+              }`}
               title="Expand to Fullscreen Studio"
             >
               <Maximize2 className="h-3.5 w-3.5" />
@@ -266,11 +276,13 @@ function DockedAIMentorCompanion({
                     className={`max-w-[92%] rounded-2xl px-3.5 py-2.5 ${
                       msg.sender === 'user'
                         ? 'bg-[#c25e2e] text-[#faf6ee] font-medium'
+                        : isLight
+                        ? 'bg-[#ffffff] border border-[#ded4be] text-[#181614]'
                         : 'bg-[#1c1a18] border border-[#2e2a26] text-[#faf6ee]'
                     }`}
                   >
                     {msg.sender === 'mentor' ? (
-                      <AIMessageRenderer content={msg.content} />
+                      <AIMessageRenderer content={msg.content} theme={theme} />
                     ) : (
                       <div className="whitespace-pre-wrap">{msg.content}</div>
                     )}
@@ -279,7 +291,9 @@ function DockedAIMentorCompanion({
               ))}
 
               {isMentorTyping && (
-                <div className="flex items-center gap-2 px-3 py-2 rounded-2xl bg-[#1c1a18] border border-[#2e2a26] text-[#a8a199] text-xs w-fit">
+                <div className={`flex items-center gap-2 px-3 py-2 rounded-2xl border text-xs w-fit ${
+                  isLight ? 'bg-[#ffffff] border-[#ded4be] text-[#6e665d]' : 'bg-[#1c1a18] border-[#2e2a26] text-[#a8a199]'
+                }`}>
                   <Sparkles className="h-3.5 w-3.5 text-[#e87a48] animate-spin" />
                   <span className="font-mono text-[11px]">Synthesizing...</span>
                 </div>
@@ -291,14 +305,18 @@ function DockedAIMentorCompanion({
 
       {/* ──────────────── BOTTOM INPUT PILL IN BURNT ORANGE PALETTE ──────────────── */}
       <div className="pt-4">
-        <div className="flex items-center justify-between gap-2 rounded-full bg-[#1c1a18] border border-[#2e2a26] px-4 py-2 focus-within:border-[#c25e2e]/50 transition-colors">
+        <div className={`flex items-center justify-between gap-2 rounded-full border px-4 py-2 focus-within:border-[#c25e2e]/50 transition-colors ${
+          isLight ? 'bg-[#ffffff] border-[#ded4be]' : 'bg-[#1c1a18] border-[#2e2a26]'
+        }`}>
           <input
             type="text"
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Ask about your lesson, code, or plan..."
-            className="flex-1 bg-transparent text-xs text-[#faf6ee] placeholder-[#8c8378] outline-none font-normal"
+            className={`flex-1 bg-transparent text-xs outline-none font-normal ${
+              isLight ? 'text-[#181614] placeholder-[#8c8378]' : 'text-[#faf6ee] placeholder-[#8c8378]'
+            }`}
           />
 
           <button

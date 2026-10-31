@@ -26,7 +26,10 @@ export default function RoadmapDetailModal({
     activeRoadmap,
     switchActiveRoadmap,
     showToast,
+    theme,
   } = useDashboard()
+
+  const isLight = theme === 'light'
 
   const [activeTab, setActiveTab] = useState('tree') // 'tree' | 'overview' | 'projects' | 'structure'
   const [isActivating, setIsActivating] = useState(false)
@@ -205,7 +208,11 @@ export default function RoadmapDetailModal({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.98, y: 10 }}
           transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-          className="relative z-10 w-full max-w-6xl h-[94vh] max-h-[960px] rounded-3xl bg-[#0e0d0c] border border-[#262320] shadow-[0_32px_80px_rgba(0,0,0,0.95)] overflow-hidden flex flex-col text-[#faf6ee]"
+          className={`relative z-10 w-full max-w-6xl h-[94vh] max-h-[960px] rounded-3xl border shadow-[0_32px_80px_rgba(0,0,0,0.95)] overflow-hidden flex flex-col transition-colors duration-300 ${
+            isLight
+              ? 'bg-[#f6f1e7] border-[#ded4be] text-[#181614]'
+              : 'bg-[#0e0d0c] border-[#262320] text-[#faf6ee]'
+          }`}
           data-lenis-prevent
         >
           {/* Subtle Burnt Orange ambient background glows */}
@@ -213,7 +220,11 @@ export default function RoadmapDetailModal({
           <div className="pointer-events-none absolute -bottom-40 -right-40 h-96 w-96 rounded-full bg-[#d97b48]/8 blur-[140px]" />
 
           {/* ── TOP HEADER BAR ─────────────────────────────────────────────── */}
-          <header className="shrink-0 px-6 sm:px-8 py-5 border-b border-[#262320] flex items-center justify-between gap-4 bg-[#141312]/80 backdrop-blur-md relative z-20">
+          <header className={`shrink-0 px-6 sm:px-8 py-5 border-b flex items-center justify-between gap-4 backdrop-blur-md relative z-20 transition-colors duration-300 ${
+            isLight
+              ? 'border-[#ded4be] bg-[#f0e9dc]/90 text-[#181614]'
+              : 'border-[#262320] bg-[#141312]/80 text-[#faf6ee]'
+          }`}>
             <div className="flex items-center gap-3 min-w-0">
               <div className="h-8 w-8 rounded-full border border-[#c25e2e]/40 bg-[#c25e2e]/10 flex items-center justify-center text-xs font-semibold text-[#faf6ee] shrink-0">
                 T
@@ -222,7 +233,9 @@ export default function RoadmapDetailModal({
                 <span className="text-[10px] font-mono uppercase tracking-wider text-[#e87a48] font-semibold block">
                   Roadmap Blueprint Engine 2.0
                 </span>
-                <h2 className="text-base sm:text-lg font-medium text-[#faf6ee] truncate tracking-tight">
+                <h2 className={`text-base sm:text-lg font-medium truncate tracking-tight ${
+                  isLight ? 'text-[#181614]' : 'text-[#faf6ee]'
+                }`}>
                   {roadmap.title}
                 </h2>
               </div>
@@ -251,7 +264,11 @@ export default function RoadmapDetailModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="h-8 w-8 rounded-full border border-[#262320] flex items-center justify-center text-[#a8a199] hover:text-[#faf6ee] hover:bg-[#1f1d1b] transition-colors cursor-pointer"
+                className={`h-8 w-8 rounded-full border flex items-center justify-center transition-colors cursor-pointer ${
+                  isLight
+                    ? 'border-[#ded4be] text-[#6e665d] hover:text-[#181614] hover:bg-[#ded4be]/40'
+                    : 'border-[#262320] text-[#a8a199] hover:text-[#faf6ee] hover:bg-[#1f1d1b]'
+                }`}
               >
                 <X className="h-4 w-4" />
               </button>
@@ -261,7 +278,9 @@ export default function RoadmapDetailModal({
           {/* ── SEGMENTED SUB-NAVIGATION ───────────────────────────────────── */}
           <div
             data-lenis-prevent="true"
-            className="shrink-0 px-6 sm:px-8 border-b border-[#262320] bg-[#121110] flex items-center gap-2 py-2 overflow-x-auto no-scrollbar [touch-action:pan-x] overscroll-x-contain z-10"
+            className={`shrink-0 px-6 sm:px-8 border-b flex items-center gap-2 py-2 overflow-x-auto no-scrollbar [touch-action:pan-x] overscroll-x-contain z-10 transition-colors duration-300 ${
+              isLight ? 'border-[#ded4be] bg-[#eae2d3]' : 'border-[#262320] bg-[#121110]'
+            }`}
           >
             {[
               { id: 'tree', label: 'Visual Skill Tree', icon: Layers },
@@ -279,6 +298,8 @@ export default function RoadmapDetailModal({
                   className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition-all cursor-pointer whitespace-nowrap ${
                     isSel
                       ? 'bg-[#c25e2e] text-[#faf6ee] shadow-sm'
+                      : isLight
+                      ? 'text-[#6e665d] hover:text-[#181614] hover:bg-[#ded4be]/50'
                       : 'text-[#a8a199] hover:text-[#faf6ee] hover:bg-[#1a1817]'
                   }`}
                 >

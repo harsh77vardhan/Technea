@@ -19,8 +19,10 @@ function DashboardReferenceOverview({
     recommendedProjects,
     continueLearningData,
     isLoading,
+    theme,
   } = useDashboard()
 
+  const isLight = theme === 'light'
   const fullName = user?.full_name || user?.email?.split('@')[0] || 'Developer'
   const firstName = fullName.split(' ')[0]
 
@@ -244,15 +246,15 @@ function DashboardReferenceOverview({
   }
 
   return (
-    <div className="space-y-8 pb-8 select-none text-[#faf6ee]">
+    <div className={`space-y-8 pb-8 select-none transition-colors duration-300 ${isLight ? 'text-[#181614]' : 'text-[#faf6ee]'}`}>
       {/* ──────────────── 1. HEADER ROW: GREETING & METRICS ──────────────── */}
       <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 pt-1">
-        {/* Left: Calm Typography Greeting in Warm Ivory */}
+        {/* Left: Calm Typography Greeting in Warm Ivory / Soft Black */}
         <div>
-          <h1 className="text-3xl sm:text-4xl font-light tracking-tight text-[#faf6ee]">
+          <h1 className={`text-3xl sm:text-4xl font-light tracking-tight ${isLight ? 'text-[#181614]' : 'text-[#faf6ee]'}`}>
             Good {greetingTime}, {firstName}
           </h1>
-          <p className="text-sm text-[#a8a199] mt-1.5 font-normal">
+          <p className={`text-sm mt-1.5 font-normal ${isLight ? 'text-[#6e665d]' : 'text-[#a8a199]'}`}>
             Continue building your future.
           </p>
         </div>
@@ -261,15 +263,15 @@ function DashboardReferenceOverview({
         <div className="flex items-center gap-8 sm:gap-12 shrink-0">
           {/* Roadmap */}
           <div className="flex flex-col text-left">
-            <span className="text-xs text-[#a8a199] font-normal">Roadmap</span>
-            <div className="text-sm font-medium text-[#faf6ee] tracking-tight mt-0.5 flex items-center gap-1.5">
+            <span className={`text-xs font-normal ${isLight ? 'text-[#7a7268]' : 'text-[#a8a199]'}`}>Roadmap</span>
+            <div className={`text-sm font-medium tracking-tight mt-0.5 flex items-center gap-1.5 ${isLight ? 'text-[#181614]' : 'text-[#faf6ee]'}`}>
               <span>{activeRoadmap?.title || 'None Selected'}</span>
               {activeRoadmap ? (
-                <span className="text-xs font-normal text-[#a8a199]">
+                <span className={`text-xs font-normal ${isLight ? 'text-[#7a7268]' : 'text-[#a8a199]'}`}>
                   Stage {currentStage} of {totalStages}
                 </span>
               ) : (
-                <span className="text-xs font-normal text-[#a8a199]">
+                <span className={`text-xs font-normal ${isLight ? 'text-[#7a7268]' : 'text-[#a8a199]'}`}>
                   · Choose path
                 </span>
               )}
@@ -278,10 +280,10 @@ function DashboardReferenceOverview({
 
           {/* XP */}
           <div className="flex flex-col text-left">
-            <span className="text-xs text-[#a8a199] font-normal">XP</span>
-            <div className="text-sm font-medium text-[#faf6ee] tracking-tight mt-0.5 flex items-center gap-1.5">
+            <span className={`text-xs font-normal ${isLight ? 'text-[#7a7268]' : 'text-[#a8a199]'}`}>XP</span>
+            <div className={`text-sm font-medium tracking-tight mt-0.5 flex items-center gap-1.5 ${isLight ? 'text-[#181614]' : 'text-[#faf6ee]'}`}>
               <span>{xpPoints.toLocaleString()}</span>
-              <span className="text-xs font-normal text-[#a8a199]">
+              <span className={`text-xs font-normal ${isLight ? 'text-[#7a7268]' : 'text-[#a8a199]'}`}>
                 Level {computedLevel}
               </span>
             </div>
@@ -289,7 +291,7 @@ function DashboardReferenceOverview({
 
           {/* Streak with Burnt Orange highlight */}
           <div className="flex flex-col text-left">
-            <span className="text-xs text-[#a8a199] font-normal">Streak</span>
+            <span className={`text-xs font-normal ${isLight ? 'text-[#7a7268]' : 'text-[#a8a199]'}`}>Streak</span>
             <div className="text-sm font-medium text-[#e87a48] tracking-tight mt-0.5">
               <span>{streakCount} days</span>
             </div>
@@ -440,17 +442,21 @@ function DashboardReferenceOverview({
       {/* ──────────────── 3. CONTINUE LEARNING ──────────────── */}
       <section aria-label="Continue Learning" className="space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-medium text-[#faf6ee]">Continue learning</h3>
+          <h3 className={`text-sm font-medium ${isLight ? 'text-[#181614]' : 'text-[#faf6ee]'}`}>Continue learning</h3>
           <button
             type="button"
             onClick={() => onNavigateTab('courses')}
-            className="text-xs text-[#a8a199] hover:text-[#e87a48] transition-colors cursor-pointer"
+            className={`text-xs transition-colors cursor-pointer ${
+              isLight ? 'text-[#7a7268] hover:text-[#c25e2e]' : 'text-[#a8a199] hover:text-[#e87a48]'
+            }`}
           >
             All courses
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pb-8 border-b border-[#262320]">
+        <div className={`grid grid-cols-1 md:grid-cols-3 gap-8 pb-8 border-b ${
+          isLight ? 'border-[#ded4be]' : 'border-[#262320]'
+        }`}>
           {continueCourses.map((c) => (
             <div
               key={c.id}
@@ -458,14 +464,16 @@ function DashboardReferenceOverview({
               className="space-y-2.5 cursor-pointer group"
             >
               <div className="flex items-center justify-between text-sm">
-                <span className="font-normal text-[#faf6ee] group-hover:text-[#e87a48] transition-colors">{c.title}</span>
+                <span className={`font-normal transition-colors ${
+                  isLight ? 'text-[#181614] group-hover:text-[#c25e2e]' : 'text-[#faf6ee] group-hover:text-[#e87a48]'
+                }`}>{c.title}</span>
                 <span className="text-xs text-[#e87a48] font-medium">{c.progress}%</span>
               </div>
-              <p className="text-xs text-[#a8a199] font-normal">
+              <p className={`text-xs font-normal ${isLight ? 'text-[#6e665d]' : 'text-[#a8a199]'}`}>
                 {c.subtitle}
               </p>
-              {/* Thin hairline progress bar in Burnt Orange on Soft Black track */}
-              <div className="h-[2.5px] w-full bg-[#262320] rounded-full overflow-hidden">
+              {/* Thin hairline progress bar in Burnt Orange */}
+              <div className={`h-[2.5px] w-full rounded-full overflow-hidden ${isLight ? 'bg-[#ded4be]' : 'bg-[#262320]'}`}>
                 <div
                   className="h-full bg-[#c25e2e] rounded-full transition-all duration-500"
                   style={{ width: `${c.progress}%` }}
@@ -480,7 +488,9 @@ function DashboardReferenceOverview({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-2">
         {/* Column 1: Roadmap progress */}
         <section aria-label="Roadmap Progress" className="space-y-4">
-          <div className="flex items-center justify-between text-xs text-[#a8a199] font-normal">
+          <div className={`flex items-center justify-between text-xs font-normal ${
+            isLight ? 'text-[#7a7268]' : 'text-[#a8a199]'
+          }`}>
             <span>Roadmap progress</span>
             <span className="text-[#e87a48] font-medium">
               {activeRoadmap?.progress_percent ?? summaryData?.overall_progress_percent ?? 0}% overall
@@ -491,10 +501,10 @@ function DashboardReferenceOverview({
             {roadmapStages.map((stage, idx) => (
               <div key={idx} className="space-y-2">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-[#faf6ee] font-normal">{stage.label}</span>
-                  <span className="text-[#a8a199]">{stage.percent}%</span>
+                  <span className={`font-normal ${isLight ? 'text-[#181614]' : 'text-[#faf6ee]'}`}>{stage.label}</span>
+                  <span className={isLight ? 'text-[#7a7268]' : 'text-[#a8a199]'}>{stage.percent}%</span>
                 </div>
-                <div className="h-[2px] w-full bg-[#262320] rounded-full overflow-hidden">
+                <div className={`h-[2px] w-full rounded-full overflow-hidden ${isLight ? 'bg-[#ded4be]' : 'bg-[#262320]'}`}>
                   <div
                     className="h-full bg-[#c25e2e] rounded-full transition-all duration-500"
                     style={{ width: `${stage.percent}%` }}
@@ -507,12 +517,16 @@ function DashboardReferenceOverview({
 
         {/* Column 2: Projects */}
         <section aria-label="Projects" className="space-y-4">
-          <div className="flex items-center justify-between text-xs text-[#a8a199] font-normal">
+          <div className={`flex items-center justify-between text-xs font-normal ${
+            isLight ? 'text-[#7a7268]' : 'text-[#a8a199]'
+          }`}>
             <span>Projects</span>
             <button
               type="button"
               onClick={() => onNavigateTab('projects')}
-              className="text-[#a8a199] hover:text-[#e87a48] transition-colors cursor-pointer"
+              className={`transition-colors cursor-pointer ${
+                isLight ? 'text-[#7a7268] hover:text-[#c25e2e]' : 'text-[#a8a199] hover:text-[#e87a48]'
+              }`}
             >
               All projects
             </button>
@@ -522,13 +536,13 @@ function DashboardReferenceOverview({
             {projectsList.map((p, idx) => (
               <div key={idx} className="space-y-2">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-[#faf6ee] font-normal">{p.title}</span>
-                  <span className="text-[#a8a199]">{p.steps}</span>
+                  <span className={`font-normal ${isLight ? 'text-[#181614]' : 'text-[#faf6ee]'}`}>{p.title}</span>
+                  <span className={isLight ? 'text-[#7a7268]' : 'text-[#a8a199]'}>{p.steps}</span>
                 </div>
-                <p className="text-[11px] text-[#a8a199] font-normal">
+                <p className={`text-[11px] font-normal ${isLight ? 'text-[#6e665d]' : 'text-[#a8a199]'}`}>
                   {p.subtitle}
                 </p>
-                <div className="h-[2px] w-full bg-[#262320] rounded-full overflow-hidden">
+                <div className={`h-[2px] w-full rounded-full overflow-hidden ${isLight ? 'bg-[#ded4be]' : 'bg-[#262320]'}`}>
                   <div
                     className="h-full bg-[#c25e2e] rounded-full transition-all duration-500"
                     style={{ width: `${p.progress}%` }}
@@ -541,12 +555,16 @@ function DashboardReferenceOverview({
 
         {/* Column 3: Achievements */}
         <section aria-label="Achievements" className="space-y-4">
-          <div className="flex items-center justify-between text-xs text-[#a8a199] font-normal">
+          <div className={`flex items-center justify-between text-xs font-normal ${
+            isLight ? 'text-[#7a7268]' : 'text-[#a8a199]'
+          }`}>
             <span>Achievements</span>
             <button
               type="button"
               onClick={() => onNavigateTab('portfolio')}
-              className="text-[#a8a199] hover:text-[#e87a48] transition-colors cursor-pointer"
+              className={`transition-colors cursor-pointer ${
+                isLight ? 'text-[#7a7268] hover:text-[#c25e2e]' : 'text-[#a8a199] hover:text-[#e87a48]'
+              }`}
             >
               View all
             </button>
@@ -563,8 +581,8 @@ function DashboardReferenceOverview({
                 </div>
 
                 <div className="flex flex-col">
-                  <span className="text-xs text-[#faf6ee] font-normal">{ach.title}</span>
-                  <span className="text-[11px] text-[#a8a199] font-normal mt-0.5">
+                  <span className={`text-xs font-normal ${isLight ? 'text-[#181614]' : 'text-[#faf6ee]'}`}>{ach.title}</span>
+                  <span className={`text-[11px] font-normal mt-0.5 ${isLight ? 'text-[#6e665d]' : 'text-[#a8a199]'}`}>
                     {ach.subtitle}
                   </span>
                 </div>

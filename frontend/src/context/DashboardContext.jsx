@@ -25,6 +25,32 @@ export function DashboardProvider({ children }) {
   // Tab State: 'overview' | 'roadmaps' | 'courses' | 'projects' | 'mentor' | 'portfolio' | 'settings'
   const [activeTab, setActiveTab] = useState('overview')
 
+  // Visual Theme: 'dark' | 'light' (remembered across page reloads via localStorage)
+  const [theme, setTheme] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('technea_dashboard_theme') || 'dark'
+    }
+    return 'dark'
+  })
+
+  const toggleTheme = useCallback(() => {
+    setTheme((prev) => {
+      const next = prev === 'dark' ? 'light' : 'dark'
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('technea_dashboard_theme', next)
+      }
+      return next
+    })
+  }, [])
+
+  const setExplicitTheme = useCallback((newTheme) => {
+    const valid = newTheme === 'light' ? 'light' : 'dark'
+    setTheme(valid)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('technea_dashboard_theme', valid)
+    }
+  }, [])
+
   // Telemetry & Metrics (Strict real data from backend/database)
   const [summaryData, setSummaryData] = useState(null)
   const [dailyActivity, setDailyActivity] = useState(null)
@@ -188,22 +214,21 @@ export function DashboardProvider({ children }) {
     }
   }, [user, applyWorkspaceData, refreshDashboard])
 
-  // Lazy-load roadmap catalog only when user navigates to 'roadmaps' tab
+  // Pre-load roadmap catalog for instant search and roadmaps discovery
   useEffect(() => {
-    if (activeTab === 'roadmaps' && catalogRoadmaps.length === 0) {
-      let isSubscribed = true
-      getRoadmapCatalogApi({ limit: 12 })
-        .then((catVal) => {
-          if (!isSubscribed) return
-          if (Array.isArray(catVal)) setCatalogRoadmaps(catVal)
-          else if (catVal?.items) setCatalogRoadmaps(catVal.items)
-        })
-        .catch((err) => console.warn('Could not load catalog roadmaps:', err))
-      return () => {
-        isSubscribed = false
-      }
+    if (catalogRoadmaps.length > 0) return
+    let isSubscribed = true
+    getRoadmapCatalogApi({ limit: 250 })
+      .then((catVal) => {
+        if (!isSubscribed) return
+        if (Array.isArray(catVal)) setCatalogRoadmaps(catVal)
+        else if (catVal?.items) setCatalogRoadmaps(catVal.items)
+      })
+      .catch((err) => console.warn('Could not load catalog roadmaps:', err))
+    return () => {
+      isSubscribed = false
     }
-  }, [activeTab, catalogRoadmaps.length])
+  }, [catalogRoadmaps.length])
 
 
   // Switch Active Roadmap
@@ -586,6 +611,9 @@ export function DashboardProvider({ children }) {
       refreshDashboard,
       toast,
       showToast,
+      theme,
+      setTheme: setExplicitTheme,
+      toggleTheme,
     }),
     [
       user,
@@ -616,6 +644,9 @@ export function DashboardProvider({ children }) {
       refreshDashboard,
       toast,
       showToast,
+      theme,
+      setExplicitTheme,
+      toggleTheme,
     ]
   )
 
