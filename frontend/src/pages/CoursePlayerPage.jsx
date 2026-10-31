@@ -174,14 +174,40 @@ export default function CoursePlayerPage({
         setLoading(false)
 
         // Load saved progress for this resolved course
+        let currentCompleted = []
         try {
           const saved = localStorage.getItem(`technea_completed_lessons_${finalCourse.id}`)
           if (saved) {
-            setCompletedLessonIds(JSON.parse(saved))
+            currentCompleted = JSON.parse(saved)
+            setCompletedLessonIds(currentCompleted)
           }
         } catch {
           // Ignore
         }
+
+        // Resolve target lesson index from URL parameter ?lesson= or first uncompleted lesson
+        const searchParams = new URLSearchParams(window.location.search)
+        const targetLessonParam = searchParams.get('lesson')
+        let matchedIndex = -1
+
+        if (targetLessonParam) {
+          matchedIndex = combinedLessons.findIndex(
+            (l) => String(l.id) === String(targetLessonParam) || String(l.lesson_order) === String(targetLessonParam)
+          )
+        }
+
+        if (matchedIndex === -1 && currentCompleted.length > 0) {
+          matchedIndex = combinedLessons.findIndex(
+            (l) => !currentCompleted.includes(l.id)
+          )
+        }
+
+        if (matchedIndex !== -1) {
+          setActiveLessonIndex(matchedIndex)
+        } else {
+          setActiveLessonIndex(0)
+        }
+
       } catch (err) {
         if (!isMounted) return
         console.error('Failed to load course player data:', err)

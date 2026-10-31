@@ -622,17 +622,11 @@ export default function LearningDashboardModal({
     onOpenExplorer(skill)
   }
 
-  const handleResumeMilestone = () => {
-    if (currentPath) {
-      if (currentPath.slug || currentPath.id) {
-        window.history.pushState({}, '', `/learning-paths/${currentPath.slug || currentPath.id}`)
-        window.dispatchEvent(new PopStateEvent('popstate'))
-      } else {
-        onSelectPath(currentPath)
-      }
-    } else {
-      openRoadmapBuilder()
-    }
+  const handleResumeMilestone = (mission) => {
+    const courseId = mission?.course_id || 182
+    const lessonId = mission?.lesson_id || 241
+    window.history.pushState({}, '', `/courses/${courseId}?lesson=${lessonId}`)
+    window.dispatchEvent(new PopStateEvent('popstate'))
   }
 
   // Fetch Dashboard, Courses & Ecosystem data
@@ -1222,7 +1216,9 @@ export default function LearningDashboardModal({
                       currentPath={currentPath}
                       overallPercent={overallPercent}
                       streakCount={streakCount}
+                      onContinueLesson={handleResumeMilestone}
                       onResumeMilestone={handleResumeMilestone}
+                      onExploreCatalog={() => setActiveTab('roadmaps')}
                       onLaunchWorkspace={() => handleExploreSkills(currentPath?.title)}
                       onShare={() => setIsShareModalOpen(true)}
                       onNavigateTab={(tab) => setActiveTab(tab)}

@@ -1243,7 +1243,7 @@ class ProgressService:
         daily_act = summary.daily_activity or await self.get_daily_activity(db, user_id=user_id)
         achievements = await self.get_achievements(db, user_id=user_id)
 
-        # User roadmaps
+        # 1. Fetch user generated roadmaps
         from app.services.roadmap_builder import roadmap_builder_service
         user_roadmaps = await roadmap_builder_service.get_user_roadmaps(db, user_id=user_id)
         saved_roadmaps = [
@@ -1260,11 +1260,221 @@ class ProgressService:
                 "roadmap_data": r.roadmap_data or {},
                 "created_at": r.created_at.isoformat() if r.created_at else None,
                 "updated_at": r.updated_at.isoformat() if r.updated_at else None,
+                "is_generated": True,
             }
             for r in user_roadmaps
         ]
 
-        # Recommended & user projects
+        # 2. Also include user enrolled curated learning paths if any
+        ulp_stmt = (
+            select(UserLearningPath, LearningPath)
+            .join(LearningPath, UserLearningPath.learning_path_id == LearningPath.id)
+            .where(UserLearningPath.user_id == user_id)
+            .order_by(UserLearningPath.last_accessed_at.desc())
+        )
+        ulp_res = await db.execute(ulp_stmt)
+        enrolled_rows = ulp_res.all()
+
+        if enrolled_rows:
+            enrolled_path_ids = [lp.id for _, lp in enrolled_rows]
+            curated_steps_stmt = (
+                select(RoadmapStep)
+                .where(RoadmapStep.learning_path_id.in_(enrolled_path_ids))
+                .order_by(RoadmapStep.learning_path_id, RoadmapStep.step_number)
+            )
+            c_steps_res = await db.execute(curated_steps_stmt)
+            steps_by_lp: dict[int, list[RoadmapStep]] = {}
+            for step in c_steps_res.scalars().all():
+                steps_by_lp.setdefault(step.learning_path_id, []).append(step)
+
+            done_steps_stmt = select(UserRoadmapProgress.learning_path_id, UserRoadmapProgress.step_id).where(
+                UserRoadmapProgress.user_id == user_id,
+                UserRoadmapProgress.learning_path_id.in_(enrolled_path_ids),
+                UserRoadmapProgress.is_completed.is_(True),
+            )
+            done_steps_res = await db.execute(done_steps_stmt)
+            done_by_lp: dict[int, list[str]] = {}
+            for pid, sid in done_steps_res.all():
+                done_by_lp.setdefault(pid, []).append(str(sid))
+
+            has_active_gen = any(r.get("is_active") for r in saved_roadmaps)
+
+            for idx, (ulp, lp) in enumerate(enrolled_rows):
+                p_steps = steps_by_lp.get(lp.id, [])
+                p_done = done_by_lp.get(lp.id, [])
+                is_lp_active = not has_active_gen and idx == 0
+
+                saved_roadmaps.append(
+                    {
+                        "id": lp.id,
+                        "title": lp.title,
+                        "goal": lp.description or lp.title,
+                        "target_role": lp.category or "Engineering",
+                        "experience_level": lp.level or "Beginner",
+                        "estimated_duration": lp.duration or "Self-paced",
+                        "progress_percent": ulp.progress_percent,
+                        "is_active": is_lp_active,
+                        "completed_milestone_ids": p_done,
+                        "roadmap_data": {
+                            "phases": [
+                                {
+                                    "phase_number": 1,
+                                    "title": f"{lp.title} Modules",
+                                    "milestones": [
+                                        {
+                                            "id": str(s.id),
+                                            "title": s.title,
+                                            "description": s.description,
+                                            "skills": s.key_skills or [],
+                                            "estimated_time": f"{s.estimated_weeks or 1} weeks",
+                                            "learning_path_id": lp.id,
+                                        }
+                                        for s in p_steps
+                                    ],
+                                }
+                            ]
+                        },
+                        "created_at": ulp.last_accessed_at.isoformat() if ulp.last_accessed_at else None,
+                        "updated_at": ulp.last_accessed_at.isoformat() if ulp.last_accessed_at else None,
+                        "is_generated": False,
+                    }
+                )
+
+        # 3. Ensure exactly one active roadmap if roadmaps exist
+        active_rm = None
+        for r in saved_roadmaps:
+            if r.get("is_active"):
+                active_rm = r
+                break
+        if not active_rm and saved_roadmaps:
+            saved_roadmaps[0]["is_active"] = True
+            active_rm = saved_roadmaps[0]
+
+        # 4. Resolve exact continue_learning position
+        continue_learning = None
+        if active_rm:
+            completed_ms_set = set(str(m) for m in (active_rm.get("completed_milestone_ids") or []))
+            phases = (active_rm.get("roadmap_data") or {}).get("phases", [])
+
+            target_phase_title = None
+            target_milestone = None
+
+            for phase in phases:
+                for ms in phase.get("milestones", []):
+                    ms_id = str(ms.get("id", ""))
+                    if ms_id not in completed_ms_set:
+                        target_milestone = ms
+                        target_phase_title = phase.get("title")
+                        break
+                if target_milestone:
+                    break
+
+            # If all milestones marked done, default to the first or last milestone
+            if not target_milestone and phases and phases[0].get("milestones"):
+                target_milestone = phases[0]["milestones"][0]
+                target_phase_title = phases[0].get("title")
+
+            if target_milestone:
+                courses = target_milestone.get("courses", [])
+                target_course_id = None
+                target_course_title = None
+
+                if courses:
+                    c_info = courses[0]
+                    target_course_id = c_info.get("id")
+                    target_course_title = c_info.get("title")
+
+                # If no course in milestone, search course matching milestone skill / category
+                if not target_course_id:
+                    ms_skills = target_milestone.get("skills") or target_milestone.get("key_skills") or []
+                    search_kw = ms_skills[0] if ms_skills else target_milestone.get("title", "")
+                    from sqlalchemy import or_
+                    c_query = (
+                        select(Course)
+                        .where(
+                            or_(
+                                Course.title.ilike(f"%{search_kw}%"),
+                                Course.category.ilike(f"%{search_kw}%"),
+                            )
+                        )
+                        .order_by(Course.id.asc())
+                        .limit(1)
+                    )
+                    c_res = await db.execute(c_query)
+                    matched_course = c_res.scalar_one_or_none()
+                    if matched_course:
+                        target_course_id = matched_course.id
+                        target_course_title = matched_course.title
+                    else:
+                        c_first = await db.execute(select(Course).order_by(Course.id.asc()).limit(1))
+                        f_course = c_first.scalar_one_or_none()
+                        if f_course:
+                            target_course_id = f_course.id
+                            target_course_title = f_course.title
+
+                # Now find the exact lesson where user stopped
+                if target_course_id:
+                    l_stmt = select(Lesson).where(Lesson.course_id == target_course_id).order_by(Lesson.lesson_order.asc())
+                    l_res = await db.execute(l_stmt)
+                    all_course_lessons = list(l_res.scalars().all())
+
+                    done_lessons_stmt = select(UserLessonProgress.lesson_id).where(
+                        UserLessonProgress.user_id == user_id,
+                        UserLessonProgress.course_id == target_course_id,
+                        UserLessonProgress.is_completed.is_(True),
+                    )
+                    done_lessons_res = await db.execute(done_lessons_stmt)
+                    done_lesson_ids = set(done_lessons_res.scalars().all())
+
+                    next_lesson = None
+                    for l in all_course_lessons:
+                        if l.id not in done_lesson_ids:
+                            next_lesson = l
+                            break
+
+                    if not next_lesson and all_course_lessons:
+                        next_lesson = all_course_lessons[0]
+
+                    if next_lesson:
+                        continue_learning = {
+                            "roadmap_id": active_rm.get("id"),
+                            "roadmap_title": active_rm.get("title"),
+                            "phase_title": target_phase_title or "Current Phase",
+                            "milestone_id": target_milestone.get("id"),
+                            "milestone_title": target_milestone.get("title"),
+                            "course_id": target_course_id,
+                            "course_title": target_course_title or "Course Overview",
+                            "lesson_id": next_lesson.id,
+                            "lesson_title": next_lesson.title,
+                            "lesson_order": next_lesson.lesson_order,
+                            "duration": next_lesson.duration or "25 mins",
+                            "progress_percent": active_rm.get("progress_percent", 0),
+                        }
+
+        # 5. Fallback continue_learning if no roadmaps yet
+        if not continue_learning:
+            first_c = await db.execute(select(Course).order_by(Course.id.asc()).limit(1))
+            c_obj = first_c.scalar_one_or_none()
+            if c_obj:
+                first_l = await db.execute(select(Lesson).where(Lesson.course_id == c_obj.id).order_by(Lesson.lesson_order.asc()).limit(1))
+                l_obj = first_l.scalar_one_or_none()
+                if l_obj:
+                    continue_learning = {
+                        "roadmap_id": None,
+                        "roadmap_title": "Getting Started",
+                        "phase_title": "Foundations",
+                        "milestone_id": "intro",
+                        "milestone_title": "Core Foundations",
+                        "course_id": c_obj.id,
+                        "course_title": c_obj.title,
+                        "lesson_id": l_obj.id,
+                        "lesson_title": l_obj.title,
+                        "lesson_order": l_obj.lesson_order,
+                        "duration": l_obj.duration or "20 mins",
+                        "progress_percent": 0,
+                    }
+
+        # 6. Recommended & user projects
         from app.services.project import project_service
         rec_proj_resp = await project_service.get_recommended_projects(db, user_id=user_id)
         my_proj_models = await project_service.get_user_projects(db, user_id=user_id)
@@ -1276,6 +1486,7 @@ class ProgressService:
             saved_roadmaps=saved_roadmaps,
             recommended_projects=[p.model_dump() for p in rec_proj_resp.recommended_projects],
             my_projects=[p.model_dump() for p in my_proj_models],
+            continue_learning=continue_learning,
         )
 
 

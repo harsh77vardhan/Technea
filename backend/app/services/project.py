@@ -153,7 +153,7 @@ class ProjectService:
         rm_stmt = (
             select(UserGeneratedRoadmap)
             .where(UserGeneratedRoadmap.user_id == user_id)
-            .order_by(UserGeneratedRoadmap.updated_at.desc())
+            .order_by(UserGeneratedRoadmap.is_active.desc(), UserGeneratedRoadmap.updated_at.desc())
         )
         rm_res = await db.execute(rm_stmt)
         active_roadmap = rm_res.scalars().first()
@@ -170,22 +170,59 @@ class ProjectService:
         prog_res = await db.execute(prog_stmt)
         latest_step = prog_res.first()
 
-        goal = active_roadmap.goal.lower() if active_roadmap else ""
-        step_title = latest_step[1].title if latest_step else ""
+        roadmap_text = (
+            f"{active_roadmap.title} {active_roadmap.goal} {active_roadmap.target_role or ''}".lower()
+            if active_roadmap
+            else ""
+        )
+        step_title = latest_step[1].title.lower() if latest_step else ""
 
         recommended: list[ProjectResponse] = []
         reason = ""
         skill_tag = "Full Stack Development"
 
-        if "python" in goal or "python" in step_title.lower() or "function" in step_title.lower():
+        if "full stack" in roadmap_text or "web development" in roadmap_text:
+            recommended = [
+                p
+                for p in all_projects
+                if any(
+                    term in " ".join(p.technologies + p.related_paths).lower()
+                    for term in ["full stack", "react", "html", "fastapi", "web"]
+                )
+            ]
+            reason = f"Tailored hands-on deliverables matching your active roadmap: '{active_roadmap.title}'."
+            skill_tag = "Full Stack Web Engineering"
+        elif "devops" in roadmap_text or "cloud" in roadmap_text or "docker" in step_title or "linux" in roadmap_text:
+            recommended = [
+                p
+                for p in all_projects
+                if any(
+                    term in " ".join(p.technologies + p.related_paths).lower()
+                    for term in ["docker", "devops", "cloud", "linux", "ci/cd", "microservice"]
+                )
+            ]
+            reason = f"Production infrastructure labs matching your active roadmap: '{active_roadmap.title}'."
+            skill_tag = "DevOps & Cloud Systems"
+        elif "ai" in roadmap_text or "machine learning" in roadmap_text or "data" in roadmap_text:
+            recommended = [
+                p
+                for p in all_projects
+                if any(
+                    term in " ".join(p.technologies + p.related_paths).lower()
+                    for term in ["ai", "machine learning", "rag", "pandas", "data"]
+                )
+            ]
+            reason = f"Applied machine learning and intelligent agent deliverables for: '{active_roadmap.title}'."
+            skill_tag = "Applied AI & Data"
+        elif "python" in roadmap_text or "python" in step_title or "function" in step_title:
             recommended = [
                 p
                 for p in all_projects
                 if "Python" in p.technologies or "Python Fundamentals" in p.related_paths
             ]
-            reason = "Because you completed Python Functions & Foundations, build these CLI and data parsing deliverables to reinforce syntax retention."
+            reason = "Build these CLI and data parsing deliverables to reinforce syntax retention and backend patterns."
             skill_tag = "Python Foundations"
-        elif "react" in goal or "frontend" in goal or "component" in step_title.lower():
+        elif "react" in roadmap_text or "frontend" in roadmap_text or "component" in step_title:
             recommended = [
                 p
                 for p in all_projects
@@ -193,22 +230,6 @@ class ProjectService:
             ]
             reason = "Solidify your React Hooks and reactive state lifecycles by building production frontend applications."
             skill_tag = "React Architecture"
-        elif "devops" in goal or "cloud" in goal or "docker" in step_title.lower():
-            recommended = [
-                p
-                for p in all_projects
-                if "Docker" in p.technologies or "DevOps & Cloud" in p.related_paths
-            ]
-            reason = "Practice container orchestration, reverse proxy configurations, and automated CI/CD pipelines."
-            skill_tag = "DevOps & Cloud"
-        elif "ai" in goal or "machine learning" in goal or "data" in goal:
-            recommended = [
-                p
-                for p in all_projects
-                if "Pandas" in p.technologies or "AI / Machine Learning" in p.related_paths
-            ]
-            reason = "Apply predictive modeling and RAG vector retrieval pipelines to real-world datasets."
-            skill_tag = "Applied AI & Data"
 
         if not recommended:
             recommended = all_projects[:4]

@@ -39,6 +39,7 @@ export default function DashboardPage({
     switchActiveRoadmap,
     achievements,
     catalogRoadmaps,
+    continueLearningData,
     showToast,
   } = useDashboard()
 
@@ -48,14 +49,14 @@ export default function DashboardPage({
 
   // Direct lesson navigation
   const handleContinueLesson = useCallback((mission) => {
-    const courseId = mission?.course_id || 1
-    const lessonId = mission?.lesson_id || 1
+    const courseId = mission?.course_id || continueLearningData?.course_id || 182
+    const lessonId = mission?.lesson_id || continueLearningData?.lesson_id || 241
     const targetUrl = `/courses/${courseId}?lesson=${lessonId}`
     if (typeof window !== 'undefined') {
       window.history.pushState({}, '', targetUrl)
       window.dispatchEvent(new PopStateEvent('popstate'))
     }
-  }, [])
+  }, [continueLearningData])
 
   // Filter catalog roadmaps
   const filteredCatalog = (catalogRoadmaps || []).filter((rm) => {

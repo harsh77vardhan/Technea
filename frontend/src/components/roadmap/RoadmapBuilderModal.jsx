@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../../context/useAuth'
+import { useDashboard } from '../../context/useDashboard'
 import {
   generateRoadmapApi,
   saveRoadmapApi,
@@ -20,6 +21,8 @@ export default function RoadmapBuilderModal({
   onSelectPath,
 }) {
   const { user } = useAuth()
+  const { switchActiveRoadmap, refreshDashboard } = useDashboard()
+
 
   // Stages: 'entry' | 'generating' | 'view'
   const [stage, setStage] = useState('entry')
@@ -203,7 +206,13 @@ export default function RoadmapBuilderModal({
         roadmap_data: generatedData.roadmap_data,
       })
       setSavedRoadmapId(saved.id)
-      showToast('Roadmap saved to your Technea account.')
+      if (switchActiveRoadmap) {
+        await switchActiveRoadmap(saved)
+      }
+      if (refreshDashboard) {
+        await refreshDashboard(true)
+      }
+      showToast('Roadmap saved and set as your active learning focus!')
     } catch (err) {
       console.error('Failed to save roadmap:', err)
       showToast('Failed to save roadmap. Please try again.')

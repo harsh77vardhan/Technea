@@ -3,7 +3,8 @@ import { Check, Star } from 'lucide-react'
 import { useDashboard } from '../../context/useDashboard'
 
 function DashboardReferenceOverview({
-  onContinueLesson = () => {},
+  onContinueLesson,
+  onResumeMilestone,
   onExploreCatalog = () => {},
   onNavigateTab = () => {},
 }) {
@@ -12,13 +13,33 @@ function DashboardReferenceOverview({
     activeRoadmap,
     todayMission,
     dailyActivity,
+    summaryData,
     achievements,
     myProjects,
+    recommendedProjects,
+    continueLearningData,
     isLoading,
   } = useDashboard()
 
-  const fullName = user?.full_name || user?.email?.split('@')[0] || 'Harsh'
+  const fullName = user?.full_name || user?.email?.split('@')[0] || 'Developer'
   const firstName = fullName.split(' ')[0]
+
+  // Direct lesson navigator
+  const handleContinue = (item) => {
+    const target = item || todayMission || continueLearningData
+    if (typeof onContinueLesson === 'function') {
+      onContinueLesson(target)
+      return
+    }
+    if (typeof onResumeMilestone === 'function') {
+      onResumeMilestone(target)
+      return
+    }
+    const courseId = target?.course_id || continueLearningData?.course_id || 182
+    const lessonId = target?.lesson_id || continueLearningData?.lesson_id || 241
+    window.history.pushState({}, '', `/courses/${courseId}?lesson=${lessonId}`)
+    window.dispatchEvent(new PopStateEvent('popstate'))
+  }
 
   // Dynamic time-aware greeting
   const currentHour = new Date().getHours()
@@ -29,26 +50,23 @@ function DashboardReferenceOverview({
     greetingTime = 'afternoon'
   }
 
-  // Stats computation
-  const xpPoints = user?.total_xp ?? 4820
-  const computedLevel = Math.max(1, Math.floor(xpPoints / 400) + 1)
-  const streakCount = dailyActivity?.streak_count ?? 12
+  // Stats computation from real backend data (0 when fresh, never hardcoded dummy values)
+  const xpPoints = summaryData?.xp_points ?? user?.total_xp ?? 0
+  const computedLevel = summaryData?.developer_level || (xpPoints > 0 ? `Level ${Math.floor(xpPoints / 400) + 1}` : 'Code Initiate')
+  const streakCount = dailyActivity?.streak_count ?? 0
 
   // Active roadmap progress and steps
-  const totalStages = activeRoadmap?.milestones?.length || 6
+  const totalStages = activeRoadmap?.total_steps_count || activeRoadmap?.milestones?.length || 1
   const completedStages =
+    activeRoadmap?.completed_steps_count ||
     activeRoadmap?.milestones?.filter((m) => m.completed)?.length ||
-    Math.round((activeRoadmap?.progress_percent || 68) * totalStages / 100) ||
-    3
+    0
   const currentStage = Math.min(totalStages, Math.max(1, completedStages + 1))
 
   // Mission progress percent and steps for SVG ring
-  const displayProgress = todayMission?.progress_percent ?? activeRoadmap?.progress_percent ?? 68
-  const totalSteps = 6
-  const completedSteps = Math.min(
-    totalSteps,
-    Math.max(1, Math.round((displayProgress / 100) * totalSteps) || 4)
-  )
+  const displayProgress = todayMission?.progress_percent ?? activeRoadmap?.progress_percent ?? 0
+  const totalSteps = Math.max(1, totalStages)
+  const completedSteps = Math.min(totalSteps, completedStages)
 
   // Circular SVG ring math
   const radius = 52
@@ -61,109 +79,158 @@ function DashboardReferenceOverview({
   const dotX = 70 + radius * Math.cos(angleRad)
   const dotY = 70 + radius * Math.sin(angleRad)
 
-  // Continue learning courses matching source of truth reference
-  const continueCourses = useMemo(() => [
-    {
-      id: 'course-node',
-      title: 'Node.js & Express',
-      progress: 64,
-      subtitle: 'Middleware and routing · 35 min left',
-    },
-    {
-      id: 'course-react',
-      title: 'React Foundations',
-      progress: 82,
-      subtitle: 'State management · 20 min left',
-    },
-    {
-      id: 'course-ml',
-      title: 'Applied Machine Learning',
-      progress: 31,
-      subtitle: 'Linear regression · 1h 10m left',
-    },
-  ], [])
+  // Continue learning courses derived from active roadmap curriculum / real courses
+  const continueCourses = useMemo(() => {
+    const list = []
+    if (continueLearningData?.course_id) {
+      list.push({
+        id: continueLearningData.course_id,
+        title: continueLearningData.course_title || 'Web Foundations',
+        progress: continueLearningData.progress_percent || 0,
+        subtitle: `${continueLearningData.milestone_title || 'Module 1'} · ${continueLearningData.duration || '25 min left'}`,
+        course_id: continueLearningData.course_id,
+        lesson_id: continueLearningData.lesson_id || 1,
+      })
+    }
+    if (activeRoadmap?.milestones) {
+      for (const ms of activeRoadmap.milestones) {
+        if (ms.course_id && !list.some((item) => item.id === ms.course_id)) {
+          list.push({
+            id: ms.course_id,
+            title: ms.title,
+            progress: ms.completed ? 100 : (ms.current ? activeRoadmap.progress_percent || 0 : 0),
+            subtitle: `${ms.estimated_time || '25 min left'} · Practical Lab`,
+            course_id: ms.course_id,
+            lesson_id: ms.lesson_id || 1,
+          })
+        }
+        if (list.length >= 3) break
+      }
+    }
+    if (list.length < 3 && activeRoadmap?.roadmap_data?.phases) {
+      for (const phase of activeRoadmap.roadmap_data.phases) {
+        for (const ms of phase.milestones || []) {
+          for (const c of ms.courses || []) {
+            if (!list.some((item) => item.id === c.id)) {
+              list.push({
+                id: c.id,
+                title: c.title,
+                progress: ms.completed ? 100 : (activeRoadmap.progress_percent || 0),
+                subtitle: `${c.instructor || ms.title} · ${c.duration || '25 min left'}`,
+                course_id: c.id,
+                lesson_id: ms.lesson_id || 1,
+              })
+            }
+            if (list.length >= 3) break
+          }
+          if (list.length >= 3) break
+        }
+        if (list.length >= 3) break
+      }
+    }
+    if (list.length === 0 && Array.isArray(summaryData?.enrolled_paths)) {
+      summaryData.enrolled_paths.slice(0, 3).forEach((p) => {
+        list.push({
+          id: p.id,
+          title: p.title,
+          progress: p.progress_percent || 0,
+          subtitle: `${p.category || 'Engineering'} · ${p.duration || 'Self-paced'}`,
+          course_id: p.id,
+          lesson_id: 1,
+        })
+      })
+    }
+    if (list.length === 0 && activeRoadmap) {
+      list.push({
+        id: activeRoadmap.id,
+        title: activeRoadmap.title,
+        progress: activeRoadmap.progress_percent || 0,
+        subtitle: `${activeRoadmap.target_role || 'Core Track'} · In Progress`,
+        course_id: 182,
+        lesson_id: 241,
+      })
+    }
+    return list
+  }, [continueLearningData, activeRoadmap, summaryData])
 
-  // Roadmap stages progress matching source of truth reference
+  // Roadmap stages progress derived from active roadmap's real milestones/phases
   const roadmapStages = useMemo(() => {
-    if (activeRoadmap?.milestones && activeRoadmap.milestones.length >= 3) {
-      return activeRoadmap.milestones.slice(0, 3).map((m, idx) => ({
-        label: m.completed ? m.title : idx === 1 ? `${m.title} · current` : m.title,
-        percent: m.completed ? 100 : idx === 1 ? (activeRoadmap.progress_percent || 58) : 12,
+    if (activeRoadmap?.milestones && activeRoadmap.milestones.length > 0) {
+      return activeRoadmap.milestones.slice(0, 3).map((m) => ({
+        label: m.completed ? m.title : m.current ? `${m.title} · current` : m.title,
+        percent: m.completed ? 100 : m.current ? (activeRoadmap.progress_percent || 0) : 0,
       }))
     }
-    return [
-      { label: 'Frontend', percent: 100 },
-      { label: 'Backend · current', percent: 58 },
-      { label: 'APIs & Auth', percent: 12 },
-    ]
+    if (activeRoadmap?.roadmap_data?.phases && activeRoadmap.roadmap_data.phases.length > 0) {
+      return activeRoadmap.roadmap_data.phases.slice(0, 3).map((ph, idx) => {
+        const isCurrent = idx === 0
+        return {
+          label: isCurrent
+            ? `${ph.title.split(':')[1]?.trim() || ph.title} · current`
+            : ph.title.split(':')[1]?.trim() || ph.title,
+          percent: isCurrent ? (activeRoadmap.progress_percent || 0) : 0,
+        }
+      })
+    }
+    return []
   }, [activeRoadmap])
 
-  // Connected projects matching source of truth reference
+  // Connected projects derived from real user projects and roadmap recommendations
   const projectsList = useMemo(() => {
-    if (myProjects && myProjects.length >= 2) {
-      return myProjects.slice(0, 2).map((p, idx) => ({
-        title: p.title,
-        steps: idx === 0 ? '3 of 5' : '2 of 6',
-        subtitle: p.technologies?.join(' · ') || 'React · APIs',
-        progress: idx === 0 ? 60 : 33,
-      }))
+    const list = []
+    if (Array.isArray(myProjects) && myProjects.length > 0) {
+      myProjects.forEach((p) => {
+        const stepsCount = p.milestones?.length || 4
+        const completedCount =
+          p.status === 'completed'
+            ? stepsCount
+            : p.status === 'in_progress'
+            ? Math.round(stepsCount * 0.5)
+            : 0
+        list.push({
+          title: p.title,
+          steps: `${completedCount} of ${stepsCount}`,
+          subtitle: p.technologies?.slice(0, 3)?.join(' · ') || 'Practical Deliverable',
+          progress: p.status === 'completed' ? 100 : p.status === 'in_progress' ? 50 : 0,
+        })
+      })
     }
-    return [
-      {
-        title: 'Task API',
-        steps: '3 of 5',
-        subtitle: 'Node.js · Express · PostgreSQL',
-        progress: 60,
-      },
-      {
-        title: 'Chat Client',
-        steps: '2 of 6',
-        subtitle: 'React · WebSockets · Paused',
-        progress: 33,
-      },
-    ]
-  }, [myProjects])
+    if (list.length < 2 && Array.isArray(recommendedProjects)) {
+      recommendedProjects.forEach((p) => {
+        if (list.length >= 2) return
+        list.push({
+          title: p.title,
+          steps: `0 of ${p.milestones?.length || 4}`,
+          subtitle: p.technologies?.slice(0, 3)?.join(' · ') || 'Recommended Lab',
+          progress: 0,
+        })
+      })
+    }
+    return list
+  }, [myProjects, recommendedProjects])
 
-  // Platform achievements matching source of truth reference
+  // Platform achievements derived from real backend achievements
   const achievementsList = useMemo(() => {
-    if (achievements && achievements.length >= 3) {
-      return [
-        {
-          type: 'number',
-          badgeText: `${streakCount}`,
-          title: `${streakCount}-day streak`,
-          subtitle: 'Recent',
-        },
-        {
-          type: 'check',
-          title: achievements[0]?.title || 'First API shipped',
-          subtitle: 'Milestone v1',
-        },
-        {
-          type: 'star',
-          title: achievements[1]?.title || 'Quiz score 90% +',
-          subtitle: 'Foundations',
-        },
-      ]
+    if (!Array.isArray(achievements) || achievements.length === 0) {
+      return []
     }
-    return [
-      {
-        type: 'number',
-        badgeText: '7',
-        title: '7-day streak',
-        subtitle: 'Oct 24',
-      },
-      {
-        type: 'check',
-        title: 'First API shipped',
-        subtitle: 'Task API v1',
-      },
-      {
-        type: 'star',
-        title: 'Quiz score 90% +',
-        subtitle: 'React Foundations',
-      },
-    ]
+    const sorted = [...achievements].sort(
+      (a, b) => (b.earned || b.unlocked ? 1 : 0) - (a.earned || a.unlocked ? 1 : 0)
+    )
+    return sorted.slice(0, 3).map((ach) => {
+      let type = 'check'
+      if (ach.achievement_id === 'streak_master' || ach.id === 'streak_master' || ach.icon === 'flame') {
+        type = 'number'
+      } else if (ach.icon === 'star' || ach.icon === 'sparkles') {
+        type = 'star'
+      }
+      return {
+        type,
+        badgeText: `${streakCount}`,
+        title: ach.title,
+        subtitle: ach.earned || ach.unlocked ? 'Unlocked' : (ach.category || 'Milestone'),
+      }
+    })
   }, [achievements, streakCount])
 
   if (isLoading && !activeRoadmap) {
@@ -234,19 +301,19 @@ function DashboardReferenceOverview({
             </span>
 
             <h2 className="text-2xl sm:text-3xl font-normal tracking-tight text-[#181614] leading-snug">
-              {todayMission?.lesson_title || 'Add secure authentication to your REST API'}
+              {todayMission?.lesson_title || 'Introduction to Technea Learning Workspace'}
             </h2>
 
             {/* Milestone & Time Left Metadata */}
             <div className="flex items-center gap-2 text-sm text-[#665e56] font-normal pt-1">
               <span>Milestone</span>
               <span className="text-[#181614] font-medium">
-                {activeRoadmap?.current_milestone?.title || 'Secure the Task API'}
+                {todayMission?.milestone_title || activeRoadmap?.current_milestone?.title || activeRoadmap?.next_step_title || 'Core Foundations'}
               </span>
               <span className="text-[#a8a199]">·</span>
               <span>Time left</span>
               <span className="text-[#181614] font-medium">
-                {todayMission?.estimated_time ? todayMission.estimated_time.replace(' remaining', '') : '45 min'}
+                {todayMission?.estimated_time ? todayMission.estimated_time.replace(' remaining', '') : '25 min'}
               </span>
             </div>
 
@@ -254,7 +321,7 @@ function DashboardReferenceOverview({
             <div className="flex items-center gap-5 pt-3">
               <button
                 type="button"
-                onClick={() => onContinueLesson(todayMission)}
+                onClick={() => handleContinue(todayMission)}
                 className="rounded-full bg-[#c25e2e] text-[#faf6ee] font-medium px-6 py-2.5 text-sm hover:bg-[#ad4f22] transition-colors shadow-md cursor-pointer"
               >
                 Resume learning →
@@ -340,9 +407,13 @@ function DashboardReferenceOverview({
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pb-8 border-b border-[#262320]">
           {continueCourses.map((c) => (
-            <div key={c.id} className="space-y-2.5">
+            <div
+              key={c.id}
+              onClick={() => handleContinue(c)}
+              className="space-y-2.5 cursor-pointer group"
+            >
               <div className="flex items-center justify-between text-sm">
-                <span className="font-normal text-[#faf6ee]">{c.title}</span>
+                <span className="font-normal text-[#faf6ee] group-hover:text-[#e87a48] transition-colors">{c.title}</span>
                 <span className="text-xs text-[#e87a48] font-medium">{c.progress}%</span>
               </div>
               <p className="text-xs text-[#a8a199] font-normal">
@@ -366,7 +437,9 @@ function DashboardReferenceOverview({
         <section aria-label="Roadmap Progress" className="space-y-4">
           <div className="flex items-center justify-between text-xs text-[#a8a199] font-normal">
             <span>Roadmap progress</span>
-            <span className="text-[#e87a48] font-medium">47% overall</span>
+            <span className="text-[#e87a48] font-medium">
+              {activeRoadmap?.progress_percent ?? summaryData?.overall_progress_percent ?? 0}% overall
+            </span>
           </div>
 
           <div className="space-y-4">

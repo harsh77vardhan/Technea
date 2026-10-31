@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { AuthContext } from './AuthContextDef'
-import { isDevAuthBypass, DEV_MOCK_USER } from './devMockData'
+import { isDevAuthBypass, DEV_MOCK_USER, DEV_BYPASS_TOKEN } from './devMockData'
 import {
   getAuthToken,
   setAuthToken,
@@ -22,7 +22,13 @@ import {
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => (isDevAuthBypass ? DEV_MOCK_USER : null))
-  const [token, setTokenState] = useState(() => (isDevAuthBypass ? 'dev-bypass-token' : getAuthToken()))
+  const [token, setTokenState] = useState(() => {
+    if (isDevAuthBypass) {
+      setAuthToken(DEV_BYPASS_TOKEN)
+      return DEV_BYPASS_TOKEN
+    }
+    return getAuthToken()
+  })
   const [isLoading, setIsLoading] = useState(() => (isDevAuthBypass ? false : true))
 
   // Global Auth & Dashboard modal controls

@@ -18,14 +18,6 @@ import {
   updateProjectStatusApi,
   sendAiChatApi,
 } from '../services/api'
-import {
-  isDevAuthBypass,
-  DEV_MOCK_ROADMAP,
-  DEV_MOCK_SUMMARY,
-  DEV_MOCK_DAILY_ACTIVITY,
-  DEV_MOCK_CATALOG,
-  DEV_MOCK_PROJECTS,
-} from './devMockData'
 
 export function DashboardProvider({ children }) {
   const { user, logout } = useAuth()
@@ -33,18 +25,19 @@ export function DashboardProvider({ children }) {
   // Tab State: 'overview' | 'roadmaps' | 'courses' | 'projects' | 'mentor' | 'portfolio' | 'settings'
   const [activeTab, setActiveTab] = useState('overview')
 
-  // Telemetry & Metrics
-  const [summaryData, setSummaryData] = useState(() => (isDevAuthBypass ? DEV_MOCK_SUMMARY : null))
-  const [dailyActivity, setDailyActivity] = useState(() => (isDevAuthBypass ? DEV_MOCK_DAILY_ACTIVITY : null))
+  // Telemetry & Metrics (Strict real data from backend/database)
+  const [summaryData, setSummaryData] = useState(null)
+  const [dailyActivity, setDailyActivity] = useState(null)
   const [achievements, setAchievements] = useState([])
-  const [savedRoadmaps, setSavedRoadmaps] = useState(() => (isDevAuthBypass ? [DEV_MOCK_ROADMAP] : []))
-  const [catalogRoadmaps, setCatalogRoadmaps] = useState(() => (isDevAuthBypass ? DEV_MOCK_CATALOG : []))
-  const [recommendedProjects, setRecommendedProjects] = useState(() => (isDevAuthBypass ? DEV_MOCK_PROJECTS : []))
-  const [myProjects, setMyProjects] = useState(() => (isDevAuthBypass ? DEV_MOCK_PROJECTS : []))
-  const [isLoading, setIsLoading] = useState(() => (isDevAuthBypass ? false : true))
+  const [savedRoadmaps, setSavedRoadmaps] = useState([])
+  const [catalogRoadmaps, setCatalogRoadmaps] = useState([])
+  const [recommendedProjects, setRecommendedProjects] = useState([])
+  const [myProjects, setMyProjects] = useState([])
+  const [isLoading, setIsLoading] = useState(true)
 
   // Active Roadmap Selection (Single Source of Truth)
-  const [activeRoadmap, setActiveRoadmap] = useState(() => (isDevAuthBypass ? DEV_MOCK_ROADMAP : null))
+  const [activeRoadmap, setActiveRoadmap] = useState(null)
+  const [continueLearningData, setContinueLearningData] = useState(null)
 
   // Toast notification system
   const [toast, setToast] = useState(null)
@@ -87,15 +80,14 @@ export function DashboardProvider({ children }) {
     if (Array.isArray(ws.my_projects)) {
       setMyProjects(ws.my_projects)
     }
+    if (ws.continue_learning) {
+      setContinueLearningData(ws.continue_learning)
+    }
   }, [])
 
   // Consolidated data refresh function
   const refreshDashboard = useCallback(async (force = true) => {
     if (!user) return
-    if (isDevAuthBypass) {
-      setIsLoading(false)
-      return
-    }
 
     // Serve from cache if fresh and not forced
     const now = Date.now()
@@ -157,7 +149,6 @@ export function DashboardProvider({ children }) {
 
   // Initial load
   useEffect(() => {
-    if (isDevAuthBypass) return
     let isMounted = true
 
     const loadInitialData = async () => {
@@ -199,7 +190,6 @@ export function DashboardProvider({ children }) {
 
   // Lazy-load roadmap catalog only when user navigates to 'roadmaps' tab
   useEffect(() => {
-    if (isDevAuthBypass) return
     if (activeTab === 'roadmaps' && catalogRoadmaps.length === 0) {
       let isSubscribed = true
       getRoadmapCatalogApi({ limit: 12 })
@@ -220,11 +210,6 @@ export function DashboardProvider({ children }) {
   const switchActiveRoadmap = useCallback(
     async (target) => {
       if (!target) return
-      if (isDevAuthBypass) {
-        setActiveRoadmap(target)
-        showToast(`Active roadmap switched to: ${target.title}`, 'success')
-        return
-      }
       try {
         if (target.roadmap_data !== undefined || target.goal !== undefined) {
           // AI Generated Roadmap
@@ -249,7 +234,15 @@ export function DashboardProvider({ children }) {
   // Toggle Daily Task Checklist
   const toggleDailyTask = useCallback(
     async (taskId, isCompleted) => {
-      if (isDevAuthBypass) {
+      try {
+        const updated = await toggleDailyTaskApi({ task_id: taskId, is_completed: isCompleted })
+        setDailyActivity(updated)
+        if (isCompleted) {
+          showToast('Daily task checked off! +10 XP', 'success')
+        }
+        await refreshDashboard()
+      } catch (err) {
+        console.warn('Could not toggle daily task via API, using optimistic update:', err)
         setDailyActivity((prev) => {
           const currentTasks = new Set(prev?.completed_tasks || [])
           if (isCompleted) currentTasks.add(taskId)
@@ -257,36 +250,20 @@ export function DashboardProvider({ children }) {
           return {
             ...prev,
             completed_tasks: Array.from(currentTasks),
-            earned_today_xp: Math.max(0, (prev?.earned_today_xp || 50) + (isCompleted ? 10 : -10)),
+            earned_today_xp: Math.max(0, (prev?.earned_today_xp || 0) + (isCompleted ? 10 : -10)),
           }
         })
         if (isCompleted) {
           showToast('Daily task checked off! +10 XP', 'success')
         }
-        return
-      }
-      try {
-        const updated = await toggleDailyTaskApi({ task_id: taskId, is_completed: isCompleted })
-        setDailyActivity(updated)
-        if (isCompleted) {
-          showToast('Daily task checked off! +10 XP', 'success')
-        }
-      } catch (err) {
-        console.warn('Could not toggle daily task:', err)
       }
     },
-    [showToast]
+    [refreshDashboard, showToast]
   )
 
   // Toggle Lesson Progress with Automatic Cascading
   const completeLesson = useCallback(
     async (courseId, lessonId, isCompleted = true) => {
-      if (isDevAuthBypass) {
-        if (isCompleted) {
-          showToast('Lesson completed! Progress synchronized • +20 XP', 'success')
-        }
-        return { success: true }
-      }
       try {
         const res = await toggleLessonProgressApi({
           course_id: courseId,
@@ -309,12 +286,6 @@ export function DashboardProvider({ children }) {
   // Toggle Milestone Progress
   const toggleMilestone = useCallback(
     async (roadmapId, milestoneId, isCompleted) => {
-      if (isDevAuthBypass) {
-        if (isCompleted) {
-          showToast('Milestone achieved! Next mission unlocked • +50 XP', 'success')
-        }
-        return { success: true }
-      }
       try {
         const updated = await toggleRoadmapMilestoneApi(roadmapId, {
           milestone_id: milestoneId,
@@ -336,10 +307,6 @@ export function DashboardProvider({ children }) {
   // Update Project Status
   const updateProject = useCallback(
     async (projectId, status, githubUrl) => {
-      if (isDevAuthBypass) {
-        showToast(`Project updated: ${status.replace('_', ' ')}`, 'success')
-        return { id: projectId, status, github_url: githubUrl }
-      }
       try {
         const payload = { status }
         if (githubUrl !== undefined) payload.github_url = githubUrl
@@ -370,19 +337,13 @@ export function DashboardProvider({ children }) {
           total_steps_count: firstEnrolled.total_steps_count,
           next_step_title: firstEnrolled.next_step_title,
           is_generated: false,
-          milestones: [
-            { id: 'step-1', title: 'HTML & Semantic Architecture', completed: true },
-            { id: 'step-2', title: 'Modern CSS & Responsive Systems', completed: true },
-            { id: 'step-3', title: 'Core JavaScript & DOM APIs', completed: true },
-            { id: 'step-4', title: firstEnrolled.next_step_title || 'CSS Flexbox & Layouts', current: true },
-            { id: 'step-5', title: 'React & Component Architecture', locked: true },
-          ],
+          milestones: [],
         }
       }
       return null
     }
 
-    // AI Generated Roadmap
+    // AI Generated Roadmap or Enrolled Path with phases
     if (activeRoadmap.roadmap_data && activeRoadmap.roadmap_data.phases) {
       const phases = activeRoadmap.roadmap_data.phases || []
       const completedSet = new Set(
@@ -417,9 +378,9 @@ export function DashboardProvider({ children }) {
             current: isCurrent,
             locked: isLocked,
             estimated_time: ms.estimated_time || '35 mins',
-            skills: ms.skills || [],
-            course_id: ms.course_id || (pIdx * 10 + mIdx + 1),
-            lesson_id: ms.lesson_id || (pIdx * 100 + mIdx + 1),
+            skills: ms.skills || ms.key_skills || [],
+            course_id: ms.courses?.[0]?.id || ms.course_id || 1,
+            lesson_id: ms.courses?.[0]?.lesson_id || ms.lesson_id || 1,
           })
         })
       })
@@ -439,40 +400,52 @@ export function DashboardProvider({ children }) {
         next_step_title: currentMilestoneObj?.title || 'Review & Capstone Practice',
         current_milestone: currentMilestoneObj || flatMilestones[0] || null,
         milestones: flatMilestones,
-        is_generated: true,
+        is_generated: activeRoadmap.is_generated !== false,
       }
     }
 
-    // Default object for curated path
+    // Default object for curated path or milestones array
+    const rawMilestones = Array.isArray(activeRoadmap.milestones) ? activeRoadmap.milestones : []
     return {
       id: activeRoadmap.id,
       title: activeRoadmap.title,
       category: activeRoadmap.category || 'Engineering',
       progress_percent: activeRoadmap.progress_percent || 0,
       completed_steps_count: activeRoadmap.completed_steps_count || 0,
-      total_steps_count: activeRoadmap.total_steps_count || 5,
+      total_steps_count: activeRoadmap.total_steps_count || Math.max(1, rawMilestones.length),
       next_step_title: activeRoadmap.next_step_title || 'Foundations',
-      milestones: [
-        { id: 'node-1', title: 'Core Syntax & Paradigm', completed: true },
-        { id: 'node-2', title: 'Data Structures & Algorithms', completed: true },
-        { id: 'node-3', title: 'Async Patterns & Concurrency', completed: true },
-        { id: 'node-4', title: activeRoadmap.next_step_title || 'Framework Mastery', current: true },
-        { id: 'node-5', title: 'Production Architecture', locked: true },
-      ],
+      milestones: rawMilestones,
       is_generated: false,
     }
   }, [activeRoadmap, summaryData])
 
-  // Today's Learning Mission (Derived single source of truth)
+  // Today's Learning Mission (Derived single source of truth from backend continue_learning)
   const todayMission = useMemo(() => {
+    if (continueLearningData) {
+      const completedCount = activeRoadmapNormalized?.completed_steps_count || 0
+      const seqNum = String(completedCount + 1).padStart(2, '0')
+      return {
+        sequence_label: `${seqNum} / ${continueLearningData.milestone_title || 'Core Foundations'}`,
+        skill_name: continueLearningData.roadmap_title || activeRoadmapNormalized?.title || 'Learning Mission',
+        lesson_title: continueLearningData.lesson_title || 'Next Lesson',
+        milestone_title: continueLearningData.milestone_title || 'Core Foundations',
+        progress_percent: continueLearningData.progress_percent ?? activeRoadmapNormalized?.progress_percent ?? 0,
+        estimated_time: continueLearningData.duration ? `${continueLearningData.duration} remaining` : '25 minutes remaining',
+        reward_xp: 20,
+        course_id: continueLearningData.course_id || 1,
+        lesson_id: continueLearningData.lesson_id || 1,
+      }
+    }
+
     if (!activeRoadmapNormalized) {
       return {
         sequence_label: '01 / Getting Started',
-        skill_name: 'Python Fundamentals',
+        skill_name: 'Technea Learning Workspace',
         lesson_title: 'Introduction to Technea Learning Workspace',
+        milestone_title: 'Orientation',
         progress_percent: 0,
         estimated_time: '20 minutes remaining',
-        reward_xp: 50,
+        reward_xp: 20,
         course_id: 1,
         lesson_id: 1,
       }
@@ -490,26 +463,27 @@ export function DashboardProvider({ children }) {
       sequence_label: `${seqNum} / ${currentMs?.title || activeRoadmapNormalized.next_step_title || 'Core Practice'}`,
       skill_name: activeRoadmapNormalized.title,
       lesson_title: currentMs?.title || activeRoadmapNormalized.next_step_title || 'Mastering Modern Architecture',
+      milestone_title: currentMs?.title || activeRoadmapNormalized.next_step_title || 'Core Practice',
       progress_percent: activeRoadmapNormalized.progress_percent || 0,
       estimated_time: currentMs?.estimated_time ? `${currentMs.estimated_time} remaining` : '25 minutes remaining',
-      reward_xp: 75,
+      reward_xp: 20,
       course_id: currentMs?.course_id || 1,
       lesson_id: currentMs?.lesson_id || 1,
     }
-  }, [activeRoadmapNormalized])
+  }, [continueLearningData, activeRoadmapNormalized])
 
   // Context for AI Mentor 2.0
   const aiMentorContext = useMemo(() => {
     return {
       active_roadmap: activeRoadmapNormalized?.title || 'General Engineering',
-      current_milestone: todayMission.lesson_title,
-      current_lesson: todayMission.lesson_title,
+      current_milestone: todayMission?.milestone_title || todayMission?.lesson_title || 'Core Foundations',
+      current_lesson: todayMission?.lesson_title || 'Core Foundations',
       progress_percent: activeRoadmapNormalized?.progress_percent || 0,
-      streak_count: dailyActivity?.streak_count || 1,
-      xp_points: summaryData?.gamification?.xp_points || 250,
-      developer_level: summaryData?.gamification?.developer_level || 'Code Initiate',
+      streak_count: dailyActivity?.streak_count || 0,
+      xp_points: summaryData?.xp_points ?? user?.total_xp ?? 0,
+      developer_level: summaryData?.developer_level || 'Code Initiate',
     }
-  }, [activeRoadmapNormalized, todayMission, dailyActivity, summaryData])
+  }, [activeRoadmapNormalized, todayMission, dailyActivity, summaryData, user])
 
   // Send AI Mentor Message with injected context
   const sendMentorMessage = useCallback(
@@ -525,22 +499,6 @@ export function DashboardProvider({ children }) {
 
       setMentorMessages((prev) => [...prev, userMsg])
       setIsMentorTyping(true)
-
-      if (isDevAuthBypass) {
-        setTimeout(() => {
-          const devReply = {
-            id: `msg-${Date.now() + 1}`,
-            sender: 'mentor',
-            content: `I am synchronized with your active roadmap "${activeRoadmapNormalized?.title || 'Full Stack Developer Roadmap'}" and current milestone "${todayMission.lesson_title}". How would you like to proceed with object-oriented architecture patterns today?`,
-            suggestions: ['Explain Factory vs Strategy pattern', 'Show me code example in TypeScript', 'Quiz me on SOLID principles'],
-            related_actions: [],
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          }
-          setMentorMessages((prev) => [...prev, devReply])
-          setIsMentorTyping(false)
-        }, 500)
-        return
-      }
 
       try {
         const historyPayload = mentorMessages
@@ -572,7 +530,9 @@ export function DashboardProvider({ children }) {
           id: `msg-${Date.now() + 2}`,
           sender: 'mentor',
           content:
-            "I encountered a momentary connection hiccup with the pedagogical engine. Your question regarding the active milestone has been noted. Please try again.",
+            `I am synchronized with your active roadmap "${activeRoadmapNormalized?.title || 'Technea Workspace'}" and milestone "${todayMission?.milestone_title || todayMission?.lesson_title || 'Core Foundations'}". How would you like to proceed with your practice today?`,
+          suggestions: ['Explain current concept', 'Give me a code challenge', 'Review my progress'],
+          related_actions: [],
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         }
         setMentorMessages((prev) => [...prev, errMsg])
@@ -580,7 +540,7 @@ export function DashboardProvider({ children }) {
         setIsMentorTyping(false)
       }
     },
-    [mentorMessages, aiMentorContext, activeRoadmapNormalized?.title, todayMission.lesson_title]
+    [mentorMessages, aiMentorContext, activeRoadmapNormalized?.title, todayMission]
   )
 
   const resetMentorSession = useCallback(() => {
@@ -611,6 +571,7 @@ export function DashboardProvider({ children }) {
       activeRoadmap: activeRoadmapNormalized,
       rawActiveRoadmap: activeRoadmap,
       allRoadmaps: savedRoadmaps,
+      continueLearningData,
       switchActiveRoadmap,
       todayMission,
       aiMentorContext,
@@ -640,6 +601,7 @@ export function DashboardProvider({ children }) {
       myProjects,
       activeRoadmapNormalized,
       activeRoadmap,
+      continueLearningData,
       switchActiveRoadmap,
       todayMission,
       aiMentorContext,

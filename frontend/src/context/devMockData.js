@@ -9,9 +9,12 @@
 export const isDevAuthBypass =
   Boolean(import.meta.env.DEV && import.meta.env.VITE_DEV_BYPASS_AUTH === 'true')
 
+export const DEV_BYPASS_TOKEN =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMzM3OGM1YS1mZmM1LTQwOWMtYjE1Mi02ZWViMzE0OWJmNDgiLCJpYXQiOjE3OTM0NDg5MTksImV4cCI6MTgyNDk4NDkxOX0.RWC4Sw2kdQkignyo8H8j3Fm-c8ddViO2SsbQ5wa37G0'
+
 export const DEV_MOCK_USER = {
-  id: 9999,
-  email: 'harsh@example.com',
+  id: '13378c5a-ffc5-409c-b152-6eeb3149bf48',
+  email: 'harshvsvardhan22@gmail.com',
   full_name: 'Harsh Singh',
   username: 'harsh',
   total_xp: 50,

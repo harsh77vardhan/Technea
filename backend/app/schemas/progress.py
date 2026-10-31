@@ -227,6 +227,8 @@ class DashboardWorkspaceResponse(BaseModel):
     saved_roadmaps: list[dict] = Field(default_factory=list)
     recommended_projects: list[dict] = Field(default_factory=list)
     my_projects: list[dict] = Field(default_factory=list)
+    continue_learning: dict | None = None
+
 
 
 

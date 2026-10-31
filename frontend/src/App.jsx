@@ -349,11 +349,13 @@ function AppContent() {
             <CoursePlayerPage
               course={courseRouteId ? { id: courseRouteId } : null}
               onBack={() => {
-                window.history.pushState({}, '', '/')
-                setCurrentPath('/')
+                const target = user ? '/dashboard' : '/'
+                window.history.pushState({}, '', target)
+                setCurrentPath(target)
                 setCurrentSearch('')
                 window.dispatchEvent(new PopStateEvent('popstate'))
               }}
+
             />
           </Suspense>
         </ErrorBoundary>

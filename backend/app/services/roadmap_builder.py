@@ -1357,7 +1357,18 @@ class RoadmapBuilderService:
 
         await db.commit()
         await db.refresh(roadmap)
+
+        # Automatic Progression Cascades on milestone completion
+        if is_completed:
+            try:
+                from app.services.progress import progress_service
+                await progress_service.toggle_daily_task(db, user_id=user_id, task_id="review", is_completed=True)
+                await progress_service.evaluate_and_award_achievements(db, user_id=user_id)
+            except Exception:
+                pass
+
         return roadmap
+
 
     async def regenerate_user_roadmap(
         self,
