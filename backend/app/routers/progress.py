@@ -12,6 +12,7 @@ from app.schemas.progress import (
     DailyActivityResponse,
     DailyTaskToggleRequest,
     DashboardSummaryResponse,
+    DashboardWorkspaceResponse,
     GuestProgressSyncRequest,
     LessonToggleRequest,
     PathProgressResponse,
@@ -136,6 +137,23 @@ async def get_dashboard_summary(
 ) -> DashboardSummaryResponse:
     """Retrieve overall learning metrics, active learning paths, and skill mastery breakdown."""
     return await progress_service.get_dashboard_summary(
+        db,
+        user_id=current_user.id,
+    )
+
+
+@router.get(
+    "/workspace",
+    response_model=DashboardWorkspaceResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Get complete consolidated learning workspace state in a single request",
+)
+async def get_workspace(
+    current_user: CurrentUserDep,
+    db: DatabaseDep,
+) -> DashboardWorkspaceResponse:
+    """Consolidated endpoint returning dashboard metrics, active roadmaps, daily checklist, achievements, and projects."""
+    return await progress_service.get_workspace(
         db,
         user_id=current_user.id,
     )

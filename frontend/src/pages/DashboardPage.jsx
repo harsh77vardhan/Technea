@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, lazy, Suspense } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Compass,
@@ -13,8 +13,24 @@ import { useAuth } from '../context/useAuth'
 import { useDashboard } from '../context/useDashboard'
 import DashboardLeftSidebar from '../components/dashboard/DashboardLeftSidebar'
 import DashboardReferenceOverview from '../components/dashboard/DashboardReferenceOverview'
-import FloatingAIMentorCompanion from '../components/dashboard/FloatingAIMentorCompanion'
 import MemphisCornerDecorations from '../components/dashboard/MemphisCornerDecorations'
+
+const FloatingAIMentorCompanion = lazy(() => import('../components/dashboard/FloatingAIMentorCompanion'))
+
+function FloatingAIMentorFallback() {
+  return (
+    <div className="fixed bottom-6 right-6 z-40">
+      <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-[#0a0c14]/90 border border-violet-500/30 text-white backdrop-blur-xl shadow-[0_0_25px_rgba(124,58,237,0.25)]">
+        <span className="relative flex h-2.5 w-2.5">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75" />
+          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-violet-500" />
+        </span>
+        <span className="text-xs font-mono font-semibold text-white tracking-wide">AI Mentor</span>
+      </div>
+    </div>
+  )
+}
+
 
 export default function DashboardPage({
   onSelectPath = () => {},
@@ -562,7 +578,9 @@ export default function DashboardPage({
       </main>
 
       {/* ──────────────── 4. FLOATING AI MENTOR 2.0 COMPANION ──────────────── */}
-      <FloatingAIMentorCompanion />
+      <Suspense fallback={<FloatingAIMentorFallback />}>
+        <FloatingAIMentorCompanion />
+      </Suspense>
     </div>
   )
 }

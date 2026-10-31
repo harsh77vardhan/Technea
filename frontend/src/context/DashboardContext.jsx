@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { DashboardContext } from './DashboardContextDef'
 import { useAuth } from './useAuth'
 import {
+  getDashboardWorkspaceApi,
   getDashboardSummaryApi,
   getMyRoadmapsApi,
   getRoadmapCatalogApi,
@@ -58,63 +59,52 @@ export function DashboardProvider({ children }) {
   ])
   const [isMentorTyping, setIsMentorTyping] = useState(false)
 
-  // Master data fetching function for manual or programmatic refresh
-  const refreshDashboard = useCallback(async () => {
+  // In-memory workspace cache to eliminate redundant network roundtrips
+  const workspaceCacheRef = useRef({ data: null, timestamp: 0 })
+
+  // Helper to unpack workspace payload into state
+  const applyWorkspaceData = useCallback((ws) => {
+    if (!ws) return
+    if (ws.summary) setSummaryData(ws.summary)
+    if (ws.daily_activity) setDailyActivity(ws.daily_activity)
+    if (Array.isArray(ws.achievements)) setAchievements(ws.achievements)
+    if (Array.isArray(ws.saved_roadmaps)) {
+      setSavedRoadmaps(ws.saved_roadmaps)
+      const active = ws.saved_roadmaps.find((r) => r.is_active) || ws.saved_roadmaps[0] || null
+      if (active) setActiveRoadmap(active)
+    }
+    if (Array.isArray(ws.recommended_projects)) {
+      setRecommendedProjects(ws.recommended_projects)
+    }
+    if (Array.isArray(ws.my_projects)) {
+      setMyProjects(ws.my_projects)
+    }
+  }, [])
+
+  // Consolidated data refresh function
+  const refreshDashboard = useCallback(async (force = true) => {
     if (!user) return
 
-    try {
-      const [summaryRes, dailyRes, achRes, roadmapsRes, recProjRes, myProjRes] =
-        await Promise.allSettled([
-          getDashboardSummaryApi(),
-          getDailyActivityApi(),
-          getAchievementsApi(),
-          getMyRoadmapsApi(),
-          getRecommendedProjectsApi(),
-          getMyProjectsApi(),
-        ])
-
-      if (summaryRes.status === 'fulfilled' && summaryRes.value) {
-        setSummaryData(summaryRes.value)
-      }
-      if (dailyRes.status === 'fulfilled' && dailyRes.value) {
-        setDailyActivity(dailyRes.value)
-      }
-      if (achRes.status === 'fulfilled' && Array.isArray(achRes.value)) {
-        setAchievements(achRes.value)
-      }
-      if (roadmapsRes.status === 'fulfilled' && Array.isArray(roadmapsRes.value)) {
-        const roadmaps = roadmapsRes.value
-        setSavedRoadmaps(roadmaps)
-        const active = roadmaps.find((r) => r.is_active) || roadmaps[0] || null
-        if (active) {
-          setActiveRoadmap(active)
-        }
-      }
-      if (recProjRes.status === 'fulfilled' && Array.isArray(recProjRes.value)) {
-        setRecommendedProjects(recProjRes.value)
-      }
-      if (myProjRes.status === 'fulfilled' && Array.isArray(myProjRes.value)) {
-        setMyProjects(myProjRes.value)
-      }
-    } catch (err) {
-      console.warn('Dashboard data refresh partial error:', err)
-    } finally {
+    // Serve from cache if fresh and not forced
+    const now = Date.now()
+    if (!force && workspaceCacheRef.current.data && now - workspaceCacheRef.current.timestamp < 45000) {
+      applyWorkspaceData(workspaceCacheRef.current.data)
       setIsLoading(false)
+      return
     }
-  }, [user])
 
-  // Initial load
-  useEffect(() => {
-    let isMounted = true
-
-    const loadInitialData = async () => {
-      if (!user) {
-        if (isMounted) setIsLoading(false)
+    try {
+      // 1. Try single consolidated endpoint first
+      const wsData = await getDashboardWorkspaceApi()
+      if (wsData && wsData.summary) {
+        applyWorkspaceData(wsData)
+        workspaceCacheRef.current = { data: wsData, timestamp: now }
         return
       }
-
+    } catch {
+      // 2. Fallback to parallel multi-endpoint requests if consolidated endpoint is unavailable
       try {
-        const [summaryRes, dailyRes, achRes, roadmapsRes, recProjRes, myProjRes, catRes] =
+        const [summaryRes, dailyRes, achRes, roadmapsRes, recProjRes, myProjRes] =
           await Promise.allSettled([
             getDashboardSummaryApi(),
             getDailyActivityApi(),
@@ -122,10 +112,7 @@ export function DashboardProvider({ children }) {
             getMyRoadmapsApi(),
             getRecommendedProjectsApi(),
             getMyProjectsApi(),
-            getRoadmapCatalogApi({ limit: 12 }),
           ])
-
-        if (!isMounted) return
 
         if (summaryRes.status === 'fulfilled' && summaryRes.value) {
           setSummaryData(summaryRes.value)
@@ -140,9 +127,7 @@ export function DashboardProvider({ children }) {
           const roadmaps = roadmapsRes.value
           setSavedRoadmaps(roadmaps)
           const active = roadmaps.find((r) => r.is_active) || roadmaps[0] || null
-          if (active) {
-            setActiveRoadmap(active)
-          }
+          if (active) setActiveRoadmap(active)
         }
         if (recProjRes.status === 'fulfilled' && Array.isArray(recProjRes.value)) {
           setRecommendedProjects(recProjRes.value)
@@ -150,13 +135,43 @@ export function DashboardProvider({ children }) {
         if (myProjRes.status === 'fulfilled' && Array.isArray(myProjRes.value)) {
           setMyProjects(myProjRes.value)
         }
-        if (catRes.status === 'fulfilled') {
-          const catVal = catRes.value
-          if (Array.isArray(catVal)) setCatalogRoadmaps(catVal)
-          else if (catVal?.items) setCatalogRoadmaps(catVal.items)
+      } catch (fallbackErr) {
+        console.warn('Dashboard data refresh partial error:', fallbackErr)
+      }
+    } finally {
+      setIsLoading(false)
+    }
+  }, [user, applyWorkspaceData])
+
+  // Initial load
+  useEffect(() => {
+    let isMounted = true
+
+    const loadInitialData = async () => {
+      if (!user) {
+        if (isMounted) setIsLoading(false)
+        return
+      }
+
+      // Check cache for instant 0ms paint
+      const now = Date.now()
+      if (workspaceCacheRef.current.data && now - workspaceCacheRef.current.timestamp < 45000) {
+        applyWorkspaceData(workspaceCacheRef.current.data)
+        if (isMounted) setIsLoading(false)
+        return
+      }
+
+      try {
+        const wsData = await getDashboardWorkspaceApi()
+        if (!isMounted) return
+        if (wsData && wsData.summary) {
+          applyWorkspaceData(wsData)
+          workspaceCacheRef.current = { data: wsData, timestamp: now }
         }
-      } catch (err) {
-        console.warn('Initial dashboard load error:', err)
+      } catch {
+        // Fallback to parallel fetching
+        if (!isMounted) return
+        await refreshDashboard(true)
       } finally {
         if (isMounted) setIsLoading(false)
       }
@@ -167,7 +182,25 @@ export function DashboardProvider({ children }) {
     return () => {
       isMounted = false
     }
-  }, [user])
+  }, [user, applyWorkspaceData, refreshDashboard])
+
+  // Lazy-load roadmap catalog only when user navigates to 'roadmaps' tab
+  useEffect(() => {
+    if (activeTab === 'roadmaps' && catalogRoadmaps.length === 0) {
+      let isSubscribed = true
+      getRoadmapCatalogApi({ limit: 12 })
+        .then((catVal) => {
+          if (!isSubscribed) return
+          if (Array.isArray(catVal)) setCatalogRoadmaps(catVal)
+          else if (catVal?.items) setCatalogRoadmaps(catVal.items)
+        })
+        .catch((err) => console.warn('Could not load catalog roadmaps:', err))
+      return () => {
+        isSubscribed = false
+      }
+    }
+  }, [activeTab, catalogRoadmaps.length])
+
 
   // Switch Active Roadmap
   const switchActiveRoadmap = useCallback(
@@ -494,37 +527,68 @@ export function DashboardProvider({ children }) {
     ])
   }, [activeRoadmapNormalized])
 
-  const value = {
-    user,
-    logout,
-    activeTab,
-    setActiveTab,
-    isLoading,
-    summaryData,
-    dailyActivity,
-    achievements,
-    savedRoadmaps,
-    catalogRoadmaps,
-    recommendedProjects,
-    myProjects,
-    activeRoadmap: activeRoadmapNormalized,
-    rawActiveRoadmap: activeRoadmap,
-    allRoadmaps: savedRoadmaps,
-    switchActiveRoadmap,
-    todayMission,
-    aiMentorContext,
-    mentorMessages,
-    isMentorTyping,
-    sendMentorMessage,
-    resetMentorSession,
-    completeLesson,
-    toggleMilestone,
-    toggleDailyTask,
-    updateProject,
-    refreshDashboard,
-    toast,
-    showToast,
-  }
+  const value = useMemo(
+    () => ({
+      user,
+      logout,
+      activeTab,
+      setActiveTab,
+      isLoading,
+      summaryData,
+      dailyActivity,
+      achievements,
+      savedRoadmaps,
+      catalogRoadmaps,
+      recommendedProjects,
+      myProjects,
+      activeRoadmap: activeRoadmapNormalized,
+      rawActiveRoadmap: activeRoadmap,
+      allRoadmaps: savedRoadmaps,
+      switchActiveRoadmap,
+      todayMission,
+      aiMentorContext,
+      mentorMessages,
+      isMentorTyping,
+      sendMentorMessage,
+      resetMentorSession,
+      completeLesson,
+      toggleMilestone,
+      toggleDailyTask,
+      updateProject,
+      refreshDashboard,
+      toast,
+      showToast,
+    }),
+    [
+      user,
+      logout,
+      activeTab,
+      isLoading,
+      summaryData,
+      dailyActivity,
+      achievements,
+      savedRoadmaps,
+      catalogRoadmaps,
+      recommendedProjects,
+      myProjects,
+      activeRoadmapNormalized,
+      activeRoadmap,
+      switchActiveRoadmap,
+      todayMission,
+      aiMentorContext,
+      mentorMessages,
+      isMentorTyping,
+      sendMentorMessage,
+      resetMentorSession,
+      completeLesson,
+      toggleMilestone,
+      toggleDailyTask,
+      updateProject,
+      refreshDashboard,
+      toast,
+      showToast,
+    ]
+  )
 
   return (
     <DashboardContext.Provider value={value}>

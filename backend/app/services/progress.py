@@ -31,6 +31,7 @@ from app.schemas.progress import (
     DailyTaskToggleRequest,
     DashboardEnrolledPath,
     DashboardSummaryResponse,
+    DashboardWorkspaceResponse,
     PathProgressResponse,
     SkillProgressBadge,
     UserBadge,
@@ -570,22 +571,33 @@ class ProgressService:
         ulp_res = await db.execute(ulp_stmt)
         path_rows = ulp_res.all()
 
-        for ulp, lp in path_rows:
-            # Query steps for this path
-            steps_stmt = select(RoadmapStep).where(
-                RoadmapStep.learning_path_id == lp.id
-            ).order_by(RoadmapStep.step_number)
-            steps_res = await db.execute(steps_stmt)
-            steps = list(steps_res.scalars().all())
+        # Batch query steps and completed progress for all enrolled paths
+        path_ids = [lp.id for _, lp in path_rows]
+        steps_by_path: dict[int, list[RoadmapStep]] = {}
+        completed_by_path: dict[int, set[int]] = {}
 
-            # Query completed steps
-            c_stmt = select(UserRoadmapProgress.step_id).where(
+        if path_ids:
+            steps_stmt = (
+                select(RoadmapStep)
+                .where(RoadmapStep.learning_path_id.in_(path_ids))
+                .order_by(RoadmapStep.learning_path_id, RoadmapStep.step_number)
+            )
+            steps_res = await db.execute(steps_stmt)
+            for step in steps_res.scalars().all():
+                steps_by_path.setdefault(step.learning_path_id, []).append(step)
+
+            c_stmt = select(UserRoadmapProgress.learning_path_id, UserRoadmapProgress.step_id).where(
                 UserRoadmapProgress.user_id == user_id,
-                UserRoadmapProgress.learning_path_id == lp.id,
+                UserRoadmapProgress.learning_path_id.in_(path_ids),
                 UserRoadmapProgress.is_completed.is_(True),
             )
             c_res = await db.execute(c_stmt)
-            completed_step_ids = set(c_res.scalars().all())
+            for pid, sid in c_res.all():
+                completed_by_path.setdefault(pid, set()).add(sid)
+
+        for ulp, lp in path_rows:
+            steps = steps_by_path.get(lp.id, [])
+            completed_step_ids = completed_by_path.get(lp.id, set())
 
             next_step_title = None
             for s in steps:
@@ -1220,6 +1232,51 @@ class ProgressService:
             )
 
         return result
+
+    async def get_workspace(
+        self,
+        db: AsyncSession,
+        user_id: uuid.UUID,
+    ) -> DashboardWorkspaceResponse:
+        """Single consolidated workspace bootstrap payload for instant dashboard initialization."""
+        summary = await self.get_dashboard_summary(db, user_id=user_id)
+        daily_act = summary.daily_activity or await self.get_daily_activity(db, user_id=user_id)
+        achievements = await self.get_achievements(db, user_id=user_id)
+
+        # User roadmaps
+        from app.services.roadmap_builder import roadmap_builder_service
+        user_roadmaps = await roadmap_builder_service.get_user_roadmaps(db, user_id=user_id)
+        saved_roadmaps = [
+            {
+                "id": r.id,
+                "title": r.title,
+                "goal": r.goal,
+                "target_role": r.target_role,
+                "experience_level": r.experience_level,
+                "estimated_duration": r.estimated_duration,
+                "progress_percent": r.progress_percent,
+                "is_active": r.is_active,
+                "completed_milestone_ids": r.completed_milestone_ids or [],
+                "roadmap_data": r.roadmap_data or {},
+                "created_at": r.created_at.isoformat() if r.created_at else None,
+                "updated_at": r.updated_at.isoformat() if r.updated_at else None,
+            }
+            for r in user_roadmaps
+        ]
+
+        # Recommended & user projects
+        from app.services.project import project_service
+        rec_proj_resp = await project_service.get_recommended_projects(db, user_id=user_id)
+        my_proj_models = await project_service.get_user_projects(db, user_id=user_id)
+
+        return DashboardWorkspaceResponse(
+            summary=summary,
+            daily_activity=daily_act,
+            achievements=achievements,
+            saved_roadmaps=saved_roadmaps,
+            recommended_projects=[p.model_dump() for p in rec_proj_resp.recommended_projects],
+            my_projects=[p.model_dump() for p in my_proj_models],
+        )
 
 
 progress_service = ProgressService()

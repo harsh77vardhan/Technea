@@ -218,4 +218,16 @@ class AchievementItemResponse(BaseModel):
     unlocked_at: str | None = None
 
 
+class DashboardWorkspaceResponse(BaseModel):
+    """Consolidated workspace bootstrap payload for instant single-request dashboard initialization."""
+
+    summary: DashboardSummaryResponse
+    daily_activity: DailyActivityResponse
+    achievements: list[AchievementItemResponse] = Field(default_factory=list)
+    saved_roadmaps: list[dict] = Field(default_factory=list)
+    recommended_projects: list[dict] = Field(default_factory=list)
+    my_projects: list[dict] = Field(default_factory=list)
+
+
+
 

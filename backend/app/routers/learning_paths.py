@@ -1,6 +1,6 @@
 from typing import Annotated
 from fastapi import APIRouter, HTTPException, Query, Response, status
-from app.api.deps import DatabaseDep
+from app.api.deps import CurrentUserDep, DatabaseDep
 from app.schemas.learning_path import LearningPathPaginationResponse, LearningPathResponse
 from app.services.learning_path import learning_path_service
 

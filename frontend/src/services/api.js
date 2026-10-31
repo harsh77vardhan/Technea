@@ -676,6 +676,14 @@ export async function getDashboardSummaryApi() {
   return request('/progress/dashboard')
 }
 
+/**
+ * Fetch consolidated dashboard workspace payload in a single HTTP request
+ * @returns {Promise<{ summary: Object, daily_activity: Object, achievements: Array, saved_roadmaps: Array, recommended_projects: Array, my_projects: Array }>}
+ */
+export async function getDashboardWorkspaceApi() {
+  return request('/progress/workspace')
+}
+
 /* ==========================================================================
    AI Career Roadmap Builder Endpoints
    ========================================================================== */
@@ -1097,6 +1105,7 @@ export default {
   toggleLessonProgressApi,
   syncGuestProgressApi,
   getDashboardSummaryApi,
+  getDashboardWorkspaceApi,
   generateRoadmapApi,
   saveRoadmapApi,
   getMyRoadmapsApi,

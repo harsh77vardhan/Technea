@@ -15,6 +15,82 @@ import {
 } from 'lucide-react'
 import { useDashboard } from '../../context/useDashboard'
 
+function DashboardOverviewSkeleton() {
+  return (
+    <div className="space-y-6 sm:space-y-8 pb-4 select-none text-[#f8fafc] animate-pulse">
+      {/* 1. Header Skeleton */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-1">
+        <div className="space-y-2.5">
+          <div className="flex items-center gap-2">
+            <div className="h-3 w-32 rounded-full bg-white/10" />
+            <div className="h-1.5 w-1.5 rounded-full bg-white/20" />
+            <div className="h-3 w-24 rounded-full bg-white/10" />
+          </div>
+          <div className="h-12 w-64 rounded-2xl bg-white/[0.05] border border-white/10" />
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-28 rounded-2xl bg-white/[0.04] border border-white/10" />
+          <div className="h-10 w-10 rounded-2xl bg-white/[0.04] border border-white/10" />
+        </div>
+      </div>
+
+      {/* 2. Today's Learning Mission Skeleton */}
+      <div className="relative rounded-3xl border border-white/10 bg-white/[0.02] p-6 sm:p-8 backdrop-blur-xl space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-2">
+            <div className="h-3 w-36 rounded-full bg-violet-500/20" />
+            <div className="h-7 w-60 rounded-xl bg-white/10" />
+            <div className="h-4 w-80 rounded-lg bg-white/5" />
+          </div>
+          <div className="h-11 w-44 rounded-2xl bg-white/10" />
+        </div>
+        <div className="space-y-2">
+          <div className="flex justify-between">
+            <div className="h-3 w-20 rounded bg-white/10" />
+            <div className="h-3 w-16 rounded bg-white/10" />
+          </div>
+          <div className="h-2.5 w-full rounded-full bg-white/5 overflow-hidden">
+            <div className="h-full w-1/3 rounded-full bg-violet-500/30" />
+          </div>
+        </div>
+      </div>
+
+      {/* 3. Learning Journey Circuit Skeleton */}
+      <div className="rounded-3xl border border-white/10 bg-white/[0.02] p-6 sm:p-7 backdrop-blur-xl space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="h-4 w-44 rounded bg-white/10" />
+          <div className="h-3 w-28 rounded bg-white/5" />
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 pt-2">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="h-20 rounded-2xl border border-white/5 bg-white/[0.02] p-3 space-y-2">
+              <div className="h-3 w-12 rounded bg-white/10" />
+              <div className="h-4 w-24 rounded bg-white/10" />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 4. 2-Column Grid Skeleton: Daily Plan & Project */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="rounded-3xl border border-white/10 bg-white/[0.02] p-6 space-y-4">
+          <div className="h-5 w-32 rounded bg-white/10" />
+          <div className="space-y-2.5">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-12 rounded-xl bg-white/[0.02] border border-white/5" />
+            ))}
+          </div>
+        </div>
+        <div className="rounded-3xl border border-white/10 bg-white/[0.02] p-6 space-y-4">
+          <div className="h-5 w-40 rounded bg-white/10" />
+          <div className="h-28 rounded-2xl bg-white/[0.02] border border-white/5" />
+          <div className="h-10 w-full rounded-xl bg-white/10" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function DashboardReferenceOverview({
   onContinueLesson = () => {},
   onExploreCatalog = () => {},
@@ -30,9 +106,14 @@ function DashboardReferenceOverview({
     dailyActivity,
     toggleDailyTask,
     recommendedProjects,
+    isLoading,
   } = useDashboard()
 
   const [isRoadmapSelectorOpen, setIsRoadmapSelectorOpen] = useState(false)
+
+  if (isLoading && !activeRoadmap) {
+    return <DashboardOverviewSkeleton />
+  }
 
   const fullName = user?.full_name || user?.email?.split('@')[0] || 'Engineer'
   const firstName = fullName.split(' ')[0]

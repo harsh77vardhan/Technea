@@ -158,7 +158,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
           window.dispatchEvent(new PopStateEvent('popstate'))
           openDashboard()
         }
-      }, 400)
+      }, 50)
     } catch (err) {
       console.error('OTP verification error:', err)
       setError(formatAuthError(err, 'Invalid or expired verification code. Please try again.'))
@@ -261,7 +261,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
           window.dispatchEvent(new PopStateEvent('popstate'))
           openDashboard()
         }
-      }, 400)
+      }, 50)
     } catch (err) {
       console.error('Auth error:', err)
       setError(formatAuthError(err, 'Authentication failed. Please check your credentials.'))
