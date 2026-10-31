@@ -311,7 +311,7 @@ export default function RoadmapTimelineView({
           ) : (
             <div>
               <div className="inline-flex items-center gap-2 px-2 py-0.5 rounded-full bg-white/[0.05] border border-white/[0.1] mb-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                <span className="w-1.5 h-1.5 rounded-full bg-[#faf6ee]" />
                 <span className="text-[10px] font-mono tracking-wider uppercase text-neutral-300">
                   {generatedData?.target_role || roadmapDetails.target_role || 'Synthesized Track'}
                 </span>
@@ -377,13 +377,13 @@ export default function RoadmapTimelineView({
             disabled={isSaving || Boolean(savedRoadmapId)}
             className={`inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${
               savedRoadmapId
-                ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300'
+                ? 'border-white/30 bg-white/10 text-[#faf6ee]'
                 : 'border-white/[0.1] bg-[#0a0a0a]/90 text-neutral-300 hover:text-white hover:border-white/[0.25]'
             }`}
           >
             {savedRoadmapId ? (
               <>
-                <BookmarkCheck className="w-3.5 h-3.5 text-emerald-400" />
+                <BookmarkCheck className="w-3.5 h-3.5 text-[#faf6ee]" />
                 <span>Saved</span>
               </>
             ) : isSaving ? (

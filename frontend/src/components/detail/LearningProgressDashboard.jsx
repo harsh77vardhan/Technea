@@ -59,7 +59,7 @@ export default function LearningProgressDashboard({
 
           <div className="space-y-0.5 min-w-0">
             <div className="flex items-center gap-2">
-              <span className="font-mono text-[10px] uppercase tracking-wider text-emerald-400 font-semibold">
+              <span className="font-mono text-[10px] uppercase tracking-wider text-[#faf6ee] font-semibold">
                 {percent === 100 ? 'Complete' : 'In Progress'}
               </span>
               <span className="font-mono text-xs text-neutral-400">

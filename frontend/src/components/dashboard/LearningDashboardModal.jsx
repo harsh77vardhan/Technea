@@ -49,6 +49,8 @@ import MemphisCornerDecorations from './MemphisCornerDecorations'
 import DashboardLeftSidebar from './DashboardLeftSidebar'
 import DashboardReferenceOverview from './DashboardReferenceOverview'
 import DockedAIMentorCompanion from './DockedAIMentorCompanion'
+import TechneaLogo from '../layout/TechneaLogo'
+
 
 let messageCounter = 1000
 function getNextMentorMsgId() {
@@ -1115,12 +1117,13 @@ export default function LearningDashboardModal({
       >
         {/* Mobile Navigation Header (only on screens < lg) */}
         <header className="relative z-20 flex lg:hidden items-center justify-between border-b border-[#e2e8f0] bg-white px-4 py-2.5 gap-2 shrink-0 shadow-xs">
-          <div className="flex items-center gap-2">
-            <div className="h-7 w-7 rounded-lg bg-black text-white font-extrabold text-xs flex items-center justify-center font-sans">
-              T
-            </div>
-            <span className="text-sm font-bold text-[#0f172a] font-sans">Technea</span>
-          </div>
+          <TechneaLogo
+            as="div"
+            size={26}
+            textSizeClassName="text-[17px]"
+            textClassName="text-[#0f172a]"
+          />
+
 
           <div className="flex items-center gap-1 overflow-x-auto max-w-[55%] scrollbar-none py-1">
             {navTabs.map((tab) => {
@@ -1170,7 +1173,7 @@ export default function LearningDashboardModal({
               exit={{ opacity: 0, y: -10 }}
               className="absolute top-4 left-1/2 -translate-x-1/2 z-50 rounded-xl border border-[#cbd5e1] bg-white px-4 py-2 text-xs font-mono text-[#0f172a] shadow-[0_8px_32px_rgba(0,0,0,0.12)] flex items-center gap-2"
             >
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+              <span className="h-1.5 w-1.5 rounded-full bg-[#0f172a]" />
               <span>{toastMessage}</span>
             </motion.div>
           )}
@@ -1506,7 +1509,7 @@ export default function LearningDashboardModal({
                                       <span
                                         className={`rounded-full border px-2 py-0.5 text-[9px] font-mono font-medium ${
                                           isBeginner
-                                            ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300'
+                                            ? 'border-white/20 bg-white/[0.08] text-[#faf6ee]'
                                             : isAdvanced
                                             ? 'border-purple-500/20 bg-purple-500/10 text-purple-300'
                                             : 'border-sky-500/20 bg-sky-500/10 text-sky-300'
@@ -1792,7 +1795,7 @@ export default function LearningDashboardModal({
                             key={proj.id}
                             className={`relative overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent rounded-2xl sm:rounded-3xl border p-5 sm:p-6 flex flex-col justify-between gap-4 transition-all duration-300 backdrop-blur-3xl shadow-[0_8px_32px_rgba(0,0,0,0.6)] ${
                               userStatus === 'completed'
-                                ? 'border-emerald-500/30 bg-[#050505]/95 shadow-[0_8px_32px_rgba(16,185,129,0.08)]'
+                                ? 'border-white/20 bg-[#050505]/95 shadow-[0_8px_32px_rgba(255,255,255,0.05)]'
                                 : userStatus === 'in_progress'
                                 ? 'border-white/20 bg-[#050505]/95 hover:border-white/30 hover:shadow-[0_12px_40px_rgba(0,0,0,0.7)]'
                                 : 'border-white/[0.08] bg-[#050505]/90 hover:border-white/[0.18] hover:shadow-[0_12px_40px_rgba(0,0,0,0.7)]'
@@ -1826,7 +1829,7 @@ export default function LearningDashboardModal({
                                 <span
                                   className={`text-[10px] font-mono font-semibold ${
                                     userStatus === 'completed'
-                                      ? 'text-emerald-400 flex items-center gap-1'
+                                      ? 'text-[#faf6ee] flex items-center gap-1'
                                       : userStatus === 'in_progress'
                                       ? 'text-neutral-200'
                                       : 'text-neutral-400'
@@ -1940,7 +1943,7 @@ export default function LearningDashboardModal({
                                   </>
                                 )}
                                 {userStatus === 'completed' && (
-                                  <span className="text-[11px] font-mono text-emerald-400 font-medium flex items-center gap-1">
+                                  <span className="text-[11px] font-mono text-[#faf6ee] font-medium flex items-center gap-1">
                                     ✓ Verified (+150 XP)
                                   </span>
                                 )}
@@ -1992,7 +1995,7 @@ export default function LearningDashboardModal({
                           <span>Clear Chat</span>
                         </button>
                         <div className="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded-full border border-white/10 bg-white/[0.03]">
-                          <span className="flex h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)] animate-pulse" />
+                          <span className="flex h-2 w-2 rounded-full bg-[#faf6ee] shadow-[0_0_8px_rgba(250,246,238,0.8)] animate-pulse" />
                           <span className="text-[11px] font-mono text-neutral-300">Neural Engine Online</span>
                         </div>
                       </div>
@@ -2448,7 +2451,7 @@ export default function LearningDashboardModal({
                                       <span
                                         className={`rounded-full px-2 py-0.5 text-[9px] font-mono font-medium uppercase shrink-0 ${
                                           isComplete
-                                            ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400'
+                                            ? 'bg-white/[0.08] border border-white/20 text-[#faf6ee]'
                                             : 'bg-white/[0.03] border border-white/10 text-neutral-300'
                                         }`}
                                       >
@@ -2583,7 +2586,7 @@ export default function LearningDashboardModal({
                             Configure telemetry, AI Mentor preferences, and account credentials.
                           </p>
                         </div>
-                        <span className="rounded-full border border-emerald-500/20 bg-emerald-950/20 px-3 py-1 text-xs font-mono text-emerald-400">
+                        <span className="rounded-full border border-white/20 bg-white/[0.05] px-3 py-1 text-xs font-mono text-[#faf6ee]">
                           ● Environment Healthy
                         </span>
                       </div>

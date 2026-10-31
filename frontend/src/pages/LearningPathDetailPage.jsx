@@ -1041,7 +1041,7 @@ export default function LearningPathDetailPage({
             {/* Blueprint Fast Spec Card */}
             <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 backdrop-blur-md space-y-4">
               <div className="flex items-center gap-2 border-b border-white/[0.06] pb-3">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                <span className="h-1.5 w-1.5 rounded-full bg-[#faf6ee]" />
                 <h3 className="text-xs font-mono uppercase tracking-wider text-neutral-300 font-semibold">
                   Track Specification
                 </h3>

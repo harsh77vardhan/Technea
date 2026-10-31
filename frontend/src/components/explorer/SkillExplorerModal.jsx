@@ -390,7 +390,7 @@ export default function SkillExplorerModal({ isOpen, onClose, onSelectPath, init
                 {roadmapSuccessMessage && (
                   <div className="rounded-2xl border border-white/20 bg-white/[0.08] backdrop-blur-xl p-4 text-white text-xs sm:text-sm font-medium shadow-xl transition-all animate-in fade-in">
                     <p className="flex items-center gap-2">
-                      <span className="inline-block h-2 w-2 rounded-full bg-emerald-400/90 animate-pulse" />
+                      <span className="inline-block h-2 w-2 rounded-full bg-[#faf6ee] animate-pulse" />
                       {roadmapSuccessMessage}
                     </p>
                   </div>

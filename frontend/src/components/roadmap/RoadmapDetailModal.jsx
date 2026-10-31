@@ -244,8 +244,12 @@ export default function RoadmapDetailModal({
             <div className="flex items-center gap-3">
               {/* Set as Active Roadmap Primary Button */}
               {isActive ? (
-                <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-4 py-1.5 text-xs font-medium text-emerald-400">
-                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                <div className={`inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-xs font-medium ${
+                  isLight
+                    ? 'border-[#ded3bf] bg-[#ede5d5] text-[#181614]'
+                    : 'border-white/20 bg-white/[0.08] text-[#faf6ee]'
+                }`}>
+                  <span className={`h-2 w-2 rounded-full animate-pulse ${isLight ? 'bg-[#181614]' : 'bg-[#faf6ee]'}`} />
                   <span>✓ Main Active Roadmap</span>
                 </div>
               ) : (

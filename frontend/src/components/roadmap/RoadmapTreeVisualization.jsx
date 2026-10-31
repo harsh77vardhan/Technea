@@ -251,7 +251,7 @@ export default function RoadmapTreeVisualization({
               <span>Current</span>
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-emerald-500" />
+              <span className="h-2 w-2 rounded-full bg-[#faf6ee] border border-white/40" />
               <span>Mastered</span>
             </span>
             <span className="flex items-center gap-1.5">
@@ -344,7 +344,7 @@ export default function RoadmapTreeVisualization({
                       branchHasCurrent
                         ? 'border-[#c25e2e]/50 bg-[#1e1c1a] text-[#faf6ee]'
                         : branchCompleted
-                        ? 'border-emerald-500/30 bg-[#161a17] text-[#faf6ee]'
+                        ? 'border-white/20 bg-[#1a1816] text-[#faf6ee]'
                         : 'border-[#262320] bg-[#141312] text-[#a8a199]'
                     }`}
                   >
@@ -353,7 +353,7 @@ export default function RoadmapTreeVisualization({
                         Phase 0{bIdx + 1}
                       </span>
                       {branchCompleted ? (
-                        <span className="text-[10px] font-mono text-emerald-400 flex items-center gap-1">
+                        <span className="text-[10px] font-mono text-[#faf6ee] flex items-center gap-1">
                           <Check className="h-3 w-3" />
                           <span>Mastered</span>
                         </span>
@@ -380,7 +380,7 @@ export default function RoadmapTreeVisualization({
                           {nIdx > 0 && (
                             <div
                               className={`w-0.5 h-4 -mt-2 mb-2 ${
-                                node.isCompleted ? 'bg-emerald-500/50' : node.isCurrent ? 'bg-[#c25e2e]/60' : 'bg-[#262320]'
+                                node.isCompleted ? 'bg-white/40' : node.isCurrent ? 'bg-[#c25e2e]/60' : 'bg-[#262320]'
                               }`}
                             />
                           )}
@@ -395,7 +395,7 @@ export default function RoadmapTreeVisualization({
                               node.isCurrent
                                 ? 'border-2 border-[#c25e2e] bg-[#faf6ee] text-[#181614] shadow-[0_8px_24px_rgba(194,94,46,0.3)] ring-2 ring-[#c25e2e]/20'
                                 : node.isCompleted
-                                ? 'border-emerald-500/40 bg-[#151c17] text-[#faf6ee] hover:border-emerald-400'
+                                ? 'border-white/20 bg-[#181716] text-[#faf6ee] hover:border-white/40'
                                 : 'border-[#262320] bg-[#141312] text-[#8c8278] hover:border-[#3d3835]'
                             }`}
                           >
@@ -414,7 +414,7 @@ export default function RoadmapTreeVisualization({
                                   node.isCurrent
                                     ? 'bg-[#c25e2e] text-[#faf6ee] shadow-sm'
                                     : node.isCompleted
-                                    ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                                    ? 'bg-white/[0.08] text-[#faf6ee] border border-white/20'
                                     : 'bg-[#1e1c1a] text-[#786f66] border border-[#262320]'
                                 }`}
                               >
@@ -444,7 +444,7 @@ export default function RoadmapTreeVisualization({
                                     {node.estimated_time}
                                   </span>
                                   {node.isCompleted && (
-                                    <span className="text-[10px] font-mono text-emerald-400 font-medium">
+                                    <span className="text-[10px] font-mono text-[#faf6ee] font-medium">
                                       +50 XP
                                     </span>
                                   )}
@@ -509,13 +509,13 @@ export default function RoadmapTreeVisualization({
                       node.isCurrent
                         ? 'border-[#c25e2e] bg-[#faf6ee] text-[#181614]'
                         : node.isCompleted
-                        ? 'border-emerald-500/30 bg-[#161a17] text-[#faf6ee]'
+                        ? 'border-white/20 bg-[#181716] text-[#faf6ee]'
                         : 'border-[#262320] bg-[#181614] text-[#a8a199]'
                     }`}
                   >
                     <div className="flex items-center justify-between text-xs mb-1">
                       <span className="font-mono text-[10px]">{node.estimated_time}</span>
-                      {node.isCompleted && <span className="text-emerald-400 font-bold">✓</span>}
+                      {node.isCompleted && <span className="text-[#faf6ee] font-bold">✓</span>}
                       {node.isCurrent && <span className="text-[#c25e2e] font-bold">● Active</span>}
                     </div>
                     <h4 className="text-xs font-medium truncate">{node.title}</h4>
@@ -563,8 +563,8 @@ export default function RoadmapTreeVisualization({
                     {selectedNode.estimated_time}
                   </span>
                   {selectedNode.isCompleted ? (
-                    <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 text-xs text-emerald-800 font-medium">
-                      <Check className="h-3 w-3 text-emerald-700" />
+                    <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-[#ede5d5] border border-[#ded3bf] px-2.5 py-0.5 text-xs text-[#181614] font-medium">
+                      <Check className="h-3 w-3 text-[#181614]" />
                       <span>Mastered (+50 XP)</span>
                     </span>
                   ) : selectedNode.isCurrent ? (

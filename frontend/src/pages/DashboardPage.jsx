@@ -21,6 +21,8 @@ import DashboardLeftSidebar from '../components/dashboard/DashboardLeftSidebar'
 import DashboardReferenceOverview from '../components/dashboard/DashboardReferenceOverview'
 import DockedAIMentorCompanion from '../components/dashboard/DockedAIMentorCompanion'
 import RoadmapDetailModal from '../components/roadmap/RoadmapDetailModal'
+import TechneaLogo from '../components/layout/TechneaLogo'
+
 
 const FloatingAIMentorCompanion = lazy(() =>
   import('../components/dashboard/FloatingAIMentorCompanion')
@@ -294,10 +296,12 @@ export default function DashboardPage({
         }`}
       >
         <div className="flex items-center gap-2.5">
-          <div className="h-7 w-7 rounded-full border border-[#c25e2e]/50 bg-[#c25e2e]/10 flex items-center justify-center text-xs font-semibold text-[#faf6ee]">
-            T
-          </div>
-          <span className={`text-sm font-medium ${isLight ? 'text-[#181614]' : 'text-[#faf6ee]'}`}>Technea</span>
+          <TechneaLogo
+            as="div"
+            size={26}
+            textSizeClassName="text-[17px]"
+            textClassName={isLight ? 'text-[#181614]' : 'text-[#faf6ee]'}
+          />
 
           {/* Minimal premium theme toggle button in mobile top-left header */}
           <button

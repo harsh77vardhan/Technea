@@ -284,7 +284,7 @@ export default function RoadmapBuilderModal({
                 exit={{ opacity: 0, y: -12 }}
                 className="absolute top-14 left-1/2 -translate-x-1/2 z-50 bg-[#111]/90 backdrop-blur-xl border border-white/[0.15] text-white text-xs font-mono px-4 py-2.5 rounded-xl shadow-2xl flex items-center gap-2"
               >
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                <span className="w-1.5 h-1.5 rounded-full bg-[#faf6ee]" />
                 <span>{toastMessage}</span>
               </motion.div>
             )}

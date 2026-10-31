@@ -284,8 +284,8 @@ function CodeBlock({ language, code }) {
         >
           {copied ? (
             <>
-              <Check className="h-3.5 w-3.5 text-emerald-400" />
-              <span className="text-emerald-400 font-mono text-[10px]">Copied!</span>
+              <Check className="h-3.5 w-3.5 text-[#faf6ee]" />
+              <span className="text-[#faf6ee] font-mono text-[10px]">Copied!</span>
             </>
           ) : (
             <>

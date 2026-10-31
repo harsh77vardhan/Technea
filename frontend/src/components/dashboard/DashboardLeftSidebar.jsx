@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { useDashboard } from '../../context/useDashboard'
 import { getAvatarUrl } from '../../services/api'
+import TechneaLogo from '../layout/TechneaLogo'
 
 function DashboardLeftSidebar({
   activeTab = 'overview',
@@ -48,16 +49,15 @@ function DashboardLeftSidebar({
     >
       {/* ──────────────── Top Logo & Navigation ──────────────── */}
       <div className="space-y-8">
-        {/* Brand Header matching reference: circular (T) + Technea + Theme Switch */}
+        {/* Brand Header: Technea Logo + Theme Switch */}
         <div className="flex items-center justify-between px-2 pt-1">
-          <div className="flex items-center gap-2.5">
-            <div className="h-7 w-7 rounded-full border border-[#c25e2e]/50 bg-[#c25e2e]/10 flex items-center justify-center text-xs font-semibold text-[#faf6ee]">
-              T
-            </div>
-            <span className={`text-sm font-medium tracking-tight ${isLight ? 'text-[#181614]' : 'text-[#faf6ee]'}`}>
-              Technea
-            </span>
-          </div>
+          <TechneaLogo
+            as="div"
+            size={28}
+            textSizeClassName="text-[17px]"
+            textClassName={isLight ? 'text-[#181614]' : 'text-[#faf6ee]'}
+          />
+
 
           {/* Minimal, premium Theme Switch Button */}
           <button

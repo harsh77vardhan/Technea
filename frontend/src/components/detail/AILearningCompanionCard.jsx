@@ -13,9 +13,9 @@ export default function AILearningCompanionCard({
       transition={{ duration: 0.35, ease: 'easeOut' }}
       className="relative rounded-none border border-white/[0.08] bg-[#13151e]/95 p-5 sm:p-6 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden group transition-colors duration-300 hover:border-white/[0.14]"
     >
-      {/* Hairline subtle top gradient border with faint AI emerald/cyan accent */}
+      {/* Hairline subtle top gradient border */}
       <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-emerald-400/25 to-cyan-400/20"
+        className="pointer-events-none absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent"
         aria-hidden="true"
       />
 
@@ -23,13 +23,13 @@ export default function AILearningCompanionCard({
         {/* ── 1. HEADER ──────────────────────────────────────────────────────── */}
         <div className="flex items-center justify-between pb-3 border-b border-white/[0.06]">
           <div className="flex items-center gap-2">
-            <span className="text-emerald-400 text-xs select-none">✦</span>
+            <span className="text-[#faf6ee] text-xs select-none">✦</span>
             <h2 className="font-mono text-[11px] font-semibold uppercase tracking-wider text-neutral-300">
               AI Learning Companion
             </h2>
           </div>
 
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="h-1.5 w-1.5 rounded-full bg-[#faf6ee] animate-pulse" />
         </div>
 
         {/* ── 2. GREETING & CONTEXT ─────────────────────────────────────────── */}
@@ -44,8 +44,8 @@ export default function AILearningCompanionCard({
 
         {/* ── 3. SECTION: AI INSIGHT ────────────────────────────────────────── */}
         <div className="rounded-none border border-white/[0.06] bg-white/[0.02] p-3.5 space-y-1.5 transition-colors duration-200 hover:border-white/[0.12] hover:bg-white/[0.03]">
-          <div className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-emerald-400 font-medium">
-            <span className="h-1 w-1 rounded-full bg-emerald-400" />
+          <div className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-[#faf6ee] font-medium">
+            <span className="h-1 w-1 rounded-full bg-[#faf6ee]" />
             <span>AI Insight</span>
           </div>
           <p className="text-xs sm:text-sm text-neutral-200 font-normal leading-relaxed">

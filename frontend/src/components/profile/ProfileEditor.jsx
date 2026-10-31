@@ -458,9 +458,9 @@ export default function ProfileEditor({
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                className="overflow-hidden border-b border-emerald-500/20 bg-emerald-950/20 px-6 py-2.5 text-xs font-mono text-emerald-400 flex items-center gap-2"
+                className="overflow-hidden border-b border-white/20 bg-white/[0.05] px-6 py-2.5 text-xs font-mono text-[#faf6ee] flex items-center gap-2"
               >
-                <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-[#faf6ee]" />
                 <span>{successMessage}</span>
               </motion.div>
             )}

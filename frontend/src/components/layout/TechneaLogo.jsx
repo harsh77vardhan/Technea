@@ -49,24 +49,30 @@ export function TechneaIcon({ size = 36, className = '' }) {
 
 export default function TechneaLogo({
   size = 36,
+  textSizeClassName = 'text-[19px]',
   textClassName = 'text-slate-900 group-hover:text-black',
   className = '',
   showText = true,
   href = '#',
+  as: Component = 'a',
+  ...props
 }) {
+  const linkProps = Component === 'a' ? { href } : {}
   return (
-    <a
-      href={href}
+    <Component
+      {...linkProps}
       className={`inline-flex items-center gap-2.5 group transition-opacity select-none ${className}`}
+      {...props}
     >
       <TechneaIcon size={size} />
       {showText && (
         <span
-          className={`text-[19px] font-bold tracking-[-0.035em] transition-colors font-sans ${textClassName}`}
+          className={`${textSizeClassName} font-bold tracking-[-0.035em] transition-colors font-sans ${textClassName}`}
         >
           Technea
         </span>
       )}
-    </a>
+    </Component>
   )
 }
+

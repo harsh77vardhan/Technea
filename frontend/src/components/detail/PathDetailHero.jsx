@@ -140,8 +140,8 @@ export default function PathDetailHero({
           >
             {copied ? (
               <>
-                <Check className="h-3.5 w-3.5 text-emerald-400" />
-                <span className="text-emerald-400 text-[11px]">Copied</span>
+                <Check className="h-3.5 w-3.5 text-[#faf6ee]" />
+                <span className="text-[#faf6ee] text-[11px]">Copied</span>
               </>
             ) : (
               <>
