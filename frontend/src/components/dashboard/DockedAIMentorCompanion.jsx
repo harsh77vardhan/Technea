@@ -1,173 +1,314 @@
 import { useState, useRef, useEffect, memo } from 'react'
-import { Send, Bot, Sparkles, RefreshCw } from 'lucide-react'
+import {
+  Minus,
+  Maximize2,
+  ArrowUp,
+  Sparkles,
+  ChevronRight,
+  RotateCcw,
+  MessageSquare,
+  FileText,
+} from 'lucide-react'
 import AIMessageRenderer from './AIMessageRenderer'
+import { useDashboard } from '../../context/useDashboard'
 
-/**
- * DockedAIMentorCompanion
- *
- * Implements the right docked companion panel matching `techneadashboardfinal1.png`:
- * - Header: "AI Mentor 2.0" with "🟢 Synced" telemetry
- * - Prompt label: "Ask your AI Mentor..."
- * - Input text area / chat feed with live typing
- * - Bottom quick action pills: "Review my code", "Explain this concept", "Quiz me"
- */
 function DockedAIMentorCompanion({
-  messages = [],
-  isMentorTyping = false,
-  onSendMessage = () => {},
-  onResetSession = () => {},
+  onMinimize = () => {},
+  onExpand = () => {},
 }) {
-  const [inputValue, setInputValue] = useState('')
-  const messagesEndRef = useRef(null)
+  const {
+    activeRoadmap,
+    todayMission,
+    mentorMessages,
+    isMentorTyping,
+    sendMentorMessage,
+    resetMentorSession,
+  } = useDashboard()
 
-  const quickActionPills = [
-    'Review my code',
-    'Explain this concept',
-    'Quiz me',
-  ]
+  const [inputText, setInputText] = useState('')
+  const [activeView, setActiveView] = useState('context') // 'context' | 'chat'
+  const chatScrollRef = useRef(null)
 
-  // Auto-scroll to bottom of recent conversation
+  // Auto-scroll chat when in chat view
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, isMentorTyping])
+    if (activeView === 'chat' && chatScrollRef.current) {
+      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight
+    }
+  }, [mentorMessages, isMentorTyping, activeView])
 
-  const handleSubmit = (e) => {
-    e?.preventDefault()
-    const trimmed = inputValue.trim()
+  const handleSend = () => {
+    const trimmed = inputText.trim()
     if (!trimmed || isMentorTyping) return
-    onSendMessage(trimmed)
-    setInputValue('')
+    setActiveView('chat')
+    sendMentorMessage(trimmed)
+    setInputText('')
   }
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
-      handleSubmit()
+      handleSend()
     }
   }
 
-  const handlePillClick = (prompt) => {
-    if (isMentorTyping) return
-    onSendMessage(prompt)
+  const handleQuickAction = (label, prompt) => {
+    setActiveView('chat')
+    sendMentorMessage(prompt || `Can you help me with: ${label} for ${todayMission.lesson_title}?`)
   }
 
-  // Filter messages for compact docked display (last 4 messages for clean readability)
-  const displayMessages = messages.slice(-4)
+  const quickActions = [
+    {
+      id: 'recap',
+      label: 'Recap this lesson',
+      prompt: `Provide a concise architectural recap of "${todayMission.lesson_title}". Highlight key patterns and code considerations.`,
+    },
+    {
+      id: 'review',
+      label: 'Review my code',
+      prompt: `Please review my implementation approach for "${todayMission.lesson_title}". What security and performance aspects should I watch for?`,
+    },
+    {
+      id: 'quiz',
+      label: 'Quiz me',
+      prompt: `Quiz me with 3 rapid questions on "${todayMission.lesson_title}" to test my mastery.`,
+    },
+    {
+      id: 'plan',
+      label: 'Plan my week',
+      prompt: `Based on my current progress in "${activeRoadmap?.title || 'Full-Stack AI Engineer'}", suggest an optimal 5-day learning schedule.`,
+    },
+  ]
 
   return (
     <aside
-      aria-label="AI Mentor Companion"
-      className="flex flex-col h-full justify-between gap-4 overflow-hidden text-[#0f172a]"
+      aria-label="AI Technical Mentor"
+      className="flex flex-col h-full justify-between bg-[#06070a]/90 backdrop-blur-xl text-[#f8fafc] select-none p-6 relative overflow-hidden"
     >
-      {/* ──────────────── Header: AI Mentor 2.0 + Synced Status ──────────────── */}
-      <div className="flex items-center justify-between border-b border-[#e2e8f0] pb-3 shrink-0">
-        <div className="flex items-center gap-2">
-          <div className="h-6 w-6 rounded-lg bg-[#ded4f4] border border-[#c7d2fe] flex items-center justify-center text-[#7c3aed]">
-            <Bot className="h-3.5 w-3.5" />
+      {/* ──────────────── TOP HEADER ──────────────── */}
+      <div className="space-y-6">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-3">
+            {/* 3D Chrome Metallic Orb matching reference */}
+            <div
+              className="relative h-8 w-8 rounded-full shrink-0 shadow-[inset_-2px_-2px_6px_rgba(0,0,0,0.8),0_4px_10px_rgba(0,0,0,0.6)]"
+              style={{
+                background:
+                  'radial-gradient(circle at 35% 30%, #ffffff 0%, #cbd5e1 15%, #64748b 45%, #1e293b 80%, #05070d 100%)',
+                boxShadow: '0 0 12px rgba(255, 255, 255, 0.15)',
+              }}
+            >
+              <div className="absolute inset-0 rounded-full border border-white/25 pointer-events-none" />
+            </div>
+
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold text-white tracking-tight">
+                  AI Mentor
+                </span>
+                <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-white/[0.06] border border-white/10 text-neutral-400">
+                  2.0
+                </span>
+              </div>
+              <p className="text-xs text-neutral-400 font-normal mt-0.5">
+                Aware of your current lesson
+              </p>
+            </div>
           </div>
-          <h2 className="text-sm font-extrabold text-[#0f172a] tracking-tight">AI Mentor 2.0</h2>
+
+          {/* Top Right Controls: Minimize & Expand */}
+          <div className="flex items-center gap-1 text-neutral-400 pt-0.5">
+            <button
+              type="button"
+              onClick={onMinimize}
+              className="p-1 rounded-md hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer"
+              title="Minimize panel"
+            >
+              <Minus className="h-3.5 w-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={onExpand}
+              className="p-1 rounded-md hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer"
+              title="Expand to Fullscreen Studio"
+            >
+              <Maximize2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-mono text-emerald-700 font-semibold">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-            </span>
-            <span>Synced</span>
+        {/* View Toggle (Context vs Chat) if user has messages */}
+        {mentorMessages.length > 1 && (
+          <div className="flex items-center gap-1 p-1 rounded-xl bg-white/[0.03] border border-white/[0.06] text-xs">
+            <button
+              type="button"
+              onClick={() => setActiveView('context')}
+              className={`flex-1 py-1 rounded-lg text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                activeView === 'context'
+                  ? 'bg-white/10 text-white font-medium'
+                  : 'text-neutral-400 hover:text-white'
+              }`}
+            >
+              <FileText className="h-3 w-3" />
+              <span>Context</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveView('chat')}
+              className={`flex-1 py-1 rounded-lg text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                activeView === 'chat'
+                  ? 'bg-white/10 text-white font-medium'
+                  : 'text-neutral-400 hover:text-white'
+              }`}
+            >
+              <MessageSquare className="h-3 w-3" />
+              <span>Chat</span>
+            </button>
           </div>
+        )}
 
-          <button
-            type="button"
-            onClick={onResetSession}
-            title="Reset conversation session"
-            className="h-6 w-6 rounded-md border border-[#cbd5e1] bg-white text-[#64748b] hover:text-[#0f172a] hover:bg-neutral-50 flex items-center justify-center transition-colors cursor-pointer shadow-xs"
-          >
-            <RefreshCw className="h-3 w-3" />
-          </button>
-        </div>
-      </div>
+        {/* ──────────────── VIEW A: CONTEXT VIEW (EXACT REFERENCE REPLICA) ──────────────── */}
+        {activeView === 'context' && (
+          <div className="space-y-6 pt-1">
+            {/* Learning Context Section */}
+            <div>
+              <h4 className="text-xs text-neutral-400 font-normal mb-3">
+                Learning context
+              </h4>
 
-      {/* ──────────────── Middle: Prompt Area + Chat Stream ──────────────── */}
-      <div className="flex-1 min-h-0 flex flex-col gap-2 overflow-hidden">
-        <label
-          htmlFor="docked-mentor-input"
-          className="text-xs font-mono text-[#64748b] font-medium tracking-wide"
-        >
-          Ask your AI Mentor...
-        </label>
-
-        {/* Scrollable conversation stream preview */}
-        <div className="flex-1 overflow-y-auto space-y-3 pr-1 scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden text-xs">
-          {displayMessages.map((msg) => {
-            const isUser = msg.sender === 'user'
-            return (
-              <div
-                key={msg.id}
-                className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}
-              >
-                <div
-                  className={`max-w-[92%] rounded-xl px-3 py-2 text-xs leading-relaxed ${
-                    isUser
-                      ? 'bg-[#ded4f4] border border-[#c7d2fe] text-[#1e1b4b] font-mono font-medium shadow-xs'
-                      : 'bg-white border border-[#e2e8f0] text-[#1e293b] shadow-xs'
-                  }`}
-                >
-                  <AIMessageRenderer content={msg.text} theme={isUser ? 'light' : 'light'} />
+              <div className="space-y-2.5 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-neutral-400">Lesson</span>
+                  <span className="text-white font-normal truncate max-w-[170px]">
+                    {todayMission?.lesson_title || 'JWT authentication'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-neutral-400">Project</span>
+                  <span className="text-white font-normal truncate max-w-[170px]">
+                    {activeRoadmap?.current_milestone?.title || 'Task API'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-neutral-400">· Focus area</span>
+                  <span className="text-white font-normal truncate max-w-[170px]">
+                    Token expiry &amp; security
+                  </span>
                 </div>
               </div>
-            )
-          })}
 
-          {isMentorTyping && (
-            <div className="flex items-center gap-2 rounded-xl bg-white border border-[#e2e8f0] px-3 py-2 text-xs text-[#64748b] font-mono shadow-xs">
-              <Sparkles className="h-3 w-3 text-[#7c3aed] animate-spin" />
-              <span>Mentor is analyzing...</span>
+              {/* Thin hairline divider */}
+              <div className="border-b border-white/[0.08] my-5" />
+
+              {/* Context Note matching reference */}
+              <p className="text-sm leading-relaxed text-neutral-300">
+                <span className="text-white font-normal">
+                  You&apos;re two steps from finishing today&apos;s mission.{' '}
+                </span>
+                <span className="text-neutral-400 font-normal">
+                  Want a short recap of token verification before you continue?
+                </span>
+              </p>
             </div>
-          )}
-          <div ref={messagesEndRef} />
-        </div>
 
-        {/* Text Input Box */}
-        <form onSubmit={handleSubmit} className="relative mt-2 shrink-0">
-          <div className="relative rounded-xl border border-[#cbd5e1] bg-white focus-within:border-[#7c3aed] focus-within:ring-2 focus-within:ring-[#7c3aed]/20 transition-all shadow-xs">
-            <textarea
-              id="docked-mentor-input"
-              rows={2}
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="how do I use flex-direction: column?"
-              className="w-full bg-transparent px-3 py-2 text-xs text-[#0f172a] placeholder-[#94a3b8] focus:outline-none resize-none font-mono"
-            />
-            <div className="flex items-center justify-between px-2.5 pb-2 pt-0.5">
-              <span className="text-[10px] font-mono text-[#94a3b8]">Press Enter ↵</span>
-              <button
-                type="submit"
-                disabled={!inputValue.trim() || isMentorTyping}
-                className="h-6 w-6 rounded-lg bg-[#7c3aed] hover:bg-[#6d28d9] disabled:opacity-40 disabled:hover:bg-[#7c3aed] text-white flex items-center justify-center transition-all cursor-pointer shadow-xs active:scale-95"
-                aria-label="Send message to AI Mentor"
-              >
-                <Send className="h-3 w-3" />
-              </button>
+            {/* Quick Actions List */}
+            <div>
+              <h4 className="text-xs text-neutral-400 font-normal mb-2.5">
+                Quick actions
+              </h4>
+
+              <div className="space-y-1">
+                {quickActions.map((action) => (
+                  <button
+                    key={action.id}
+                    type="button"
+                    onClick={() => handleQuickAction(action.label, action.prompt)}
+                    className="w-full flex items-center justify-between py-2 text-xs text-neutral-300 hover:text-white transition-colors cursor-pointer group"
+                  >
+                    <span>{action.label}</span>
+                    <ChevronRight className="h-3.5 w-3.5 text-neutral-500 group-hover:text-white transition-colors" />
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
-        </form>
+        )}
+
+        {/* ──────────────── VIEW B: LIVE CHAT STREAM ──────────────── */}
+        {activeView === 'chat' && (
+          <div className="flex flex-col h-[380px] space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-white/[0.06] text-[11px] text-neutral-400">
+              <span>Synchronized Session</span>
+              <button
+                type="button"
+                onClick={resetMentorSession}
+                className="hover:text-white transition-colors cursor-pointer flex items-center gap-1"
+                title="Reset conversation"
+              >
+                <RotateCcw className="h-3 w-3" />
+                <span>Reset</span>
+              </button>
+            </div>
+
+            <div
+              ref={chatScrollRef}
+              className="flex-1 overflow-y-auto space-y-3 pr-1 text-xs"
+            >
+              {mentorMessages.map((msg) => (
+                <div
+                  key={msg.id}
+                  className={`flex flex-col ${
+                    msg.sender === 'user' ? 'items-end' : 'items-start'
+                  }`}
+                >
+                  <div
+                    className={`max-w-[92%] rounded-2xl px-3.5 py-2.5 ${
+                      msg.sender === 'user'
+                        ? 'bg-white text-black font-medium'
+                        : 'bg-white/[0.04] border border-white/10 text-neutral-200'
+                    }`}
+                  >
+                    {msg.sender === 'mentor' ? (
+                      <AIMessageRenderer content={msg.content} />
+                    ) : (
+                      <div className="whitespace-pre-wrap">{msg.content}</div>
+                    )}
+                  </div>
+                </div>
+              ))}
+
+              {isMentorTyping && (
+                <div className="flex items-center gap-2 px-3 py-2 rounded-2xl bg-white/[0.04] border border-white/10 text-neutral-400 text-xs w-fit">
+                  <Sparkles className="h-3.5 w-3.5 text-white animate-spin" />
+                  <span className="font-mono text-[11px]">Thinking...</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* ──────────────── Bottom: Quick Action Pills ──────────────── */}
-      <div className="space-y-2 shrink-0 pt-2 border-t border-[#e2e8f0]">
-        {quickActionPills.map((pill) => (
+      {/* ──────────────── BOTTOM INPUT PILL MATCHING REFERENCE ──────────────── */}
+      <div className="pt-4">
+        <div className="flex items-center justify-between gap-2 rounded-full bg-white/[0.04] border border-white/10 px-4 py-2 focus-within:border-white/30 transition-colors">
+          <input
+            type="text"
+            value={inputText}
+            onChange={(e) => setInputText(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Ask about your lesson, code, or plan..."
+            className="flex-1 bg-transparent text-xs text-white placeholder-neutral-500 outline-none font-normal"
+          />
+
           <button
-            key={pill}
             type="button"
-            onClick={() => handlePillClick(pill)}
-            disabled={isMentorTyping}
-            className="w-full rounded-xl border border-[#c7d2fe] bg-[#ded4f4] hover:bg-[#c7d2fe] text-[#3730a3] hover:text-[#1e1b4b] py-2 px-3 text-xs font-mono font-medium text-center transition-all duration-200 cursor-pointer shadow-xs active:scale-[0.98] disabled:opacity-50"
+            onClick={handleSend}
+            disabled={!inputText.trim() || isMentorTyping}
+            className="h-7 w-7 rounded-full bg-white text-black flex items-center justify-center shrink-0 hover:bg-neutral-200 disabled:opacity-40 disabled:hover:bg-white transition-all cursor-pointer shadow-md"
+            title="Send"
           >
-            {pill}
+            <ArrowUp className="h-3.5 w-3.5 stroke-[2.5]" />
           </button>
-        ))}
+        </div>
       </div>
     </aside>
   )

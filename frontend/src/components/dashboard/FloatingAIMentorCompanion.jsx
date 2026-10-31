@@ -1,23 +1,23 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, memo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Bot,
   Sparkles,
-  Send,
   Minimize2,
-  Maximize2,
   X,
   RotateCcw,
   Code2,
-  Lightbulb,
-  Target,
-  FileText,
   Compass,
+  ArrowUp,
 } from 'lucide-react'
 import AIMessageRenderer from './AIMessageRenderer'
 import { useDashboard } from '../../context/useDashboard'
 
-export default function FloatingAIMentorCompanion() {
+function FloatingAIMentorCompanion({
+  isDocked = true,
+  onRestoreDock = () => {},
+  isFullscreen = false,
+  onCloseFullscreen = () => {},
+}) {
   const {
     activeRoadmap,
     todayMission,
@@ -27,48 +27,17 @@ export default function FloatingAIMentorCompanion() {
     resetMentorSession,
   } = useDashboard()
 
-  // State: 'minimized' | 'expanded' | 'fullscreen'
-  const [viewState, setViewState] = useState('minimized')
   const [inputText, setInputText] = useState('')
   const [scratchpadCode, setScratchpadCode] = useState(
     '// Technea AI Scratchpad\n// Experiment with code or test solutions here\n\nfunction solution() {\n  return "Ready to build";\n}\n'
   )
   const chatScrollRef = useRef(null)
 
-  // Auto-scroll to bottom of messages
   useEffect(() => {
     if (chatScrollRef.current) {
       chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight
     }
   }, [mentorMessages, isMentorTyping])
-
-  // Contextual quick chips
-  const quickActions = [
-    {
-      id: 'explain',
-      label: 'Explain concept',
-      icon: Lightbulb,
-      prompt: `Can you explain the core architectural principles of "${todayMission.lesson_title}" in clear, practical terms with a concise code example?`,
-    },
-    {
-      id: 'challenge',
-      label: 'Practice challenge',
-      icon: Target,
-      prompt: `Give me a targeted 15-minute coding challenge based on "${todayMission.lesson_title}" with requirements and hints.`,
-    },
-    {
-      id: 'code-review',
-      label: 'Review my code',
-      icon: Code2,
-      prompt: `Please review my current implementation for "${todayMission.lesson_title}". What are the performance, security, and edge-case considerations?`,
-    },
-    {
-      id: 'summary',
-      label: 'Summarize lesson',
-      icon: FileText,
-      prompt: `Provide an executive summary of "${todayMission.lesson_title}" with the 3 most crucial takeaways for production engineers.`,
-    },
-  ]
 
   const handleSend = () => {
     if (!inputText.trim() || isMentorTyping) return
@@ -83,198 +52,46 @@ export default function FloatingAIMentorCompanion() {
     }
   }
 
-  const handleQuickAction = (prompt) => {
-    if (viewState === 'minimized') {
-      setViewState('expanded')
-    }
-    sendMentorMessage(prompt)
-  }
-
   return (
     <AnimatePresence>
-      {/* ──────────────── 1. MINIMIZED FLOATING BUTTON ──────────────── */}
-      {viewState === 'minimized' && (
+      {/* ──────────────── 1. MINIMIZED FLOATING ASSISTANT PILL ──────────────── */}
+      {!isDocked && !isFullscreen && (
         <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
+          initial={{ scale: 0.85, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.8, opacity: 0 }}
-          className="fixed bottom-6 right-6 z-40 flex items-center gap-3"
+          exit={{ scale: 0.85, opacity: 0 }}
+          className="fixed bottom-6 right-6 z-40"
         >
-          {/* Quick Prompt Pill visible on hover */}
-          <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#0a0d14]/90 border border-white/10 shadow-lg text-xs font-mono text-neutral-300 backdrop-blur-md">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-[11px] truncate max-w-[140px]">
-              {todayMission.lesson_title}
-            </span>
-          </div>
-
           <button
             type="button"
-            onClick={() => setViewState('expanded')}
-            className="group relative flex items-center gap-2.5 px-4 py-3 rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-medium text-xs shadow-[0_0_25px_rgba(124,58,237,0.4)] hover:shadow-[0_0_35px_rgba(124,58,237,0.6)] hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer border border-white/20"
-            title="Open AI Technical Mentor 2.0"
+            onClick={onRestoreDock}
+            className="group flex items-center gap-3 px-4 py-2.5 rounded-full bg-[#07090e]/95 border border-white/15 text-white shadow-[0_8px_30px_rgba(0,0,0,0.8)] hover:border-white/30 hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer backdrop-blur-xl"
+            title="Open AI Technical Mentor"
           >
-            {/* Ambient Pulse Ring */}
-            <span className="absolute -inset-1 rounded-full bg-violet-500/20 animate-ping pointer-events-none" />
-
-            <div className="h-6 w-6 rounded-full bg-white/10 flex items-center justify-center">
-              <Bot className="h-4 w-4 text-white" />
+            {/* 3D Metallic Orb */}
+            <div
+              className="relative h-6 w-6 rounded-full shrink-0 shadow-[inset_-2px_-2px_4px_rgba(0,0,0,0.8),0_2px_8px_rgba(0,0,0,0.6)]"
+              style={{
+                background:
+                  'radial-gradient(circle at 35% 30%, #ffffff 0%, #cbd5e1 15%, #64748b 45%, #1e293b 80%, #05070d 100%)',
+                boxShadow: '0 0 10px rgba(255, 255, 255, 0.15)',
+              }}
+            >
+              <div className="absolute inset-0 rounded-full border border-white/25 pointer-events-none" />
             </div>
-            <span className="font-mono tracking-wide">AI Mentor</span>
-            <span className="inline-block px-1.5 py-0.5 rounded-full bg-white/20 text-[9px] font-mono uppercase tracking-wider font-bold">
-              2.0
-            </span>
+
+            <div className="flex items-center gap-1.5 text-xs font-medium">
+              <span>AI Mentor</span>
+              <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-white/10 text-neutral-300">
+                2.0
+              </span>
+            </div>
           </button>
         </motion.div>
       )}
 
-      {/* ──────────────── 2. EXPANDED FLOATING WINDOW / DRAWER ──────────────── */}
-      {viewState === 'expanded' && (
-        <motion.aside
-          initial={{ opacity: 0, y: 20, scale: 0.95 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: 20, scale: 0.95 }}
-          transition={{ duration: 0.2 }}
-          aria-label="AI Technical Mentor Assistant"
-          className="fixed bottom-6 right-6 z-40 w-[92vw] sm:w-[420px] h-[580px] max-h-[85vh] rounded-2xl bg-[#07090e]/95 border border-white/10 shadow-[0_12px_50px_rgba(0,0,0,0.8)] backdrop-blur-2xl flex flex-col overflow-hidden text-[#f8fafc]"
-        >
-          {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-white/[0.02]">
-            <div className="flex items-center gap-2.5">
-              <div className="h-7 w-7 rounded-xl bg-violet-600/30 border border-violet-500/40 flex items-center justify-center">
-                <Bot className="h-4 w-4 text-violet-300" />
-              </div>
-              <div>
-                <div className="flex items-center gap-1.5 text-xs font-bold font-mono tracking-wide text-white">
-                  <span>AI Mentor 2.0</span>
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                </div>
-                <div className="text-[10px] text-neutral-400 font-mono truncate max-w-[190px]">
-                  {activeRoadmap?.title || 'Technea OS'}
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-1 text-neutral-400">
-              <button
-                type="button"
-                onClick={resetMentorSession}
-                className="p-1.5 rounded-lg hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
-                title="Reset conversation context"
-              >
-                <RotateCcw className="h-3.5 w-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewState('fullscreen')}
-                className="p-1.5 rounded-lg hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
-                title="Expand to Fullscreen Studio"
-              >
-                <Maximize2 className="h-3.5 w-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewState('minimized')}
-                className="p-1.5 rounded-lg hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
-                title="Minimize Mentor"
-              >
-                <Minimize2 className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          </div>
-
-          {/* Context Ribbon */}
-          <div className="px-4 py-1.5 bg-violet-950/20 border-b border-violet-900/20 flex items-center justify-between text-[10px] font-mono text-violet-300">
-            <span className="truncate max-w-[240px]">
-              Target: {todayMission.lesson_title}
-            </span>
-            <span className="shrink-0">{todayMission.progress_percent}% synced</span>
-          </div>
-
-          {/* Messages Feed */}
-          <div
-            ref={chatScrollRef}
-            className="flex-1 overflow-y-auto p-4 space-y-3 text-xs leading-relaxed"
-          >
-            {mentorMessages.map((msg) => (
-              <div
-                key={msg.id}
-                className={`flex flex-col ${
-                  msg.sender === 'user' ? 'items-end' : 'items-start'
-                }`}
-              >
-                <div
-                  className={`max-w-[88%] rounded-2xl px-3.5 py-2.5 ${
-                    msg.sender === 'user'
-                      ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-tr-xs'
-                      : 'bg-white/[0.04] border border-white/10 text-neutral-200 rounded-tl-xs'
-                  }`}
-                >
-                  {msg.sender === 'mentor' ? (
-                    <AIMessageRenderer content={msg.content} />
-                  ) : (
-                    <div className="whitespace-pre-wrap">{msg.content}</div>
-                  )}
-                </div>
-                <span className="text-[9px] font-mono text-neutral-500 mt-1 px-1">
-                  {msg.timestamp}
-                </span>
-              </div>
-            ))}
-
-            {isMentorTyping && (
-              <div className="flex items-center gap-2 px-3 py-2 rounded-2xl bg-white/[0.04] border border-white/10 text-neutral-400 text-xs w-fit">
-                <Sparkles className="h-3.5 w-3.5 text-violet-400 animate-spin" />
-                <span className="font-mono text-[11px]">Synthesizing guidance...</span>
-              </div>
-            )}
-          </div>
-
-          {/* Quick Action Chips */}
-          <div className="p-2 border-t border-white/5 bg-black/20 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-            {quickActions.map((act) => {
-              const Icon = act.icon
-              return (
-                <button
-                  key={act.id}
-                  type="button"
-                  onClick={() => handleQuickAction(act.prompt)}
-                  className="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.08] text-[10px] font-mono text-neutral-300 hover:text-white transition-all cursor-pointer whitespace-nowrap active:scale-95"
-                >
-                  <Icon className="h-3 w-3 text-violet-400" />
-                  <span>{act.label}</span>
-                </button>
-              )
-            })}
-          </div>
-
-          {/* Input Box */}
-          <div className="p-3 border-t border-white/10 bg-white/[0.02]">
-            <div className="flex items-center gap-2 rounded-xl bg-black/40 border border-white/10 px-3 py-2 focus-within:border-violet-500/60 transition-colors">
-              <input
-                type="text"
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Ask about active milestone or paste code..."
-                className="flex-1 bg-transparent text-xs text-white placeholder-neutral-500 outline-none font-sans"
-              />
-              <button
-                type="button"
-                onClick={handleSend}
-                disabled={!inputText.trim() || isMentorTyping}
-                className="p-1.5 rounded-lg bg-violet-600 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-violet-500 transition-colors cursor-pointer"
-                title="Send message"
-              >
-                <Send className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          </div>
-        </motion.aside>
-      )}
-
-      {/* ──────────────── 3. FULLSCREEN IMMERSIVE DEEP-FOCUS STUDIO ──────────────── */}
-      {viewState === 'fullscreen' && (
+      {/* ──────────────── 2. FULLSCREEN IMMERSIVE DEEP-FOCUS STUDIO ──────────────── */}
+      {isFullscreen && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -284,18 +101,23 @@ export default function FloatingAIMentorCompanion() {
           {/* Top Bar */}
           <div className="flex items-center justify-between pb-4 border-b border-white/10">
             <div className="flex items-center gap-3">
-              <div className="h-9 w-9 rounded-2xl bg-violet-600/30 border border-violet-500/40 flex items-center justify-center">
-                <Bot className="h-5 w-5 text-violet-300" />
-              </div>
+              <div
+                className="relative h-8 w-8 rounded-full shrink-0 shadow-[inset_-2px_-2px_6px_rgba(0,0,0,0.8),0_4px_10px_rgba(0,0,0,0.6)]"
+                style={{
+                  background:
+                    'radial-gradient(circle at 35% 30%, #ffffff 0%, #cbd5e1 15%, #64748b 45%, #1e293b 80%, #05070d 100%)',
+                }}
+              />
               <div>
-                <h2 className="text-base font-extrabold font-mono tracking-tight text-white flex items-center gap-2">
+                <h2 className="text-base font-medium text-white flex items-center gap-2">
                   <span>AI Learning Studio 2.0</span>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-300 border border-violet-500/30">
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-neutral-300 border border-white/10">
                     Deep Focus Mode
                   </span>
                 </h2>
-                <p className="text-xs text-neutral-400 font-mono">
-                  Active Track: {activeRoadmap?.title} • Milestone: {todayMission.lesson_title}
+                <p className="text-xs text-neutral-400 font-normal">
+                  Active Track: {activeRoadmap?.title || 'Full-Stack AI Engineer'} • Lesson:{' '}
+                  {todayMission.lesson_title}
                 </p>
               </div>
             </div>
@@ -304,24 +126,24 @@ export default function FloatingAIMentorCompanion() {
               <button
                 type="button"
                 onClick={resetMentorSession}
-                className="px-3 py-1.5 rounded-xl border border-white/10 hover:bg-white/10 text-xs font-mono text-neutral-300 hover:text-white transition-colors cursor-pointer inline-flex items-center gap-1.5"
+                className="px-3 py-1.5 rounded-xl border border-white/10 hover:bg-white/10 text-xs text-neutral-300 hover:text-white transition-colors cursor-pointer inline-flex items-center gap-1.5"
               >
                 <RotateCcw className="h-3.5 w-3.5" />
                 <span>Reset Chat</span>
               </button>
               <button
                 type="button"
-                onClick={() => setViewState('expanded')}
-                className="px-3 py-1.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-xs font-mono text-white transition-colors cursor-pointer inline-flex items-center gap-1.5"
+                onClick={onCloseFullscreen}
+                className="px-3 py-1.5 rounded-xl bg-white text-black font-medium text-xs transition-colors cursor-pointer inline-flex items-center gap-1.5 hover:bg-neutral-200"
               >
                 <Minimize2 className="h-3.5 w-3.5" />
                 <span>Exit Fullscreen</span>
               </button>
               <button
                 type="button"
-                onClick={() => setViewState('minimized')}
+                onClick={onCloseFullscreen}
                 className="p-2 rounded-xl border border-white/10 hover:bg-white/10 text-neutral-400 hover:text-white transition-colors cursor-pointer"
-                title="Minimize"
+                title="Close"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -332,25 +154,25 @@ export default function FloatingAIMentorCompanion() {
           <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 mt-4 overflow-hidden">
             {/* Left Column: Roadmap Context & Milestones (3 Cols) */}
             <div className="hidden lg:flex lg:col-span-3 flex-col rounded-2xl bg-white/[0.02] border border-white/10 p-4 space-y-4 overflow-y-auto">
-              <div className="flex items-center gap-2 text-xs font-mono font-bold text-neutral-300 uppercase tracking-wider">
-                <Compass className="h-4 w-4 text-violet-400" />
+              <div className="flex items-center gap-2 text-xs font-medium text-neutral-300">
+                <Compass className="h-4 w-4 text-white" />
                 <span>Curriculum Milestones</span>
               </div>
               <div className="space-y-2">
                 {activeRoadmap?.milestones?.map((ms, idx) => (
                   <div
                     key={ms.id || idx}
-                    className={`p-3 rounded-xl border text-xs font-mono transition-all ${
+                    className={`p-3 rounded-xl border text-xs transition-all ${
                       ms.current
-                        ? 'border-violet-500/50 bg-violet-950/20 text-white font-semibold shadow-[0_0_15px_rgba(124,58,237,0.2)]'
+                        ? 'border-white/30 bg-white/[0.06] text-white font-medium'
                         : ms.completed
-                        ? 'border-emerald-500/30 bg-emerald-950/10 text-neutral-300'
-                        : 'border-white/5 bg-white/[0.01] text-neutral-500'
+                        ? 'border-white/10 bg-white/[0.02] text-neutral-300'
+                        : 'border-white/5 bg-transparent text-neutral-500'
                     }`}
                   >
                     <div className="flex items-center justify-between text-[10px] text-neutral-400 mb-1">
-                      <span>Node {String(idx + 1).padStart(2, '0')}</span>
-                      <span>{ms.completed ? '✓ Completed' : ms.current ? '● In Focus' : '○ Locked'}</span>
+                      <span>Stage {String(idx + 1).padStart(2, '0')}</span>
+                      <span>{ms.completed ? '✓ Completed' : ms.current ? '● In Focus' : '○ Upcoming'}</span>
                     </div>
                     <div className="text-xs line-clamp-2">{ms.title}</div>
                   </div>
@@ -371,7 +193,7 @@ export default function FloatingAIMentorCompanion() {
                     <div
                       className={`max-w-[90%] rounded-2xl px-4 py-3 ${
                         msg.sender === 'user'
-                          ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-tr-xs'
+                          ? 'bg-white text-black font-medium rounded-tr-xs'
                           : 'bg-white/[0.04] border border-white/10 text-neutral-200 rounded-tl-xs'
                       }`}
                     >
@@ -381,7 +203,7 @@ export default function FloatingAIMentorCompanion() {
                         <div className="whitespace-pre-wrap">{msg.content}</div>
                       )}
                     </div>
-                    <span className="text-[9px] font-mono text-neutral-500 mt-1 px-1">
+                    <span className="text-[9px] text-neutral-500 mt-1 px-1">
                       {msg.timestamp}
                     </span>
                   </div>
@@ -389,8 +211,8 @@ export default function FloatingAIMentorCompanion() {
 
                 {isMentorTyping && (
                   <div className="flex items-center gap-2 px-3 py-2 rounded-2xl bg-white/[0.04] border border-white/10 text-neutral-400 text-xs w-fit">
-                    <Sparkles className="h-3.5 w-3.5 text-violet-400 animate-spin" />
-                    <span className="font-mono text-[11px]">Synthesizing technical response...</span>
+                    <Sparkles className="h-3.5 w-3.5 text-white animate-spin" />
+                    <span className="text-[11px]">Synthesizing technical response...</span>
                   </div>
                 )}
               </div>
@@ -404,15 +226,15 @@ export default function FloatingAIMentorCompanion() {
                     onChange={(e) => setInputText(e.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder="Ask architecture questions or test concepts..."
-                    className="flex-1 bg-transparent text-xs text-white placeholder-neutral-500 outline-none font-sans"
+                    className="flex-1 bg-transparent text-xs text-white placeholder-neutral-500 outline-none"
                   />
                   <button
                     type="button"
                     onClick={handleSend}
                     disabled={!inputText.trim() || isMentorTyping}
-                    className="px-3 py-1.5 rounded-lg bg-violet-600 text-white text-xs font-mono hover:bg-violet-500 disabled:opacity-40 transition-colors cursor-pointer"
+                    className="h-7 w-7 rounded-full bg-white text-black flex items-center justify-center hover:bg-neutral-200 disabled:opacity-40 transition-colors cursor-pointer"
                   >
-                    Send ↵
+                    <ArrowUp className="h-3.5 w-3.5 stroke-[2.5]" />
                   </button>
                 </div>
               </div>
@@ -420,24 +242,28 @@ export default function FloatingAIMentorCompanion() {
 
             {/* Right Column: Code Scratchpad & Live Notes (4 Cols) */}
             <div className="hidden lg:flex lg:col-span-4 flex-col rounded-2xl bg-white/[0.02] border border-white/10 overflow-hidden p-4 space-y-3">
-              <div className="flex items-center justify-between text-xs font-mono font-bold text-neutral-300 uppercase tracking-wider">
+              <div className="flex items-center justify-between text-xs text-neutral-300 font-medium">
                 <div className="flex items-center gap-2">
-                  <Code2 className="h-4 w-4 text-indigo-400" />
+                  <Code2 className="h-4 w-4 text-white" />
                   <span>Developer Scratchpad</span>
                 </div>
-                <span className="text-[10px] text-neutral-500 font-normal">JavaScript / Pseudo</span>
+                <span className="text-[10px] text-neutral-500">JavaScript / TypeScript</span>
               </div>
               <textarea
                 value={scratchpadCode}
                 onChange={(e) => setScratchpadCode(e.target.value)}
-                className="flex-1 w-full bg-black/60 border border-white/10 rounded-xl p-3 font-mono text-xs text-emerald-300 leading-relaxed outline-none resize-none focus:border-indigo-500/50 transition-colors"
+                className="flex-1 w-full bg-black/60 border border-white/10 rounded-xl p-3 font-mono text-xs text-emerald-300 leading-relaxed outline-none resize-none focus:border-white/30 transition-colors"
                 spellCheck="false"
               />
-              <div className="flex items-center justify-between text-[11px] font-mono text-neutral-400">
+              <div className="flex items-center justify-between text-[11px] text-neutral-400">
                 <span>Code is saved to local session</span>
                 <button
                   type="button"
-                  onClick={() => handleQuickAction(`Here is code from my scratchpad for review:\n\`\`\`javascript\n${scratchpadCode}\n\`\`\``)}
+                  onClick={() =>
+                    sendMentorMessage(
+                      `Here is code from my scratchpad for review:\n\`\`\`javascript\n${scratchpadCode}\n\`\`\``
+                    )
+                  }
                   className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
                 >
                   Send to Mentor ⚡
@@ -450,3 +276,5 @@ export default function FloatingAIMentorCompanion() {
     </AnimatePresence>
   )
 }
+
+export default memo(FloatingAIMentorCompanion)
