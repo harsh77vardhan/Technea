@@ -1,8 +1,10 @@
+import asyncio
 import hashlib
 import hmac
 import json
 import re
 import secrets
+import time
 import urllib.parse
 from datetime import datetime, timedelta, timezone
 from typing import Annotated
@@ -12,7 +14,7 @@ from sqlalchemy import func, select, update
 from app.api.deps import CurrentUserDep, DatabaseDep, OptionalUserDep
 from app.core.config import settings
 from app.core.logger import logger
-from app.core.security import create_access_token, get_password_hash
+from app.core.security import create_access_token, get_password_hash, verify_password
 from app.models.email_otp import EmailOTP
 from app.models.user import User
 from app.schemas.common import MessageResponse
@@ -105,30 +107,91 @@ async def login(
     db: DatabaseDep,
 ) -> TokenResponse:
     """Authenticate user with email and password and return an access token."""
-    user = await user_service.authenticate(
-        db,
-        email=login_data.email,
-        password=login_data.password,
+    t_start = time.perf_counter()
+    clean_email = login_data.email.strip().lower()
+    logger.info("[AUTH LOGIN] Stage 1/5: Request received for email '%s'", clean_email)
+
+    # 1. Email lookup
+    t_lookup = time.perf_counter()
+    user = await user_service.get_by_email(db, email=clean_email)
+    lookup_duration = time.perf_counter() - t_lookup
+    logger.info(
+        "[AUTH LOGIN] Stage 2/5: Email lookup completed in %.3fs (user found: %s)",
+        lookup_duration,
+        bool(user),
     )
+
     if not user:
+        logger.warning(
+            "[AUTH LOGIN] User not found for email '%s' (total: %.3fs)",
+            clean_email,
+            time.perf_counter() - t_start,
+        )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password.",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
     if not user.is_active:
+        logger.warning(
+            "[AUTH LOGIN] Account deactivated for user '%s' (id=%s)",
+            user.email,
+            user.id,
+        )
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="This user account has been deactivated.",
         )
 
+    # 2. Password verification (non-blocking thread)
+    t_verify = time.perf_counter()
+    is_password_valid = await asyncio.to_thread(
+        verify_password,
+        login_data.password,
+        user.hashed_password,
+    )
+    verify_duration = time.perf_counter() - t_verify
+    logger.info(
+        "[AUTH LOGIN] Stage 3/5: Password verification completed in %.3fs (valid: %s)",
+        verify_duration,
+        is_password_valid,
+    )
+
+    if not is_password_valid:
+        logger.warning(
+            "[AUTH LOGIN] Invalid password for user '%s' (total: %.3fs)",
+            clean_email,
+            time.perf_counter() - t_start,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # 3. JWT generation
+    t_jwt = time.perf_counter()
     access_token = create_access_token(subject=user.id)
-    return TokenResponse(
+    jwt_duration = time.perf_counter() - t_jwt
+    logger.info("[AUTH LOGIN] Stage 4/5: JWT generation completed in %.3fs", jwt_duration)
+
+    # 4. Response serialization & send
+    t_resp = time.perf_counter()
+    user_resp = UserResponse.model_validate(user)
+    token_response = TokenResponse(
         access_token=access_token,
         token_type="bearer",
-        user=UserResponse.model_validate(user),
+        user=user_resp,
         profile_completed=user.profile_completed,
     )
+    total_duration = time.perf_counter() - t_start
+    logger.info(
+        "[AUTH LOGIN] Stage 5/5: Response sent successfully in %.3fs (total elapsed: %.3fs)",
+        time.perf_counter() - t_resp,
+        total_duration,
+    )
+    return token_response
 
 
 @router.get(

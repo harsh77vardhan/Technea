@@ -1,5 +1,6 @@
 """User service providing database operations for users."""
 
+import asyncio
 from datetime import datetime, timedelta, timezone
 import json
 import secrets
@@ -77,7 +78,8 @@ class UserService:
         user = await self.get_by_email(db, email=email)
         if not user:
             return None
-        if not verify_password(password, user.hashed_password):
+        is_valid = await asyncio.to_thread(verify_password, password, user.hashed_password)
+        if not is_valid:
             return None
         return user
 

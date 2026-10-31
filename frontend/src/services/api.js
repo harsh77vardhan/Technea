@@ -47,6 +47,24 @@ export function getApiBaseUrl() {
 
 export const API_BASE_URL = getApiBaseUrl()
 
+/**
+ * Fire-and-forget pre-warm ping to ensure cloud backend is awake and ready
+ */
+export function warmBackendApi() {
+  try {
+    if (typeof window !== 'undefined') {
+      fetch(`${API_BASE_URL}/health`, { method: 'GET', keepalive: true }).catch(() => {})
+    }
+  } catch {
+    // Ignore background pre-warm failures
+  }
+}
+
+// Automatically pre-warm backend on page load in browser environments
+if (typeof window !== 'undefined') {
+  setTimeout(warmBackendApi, 150)
+}
+
 const AUTH_TOKEN_KEY = 'technea_auth_token'
 
 export function getAuthToken() {
@@ -90,8 +108,8 @@ async function request(endpoint, options = {}) {
     defaultHeaders['Authorization'] = `Bearer ${token}`
   }
 
-  // Setup abort controller for 25-second timeout to prevent indefinite hangs
-  const timeoutMs = options.timeout || 25000
+  // Setup abort controller with 45-second timeout to cleanly handle cloud cold starts (e.g. Render free tier wakeups)
+  const timeoutMs = options.timeout || 45000
   const controller = new AbortController()
   const timerId = setTimeout(() => controller.abort(), timeoutMs)
 
@@ -1217,6 +1235,7 @@ export default {
   getUserFollowersApi,
   getUserFollowingApi,
   getUserStatsApi,
+  warmBackendApi,
 }
 
 
