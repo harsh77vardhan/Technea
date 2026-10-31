@@ -560,6 +560,18 @@ async def chat_with_ai(
     else:
         context["retrieved_resources_summary"] = "None"
 
+    # Merge client-provided dynamic learning context if passed (active roadmap, milestone, lesson, etc.)
+    if payload.context and isinstance(payload.context, dict):
+        for k, v in payload.context.items():
+            if v is not None:
+                context[k] = v
+        if "active_roadmap" in payload.context:
+            context["active_roadmap_title"] = str(payload.context["active_roadmap"])
+        if "current_milestone" in payload.context:
+            context["current_milestone_title"] = str(payload.context["current_milestone"])
+        if "current_lesson" in payload.context:
+            context["current_lesson_title"] = str(payload.context["current_lesson"])
+
     # Call AI service orchestrator
     generated_text, provider_used = await ai_service.generate_chat_response(
         prompt=payload.message,

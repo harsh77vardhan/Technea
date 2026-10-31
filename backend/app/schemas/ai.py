@@ -21,6 +21,10 @@ class AIChatRequest(BaseModel):
         default=None,
         description="Prior conversation turns for multi-turn context",
     )
+    context: dict[str, Any] | None = Field(
+        default=None,
+        description="Dynamic client learning context (active_roadmap, current_milestone, current_lesson, progress_percent)",
+    )
 
     model_config = ConfigDict(from_attributes=True)
 

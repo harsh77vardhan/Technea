@@ -122,3 +122,60 @@ async def get_learning_path(
             detail=f"Learning path '{slug_or_id}' not found",
         )
     return LearningPathResponse.model_validate(path)
+
+
+@router.post(
+    "/{path_id}/set-active",
+    response_model=LearningPathResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Set learning path as user's main active focus",
+)
+async def set_active_learning_path(
+    path_id: int,
+    current_user: CurrentUserDep,
+    db: DatabaseDep,
+) -> LearningPathResponse:
+    """Enroll or set a curated learning path as user's active focus."""
+    from datetime import datetime, timezone
+    from sqlalchemy import select
+    from app.models.learning_path import LearningPath
+    from app.models.progress import UserLearningPath
+    from app.models.user_roadmap import UserGeneratedRoadmap
+
+    path = await db.get(LearningPath, path_id)
+    if not path:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Learning path ID {path_id} not found",
+        )
+
+    # Deactivate all user generated roadmaps
+    ugr_stmt = select(UserGeneratedRoadmap).where(UserGeneratedRoadmap.user_id == current_user.id)
+    ugr_res = await db.execute(ugr_stmt)
+    for ugr in ugr_res.scalars().all():
+        ugr.is_active = False
+
+    # Ensure UserLearningPath exists and update last_accessed_at to now
+    now = datetime.now(timezone.utc)
+    ulp_stmt = select(UserLearningPath).where(
+        UserLearningPath.user_id == current_user.id,
+        UserLearningPath.learning_path_id == path_id,
+    )
+    ulp_res = await db.execute(ulp_stmt)
+    ulp = ulp_res.scalar_one_or_none()
+    if not ulp:
+        ulp = UserLearningPath(
+            user_id=current_user.id,
+            learning_path_id=path_id,
+            status="active",
+            progress_percent=0,
+            last_accessed_at=now,
+        )
+        db.add(ulp)
+    else:
+        ulp.last_accessed_at = now
+        ulp.status = "active"
+
+    await db.commit()
+    return LearningPathResponse.model_validate(path)
+

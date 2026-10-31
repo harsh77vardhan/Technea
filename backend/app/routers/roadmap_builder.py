@@ -258,6 +258,32 @@ async def regenerate_user_roadmap(
         )
 
 
+@router.post(
+    "/{roadmap_id}/set-active",
+    response_model=RoadmapDetailResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Set roadmap as user's main active focus",
+)
+async def set_active_roadmap(
+    roadmap_id: int,
+    current_user: CurrentUserDep,
+    db: DatabaseDep,
+) -> RoadmapDetailResponse:
+    """Set the specified roadmap as active focus, deactivating others."""
+    try:
+        updated = await roadmap_builder_service.set_active_roadmap(
+            db,
+            roadmap_id=roadmap_id,
+            user_id=current_user.id,
+        )
+        return RoadmapDetailResponse.model_validate(updated)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e),
+        )
+
+
 @router.delete(
     "/{roadmap_id}",
     response_model=MessageResponse,

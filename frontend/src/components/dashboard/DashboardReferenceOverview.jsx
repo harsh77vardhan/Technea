@@ -1,42 +1,43 @@
-import { memo } from 'react'
-import { motion } from 'framer-motion'
+import { useState, memo } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   ArrowRight,
-  ExternalLink,
   Flame,
   Share2,
   Check,
-  Code2,
-  Rocket,
-  Trophy,
-  Clock,
+  ChevronDown,
+  Sparkles,
+  Zap,
+  FolderGit2,
+  Lock,
+  Compass,
+  CheckCircle2,
 } from 'lucide-react'
+import { useDashboard } from '../../context/useDashboard'
 
-/**
- * DashboardReferenceOverview (Version 1.1 Refinement)
- *
- * Primary design reference: `techneadashboardfinal1.png`
- * - Theme: Crisp, calm, futuristic workspace
- * - Backgrounds: Pure white cards #ffffff with subtle borders #e2e8f0 and soft ambient shadow
- * - Typography: Bold dark text #0f172a, subtle slate #64748b
- * - Section 1: "TODAY'S LEARNING MISSION" with high-contrast "Resume Learning →" CTA
- * - Section 2: "CONTINUE LEARNING & CURRENT ROADMAP" with 4-node circuit track & soft lavender card #ede9fe
- * - Section 3: "PORTFOLIO PROJECTS & ACHIEVEMENTS" kept secondary, compact, and uncluttered
- */
 function DashboardReferenceOverview({
-  user,
-  currentPath,
-  overallPercent = 68,
-  streakCount = 7,
-  onResumeMilestone = () => {},
-  onLaunchWorkspace = () => {},
-  onShare = () => {},
+  onContinueLesson = () => {},
+  onExploreCatalog = () => {},
   onNavigateTab = () => {},
+  onShare = () => {},
 }) {
-  const fullName = user?.full_name || user?.email?.split('@')[0] || 'Harsh'
+  const {
+    user,
+    activeRoadmap,
+    allRoadmaps,
+    switchActiveRoadmap,
+    todayMission,
+    dailyActivity,
+    toggleDailyTask,
+    recommendedProjects,
+  } = useDashboard()
+
+  const [isRoadmapSelectorOpen, setIsRoadmapSelectorOpen] = useState(false)
+
+  const fullName = user?.full_name || user?.email?.split('@')[0] || 'Engineer'
   const firstName = fullName.split(' ')[0]
 
-  // Dynamic greeting based on current local time
+  // Time-aware greeting
   const currentHour = new Date().getHours()
   let greetingTime = 'evening'
   if (currentHour >= 5 && currentHour < 12) {
@@ -45,37 +46,168 @@ function DashboardReferenceOverview({
     greetingTime = 'afternoon'
   }
 
-  // Active milestone details
-  const activeMilestoneTitle = currentPath?.next_step_title || 'Build a Responsive AI Chat UI'
-  const activeRoadmapTitle = currentPath?.title || 'React Fundamentals'
-  const displayProgress = overallPercent > 0 ? overallPercent : 68
+  const streakCount = dailyActivity?.streak_count || 1
+  const displayProgress = todayMission?.progress_percent || activeRoadmap?.progress_percent || 0
+
+  // Interactive Learning Journey milestones
+  const journeyMilestones = activeRoadmap?.milestones || [
+    { id: 'm-1', title: 'HTML Foundations', completed: true },
+    { id: 'm-2', title: 'Modern CSS Systems', completed: true },
+    { id: 'm-3', title: 'Core JavaScript & DOM', completed: true },
+    { id: 'm-4', title: 'Flexbox & Responsive UI', current: true },
+    { id: 'm-5', title: 'Next.js & Full-Stack Architecture', locked: true },
+  ]
+
+  // Daily workspace plan
+  const defaultDailyTasks = [
+    { id: 'lesson', label: `Complete ${todayMission?.lesson_title || 'daily lesson'}`, xp: 20 },
+    { id: 'practice', label: 'Practice interactive coding challenge', xp: 25 },
+    { id: 'quiz', label: 'Complete 5-question knowledge quiz', xp: 15 },
+    { id: 'project', label: 'Build or review milestone mini project', xp: 40 },
+  ]
+
+  const completedDailyTasks = new Set(dailyActivity?.completed_tasks || [])
+
+  // Featured Project tied to roadmap
+  const featuredProject =
+    recommendedProjects?.[0] || {
+      id: 1,
+      title: `${activeRoadmap?.title || 'Modern Web'} Capstone Application`,
+      description: 'End-to-end production application implementing your active milestone patterns.',
+      difficulty: 'Intermediate',
+      technologies: ['React', 'TypeScript', 'Tailwind', 'AI API'],
+      status: 'unlocked',
+    }
 
   return (
-    <div className="space-y-6 sm:space-y-7 pb-2 select-none">
-      {/* ──────────────── Top Greeting & Quick Telemetry Header ──────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1">
+    <div className="space-y-6 sm:space-y-8 pb-4 select-none text-[#f8fafc]">
+      {/* ──────────────── 1. ACTIVE ROADMAP COMMAND HEADER ──────────────── */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-1">
         <div>
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-[#0f172a]">
-            Good {greetingTime}, {firstName}
-          </h1>
-          <p className="text-xs sm:text-sm text-[#64748b] mt-1 font-normal tracking-wide">
-            Continue building your future.
-          </p>
+          <div className="flex items-center gap-2 mb-1.5">
+            <span className="text-[11px] font-mono uppercase tracking-widest text-violet-400 font-semibold">
+              AI Learning Operating System
+            </span>
+            <span className="h-1 w-1 rounded-full bg-violet-400" />
+            <span className="text-[11px] font-mono text-neutral-400">
+              Good {greetingTime}, {firstName}
+            </span>
+          </div>
+
+          {/* Active Roadmap Selector Pill */}
+          <div className="relative inline-block">
+            <button
+              type="button"
+              onClick={() => setIsRoadmapSelectorOpen((prev) => !prev)}
+              className="inline-flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 hover:border-violet-500/40 text-left transition-all duration-200 cursor-pointer backdrop-blur-xl group shadow-lg"
+              title="Click to switch active roadmap"
+            >
+              <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+              <div className="flex flex-col">
+                <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-wider">
+                  Current Focus
+                </span>
+                <span className="text-sm sm:text-base font-bold text-white tracking-tight flex items-center gap-2">
+                  <span>{activeRoadmap?.title || 'React & AI Engineering'}</span>
+                  <ChevronDown
+                    className={`h-4 w-4 text-neutral-400 group-hover:text-white transition-transform duration-200 ${
+                      isRoadmapSelectorOpen ? 'rotate-180' : ''
+                    }`}
+                  />
+                </span>
+              </div>
+            </button>
+
+            {/* Dropdown Menu for Switching Roadmaps */}
+            <AnimatePresence>
+              {isRoadmapSelectorOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 8, scale: 0.98 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute left-0 top-full mt-2 z-50 w-80 rounded-2xl bg-[#0c1017]/98 border border-white/15 p-2 shadow-2xl backdrop-blur-2xl text-xs space-y-1"
+                >
+                  <div className="px-3 py-2 text-[10px] font-mono text-neutral-400 uppercase tracking-wider border-b border-white/10 flex items-center justify-between">
+                    <span>Your Learning Roadmaps</span>
+                    <span>{allRoadmaps?.length || 1} Total</span>
+                  </div>
+
+                  <div className="max-h-56 overflow-y-auto space-y-1 pt-1">
+                    {allRoadmaps && allRoadmaps.length > 0 ? (
+                      allRoadmaps.map((rm) => {
+                        const isCurrent = rm.id === activeRoadmap?.id
+                        return (
+                          <button
+                            key={rm.id}
+                            type="button"
+                            onClick={() => {
+                              switchActiveRoadmap(rm)
+                              setIsRoadmapSelectorOpen(false)
+                            }}
+                            className={`w-full text-left px-3 py-2.5 rounded-xl transition-all flex items-center justify-between cursor-pointer ${
+                              isCurrent
+                                ? 'bg-violet-600/30 border border-violet-500/40 text-white font-medium'
+                                : 'hover:bg-white/5 text-neutral-300 hover:text-white'
+                            }`}
+                          >
+                            <div className="truncate pr-2">
+                              <div className="font-semibold truncate">{rm.title}</div>
+                              <div className="text-[10px] text-neutral-400 font-mono">
+                                {rm.target_role || 'Engineering Track'} • {rm.progress_percent || 0}%
+                              </div>
+                            </div>
+                            {isCurrent && <Check className="h-4 w-4 text-violet-400 shrink-0" />}
+                          </button>
+                        )
+                      })
+                    ) : (
+                      <div className="p-3 text-neutral-400 text-center font-mono text-[11px]">
+                        No other roadmaps yet.
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="pt-2 border-t border-white/10 flex items-center justify-between px-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsRoadmapSelectorOpen(false)
+                        onExploreCatalog()
+                      }}
+                      className="text-[11px] font-mono text-violet-400 hover:text-violet-300 transition-colors cursor-pointer"
+                    >
+                      + Explore 100+ Catalog
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsRoadmapSelectorOpen(false)
+                        onNavigateTab('roadmaps')
+                      }}
+                      className="text-[11px] font-mono text-neutral-400 hover:text-white transition-colors cursor-pointer"
+                    >
+                      Manage All →
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
 
+        {/* Top Right Quick Stats */}
         <div className="flex items-center gap-2.5 shrink-0">
-          {/* Streak Badge */}
-          <div className="inline-flex items-center gap-1.5 rounded-full border border-[#e2e8f0] bg-white px-3.5 py-1.5 text-xs font-mono font-medium text-[#1e293b] shadow-xs">
-            <Flame className="h-3.5 w-3.5 text-amber-500 fill-amber-500" />
+          <div className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] px-3.5 py-1.5 text-xs font-mono text-neutral-200 backdrop-blur-md shadow-xs">
+            <Flame className="h-3.5 w-3.5 text-amber-400 fill-amber-400" />
             <span>{streakCount}-day streak</span>
           </div>
 
-          {/* Share Button */}
           <button
             type="button"
             onClick={onShare}
-            className="inline-flex items-center gap-1.5 rounded-full border border-[#e2e8f0] bg-white hover:bg-neutral-50 px-3.5 py-1.5 text-xs font-mono text-[#1e293b] transition-all cursor-pointer shadow-xs active:scale-95"
-            title="Share your learning progression"
+            className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] hover:bg-white/[0.08] hover:border-white/20 px-3.5 py-1.5 text-xs font-mono text-neutral-200 transition-all cursor-pointer backdrop-blur-md shadow-xs active:scale-95"
+            title="Share learning progress"
           >
             <Share2 className="h-3.5 w-3.5" />
             <span>Share</span>
@@ -83,251 +215,280 @@ function DashboardReferenceOverview({
         </div>
       </div>
 
-      {/* ──────────────── SECTION 1: TODAY'S LEARNING MISSION ──────────────── */}
-      <section aria-labelledby="section-mission-title" className="space-y-2">
-        <div className="flex items-center justify-between text-[11px] font-mono tracking-wider text-[#64748b] font-semibold px-0.5">
-          <span id="section-mission-title" className="uppercase">
+      {/* ──────────────── 2. SECTION 1: TODAY'S LEARNING MISSION ──────────────── */}
+      <section aria-labelledby="section-mission-title" className="space-y-3">
+        <div className="flex items-center justify-between text-[11px] font-mono tracking-wider text-neutral-400 font-semibold px-0.5">
+          <span id="section-mission-title" className="uppercase flex items-center gap-1.5">
+            <Zap className="h-3.5 w-3.5 text-violet-400" />
             TODAY&apos;S LEARNING MISSION
           </span>
-          <span className="text-[#64748b] font-medium normal-case sm:uppercase">
-            Learning operating system
+          <span className="text-violet-400 font-medium">
+            Active Skill: {todayMission.skill_name}
           </span>
         </div>
 
-        <div className="relative overflow-hidden rounded-2xl border border-[#e2e8f0] bg-white p-6 sm:p-7 shadow-[0_4px_24px_rgba(0,0,0,0.03)] hover:border-[#cbd5e1] transition-all duration-300 group">
-          {/* Sequence & Progress Row */}
-          <div className="flex items-center justify-between text-xs font-mono text-[#475569] mb-2.5">
-            <span className="text-[#475569] font-medium">04 / Styling and Flexbox</span>
-            <span className="text-[#0f172a] font-semibold">{displayProgress}% Progress</span>
+        <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/[0.05] via-white/[0.02] to-transparent p-6 sm:p-8 backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] hover:border-white/20 transition-all duration-300 group">
+          {/* Subtle radial ambient glow */}
+          <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-violet-600/15 blur-3xl" />
+
+          {/* Sequence & Progress Header */}
+          <div className="flex items-center justify-between text-xs font-mono text-neutral-400 mb-3">
+            <span className="font-semibold text-violet-300">{todayMission.sequence_label}</span>
+            <span className="text-emerald-400 font-bold tracking-wider">
+              {displayProgress}% complete
+            </span>
           </div>
 
-          {/* Massive Headline */}
-          <div className="mb-6">
+          {/* Lesson Headline */}
+          <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight text-white mb-3 group-hover:text-violet-200 transition-colors">
+            {todayMission.lesson_title}
+          </h2>
+
+          {/* Effort & Reward Metadata */}
+          <div className="flex flex-wrap items-center gap-4 text-xs font-mono text-neutral-400 mb-6">
+            <span className="inline-flex items-center gap-1.5">
+              <span>⏱</span>
+              <span>{todayMission.estimated_time}</span>
+            </span>
+            <span>•</span>
+            <span className="inline-flex items-center gap-1.5 text-violet-300">
+              <Sparkles className="h-3.5 w-3.5 text-violet-400" />
+              <span>+{todayMission.reward_xp} XP Reward</span>
+            </span>
+          </div>
+
+          {/* Hairline Animated Progress Bar */}
+          <div className="relative h-1.5 w-full rounded-full bg-white/10 overflow-hidden mb-6">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-violet-500 via-indigo-500 to-emerald-400 transition-all duration-700 ease-out"
+              style={{ width: `${Math.max(8, displayProgress)}%` }}
+            />
+          </div>
+
+          {/* Actions: Continue Learning opens exact lesson, Explore opens catalog */}
+          <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
-              onClick={onResumeMilestone}
-              className="text-left group/btn inline-flex items-center gap-2 text-xl sm:text-2xl md:text-3xl font-extrabold text-[#0f172a] tracking-tight hover:text-black transition-colors cursor-pointer"
+              onClick={() => onContinueLesson(todayMission)}
+              className="inline-flex items-center gap-2 rounded-xl bg-white hover:bg-neutral-100 text-black font-semibold px-5 py-3 text-xs sm:text-sm font-sans tracking-tight transition-all duration-150 cursor-pointer shadow-lg hover:shadow-xl active:scale-95 group/btn"
             >
-              <span>{activeMilestoneTitle}</span>
-              <ExternalLink className="h-5 w-5 sm:h-6 sm:w-6 text-[#64748b] group-hover/btn:text-[#0f172a] group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform shrink-0" />
+              <span>Continue Learning</span>
+              <ArrowRight className="h-4 w-4 transition-transform group-hover/btn:translate-x-0.5" />
+            </button>
+
+            <button
+              type="button"
+              onClick={onExploreCatalog}
+              className="inline-flex items-center gap-2 rounded-xl border border-white/10 hover:border-white/20 bg-white/[0.04] hover:bg-white/[0.08] text-white font-medium px-4 py-3 text-xs sm:text-sm font-sans transition-all duration-150 cursor-pointer active:scale-95"
+            >
+              <Compass className="h-4 w-4 text-neutral-400" />
+              <span>Explore Catalog</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* ──────────────── 3. SECTION 2: INTERACTIVE LEARNING JOURNEY ──────────────── */}
+      <section aria-labelledby="section-journey-title" className="space-y-3">
+        <div className="flex items-center justify-between text-[11px] font-mono tracking-wider text-neutral-400 font-semibold px-0.5">
+          <span id="section-journey-title" className="uppercase flex items-center gap-1.5">
+            <Compass className="h-3.5 w-3.5 text-indigo-400" />
+            INTERACTIVE LEARNING JOURNEY
+          </span>
+          <span className="text-neutral-400 font-normal">Click milestone to inspect</span>
+        </div>
+
+        <div className="rounded-3xl border border-white/10 bg-white/[0.02] p-6 sm:p-7 backdrop-blur-xl">
+          {/* Visual Step-by-Step Circuit (HTML ✓ -> CSS ✓ -> Flexbox ● -> React ○) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 relative">
+            {journeyMilestones.map((ms, idx) => {
+              const isCompleted = ms.completed
+              const isCurrent = ms.current
+              const isLocked = ms.locked
+
+              return (
+                <div
+                  key={ms.id || idx}
+                  onClick={() => {
+                    if (!isLocked) onContinueLesson(ms)
+                  }}
+                  className={`relative flex flex-col justify-between p-4 rounded-2xl border transition-all duration-200 cursor-pointer group ${
+                    isCurrent
+                      ? 'border-violet-500/80 bg-violet-950/20 shadow-[0_0_25px_rgba(124,58,237,0.25)] scale-[1.02]'
+                      : isCompleted
+                      ? 'border-emerald-500/30 bg-emerald-950/10 hover:border-emerald-500/50'
+                      : 'border-white/5 bg-white/[0.01] hover:border-white/10 opacity-70'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-[10px] font-mono text-neutral-400">
+                      Step {String(idx + 1).padStart(2, '0')}
+                    </span>
+                    {isCompleted ? (
+                      <div className="h-5 w-5 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
+                        <Check className="h-3 w-3 stroke-[3]" />
+                      </div>
+                    ) : isCurrent ? (
+                      <div className="h-5 w-5 rounded-full bg-violet-500/30 border border-violet-500 flex items-center justify-center text-violet-300 animate-pulse">
+                        <span className="h-2 w-2 rounded-full bg-violet-400" />
+                      </div>
+                    ) : (
+                      <div className="h-5 w-5 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-neutral-500">
+                        <Lock className="h-2.5 w-2.5" />
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <h3
+                      className={`text-xs font-semibold font-mono tracking-tight line-clamp-2 ${
+                        isCurrent
+                          ? 'text-white font-bold'
+                          : isCompleted
+                          ? 'text-neutral-200'
+                          : 'text-neutral-400'
+                      }`}
+                    >
+                      {ms.title}
+                    </h3>
+                  </div>
+
+                  <div className="mt-3 pt-2 border-t border-white/5 flex items-center justify-between text-[10px] font-mono">
+                    <span
+                      className={
+                        isCurrent
+                          ? 'text-violet-300 font-bold'
+                          : isCompleted
+                          ? 'text-emerald-400'
+                          : 'text-neutral-500'
+                      }
+                    >
+                      {isCompleted ? 'Completed ✓' : isCurrent ? 'Active Focus ●' : 'Upcoming ○'}
+                    </span>
+                    {!isLocked && (
+                      <ArrowRight className="h-3 w-3 text-neutral-500 group-hover:text-white transition-colors" />
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ──────────────── 4. SECTION 3: DAILY PLAN & CONNECTED PROJECTS ──────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Daily Plan Workspace (7 Cols) */}
+        <section aria-labelledby="section-daily-title" className="lg:col-span-7 space-y-3">
+          <div className="flex items-center justify-between text-[11px] font-mono tracking-wider text-neutral-400 font-semibold px-0.5">
+            <span id="section-daily-title" className="uppercase flex items-center gap-1.5">
+              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+              TODAY&apos;S PLAN &amp; WORKSPACE
+            </span>
+            <span className="text-neutral-400 font-normal">
+              {completedDailyTasks.size} of {defaultDailyTasks.length} done
+            </span>
+          </div>
+
+          <div className="rounded-3xl border border-white/10 bg-white/[0.02] p-5 sm:p-6 backdrop-blur-xl space-y-3">
+            {defaultDailyTasks.map((task) => {
+              const isChecked = completedDailyTasks.has(task.id)
+              return (
+                <div
+                  key={task.id}
+                  onClick={() => toggleDailyTask(task.id, !isChecked)}
+                  className={`flex items-center justify-between p-3.5 rounded-2xl border transition-all cursor-pointer ${
+                    isChecked
+                      ? 'bg-emerald-950/15 border-emerald-500/30 text-neutral-300'
+                      : 'bg-white/[0.02] border-white/5 hover:border-white/15 text-white'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`h-5 w-5 rounded-lg border flex items-center justify-center transition-colors ${
+                        isChecked
+                          ? 'bg-emerald-500 border-emerald-400 text-black'
+                          : 'border-white/20 hover:border-violet-400 text-transparent'
+                      }`}
+                    >
+                      <Check className="h-3.5 w-3.5 stroke-[3]" />
+                    </div>
+                    <span
+                      className={`text-xs font-mono tracking-tight ${
+                        isChecked ? 'line-through text-neutral-500' : 'text-neutral-200'
+                      }`}
+                    >
+                      {task.label}
+                    </span>
+                  </div>
+
+                  <span className="text-[10px] font-mono text-violet-400 shrink-0">
+                    +{task.xp} XP
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        </section>
+
+        {/* Connected Projects (5 Cols) */}
+        <section aria-labelledby="section-projects-title" className="lg:col-span-5 space-y-3">
+          <div className="flex items-center justify-between text-[11px] font-mono tracking-wider text-neutral-400 font-semibold px-0.5">
+            <span id="section-projects-title" className="uppercase flex items-center gap-1.5">
+              <FolderGit2 className="h-3.5 w-3.5 text-blue-400" />
+              CONNECTED PROJECT
+            </span>
+            <button
+              type="button"
+              onClick={() => onNavigateTab('projects')}
+              className="text-violet-400 hover:text-violet-300 font-mono text-[10px] cursor-pointer"
+            >
+              View All →
             </button>
           </div>
 
-          {/* Actions on Left, Progress Bar on Right */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 pt-3 border-t border-[#f1f5f9]">
-            {/* Action Buttons */}
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={onResumeMilestone}
-                className="inline-flex items-center gap-2 rounded-xl bg-[#18181b] hover:bg-black text-white font-semibold px-5 py-2.5 text-xs transition-all duration-200 cursor-pointer shadow-xs active:scale-95"
-              >
-                <span>Resume Learning</span>
-                <ArrowRight className="h-3.5 w-3.5" />
-              </button>
-
-              <button
-                type="button"
-                onClick={onLaunchWorkspace}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-[#cbd5e1] bg-white hover:bg-neutral-50 text-[#1e293b] px-4 py-2.5 text-xs font-medium transition-all duration-200 cursor-pointer shadow-xs active:scale-95"
-              >
-                <span>Launch</span>
-                <ExternalLink className="h-3.5 w-3.5 text-[#64748b]" />
-              </button>
-            </div>
-
-            {/* Progress Bar & Est. Time */}
-            <div className="flex flex-col items-start md:items-end gap-1.5 min-w-[200px] sm:min-w-[240px]">
-              <div className="w-full bg-[#e2e8f0] h-2 sm:h-2.5 rounded-full overflow-hidden p-0.5">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${displayProgress}%` }}
-                  transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                  className="h-full rounded-full bg-[#312e81]"
-                />
-              </div>
-              <div className="flex items-center gap-1 text-[11px] font-mono text-[#64748b] tracking-wide">
-                <Clock className="h-3 w-3 text-[#94a3b8]" />
-                <span>Est. Time: 45m</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ──────────────── SECTION 2: CONTINUE LEARNING & CURRENT ROADMAP ──────────────── */}
-      <section aria-labelledby="section-roadmap-title" className="space-y-2">
-        <h2
-          id="section-roadmap-title"
-          className="text-[11px] font-mono tracking-wider text-[#64748b] font-semibold px-0.5 uppercase"
-        >
-          CONTINUE LEARNING &amp; CURRENT ROADMAP
-        </h2>
-
-        <div className="py-2">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-            {/* Left: 4-Node Circuit Track */}
-            <div className="flex-1 overflow-x-auto pb-2 scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-              <div className="min-w-[340px] flex items-center justify-between relative py-2">
-                {/* Node 1: Completed */}
-                <div className="flex flex-col items-center gap-2 relative z-10">
-                  <div className="h-8 w-8 rounded-full bg-[#18181b] text-white flex items-center justify-center shadow-xs">
-                    <Check className="h-4 w-4 text-white stroke-[2.5]" />
-                  </div>
-                  <span className="text-[11px] font-sans text-[#475569] font-medium">Completed</span>
-                </div>
-
-                {/* Connector Line 1-2 */}
-                <div className="flex-1 h-[2px] bg-[#18181b] mx-2 -mt-5" />
-
-                {/* Node 2: Completed */}
-                <div className="flex flex-col items-center gap-2 relative z-10">
-                  <div className="h-8 w-8 rounded-full bg-[#18181b] text-white flex items-center justify-center shadow-xs">
-                    <Check className="h-4 w-4 text-white stroke-[2.5]" />
-                  </div>
-                  <span className="text-[11px] font-sans text-[#475569] font-medium">Node 2</span>
-                </div>
-
-                {/* Connector Line 2-3 */}
-                <div className="flex-1 h-[2px] bg-[#18181b] mx-2 -mt-5" />
-
-                {/* Node 3: Completed */}
-                <div className="flex flex-col items-center gap-2 relative z-10">
-                  <div className="h-8 w-8 rounded-full bg-[#18181b] text-white flex items-center justify-center shadow-xs">
-                    <Check className="h-4 w-4 text-white stroke-[2.5]" />
-                  </div>
-                  <span className="text-[11px] font-sans text-[#475569] font-medium">Node 3</span>
-                </div>
-
-                {/* Connector Line 3-4 */}
-                <div className="flex-1 h-[2px] bg-[#18181b] mx-2 -mt-5" />
-
-                {/* Node 4: Active Beacon with Radiant Violet Aura */}
-                <div className="flex flex-col items-center gap-2 relative z-10">
-                  <div className="relative flex items-center justify-center">
-                    {/* Glowing outer radiant aura matching reference */}
-                    <span className="absolute -inset-2 rounded-full bg-violet-600/35 blur-md animate-pulse" />
-                    <div className="relative h-9 w-9 rounded-full bg-[#1e1b4b] text-white font-mono font-bold text-xs flex items-center justify-center shadow-[0_0_20px_rgba(124,58,237,0.7)] ring-2 ring-[#7c3aed]">
-                      04
-                    </div>
-                  </div>
-                  <span className="text-[11px] font-sans font-bold text-[#0f172a] tracking-wider">
-                    Active
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Dotted Link to Active Milestone Card */}
-            <div className="hidden lg:flex items-center justify-center px-1">
-              <div className="w-8 border-t-2 border-dotted border-[#cbd5e1]" />
-            </div>
-
-            {/* Right: Connected Active Milestone Card in soft lavender #ede9fe */}
-            <div
-              onClick={onResumeMilestone}
-              className="w-full lg:w-72 rounded-2xl border border-[#ddd6fe] bg-[#ede9fe] p-4 hover:bg-[#e0e7ff] transition-all duration-300 cursor-pointer shadow-xs group"
-            >
-              <div className="flex items-center justify-between gap-2 mb-2">
-                <span className="text-sm font-bold text-[#1e1b4b] group-hover:text-black transition-colors">
-                  {activeRoadmapTitle}
+          <div className="rounded-3xl border border-white/10 bg-white/[0.02] p-5 sm:p-6 backdrop-blur-xl flex flex-col justify-between h-[calc(100%-2rem)]">
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-300 border border-violet-500/30">
+                  Milestone Deliverable
                 </span>
-                {/* React Atom / Engineering Icon */}
-                <div className="h-6 w-6 rounded-lg text-[#7c3aed] flex items-center justify-center shrink-0">
-                  <Code2 className="h-4 w-4" />
-                </div>
+                <span className="text-[10px] font-mono text-emerald-400">
+                  {featuredProject.difficulty || 'Intermediate'}
+                </span>
               </div>
 
-              <p className="text-xs font-mono text-[#4338ca] mb-2.5">75% complete</p>
-
-              <div className="w-full bg-[#ddd6fe] h-1.5 rounded-full overflow-hidden">
-                <div className="h-full rounded-full bg-[#7c3aed] w-3/4 shadow-xs" />
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ──────────────── SECTION 3: PORTFOLIO PROJECTS & ACHIEVEMENTS ──────────────── */}
-      <section aria-labelledby="section-portfolio-title" className="space-y-2">
-        <div className="flex items-center justify-between text-[11px] font-mono tracking-wider text-[#64748b] font-semibold px-0.5">
-          <span id="section-portfolio-title" className="uppercase">
-            PORTFOLIO PROJECTS &amp; ACHIEVEMENTS
-          </span>
-          <button
-            type="button"
-            onClick={() => onNavigateTab('portfolio')}
-            className="inline-flex items-center gap-1 text-[#475569] hover:text-[#0f172a] transition-colors cursor-pointer"
-          >
-            <ExternalLink className="h-3 w-3" />
-            <span>Share Portfolio</span>
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Card A: Featured Portfolio Project */}
-          <div
-            onClick={() => onNavigateTab('projects')}
-            className="rounded-2xl border border-[#e2e8f0] bg-white p-5 shadow-[0_4px_24px_rgba(0,0,0,0.03)] hover:border-[#cbd5e1] transition-all duration-300 cursor-pointer group"
-          >
-            <div className="flex items-center justify-between gap-2 mb-3">
-              <h3 className="text-sm sm:text-base font-bold text-[#0f172a] group-hover:text-black transition-colors">
-                Personal Portfolio Website
+              <h3 className="text-base font-bold text-white mb-2 leading-snug">
+                {featuredProject.title}
               </h3>
-              <span className="inline-flex items-center gap-1 rounded-full border border-neutral-200 bg-neutral-100/80 px-2.5 py-0.5 text-[10px] font-mono text-neutral-600">
-                <span>Public</span>
-                <ExternalLink className="h-2.5 w-2.5 text-neutral-500" />
-              </span>
+              <p className="text-xs text-neutral-400 font-sans line-clamp-3 mb-4 leading-relaxed">
+                {featuredProject.description}
+              </p>
+
+              {/* Tech Badges */}
+              <div className="flex flex-wrap gap-1.5 mb-4">
+                {(featuredProject.technologies || ['React', 'CSS3', 'Flexbox']).map((tech, idx) => (
+                  <span
+                    key={idx}
+                    className="px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-[10px] font-mono text-neutral-300"
+                  >
+                    {tech}
+                  </span>
+                ))}
+              </div>
             </div>
 
-            {/* Exact Pastel Tech Tags matching reference image */}
-            <div className="flex flex-wrap items-center gap-1.5 pt-1">
-              <span className="rounded-md border border-[#fed7aa] bg-[#ffedd5] px-2 py-0.5 text-[10px] font-mono font-semibold text-[#c2410c]">
-                HTML
-              </span>
-              <span className="rounded-md border border-[#bfdbfe] bg-[#dbeafe] px-2 py-0.5 text-[10px] font-mono font-semibold text-[#1d4ed8]">
-                CSS
-              </span>
-              <span className="rounded-md border border-[#fef08a] bg-[#fef9c3] px-2 py-0.5 text-[10px] font-mono font-semibold text-[#854d0e]">
-                JS
-              </span>
-              <span className="rounded-md border border-[#a5f3fc] bg-[#cffafe] px-2 py-0.5 text-[10px] font-mono font-semibold text-[#0e7490]">
-                React
-              </span>
-            </div>
+            <button
+              type="button"
+              onClick={() => onNavigateTab('projects')}
+              className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-white font-mono text-xs py-2.5 transition-all cursor-pointer active:scale-95"
+            >
+              <span>Build Project</span>
+              <ArrowRight className="h-3.5 w-3.5" />
+            </button>
           </div>
-
-          {/* Card B: Achievements Summary */}
-          <div
-            onClick={() => onNavigateTab('achievements')}
-            className="rounded-2xl border border-[#e2e8f0] bg-white p-5 shadow-[0_4px_24px_rgba(0,0,0,0.03)] hover:border-[#cbd5e1] transition-all duration-300 cursor-pointer flex items-center justify-around gap-4"
-          >
-            {/* Achievement 1: Fast Learner */}
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-neutral-100 text-neutral-600 flex items-center justify-center shrink-0 shadow-xs">
-                <Rocket className="h-5 w-5 text-indigo-600" />
-              </div>
-              <div>
-                <p className="text-xs sm:text-sm font-bold text-[#0f172a] tracking-tight">Fast Learner</p>
-                <p className="text-[11px] font-mono text-[#64748b]">Artwork</p>
-              </div>
-            </div>
-
-            <div className="h-8 w-px bg-[#e2e8f0]" />
-
-            {/* Achievement 2: Milestone 4 */}
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-neutral-100 text-neutral-600 flex items-center justify-center shrink-0 shadow-xs">
-                <Trophy className="h-5 w-5 text-amber-500" />
-              </div>
-              <div>
-                <p className="text-xs sm:text-sm font-bold text-[#0f172a] tracking-tight">Milestone 4</p>
-                <p className="text-[11px] font-mono text-[#64748b]">Artwork</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+        </section>
+      </div>
     </div>
   )
 }

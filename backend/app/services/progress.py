@@ -248,6 +248,82 @@ class ProgressService:
             progress_percent=percent,
         )
 
+    async def evaluate_and_award_achievements(
+        self,
+        db: AsyncSession,
+        user_id: uuid.UUID,
+    ) -> list[str]:
+        """Automatically verify and award developer achievements."""
+        unlocked_ids = []
+        try:
+            existing_stmt = select(UserAchievement.achievement_id).where(UserAchievement.user_id == user_id)
+            existing_res = await db.execute(existing_stmt)
+            unlocked_set = set(existing_res.scalars().all())
+
+            m_stmt = select(func.count(UserRoadmapProgress.id)).where(
+                UserRoadmapProgress.user_id == user_id,
+                UserRoadmapProgress.is_completed.is_(True),
+            )
+            m_res = await db.execute(m_stmt)
+            total_milestones = m_res.scalar() or 0
+
+            l_stmt = select(func.count(UserLessonProgress.id)).where(
+                UserLessonProgress.user_id == user_id,
+                UserLessonProgress.is_completed.is_(True),
+            )
+            l_res = await db.execute(l_stmt)
+            total_lessons = l_res.scalar() or 0
+
+            daily_act = await self.get_daily_activity(db, user_id=user_id)
+            streak = daily_act.streak_count
+
+            p_stmt = select(func.count(UserProject.id)).where(UserProject.user_id == user_id)
+            p_res = await db.execute(p_stmt)
+            total_projects = p_res.scalar() or 0
+
+            r_stmt = select(func.count(UserGeneratedRoadmap.id)).where(UserGeneratedRoadmap.user_id == user_id)
+            r_res = await db.execute(r_stmt)
+            total_roadmaps = r_res.scalar() or 0
+
+            ach_stmt = select(Achievement)
+            ach_res = await db.execute(ach_stmt)
+            achievements = {a.achievement_id: a for a in ach_res.scalars().all()}
+
+            candidates = []
+            if "early_adopter" not in unlocked_set and "early_adopter" in achievements:
+                candidates.append("early_adopter")
+            if total_lessons >= 1 and "first_commit" not in unlocked_set and "first_commit" in achievements:
+                candidates.append("first_commit")
+            if streak >= 3 and "streak_master" not in unlocked_set and "streak_master" in achievements:
+                candidates.append("streak_master")
+            if total_milestones >= 5 and "milestone_champion" not in unlocked_set and "milestone_champion" in achievements:
+                candidates.append("milestone_champion")
+            if total_roadmaps >= 1 and "roadmap_architect" not in unlocked_set and "roadmap_architect" in achievements:
+                candidates.append("roadmap_architect")
+            if total_projects >= 1 and "project_builder" not in unlocked_set and "project_builder" in achievements:
+                candidates.append("project_builder")
+
+            now = datetime.now(timezone.utc)
+            for cid in candidates:
+                ach = achievements[cid]
+                ua = UserAchievement(
+                    user_id=user_id,
+                    achievement_id=ach.achievement_id,
+                    title=ach.title,
+                    description=ach.description,
+                    icon=ach.icon,
+                    xp_reward=ach.xp_reward,
+                    unlocked_at=now,
+                )
+                db.add(ua)
+                unlocked_ids.append(cid)
+
+            if unlocked_ids:
+                await db.commit()
+        except Exception:
+            pass
+        return unlocked_ids
+
     async def toggle_lesson_progress(
         self,
         db: AsyncSession,
@@ -256,7 +332,7 @@ class ProgressService:
         lesson_id: int,
         is_completed: bool,
     ) -> CourseProgressResponse:
-        """Mark a video lesson complete or incomplete."""
+        """Mark a video lesson complete or incomplete with automated progression cascading."""
         stmt = select(UserLessonProgress).where(
             UserLessonProgress.user_id == user_id,
             UserLessonProgress.lesson_id == lesson_id,
@@ -277,11 +353,25 @@ class ProgressService:
             else:
                 rec.is_completed = True
                 rec.completed_at = datetime.now(timezone.utc)
+            await db.commit()
+
+            # Automatic Progression Cascades:
+            # 1. Automatically check off daily lesson task
+            try:
+                await self.toggle_daily_task(db, user_id=user_id, task_id="lesson", is_completed=True)
+            except Exception:
+                pass
+
+            # 2. Automatically evaluate and award achievements
+            try:
+                await self.evaluate_and_award_achievements(db, user_id=user_id)
+            except Exception:
+                pass
         else:
             if rec:
                 await db.delete(rec)
+            await db.commit()
 
-        await db.commit()
         return await self.get_course_progress(db, user_id=user_id, course_id=course_id)
 
     async def sync_guest_progress(
@@ -398,13 +488,20 @@ class ProgressService:
         user_id: uuid.UUID,
     ) -> DashboardSummaryResponse:
         """Assemble comprehensive dashboard analytics for the current user."""
-        # 1. Total completed milestones
+        # 1. Total completed milestones (curated + generated)
         m_stmt = select(func.count(UserRoadmapProgress.id)).where(
             UserRoadmapProgress.user_id == user_id,
             UserRoadmapProgress.is_completed.is_(True),
         )
         m_res = await db.execute(m_stmt)
-        total_milestones = m_res.scalar() or 0
+        curated_milestones = m_res.scalar() or 0
+
+        ugr_m_stmt = select(UserGeneratedRoadmap.completed_milestone_ids).where(
+            UserGeneratedRoadmap.user_id == user_id
+        )
+        ugr_m_res = await db.execute(ugr_m_stmt)
+        gen_milestones = sum(len(ids) for ids in ugr_m_res.scalars().all() if isinstance(ids, list))
+        total_milestones = curated_milestones + gen_milestones
 
         # 2. Total completed lessons
         l_stmt = select(func.count(UserLessonProgress.id)).where(
@@ -414,7 +511,56 @@ class ProgressService:
         l_res = await db.execute(l_stmt)
         total_lessons = l_res.scalar() or 0
 
-        # 3. Enrolled paths ordered by last accessed
+        enrolled_paths: list[DashboardEnrolledPath] = []
+        skills_tally: dict[str, dict[str, int]] = {}
+
+        # 3a. AI Generated Roadmaps (ordered by is_active first)
+        ugr_stmt = (
+            select(UserGeneratedRoadmap)
+            .where(UserGeneratedRoadmap.user_id == user_id)
+            .order_by(UserGeneratedRoadmap.is_active.desc(), UserGeneratedRoadmap.updated_at.desc())
+        )
+        ugr_res = await db.execute(ugr_stmt)
+        for ugr in ugr_res.scalars().all():
+            phases = []
+            if isinstance(ugr.roadmap_data, dict):
+                phases = ugr.roadmap_data.get("phases", [])
+            total_milestones_count = 0
+            completed_milestones = set(str(m) for m in (ugr.completed_milestone_ids or []))
+            next_milestone_title = None
+
+            for phase in phases:
+                for ms in phase.get("milestones", []):
+                    total_milestones_count += 1
+                    ms_id = str(ms.get("id", ""))
+                    if not next_milestone_title and ms_id not in completed_milestones:
+                        next_milestone_title = ms.get("title")
+
+            pct = ugr.progress_percent
+            if total_milestones_count > 0 and len(completed_milestones) > 0 and pct == 0:
+                pct = min(100, round((len(completed_milestones) / total_milestones_count) * 100))
+
+            enrolled_paths.append(
+                DashboardEnrolledPath(
+                    id=ugr.id,
+                    title=ugr.title,
+                    category=ugr.target_role or "AI Custom Track",
+                    level=ugr.experience_level or "Beginner",
+                    duration=ugr.estimated_duration or "Self-paced",
+                    progress_percent=pct,
+                    completed_steps_count=len(completed_milestones),
+                    total_steps_count=max(1, total_milestones_count),
+                    next_step_title=next_milestone_title or "Review & Practice",
+                    last_accessed_at=ugr.updated_at,
+                )
+            )
+            cat = ugr.target_role or "Engineering"
+            if cat not in skills_tally:
+                skills_tally[cat] = {"completed": 0, "total": 0}
+            skills_tally[cat]["completed"] += len(completed_milestones)
+            skills_tally[cat]["total"] += max(1, total_milestones_count)
+
+        # 3b. Curated Catalog Enrolled Paths ordered by last accessed
         ulp_stmt = (
             select(UserLearningPath, LearningPath)
             .join(LearningPath, UserLearningPath.learning_path_id == LearningPath.id)
@@ -423,9 +569,6 @@ class ProgressService:
         )
         ulp_res = await db.execute(ulp_stmt)
         path_rows = ulp_res.all()
-
-        enrolled_paths: list[DashboardEnrolledPath] = []
-        skills_tally: dict[str, dict[str, int]] = {}
 
         for ulp, lp in path_rows:
             # Query steps for this path

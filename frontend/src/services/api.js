@@ -758,6 +758,28 @@ export async function deleteRoadmapApi(roadmapId) {
   })
 }
 
+/**
+ * Set an AI-generated roadmap as the user's main active focus
+ * @param {number|string} roadmapId
+ * @returns {Promise<Object>}
+ */
+export async function setActiveRoadmapApi(roadmapId) {
+  return request(`/roadmaps/${roadmapId}/set-active`, {
+    method: 'POST',
+  })
+}
+
+/**
+ * Set a curated catalog learning path as the user's main active focus
+ * @param {number|string} pathId
+ * @returns {Promise<Object>}
+ */
+export async function setActiveLearningPathApi(pathId) {
+  return request(`/learning-paths/${pathId}/set-active`, {
+    method: 'POST',
+  })
+}
+
 /* ==========================================================================
    Daily Productivity & Learning Profile Endpoints
    ========================================================================== */
@@ -798,6 +820,14 @@ export async function getAIBuddyApi() {
  */
 export async function getUserProfileApi() {
   return request('/progress/profile')
+}
+
+/**
+ * Fetch all platform achievements and unlock status for current user
+ * @returns {Promise<Array>}
+ */
+export async function getAchievementsApi() {
+  return request('/progress/achievements')
 }
 
 /* ==========================================================================
@@ -900,6 +930,7 @@ export async function sendAiChatApi(data) {
   const payload = {
     message: data?.message || '',
     conversation_history: Array.isArray(data?.conversation_history) ? data.conversation_history : [],
+    context: data?.context || undefined,
   }
   return request('/ai/chat', {
     method: 'POST',
@@ -1072,10 +1103,13 @@ export default {
   getRoadmapByIdApi,
   toggleRoadmapMilestoneApi,
   deleteRoadmapApi,
+  setActiveRoadmapApi,
+  setActiveLearningPathApi,
   getDailyActivityApi,
   toggleDailyTaskApi,
   getAIBuddyApi,
   getUserProfileApi,
+  getAchievementsApi,
   getProjectsApi,
   getRecommendedProjectsApi,
   getMyProjectsApi,

@@ -1235,7 +1235,12 @@ class RoadmapBuilderService:
         roadmap_data: dict[str, Any],
     ) -> UserGeneratedRoadmap:
         """Persist a generated roadmap in user's account."""
-        # Archive any previous active roadmaps if desired, or keep multiple
+        # Mark previous roadmaps as inactive so the new one becomes the main active focus
+        prev_stmt = select(UserGeneratedRoadmap).where(UserGeneratedRoadmap.user_id == user_id)
+        prev_res = await db.execute(prev_stmt)
+        for r in prev_res.scalars().all():
+            r.is_active = False
+
         new_roadmap = UserGeneratedRoadmap(
             user_id=user_id,
             title=title,
@@ -1418,6 +1423,31 @@ class RoadmapBuilderService:
         await db.delete(roadmap)
         await db.commit()
         return True
+
+    async def set_active_roadmap(
+        self,
+        db: AsyncSession,
+        roadmap_id: int,
+        user_id: uuid.UUID,
+    ) -> UserGeneratedRoadmap:
+        """Mark the specified roadmap as active and deactivate all others for this user."""
+        target = await self.get_roadmap_by_id(db, roadmap_id=roadmap_id, user_id=user_id)
+        if not target:
+            raise ValueError("Roadmap not found or unauthorized access.")
+
+        # Deactivate all user roadmaps
+        deactivate_stmt = (
+            select(UserGeneratedRoadmap)
+            .where(UserGeneratedRoadmap.user_id == user_id)
+        )
+        res = await db.execute(deactivate_stmt)
+        for r in res.scalars().all():
+            r.is_active = (r.id == roadmap_id)
+
+        target.is_active = True
+        await db.commit()
+        await db.refresh(target)
+        return target
 
 
 roadmap_builder_service = RoadmapBuilderService()

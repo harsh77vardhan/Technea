@@ -4,6 +4,7 @@ import 'lenis/dist/lenis.css'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import AuthProvider from './context/AuthContext'
+import { DashboardProvider } from './context/DashboardContext'
 
 gsap.registerPlugin(ScrollTrigger)
 import { useAuth } from './context/useAuth'
@@ -14,7 +15,7 @@ import PWAInstallBanner from './components/pwa/PWAInstallBanner'
 
 // Lazy-loaded route pages and heavy modals for maximum performance & bundle code splitting
 const AuthModal = lazy(() => import('./components/auth/AuthModal'))
-const LearningDashboardModal = lazy(() => import('./components/dashboard/LearningDashboardModal'))
+const DashboardPage = lazy(() => import('./pages/DashboardPage'))
 const SkillExplorerModal = lazy(() => import('./components/explorer/SkillExplorerModal'))
 const RoadmapBuilderModal = lazy(() => import('./components/roadmap/RoadmapBuilderModal'))
 const ProfilePage = lazy(() => import('./pages/ProfilePage'))
@@ -89,13 +90,11 @@ function ScrollProgressBar() {
 function AppContent() {
   const {
     user,
+    isLoading: isAuthLoading,
     isAuthModalOpen,
     openAuthModal,
     closeAuthModal,
     authModalMode,
-    isDashboardOpen,
-    openDashboard,
-    closeDashboard,
     isRoadmapBuilderOpen,
     openRoadmapBuilder,
     closeRoadmapBuilder,
@@ -121,18 +120,24 @@ function AppContent() {
     return () => window.removeEventListener('popstate', handlePopState)
   }, [])
 
-  // Auto-open context modals if direct route is navigated to
+  // Auto-open context modals or handle profile setup redirect
   useEffect(() => {
-    if (currentPath === '/dashboard') {
-      openDashboard()
-    } else if (currentPath === '/roadmap') {
+    if (currentPath === '/roadmap') {
       openRoadmapBuilder()
     } else if (currentPath === '/setup-profile' && user?.profile_completed) {
       window.history.replaceState({}, '', '/dashboard')
       window.dispatchEvent(new PopStateEvent('popstate'))
-      openDashboard()
     }
-  }, [currentPath, user, openDashboard, openRoadmapBuilder])
+  }, [currentPath, user, openRoadmapBuilder])
+
+  // Route guard: Redirect unauthenticated visits to /dashboard back to home with auth modal prompt
+  useEffect(() => {
+    if (!isAuthLoading && !user && currentPath === '/dashboard') {
+      window.history.replaceState({}, '', '/?open_auth=true')
+      window.dispatchEvent(new PopStateEvent('popstate'))
+      openAuthModal()
+    }
+  }, [isAuthLoading, user, currentPath, openAuthModal])
 
   const handledOpenAuthRef = useRef(false)
 
@@ -153,7 +158,6 @@ function AppContent() {
 
   const isAnyModalOpen = Boolean(
     isAuthModalOpen ||
-    isDashboardOpen ||
     isDirectExplorerOpen ||
     isRoadmapBuilderOpen
   )
@@ -169,9 +173,9 @@ function AppContent() {
     }
   }, [lenis])
 
-  // Pause smooth scroll and prevent background scroll bleed when any modal is open
+  // Pause smooth scroll on /dashboard or when any modal is open
   useEffect(() => {
-    if (isAnyModalOpen) {
+    if (currentPath === '/dashboard' || isAnyModalOpen) {
       if (lenis) lenis.stop()
       document.body.style.overflow = 'hidden'
     } else {
@@ -182,7 +186,7 @@ function AppContent() {
     return () => {
       document.body.style.overflow = ''
     }
-  }, [isAnyModalOpen, lenis])
+  }, [currentPath, isAnyModalOpen, lenis])
 
   // Reset scroll to top immediately on route changes and ensure Lenis is started
   useEffect(() => {
@@ -365,19 +369,17 @@ function AppContent() {
       ) : isDashboardRoute ? (
         <ErrorBoundary title="Dashboard encountered an error">
           <Suspense fallback={<SleekRouteLoadingFallback />}>
-            <LearningDashboardModal
-              isOpen={true}
-              isFullScreen={true}
-              onClose={() => {
-                closeDashboard()
-                window.history.pushState({}, '', '/')
-                setCurrentPath('/')
-                setCurrentSearch('')
-                window.dispatchEvent(new PopStateEvent('popstate'))
-              }}
-              onSelectPath={handleSelectPathFromDashboard}
-              onOpenExplorer={handleOpenExplorerFromDashboard}
-            />
+            {isAuthLoading ? (
+              <SleekRouteLoadingFallback />
+            ) : !user ? (
+              <SleekRouteLoadingFallback />
+            ) : (
+              <DashboardPage
+                onSelectPath={handleSelectPathFromDashboard}
+                onOpenExplorer={handleOpenExplorerFromDashboard}
+                onOpenRoadmapBuilder={(goal) => openRoadmapBuilder(goal || '')}
+              />
+            )}
           </Suspense>
         </ErrorBoundary>
       ) : isHomeRoute || isDirectModalRoute ? (
@@ -410,21 +412,6 @@ function AppContent() {
               isOpen={isAuthModalOpen}
               onClose={closeAuthModal}
               initialMode={authModalMode}
-            />
-          </Suspense>
-        </ErrorBoundary>
-      )}
-
-      {/* Global Learning Dashboard Modal (when opened as modal outside /dashboard) */}
-      {isDashboardOpen && !isDashboardRoute && (
-        <ErrorBoundary compact title="Dashboard temporarily unavailable">
-          <Suspense fallback={<SleekModalLoadingFallback />}>
-            <LearningDashboardModal
-              isOpen={isDashboardOpen}
-              isFullScreen={true}
-              onClose={closeDashboard}
-              onSelectPath={handleSelectPathFromDashboard}
-              onOpenExplorer={handleOpenExplorerFromDashboard}
             />
           </Suspense>
         </ErrorBoundary>
@@ -483,7 +470,9 @@ export default function App() {
       }}
     >
       <AuthProvider>
-        <AppContent />
+        <DashboardProvider>
+          <AppContent />
+        </DashboardProvider>
       </AuthProvider>
     </ReactLenis>
   )
