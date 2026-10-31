@@ -3,8 +3,8 @@ import { memo } from 'react'
 /**
  * MemphisCornerDecorations
  *
- * Exact Memphis geometric anchors matching Technea's Hero page (Hero.jsx)
- * positioned at the 4 corners of the dashboard universe.
+ * Geometric anchors matching Technea's aesthetic, styled in the
+ * premium Burnt Orange & Warm Ivory palette.
  */
 function DecoTopLeft() {
   const rows = [0, 26, 52, 78, 104, 130]
@@ -14,14 +14,14 @@ function DecoTopLeft() {
       height="170"
       viewBox="0 0 210 170"
       fill="none"
-      className="pointer-events-none absolute left-0 top-0 select-none opacity-40 xl:opacity-60 transition-opacity"
+      className="pointer-events-none absolute left-0 top-0 select-none opacity-30 xl:opacity-45 transition-opacity"
       aria-hidden="true"
     >
       {rows.map((y) => (
         <polyline
           key={y}
           points={`-10,${y + 26} 26,${y} 62,${y + 26} 98,${y} 134,${y + 26} 170,${y} 206,${y + 26} 242,${y}`}
-          stroke="#7c3aed"
+          stroke="#c25e2e"
           strokeWidth="2.5"
           strokeLinejoin="miter"
         />
@@ -41,7 +41,7 @@ function DecoTopRight() {
       height="148"
       viewBox="0 0 148 148"
       fill="none"
-      className="pointer-events-none absolute right-0 top-0 select-none opacity-40 xl:opacity-60 transition-opacity"
+      className="pointer-events-none absolute right-0 top-0 select-none opacity-30 xl:opacity-45 transition-opacity"
       aria-hidden="true"
     >
       {Array.from({ length: ROWS }, (_, row) =>
@@ -51,7 +51,7 @@ function DecoTopRight() {
             cx={col * STEP + 10}
             cy={row * STEP + 10}
             r={R}
-            fill="#2563eb"
+            fill="#d97b48"
           />
         ))
       )}
@@ -72,7 +72,7 @@ function DecoBottomLeft() {
       height="220"
       viewBox="0 0 240 220"
       fill="none"
-      className="pointer-events-none absolute bottom-0 left-0 select-none opacity-40 xl:opacity-60 transition-opacity"
+      className="pointer-events-none absolute bottom-0 left-0 select-none opacity-30 xl:opacity-45 transition-opacity"
       aria-hidden="true"
     >
       <defs>
@@ -81,7 +81,7 @@ function DecoBottomLeft() {
         </clipPath>
       </defs>
 
-      {/* Purple diagonal hatch lines */}
+      {/* Burnt Orange diagonal hatch lines */}
       {diagonals.map((x0) => (
         <line
           key={x0}
@@ -89,12 +89,12 @@ function DecoBottomLeft() {
           y1={220}
           x2={x0 + 130}
           y2={90}
-          stroke="#7c3aed"
+          stroke="#c25e2e"
           strokeWidth="2"
         />
       ))}
 
-      {/* Blue horizontal stripes clipped inside circle */}
+      {/* Terracotta horizontal stripes clipped inside circle */}
       {Array.from({ length: stripeCount }, (_, i) => {
         const y = CIRCLE_CY - CIRCLE_R + (i * (CIRCLE_R * 2)) / (stripeCount - 1)
         return (
@@ -104,7 +104,7 @@ function DecoBottomLeft() {
             y1={y}
             x2={CIRCLE_CX + CIRCLE_R + 2}
             y2={y}
-            stroke="#2563eb"
+            stroke="#d97b48"
             strokeWidth="3"
             clipPath="url(#tcn-dash-stripe-clip)"
           />
@@ -112,10 +112,10 @@ function DecoBottomLeft() {
       })}
 
       {/* Striped circle border */}
-      <circle cx={CIRCLE_CX} cy={CIRCLE_CY} r={CIRCLE_R} stroke="#2563eb" strokeWidth="2.5" />
+      <circle cx={CIRCLE_CX} cy={CIRCLE_CY} r={CIRCLE_R} stroke="#d97b48" strokeWidth="2.5" />
 
       {/* Hollow circle — overlaps the striped one */}
-      <circle cx={CIRCLE_CX - 36} cy={CIRCLE_CY - 30} r={32} stroke="#7c3aed" strokeWidth="2.5" />
+      <circle cx={CIRCLE_CX - 36} cy={CIRCLE_CY - 30} r={32} stroke="#c25e2e" strokeWidth="2.5" />
     </svg>
   )
 }
@@ -128,7 +128,7 @@ function DecoBottomRight() {
       height="180"
       viewBox="0 0 200 180"
       fill="none"
-      className="pointer-events-none absolute bottom-0 right-0 select-none opacity-40 xl:opacity-60 transition-opacity"
+      className="pointer-events-none absolute bottom-0 right-0 select-none opacity-30 xl:opacity-45 transition-opacity"
       aria-hidden="true"
     >
       {/* 4 heavy right-pointing chevrons anchored to the right edge */}
@@ -136,21 +136,21 @@ function DecoBottomRight() {
         <polyline
           key={offset}
           points={`${offset + 18},22 ${offset + 58},90 ${offset + 18},158`}
-          stroke="#2563eb"
+          stroke="#d97b48"
           strokeWidth="20"
           strokeLinejoin="miter"
           strokeLinecap="square"
         />
       ))}
 
-      {/* Purple filled square */}
-      <rect x="4" y="4" width="16" height="16" fill="#7c3aed" />
+      {/* Burnt Orange filled square */}
+      <rect x="4" y="4" width="16" height="16" fill="#c25e2e" />
 
-      {/* Small blue square */}
-      <rect x="26" y="8" width="10" height="10" fill="#2563eb" opacity="0.55" />
+      {/* Small terracotta square */}
+      <rect x="26" y="8" width="10" height="10" fill="#d97b48" opacity="0.55" />
 
-      {/* Purple right triangle anchored bottom-left */}
-      <polygon points="0,180 32,142 0,142" fill="#7c3aed" opacity="0.65" />
+      {/* Burnt Orange right triangle anchored bottom-left */}
+      <polygon points="0,180 32,142 0,142" fill="#c25e2e" opacity="0.65" />
     </svg>
   )
 }

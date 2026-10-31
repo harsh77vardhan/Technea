@@ -36,3 +36,5 @@ dist-ssr/
 *.swp
 *.swo
 *~
+.vercel
+.env*

@@ -68,13 +68,13 @@ export default function DashboardPage({
   })
 
   return (
-    <div className="relative w-full h-screen min-h-screen flex flex-col lg:flex-row bg-[#050608] text-[#f8fafc] overflow-hidden select-none">
-      {/* Technea Cybernetic Memphis Corner Technical Anchors */}
+    <div className="relative w-full h-screen min-h-screen flex flex-col lg:flex-row bg-[#0e0d0c] text-[#faf6ee] overflow-hidden select-none">
+      {/* Technea Cybernetic Memphis Corner Technical Anchors in Warm Burnt Orange Palette */}
       <MemphisCornerDecorations />
 
-      {/* Subtle background radial violet nebulae */}
-      <div className="pointer-events-none absolute -top-40 -left-40 h-96 w-96 rounded-full bg-violet-600/5 blur-[140px]" />
-      <div className="pointer-events-none absolute -bottom-40 -right-40 h-96 w-96 rounded-full bg-blue-600/5 blur-[140px]" />
+      {/* Subtle background warm burnt orange nebulae */}
+      <div className="pointer-events-none absolute -top-40 -left-40 h-96 w-96 rounded-full bg-[#c25e2e]/8 blur-[140px]" />
+      <div className="pointer-events-none absolute -bottom-40 -right-40 h-96 w-96 rounded-full bg-[#d97b48]/6 blur-[140px]" />
 
       {/* ──────────────── 1. DESKTOP NAVIGATION SIDEBAR ──────────────── */}
       <aside aria-label="Dashboard Sidebar" className="hidden lg:block w-56 shrink-0 h-full z-20">
@@ -89,13 +89,13 @@ export default function DashboardPage({
       {/* ──────────────── 2. MOBILE TOP NAVIGATION BAR ──────────────── */}
       <header
         aria-label="Mobile Navigation"
-        className="lg:hidden shrink-0 flex items-center justify-between px-4 py-3 bg-[#07090e] border-b border-white/[0.08] z-30"
+        className="lg:hidden shrink-0 flex items-center justify-between px-4 py-3 bg-[#141312] border-b border-[#262320] z-30"
       >
         <div className="flex items-center gap-2.5">
-          <div className="h-7 w-7 rounded-full border border-white/20 bg-white/[0.04] flex items-center justify-center text-xs font-semibold text-white">
+          <div className="h-7 w-7 rounded-full border border-[#c25e2e]/50 bg-[#c25e2e]/10 flex items-center justify-center text-xs font-semibold text-[#faf6ee]">
             T
           </div>
-          <span className="text-sm font-medium text-white">Technea</span>
+          <span className="text-sm font-medium text-[#faf6ee]">Technea</span>
         </div>
 
         {/* Horizontal mobile tab scroller */}
@@ -107,8 +107,8 @@ export default function DashboardPage({
               onClick={() => setActiveTab(tab)}
               className={`px-2.5 py-1 rounded-lg text-xs capitalize transition-colors cursor-pointer ${
                 activeTab === tab
-                  ? 'bg-white/10 text-white font-medium'
-                  : 'text-neutral-400 hover:text-white'
+                  ? 'bg-[#c25e2e]/15 text-[#e87a48] font-medium border border-[#c25e2e]/30'
+                  : 'text-[#a8a199] hover:text-[#faf6ee]'
               }`}
             >
               {tab}
@@ -148,17 +148,17 @@ export default function DashboardPage({
               className="space-y-8"
             >
               {/* Header */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/[0.08] pb-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#262320] pb-5">
                 <div>
                   <div className="flex items-center gap-2">
-                    <h1 className="text-2xl font-normal text-white tracking-tight">
+                    <h1 className="text-2xl font-normal text-[#faf6ee] tracking-tight">
                       Learning Roadmaps
                     </h1>
-                    <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-xs text-neutral-300">
+                    <span className="rounded-full border border-[#c25e2e]/30 bg-[#c25e2e]/10 px-2.5 py-0.5 text-xs text-[#e87a48]">
                       {allRoadmaps?.length || 1} Active Focus
                     </span>
                   </div>
-                  <p className="text-xs text-neutral-400 mt-1 font-normal">
+                  <p className="text-xs text-[#a8a199] mt-1 font-normal">
                     Manage your active engineering track or generate new tailored curriculum with the AI Roadmap Builder.
                   </p>
                 </div>
@@ -167,7 +167,7 @@ export default function DashboardPage({
                   <button
                     type="button"
                     onClick={() => onOpenRoadmapBuilder()}
-                    className="inline-flex items-center gap-2 rounded-full bg-white text-black font-medium px-5 py-2 text-xs transition-all cursor-pointer shadow-md hover:bg-neutral-200"
+                    className="inline-flex items-center gap-2 rounded-full bg-[#c25e2e] text-[#faf6ee] font-medium px-5 py-2 text-xs transition-all cursor-pointer shadow-md hover:bg-[#ad4f22]"
                   >
                     <Sparkles className="h-3.5 w-3.5" />
                     <span>Build New Roadmap</span>
@@ -176,17 +176,17 @@ export default function DashboardPage({
                   <button
                     type="button"
                     onClick={onOpenExplorer}
-                    className="inline-flex items-center gap-2 rounded-full border border-white/10 hover:border-white/20 bg-white/[0.04] px-4 py-2 text-xs text-neutral-200 transition-all cursor-pointer"
+                    className="inline-flex items-center gap-2 rounded-full border border-[#262320] hover:border-[#c25e2e]/40 bg-[#141312] px-4 py-2 text-xs text-[#faf6ee] transition-all cursor-pointer"
                   >
-                    <Compass className="h-3.5 w-3.5 text-neutral-400" />
+                    <Compass className="h-3.5 w-3.5 text-[#e87a48]" />
                     <span>Explore 100+ Catalog</span>
                   </button>
                 </div>
               </div>
 
-              {/* Your Roadmaps List */}
+              {/* Your Roadmaps List (Warm Ivory Cards) */}
               <div className="space-y-4">
-                <div className="flex items-center justify-between text-xs text-neutral-400">
+                <div className="flex items-center justify-between text-xs text-[#a8a199]">
                   <span>Your Roadmaps</span>
                   <span>Click to switch main active focus</span>
                 </div>
@@ -199,37 +199,37 @@ export default function DashboardPage({
                         key={rm.id}
                         className={`relative rounded-3xl border p-6 backdrop-blur-xl transition-all duration-200 flex flex-col justify-between ${
                           isFocus
-                            ? 'border-white/20 bg-white/[0.03] shadow-lg'
-                            : 'border-white/10 bg-white/[0.01] hover:border-white/20'
+                            ? 'border-[#c25e2e]/50 bg-[#faf6ee] text-[#181614] shadow-xl'
+                            : 'border-[#e5decb] bg-[#faf6ee] text-[#181614] hover:shadow-lg'
                         }`}
                       >
                         <div className="space-y-3">
                           <div className="flex items-center justify-between">
-                            <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-white/5 border border-white/10 text-neutral-300">
+                            <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-[#ede5d5] border border-[#ded3bf] text-[#665e56]">
                               {rm.target_role || 'Engineering'}
                             </span>
                             {isFocus ? (
-                              <span className="inline-flex items-center gap-1.5 text-xs text-neutral-200 bg-white/10 px-2.5 py-0.5 rounded-full">
-                                <span className="h-1.5 w-1.5 rounded-full bg-white" />
+                              <span className="inline-flex items-center gap-1.5 text-xs text-[#c25e2e] bg-[#c25e2e]/15 px-2.5 py-0.5 rounded-full font-medium">
+                                <span className="h-1.5 w-1.5 rounded-full bg-[#c25e2e]" />
                                 Main Active Focus
                               </span>
                             ) : (
-                              <span className="text-xs text-neutral-500">
+                              <span className="text-xs text-[#8c8278]">
                                 {rm.estimated_duration || 'Self-paced'}
                               </span>
                             )}
                           </div>
 
-                          <h3 className="text-base font-medium text-white tracking-tight">
+                          <h3 className="text-base font-medium text-[#181614] tracking-tight">
                             {rm.title}
                           </h3>
-                          <p className="text-xs text-neutral-400 line-clamp-2 leading-relaxed font-normal">
+                          <p className="text-xs text-[#665e56] line-clamp-2 leading-relaxed font-normal">
                             {rm.goal || rm.description || 'Targeted engineering curriculum.'}
                           </p>
                         </div>
 
-                        <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between">
-                          <div className="text-xs text-neutral-400">
+                        <div className="mt-6 pt-4 border-t border-[#e5decb] flex items-center justify-between">
+                          <div className="text-xs text-[#665e56]">
                             <span>{rm.progress_percent || 0}% complete</span>
                           </div>
 
@@ -238,7 +238,7 @@ export default function DashboardPage({
                               <button
                                 type="button"
                                 onClick={() => switchActiveRoadmap(rm)}
-                                className="px-3 py-1.5 rounded-full border border-white/10 hover:border-white/30 hover:bg-white/5 text-xs text-neutral-200 transition-all cursor-pointer"
+                                className="px-3 py-1.5 rounded-full border border-[#ded3bf] hover:border-[#c25e2e] text-xs text-[#181614] transition-all cursor-pointer"
                               >
                                 Set as Active
                               </button>
@@ -250,7 +250,7 @@ export default function DashboardPage({
                                 switchActiveRoadmap(rm)
                                 setActiveTab('overview')
                               }}
-                              className="px-3 py-1.5 rounded-full bg-white text-black font-medium text-xs hover:bg-neutral-200 transition-all cursor-pointer flex items-center gap-1"
+                              className="px-3 py-1.5 rounded-full bg-[#c25e2e] text-[#faf6ee] font-medium text-xs hover:bg-[#ad4f22] transition-all cursor-pointer flex items-center gap-1 shadow-sm"
                             >
                               <span>Open Workspace</span>
                               <ArrowRight className="h-3 w-3" />
@@ -264,23 +264,23 @@ export default function DashboardPage({
               </div>
 
               {/* Catalog Search & Preview */}
-              <div className="pt-6 border-t border-white/[0.08] space-y-4">
+              <div className="pt-6 border-t border-[#262320] space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
-                    <h2 className="text-sm font-medium text-white">Explore 100+ Engineering Paths</h2>
-                    <p className="text-xs text-neutral-400 mt-0.5 font-normal">
+                    <h2 className="text-sm font-medium text-[#faf6ee]">Explore 100+ Engineering Paths</h2>
+                    <p className="text-xs text-[#a8a199] mt-0.5 font-normal">
                       Select any specialized roadmap to instantly switch your active curriculum.
                     </p>
                   </div>
 
                   <div className="relative w-full sm:w-64">
-                    <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-neutral-500" />
+                    <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-[#a8a199]" />
                     <input
                       type="text"
                       placeholder="Search AI, Backend, Cloud..."
                       value={roadmapSearch}
                       onChange={(e) => setRoadmapSearch(e.target.value)}
-                      className="w-full pl-9 pr-3 py-1.5 rounded-full bg-white/[0.04] border border-white/10 text-xs text-white placeholder-neutral-500 outline-none focus:border-white/30 transition-colors"
+                      className="w-full pl-9 pr-3 py-1.5 rounded-full bg-[#141312] border border-[#262320] text-xs text-[#faf6ee] placeholder-[#8c8378] outline-none focus:border-[#c25e2e]/50 transition-colors"
                     />
                   </div>
                 </div>
@@ -289,21 +289,21 @@ export default function DashboardPage({
                   {filteredCatalog.slice(0, 6).map((catRm) => (
                     <div
                       key={catRm.id}
-                      className="p-4 rounded-2xl border border-white/10 bg-white/[0.01] hover:border-white/20 transition-all flex flex-col justify-between"
+                      className="p-4 rounded-2xl border border-[#e5decb] bg-[#faf6ee] text-[#181614] hover:shadow-md transition-all flex flex-col justify-between"
                     >
                       <div>
-                        <div className="flex items-center justify-between text-xs text-neutral-400 mb-1.5">
+                        <div className="flex items-center justify-between text-xs text-[#8c8278] mb-1.5">
                           <span>{catRm.category || 'Specialization'}</span>
                           <span>{catRm.difficulty || 'Intermediate'}</span>
                         </div>
-                        <h3 className="text-sm font-medium text-white mb-1">{catRm.title}</h3>
-                        <p className="text-xs text-neutral-400 line-clamp-2 leading-relaxed">
+                        <h3 className="text-sm font-medium text-[#181614] mb-1">{catRm.title}</h3>
+                        <p className="text-xs text-[#665e56] line-clamp-2 leading-relaxed">
                           {catRm.description}
                         </p>
                       </div>
 
-                      <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between">
-                        <span className="text-xs text-neutral-500">
+                      <div className="mt-4 pt-3 border-t border-[#e5decb] flex items-center justify-between">
+                        <span className="text-xs text-[#8c8278]">
                           {catRm.duration || '6 Weeks'}
                         </span>
                         <button
@@ -312,7 +312,7 @@ export default function DashboardPage({
                             switchActiveRoadmap(catRm)
                             if (onSelectPath) onSelectPath(catRm)
                           }}
-                          className="text-xs text-neutral-300 hover:text-white transition-colors cursor-pointer flex items-center gap-1"
+                          className="text-xs text-[#c25e2e] hover:text-[#ad4f22] font-medium transition-colors cursor-pointer flex items-center gap-1"
                         >
                           <span>Enroll Path</span>
                           <ArrowRight className="h-3 w-3" />
@@ -325,7 +325,7 @@ export default function DashboardPage({
             </motion.div>
           )}
 
-          {/* ══════════════ TAB 3: COURSES ══════════════ */}
+          {/* ══════════════ TAB 3: COURSES (WARM IVORY CARDS) ══════════════ */}
           {activeTab === 'courses' && (
             <motion.div
               key="courses"
@@ -335,9 +335,9 @@ export default function DashboardPage({
               transition={{ duration: 0.15 }}
               className="space-y-6"
             >
-              <div className="border-b border-white/[0.08] pb-4">
-                <h1 className="text-2xl font-normal text-white">Video &amp; Interactive Courses</h1>
-                <p className="text-xs text-neutral-400 mt-1 font-normal">
+              <div className="border-b border-[#262320] pb-4">
+                <h1 className="text-2xl font-normal text-[#faf6ee]">Video &amp; Interactive Courses</h1>
+                <p className="text-xs text-[#a8a199] mt-1 font-normal">
                   Step-by-step curriculum units mapped to your active roadmap milestones.
                 </p>
               </div>
@@ -353,21 +353,21 @@ export default function DashboardPage({
                 ].map((course) => (
                   <div
                     key={course.id}
-                    className="p-5 rounded-2xl border border-white/10 bg-white/[0.02] hover:border-white/20 transition-all flex flex-col justify-between"
+                    className="p-5 rounded-2xl border border-[#e5decb] bg-[#faf6ee] text-[#181614] hover:shadow-md transition-all flex flex-col justify-between"
                   >
                     <div>
-                      <div className="flex items-center justify-between text-xs text-neutral-400 mb-2">
+                      <div className="flex items-center justify-between text-xs text-[#8c8278] mb-2">
                         <span>{course.level}</span>
                         <span>{course.duration}</span>
                       </div>
-                      <h3 className="text-sm font-medium text-white mb-1.5">{course.title}</h3>
-                      <p className="text-xs text-neutral-400 font-normal">{course.lessons} video lessons</p>
+                      <h3 className="text-sm font-medium text-[#181614] mb-1.5">{course.title}</h3>
+                      <p className="text-xs text-[#665e56] font-normal">{course.lessons} video lessons</p>
                     </div>
 
                     <button
                       type="button"
                       onClick={() => handleContinueLesson({ course_id: course.id, lesson_id: 1 })}
-                      className="mt-5 w-full inline-flex items-center justify-center gap-2 py-2 rounded-full bg-white/[0.06] hover:bg-white text-neutral-200 hover:text-black font-medium text-xs transition-all cursor-pointer"
+                      className="mt-5 w-full inline-flex items-center justify-center gap-2 py-2 rounded-full bg-[#c25e2e] hover:bg-[#ad4f22] text-[#faf6ee] font-medium text-xs transition-all cursor-pointer shadow-sm"
                     >
                       <Play className="h-3 w-3 fill-current" />
                       <span>Start Course</span>
@@ -378,7 +378,7 @@ export default function DashboardPage({
             </motion.div>
           )}
 
-          {/* ══════════════ TAB 4: PROJECTS ══════════════ */}
+          {/* ══════════════ TAB 4: PROJECTS (WARM IVORY CARDS) ══════════════ */}
           {activeTab === 'projects' && (
             <motion.div
               key="projects"
@@ -388,9 +388,9 @@ export default function DashboardPage({
               transition={{ duration: 0.15 }}
               className="space-y-6"
             >
-              <div className="border-b border-white/[0.08] pb-4">
-                <h1 className="text-2xl font-normal text-white">Milestone Capstone Projects</h1>
-                <p className="text-xs text-neutral-400 mt-1 font-normal">
+              <div className="border-b border-[#262320] pb-4">
+                <h1 className="text-2xl font-normal text-[#faf6ee]">Milestone Capstone Projects</h1>
+                <p className="text-xs text-[#a8a199] mt-1 font-normal">
                   Production deliverables that unlock as you complete roadmap milestones.
                 </p>
               </div>
@@ -432,17 +432,17 @@ export default function DashboardPage({
                 ].map((proj) => (
                   <div
                     key={proj.id}
-                    className="p-6 rounded-3xl border border-white/10 bg-white/[0.02] backdrop-blur-xl flex flex-col justify-between"
+                    className="p-6 rounded-3xl border border-[#e5decb] bg-[#faf6ee] text-[#181614] backdrop-blur-xl flex flex-col justify-between shadow-sm"
                   >
                     <div>
                       <div className="flex items-center justify-between mb-3">
                         <span
                           className={`text-xs px-2.5 py-0.5 rounded-full border ${
                             proj.status === 'in_progress'
-                              ? 'bg-white/10 text-white border-white/20'
+                              ? 'bg-[#c25e2e]/15 text-[#c25e2e] border-[#c25e2e]/30 font-medium'
                               : proj.status === 'unlocked'
-                              ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
-                              : 'bg-white/5 text-neutral-500 border-white/10'
+                              ? 'bg-[#ede5d5] text-[#544d45] border-[#ded3bf]'
+                              : 'bg-[#ede5d5]/60 text-[#8c8278] border-[#ded3bf]/60'
                           }`}
                         >
                           {proj.status === 'in_progress'
@@ -451,17 +451,17 @@ export default function DashboardPage({
                             ? '✓ Unlocked'
                             : '○ Locked (Complete Milestone 4)'}
                         </span>
-                        <span className="text-xs text-neutral-400">{proj.difficulty}</span>
+                        <span className="text-xs text-[#8c8278]">{proj.difficulty}</span>
                       </div>
 
-                      <h3 className="text-base font-medium text-white mb-2">{proj.title}</h3>
-                      <p className="text-xs text-neutral-400 leading-relaxed mb-4 font-normal">{proj.desc}</p>
+                      <h3 className="text-base font-medium text-[#181614] mb-2">{proj.title}</h3>
+                      <p className="text-xs text-[#665e56] leading-relaxed mb-4 font-normal">{proj.desc}</p>
 
                       <div className="flex flex-wrap gap-1.5 mb-4">
                         {proj.tech.map((t) => (
                           <span
                             key={t}
-                            className="px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-xs text-neutral-300"
+                            className="px-2 py-0.5 rounded-md bg-[#ede5d5] border border-[#ded3bf] text-xs text-[#544d45]"
                           >
                             {t}
                           </span>
@@ -475,8 +475,8 @@ export default function DashboardPage({
                       onClick={() => showToast(`Project '${proj.title}' started!`, 'success')}
                       className={`w-full py-2.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
                         proj.status === 'locked'
-                          ? 'bg-white/5 text-neutral-600 cursor-not-allowed'
-                          : 'bg-white hover:bg-neutral-200 text-black'
+                          ? 'bg-[#ede5d5]/40 text-[#a8a199] cursor-not-allowed'
+                          : 'bg-[#c25e2e] hover:bg-[#ad4f22] text-[#faf6ee] shadow-sm'
                       }`}
                     >
                       {proj.status === 'locked' ? 'Locked Milestone' : 'Start Deliverable →'}
@@ -487,7 +487,7 @@ export default function DashboardPage({
             </motion.div>
           )}
 
-          {/* ══════════════ TAB 5: PORTFOLIO & ACHIEVEMENTS ══════════════ */}
+          {/* ══════════════ TAB 5: PORTFOLIO & ACHIEVEMENTS (WARM IVORY CARDS) ══════════════ */}
           {activeTab === 'portfolio' && (
             <motion.div
               key="portfolio"
@@ -497,9 +497,9 @@ export default function DashboardPage({
               transition={{ duration: 0.15 }}
               className="space-y-6"
             >
-              <div className="border-b border-white/[0.08] pb-4">
-                <h1 className="text-2xl font-normal text-white">Developer Portfolio &amp; Proof of Work</h1>
-                <p className="text-xs text-neutral-400 mt-1 font-normal">
+              <div className="border-b border-[#262320] pb-4">
+                <h1 className="text-2xl font-normal text-[#faf6ee]">Developer Portfolio &amp; Proof of Work</h1>
+                <p className="text-xs text-[#a8a199] mt-1 font-normal">
                   Verified platform achievements, milestone credentials, and earned developer badges.
                 </p>
               </div>
@@ -516,25 +516,25 @@ export default function DashboardPage({
                     key={ach.id || ach.achievement_id}
                     className={`p-5 rounded-2xl border backdrop-blur-xl transition-all ${
                       ach.unlocked
-                        ? 'border-white/20 bg-white/[0.03]'
-                        : 'border-white/5 bg-white/[0.01] opacity-60'
+                        ? 'border-[#e5decb] bg-[#faf6ee] text-[#181614] shadow-sm'
+                        : 'border-[#262320] bg-[#141312] text-[#a8a199] opacity-60'
                     }`}
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <Award className={`h-5 w-5 ${ach.unlocked ? 'text-white' : 'text-neutral-500'}`} />
-                      <span className="text-xs text-neutral-400">
+                      <Award className={`h-5 w-5 ${ach.unlocked ? 'text-[#c25e2e]' : 'text-[#8c8278]'}`} />
+                      <span className="text-xs text-[#8c8278]">
                         {ach.unlocked ? '✓ Unlocked' : '○ In Progress'}
                       </span>
                     </div>
-                    <h3 className="text-sm font-medium text-white mb-1">{ach.title}</h3>
-                    <p className="text-xs text-neutral-400 leading-relaxed font-normal">{ach.description}</p>
+                    <h3 className="text-sm font-medium text-[#181614] mb-1">{ach.title}</h3>
+                    <p className="text-xs text-[#665e56] leading-relaxed font-normal">{ach.description}</p>
                   </div>
                 ))}
               </div>
             </motion.div>
           )}
 
-          {/* ══════════════ TAB 6: SETTINGS ══════════════ */}
+          {/* ══════════════ TAB 6: SETTINGS (WARM IVORY CARDS) ══════════════ */}
           {activeTab === 'settings' && (
             <motion.div
               key="settings"
@@ -544,30 +544,30 @@ export default function DashboardPage({
               transition={{ duration: 0.15 }}
               className="space-y-6 max-w-3xl"
             >
-              <div className="border-b border-white/[0.08] pb-4">
-                <h1 className="text-2xl font-normal text-white">Account &amp; Workspace Settings</h1>
-                <p className="text-xs text-neutral-400 mt-1 font-normal">
+              <div className="border-b border-[#262320] pb-4">
+                <h1 className="text-2xl font-normal text-[#faf6ee]">Account &amp; Workspace Settings</h1>
+                <p className="text-xs text-[#a8a199] mt-1 font-normal">
                   Manage your platform credentials, learning preferences, and active session.
                 </p>
               </div>
 
               <div className="space-y-4">
                 {/* Profile Information */}
-                <div className="p-6 rounded-3xl border border-white/10 bg-white/[0.02] space-y-4">
-                  <div className="flex items-center gap-2 text-sm font-medium text-white">
-                    <User className="h-4 w-4" />
+                <div className="p-6 rounded-3xl border border-[#e5decb] bg-[#faf6ee] text-[#181614] space-y-4 shadow-sm">
+                  <div className="flex items-center gap-2 text-sm font-medium text-[#181614]">
+                    <User className="h-4 w-4 text-[#c25e2e]" />
                     <span>User Identity</span>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                     <div>
-                      <span className="text-neutral-400 block mb-1">Full Name</span>
-                      <div className="p-3 rounded-xl bg-white/[0.03] border border-white/10 text-white font-normal">
+                      <span className="text-[#665e56] block mb-1">Full Name</span>
+                      <div className="p-3 rounded-xl bg-[#ede5d5] border border-[#ded3bf] text-[#181614] font-normal">
                         {user?.full_name || 'Harsh'}
                       </div>
                     </div>
                     <div>
-                      <span className="text-neutral-400 block mb-1">Email Address</span>
-                      <div className="p-3 rounded-xl bg-white/[0.03] border border-white/10 text-white font-normal">
+                      <span className="text-[#665e56] block mb-1">Email Address</span>
+                      <div className="p-3 rounded-xl bg-[#ede5d5] border border-[#ded3bf] text-[#181614] font-normal">
                         {user?.email || 'user@technea.dev'}
                       </div>
                     </div>
@@ -575,36 +575,36 @@ export default function DashboardPage({
                 </div>
 
                 {/* Preferences */}
-                <div className="p-6 rounded-3xl border border-white/10 bg-white/[0.02] space-y-4">
-                  <div className="flex items-center gap-2 text-sm font-medium text-white">
-                    <Shield className="h-4 w-4" />
+                <div className="p-6 rounded-3xl border border-[#e5decb] bg-[#faf6ee] text-[#181614] space-y-4 shadow-sm">
+                  <div className="flex items-center gap-2 text-sm font-medium text-[#181614]">
+                    <Shield className="h-4 w-4 text-[#c25e2e]" />
                     <span>Learning Configuration</span>
                   </div>
                   <div className="space-y-3 text-xs">
-                    <div className="flex items-center justify-between p-3 rounded-xl bg-white/[0.03] border border-white/10">
+                    <div className="flex items-center justify-between p-3 rounded-xl bg-[#ede5d5] border border-[#ded3bf]">
                       <div>
-                        <div className="text-white font-medium">Active Engineering Focus</div>
-                        <div className="text-neutral-400 text-[11px]">
+                        <div className="text-[#181614] font-medium">Active Engineering Focus</div>
+                        <div className="text-[#665e56] text-[11px]">
                           {activeRoadmap?.title || 'Full-Stack AI Engineer'}
                         </div>
                       </div>
                       <button
                         type="button"
                         onClick={() => setActiveTab('roadmaps')}
-                        className="text-xs text-neutral-300 hover:text-white cursor-pointer"
+                        className="text-xs text-[#c25e2e] hover:text-[#ad4f22] font-medium cursor-pointer"
                       >
                         Change Focus →
                       </button>
                     </div>
 
-                    <div className="flex items-center justify-between p-3 rounded-xl bg-white/[0.03] border border-white/10">
+                    <div className="flex items-center justify-between p-3 rounded-xl bg-[#ede5d5] border border-[#ded3bf]">
                       <div>
-                        <div className="text-white font-medium">AI Mentor Telemetry</div>
-                        <div className="text-neutral-400 text-[11px]">
+                        <div className="text-[#181614] font-medium">AI Mentor Telemetry</div>
+                        <div className="text-[#665e56] text-[11px]">
                           Real-time lesson context synchronization enabled
                         </div>
                       </div>
-                      <span className="text-xs text-neutral-300">Active</span>
+                      <span className="text-xs text-[#c25e2e] font-medium">Active</span>
                     </div>
                   </div>
                 </div>
@@ -614,7 +614,7 @@ export default function DashboardPage({
                   <button
                     type="button"
                     onClick={logout}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-red-500/30 text-red-400 hover:bg-red-500/10 text-xs font-medium transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-[#c25e2e]/40 text-[#c25e2e] hover:bg-[#c25e2e]/10 text-xs font-medium transition-colors cursor-pointer"
                   >
                     <LogOut className="h-3.5 w-3.5" />
                     <span>Sign Out of Technea</span>
@@ -630,7 +630,7 @@ export default function DashboardPage({
       {isMentorDocked && activeTab === 'overview' && (
         <aside
           aria-label="AI Technical Mentor Column"
-          className="hidden xl:block w-80 shrink-0 h-full border-l border-white/[0.08] z-20"
+          className="hidden xl:block w-80 shrink-0 h-full border-l border-[#262320] z-20"
         >
           <DockedAIMentorCompanion
             onMinimize={() => setIsMentorDocked(false)}

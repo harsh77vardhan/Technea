@@ -65,24 +65,24 @@ function FloatingAIMentorCompanion({
           <button
             type="button"
             onClick={onRestoreDock}
-            className="group flex items-center gap-3 px-4 py-2.5 rounded-full bg-[#07090e]/95 border border-white/15 text-white shadow-[0_8px_30px_rgba(0,0,0,0.8)] hover:border-white/30 hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer backdrop-blur-xl"
+            className="group flex items-center gap-3 px-4 py-2.5 rounded-full bg-[#141312]/95 border border-[#c25e2e]/30 text-[#faf6ee] shadow-[0_8px_30px_rgba(0,0,0,0.8)] hover:border-[#c25e2e]/60 hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer backdrop-blur-xl"
             title="Open AI Technical Mentor"
           >
-            {/* 3D Metallic Orb */}
+            {/* 3D Warm Bronze & Burnt Orange Metallic Orb */}
             <div
               className="relative h-6 w-6 rounded-full shrink-0 shadow-[inset_-2px_-2px_4px_rgba(0,0,0,0.8),0_2px_8px_rgba(0,0,0,0.6)]"
               style={{
                 background:
-                  'radial-gradient(circle at 35% 30%, #ffffff 0%, #cbd5e1 15%, #64748b 45%, #1e293b 80%, #05070d 100%)',
-                boxShadow: '0 0 10px rgba(255, 255, 255, 0.15)',
+                  'radial-gradient(circle at 35% 30%, #fbf8f2 0%, #e0c8b0 18%, #8c5332 50%, #3d2315 80%, #170d07 100%)',
+                boxShadow: '0 0 10px rgba(194, 94, 46, 0.25)',
               }}
             >
-              <div className="absolute inset-0 rounded-full border border-white/25 pointer-events-none" />
+              <div className="absolute inset-0 rounded-full border border-[#fbf8f2]/25 pointer-events-none" />
             </div>
 
             <div className="flex items-center gap-1.5 text-xs font-medium">
               <span>AI Mentor</span>
-              <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-white/10 text-neutral-300">
+              <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-[#c25e2e]/15 text-[#e87a48]">
                 2.0
               </span>
             </div>
@@ -96,26 +96,26 @@ function FloatingAIMentorCompanion({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 bg-[#050508]/98 backdrop-blur-3xl flex flex-col p-4 sm:p-6 text-[#f8fafc]"
+          className="fixed inset-0 z-50 bg-[#0e0d0c]/98 backdrop-blur-3xl flex flex-col p-4 sm:p-6 text-[#faf6ee]"
         >
           {/* Top Bar */}
-          <div className="flex items-center justify-between pb-4 border-b border-white/10">
+          <div className="flex items-center justify-between pb-4 border-b border-[#262320]">
             <div className="flex items-center gap-3">
               <div
                 className="relative h-8 w-8 rounded-full shrink-0 shadow-[inset_-2px_-2px_6px_rgba(0,0,0,0.8),0_4px_10px_rgba(0,0,0,0.6)]"
                 style={{
                   background:
-                    'radial-gradient(circle at 35% 30%, #ffffff 0%, #cbd5e1 15%, #64748b 45%, #1e293b 80%, #05070d 100%)',
+                    'radial-gradient(circle at 35% 30%, #fbf8f2 0%, #e0c8b0 18%, #8c5332 50%, #3d2315 80%, #170d07 100%)',
                 }}
               />
               <div>
-                <h2 className="text-base font-medium text-white flex items-center gap-2">
+                <h2 className="text-base font-medium text-[#faf6ee] flex items-center gap-2">
                   <span>AI Learning Studio 2.0</span>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-neutral-300 border border-white/10">
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#c25e2e]/15 text-[#e87a48] border border-[#c25e2e]/30">
                     Deep Focus Mode
                   </span>
                 </h2>
-                <p className="text-xs text-neutral-400 font-normal">
+                <p className="text-xs text-[#a8a199] font-normal">
                   Active Track: {activeRoadmap?.title || 'Full-Stack AI Engineer'} • Lesson:{' '}
                   {todayMission.lesson_title}
                 </p>
@@ -126,7 +126,7 @@ function FloatingAIMentorCompanion({
               <button
                 type="button"
                 onClick={resetMentorSession}
-                className="px-3 py-1.5 rounded-xl border border-white/10 hover:bg-white/10 text-xs text-neutral-300 hover:text-white transition-colors cursor-pointer inline-flex items-center gap-1.5"
+                className="px-3 py-1.5 rounded-xl border border-[#262320] hover:bg-[#1c1a18] text-xs text-[#a8a199] hover:text-[#faf6ee] transition-colors cursor-pointer inline-flex items-center gap-1.5"
               >
                 <RotateCcw className="h-3.5 w-3.5" />
                 <span>Reset Chat</span>
@@ -134,7 +134,7 @@ function FloatingAIMentorCompanion({
               <button
                 type="button"
                 onClick={onCloseFullscreen}
-                className="px-3 py-1.5 rounded-xl bg-white text-black font-medium text-xs transition-colors cursor-pointer inline-flex items-center gap-1.5 hover:bg-neutral-200"
+                className="px-3 py-1.5 rounded-xl bg-[#c25e2e] text-[#faf6ee] font-medium text-xs transition-colors cursor-pointer inline-flex items-center gap-1.5 hover:bg-[#ad4f22]"
               >
                 <Minimize2 className="h-3.5 w-3.5" />
                 <span>Exit Fullscreen</span>
@@ -142,7 +142,7 @@ function FloatingAIMentorCompanion({
               <button
                 type="button"
                 onClick={onCloseFullscreen}
-                className="p-2 rounded-xl border border-white/10 hover:bg-white/10 text-neutral-400 hover:text-white transition-colors cursor-pointer"
+                className="p-2 rounded-xl border border-[#262320] hover:bg-[#1c1a18] text-[#a8a199] hover:text-[#faf6ee] transition-colors cursor-pointer"
                 title="Close"
               >
                 <X className="h-4 w-4" />
@@ -153,9 +153,9 @@ function FloatingAIMentorCompanion({
           {/* 3-Column Studio Body */}
           <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 mt-4 overflow-hidden">
             {/* Left Column: Roadmap Context & Milestones (3 Cols) */}
-            <div className="hidden lg:flex lg:col-span-3 flex-col rounded-2xl bg-white/[0.02] border border-white/10 p-4 space-y-4 overflow-y-auto">
-              <div className="flex items-center gap-2 text-xs font-medium text-neutral-300">
-                <Compass className="h-4 w-4 text-white" />
+            <div className="hidden lg:flex lg:col-span-3 flex-col rounded-2xl bg-[#141312] border border-[#262320] p-4 space-y-4 overflow-y-auto">
+              <div className="flex items-center gap-2 text-xs font-medium text-[#faf6ee]">
+                <Compass className="h-4 w-4 text-[#e87a48]" />
                 <span>Curriculum Milestones</span>
               </div>
               <div className="space-y-2">
@@ -164,13 +164,13 @@ function FloatingAIMentorCompanion({
                     key={ms.id || idx}
                     className={`p-3 rounded-xl border text-xs transition-all ${
                       ms.current
-                        ? 'border-white/30 bg-white/[0.06] text-white font-medium'
+                        ? 'border-[#c25e2e]/50 bg-[#c25e2e]/10 text-[#faf6ee] font-medium'
                         : ms.completed
-                        ? 'border-white/10 bg-white/[0.02] text-neutral-300'
-                        : 'border-white/5 bg-transparent text-neutral-500'
+                        ? 'border-[#262320] bg-[#1c1a18]/60 text-[#a8a199]'
+                        : 'border-[#262320]/40 bg-transparent text-[#786f66]'
                     }`}
                   >
-                    <div className="flex items-center justify-between text-[10px] text-neutral-400 mb-1">
+                    <div className="flex items-center justify-between text-[10px] text-[#a8a199] mb-1">
                       <span>Stage {String(idx + 1).padStart(2, '0')}</span>
                       <span>{ms.completed ? '✓ Completed' : ms.current ? '● In Focus' : '○ Upcoming'}</span>
                     </div>
@@ -181,7 +181,7 @@ function FloatingAIMentorCompanion({
             </div>
 
             {/* Center Column: Live Conversational Stream (5 Cols) */}
-            <div className="col-span-1 lg:col-span-5 flex flex-col rounded-2xl bg-white/[0.02] border border-white/10 overflow-hidden">
+            <div className="col-span-1 lg:col-span-5 flex flex-col rounded-2xl bg-[#141312] border border-[#262320] overflow-hidden">
               <div ref={chatScrollRef} className="flex-1 overflow-y-auto p-4 space-y-3 text-xs">
                 {mentorMessages.map((msg) => (
                   <div
@@ -193,8 +193,8 @@ function FloatingAIMentorCompanion({
                     <div
                       className={`max-w-[90%] rounded-2xl px-4 py-3 ${
                         msg.sender === 'user'
-                          ? 'bg-white text-black font-medium rounded-tr-xs'
-                          : 'bg-white/[0.04] border border-white/10 text-neutral-200 rounded-tl-xs'
+                          ? 'bg-[#c25e2e] text-[#faf6ee] font-medium rounded-tr-xs'
+                          : 'bg-[#1c1a18] border border-[#2e2a26] text-[#faf6ee] rounded-tl-xs'
                       }`}
                     >
                       {msg.sender === 'mentor' ? (
@@ -203,36 +203,36 @@ function FloatingAIMentorCompanion({
                         <div className="whitespace-pre-wrap">{msg.content}</div>
                       )}
                     </div>
-                    <span className="text-[9px] text-neutral-500 mt-1 px-1">
+                    <span className="text-[9px] text-[#a8a199] mt-1 px-1">
                       {msg.timestamp}
                     </span>
                   </div>
                 ))}
 
                 {isMentorTyping && (
-                  <div className="flex items-center gap-2 px-3 py-2 rounded-2xl bg-white/[0.04] border border-white/10 text-neutral-400 text-xs w-fit">
-                    <Sparkles className="h-3.5 w-3.5 text-white animate-spin" />
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-2xl bg-[#1c1a18] border border-[#2e2a26] text-[#a8a199] text-xs w-fit">
+                    <Sparkles className="h-3.5 w-3.5 text-[#e87a48] animate-spin" />
                     <span className="text-[11px]">Synthesizing technical response...</span>
                   </div>
                 )}
               </div>
 
               {/* Center Input Bar */}
-              <div className="p-3 border-t border-white/10 bg-white/[0.01]">
-                <div className="flex items-center gap-2 rounded-xl bg-black/50 border border-white/10 px-3 py-2.5">
+              <div className="p-3 border-t border-[#262320] bg-[#141312]">
+                <div className="flex items-center gap-2 rounded-xl bg-[#1c1a18] border border-[#2e2a26] px-3 py-2.5">
                   <input
                     type="text"
                     value={inputText}
                     onChange={(e) => setInputText(e.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder="Ask architecture questions or test concepts..."
-                    className="flex-1 bg-transparent text-xs text-white placeholder-neutral-500 outline-none"
+                    className="flex-1 bg-transparent text-xs text-[#faf6ee] placeholder-[#8c8378] outline-none"
                   />
                   <button
                     type="button"
                     onClick={handleSend}
                     disabled={!inputText.trim() || isMentorTyping}
-                    className="h-7 w-7 rounded-full bg-white text-black flex items-center justify-center hover:bg-neutral-200 disabled:opacity-40 transition-colors cursor-pointer"
+                    className="h-7 w-7 rounded-full bg-[#c25e2e] text-[#faf6ee] flex items-center justify-center hover:bg-[#ad4f22] disabled:opacity-40 transition-colors cursor-pointer"
                   >
                     <ArrowUp className="h-3.5 w-3.5 stroke-[2.5]" />
                   </button>
@@ -241,21 +241,21 @@ function FloatingAIMentorCompanion({
             </div>
 
             {/* Right Column: Code Scratchpad & Live Notes (4 Cols) */}
-            <div className="hidden lg:flex lg:col-span-4 flex-col rounded-2xl bg-white/[0.02] border border-white/10 overflow-hidden p-4 space-y-3">
-              <div className="flex items-center justify-between text-xs text-neutral-300 font-medium">
+            <div className="hidden lg:flex lg:col-span-4 flex-col rounded-2xl bg-[#141312] border border-[#262320] overflow-hidden p-4 space-y-3">
+              <div className="flex items-center justify-between text-xs text-[#faf6ee] font-medium">
                 <div className="flex items-center gap-2">
-                  <Code2 className="h-4 w-4 text-white" />
+                  <Code2 className="h-4 w-4 text-[#e87a48]" />
                   <span>Developer Scratchpad</span>
                 </div>
-                <span className="text-[10px] text-neutral-500">JavaScript / TypeScript</span>
+                <span className="text-[10px] text-[#a8a199]">JavaScript / TypeScript</span>
               </div>
               <textarea
                 value={scratchpadCode}
                 onChange={(e) => setScratchpadCode(e.target.value)}
-                className="flex-1 w-full bg-black/60 border border-white/10 rounded-xl p-3 font-mono text-xs text-emerald-300 leading-relaxed outline-none resize-none focus:border-white/30 transition-colors"
+                className="flex-1 w-full bg-[#0e0d0c] border border-[#262320] rounded-xl p-3 font-mono text-xs text-[#f4eee2] leading-relaxed outline-none resize-none focus:border-[#c25e2e]/50 transition-colors"
                 spellCheck="false"
               />
-              <div className="flex items-center justify-between text-[11px] text-neutral-400">
+              <div className="flex items-center justify-between text-[11px] text-[#a8a199]">
                 <span>Code is saved to local session</span>
                 <button
                   type="button"
@@ -264,7 +264,7 @@ function FloatingAIMentorCompanion({
                       `Here is code from my scratchpad for review:\n\`\`\`javascript\n${scratchpadCode}\n\`\`\``
                     )
                   }
-                  className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
+                  className="px-3 py-1 rounded-lg bg-[#c25e2e] hover:bg-[#ad4f22] text-[#faf6ee] font-medium transition-colors cursor-pointer"
                 >
                   Send to Mentor ⚡
                 </button>

@@ -168,36 +168,36 @@ function DashboardReferenceOverview({
 
   if (isLoading && !activeRoadmap) {
     return (
-      <div className="space-y-8 animate-pulse text-[#f8fafc]">
-        <div className="h-10 w-72 bg-white/5 rounded-xl" />
-        <div className="h-64 w-full bg-white/5 rounded-3xl" />
-        <div className="h-32 w-full bg-white/5 rounded-2xl" />
+      <div className="space-y-8 animate-pulse text-[#faf6ee]">
+        <div className="h-10 w-72 bg-[#1c1a18] rounded-xl" />
+        <div className="h-64 w-full bg-[#1c1a18] rounded-3xl" />
+        <div className="h-32 w-full bg-[#1c1a18] rounded-2xl" />
       </div>
     )
   }
 
   return (
-    <div className="space-y-8 pb-8 select-none text-[#f8fafc]">
+    <div className="space-y-8 pb-8 select-none text-[#faf6ee]">
       {/* ──────────────── 1. HEADER ROW: GREETING & METRICS ──────────────── */}
       <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 pt-1">
-        {/* Left: Calm Typography Greeting */}
+        {/* Left: Calm Typography Greeting in Warm Ivory */}
         <div>
-          <h1 className="text-3xl sm:text-4xl font-light tracking-tight text-white">
+          <h1 className="text-3xl sm:text-4xl font-light tracking-tight text-[#faf6ee]">
             Good {greetingTime}, {firstName}
           </h1>
-          <p className="text-sm text-neutral-400 mt-1.5 font-normal">
+          <p className="text-sm text-[#a8a199] mt-1.5 font-normal">
             Continue building your future.
           </p>
         </div>
 
-        {/* Right: Clean 3 Horizontal Metrics matching reference */}
+        {/* Right: Clean 3 Horizontal Metrics with Burnt Orange highlights */}
         <div className="flex items-center gap-8 sm:gap-12 shrink-0">
           {/* Roadmap */}
           <div className="flex flex-col text-left">
-            <span className="text-xs text-neutral-400 font-normal">Roadmap</span>
-            <div className="text-sm font-medium text-white tracking-tight mt-0.5 flex items-center gap-1.5">
+            <span className="text-xs text-[#a8a199] font-normal">Roadmap</span>
+            <div className="text-sm font-medium text-[#faf6ee] tracking-tight mt-0.5 flex items-center gap-1.5">
               <span>{activeRoadmap?.title || 'Full-Stack AI Engineer'}</span>
-              <span className="text-xs font-normal text-neutral-400">
+              <span className="text-xs font-normal text-[#a8a199]">
                 Stage {currentStage} of {totalStages}
               </span>
             </div>
@@ -205,57 +205,57 @@ function DashboardReferenceOverview({
 
           {/* XP */}
           <div className="flex flex-col text-left">
-            <span className="text-xs text-neutral-400 font-normal">XP</span>
-            <div className="text-sm font-medium text-white tracking-tight mt-0.5 flex items-center gap-1.5">
+            <span className="text-xs text-[#a8a199] font-normal">XP</span>
+            <div className="text-sm font-medium text-[#faf6ee] tracking-tight mt-0.5 flex items-center gap-1.5">
               <span>{xpPoints.toLocaleString()}</span>
-              <span className="text-xs font-normal text-neutral-400">
+              <span className="text-xs font-normal text-[#a8a199]">
                 Level {computedLevel}
               </span>
             </div>
           </div>
 
-          {/* Streak */}
+          {/* Streak with Burnt Orange highlight */}
           <div className="flex flex-col text-left">
-            <span className="text-xs text-neutral-400 font-normal">Streak</span>
-            <div className="text-sm font-medium text-white tracking-tight mt-0.5">
+            <span className="text-xs text-[#a8a199] font-normal">Streak</span>
+            <div className="text-sm font-medium text-[#e87a48] tracking-tight mt-0.5">
               <span>{streakCount} days</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* ──────────────── 2. TODAY'S LEARNING MISSION HERO CARD ──────────────── */}
+      {/* ──────────────── 2. TODAY'S LEARNING MISSION HERO CARD (WARM IVORY SURFACE) ──────────────── */}
       <section aria-label="Today's Mission">
-        <div className="rounded-[28px] border border-white/[0.08] bg-[#0c0e14]/70 p-8 sm:p-9 backdrop-blur-xl relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-8 shadow-xl">
+        <div className="rounded-[28px] border border-[#e5decb] bg-[#faf6ee] p-8 sm:p-9 shadow-xl relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-8 text-[#181614]">
           {/* Left Column: Mission Content */}
           <div className="flex-1 max-w-2xl space-y-4">
-            <span className="text-xs font-mono uppercase tracking-[0.2em] text-neutral-400 font-medium">
+            <span className="text-xs font-mono uppercase tracking-[0.2em] text-[#c25e2e] font-semibold">
               TODAY&apos;S MISSION
             </span>
 
-            <h2 className="text-2xl sm:text-3xl font-normal tracking-tight text-white leading-snug">
+            <h2 className="text-2xl sm:text-3xl font-normal tracking-tight text-[#181614] leading-snug">
               {todayMission?.lesson_title || 'Add secure authentication to your REST API'}
             </h2>
 
             {/* Milestone & Time Left Metadata */}
-            <div className="flex items-center gap-2 text-sm text-neutral-400 font-normal pt-1">
+            <div className="flex items-center gap-2 text-sm text-[#665e56] font-normal pt-1">
               <span>Milestone</span>
-              <span className="text-white font-medium">
+              <span className="text-[#181614] font-medium">
                 {activeRoadmap?.current_milestone?.title || 'Secure the Task API'}
               </span>
-              <span className="text-neutral-500">·</span>
+              <span className="text-[#a8a199]">·</span>
               <span>Time left</span>
-              <span className="text-white font-medium">
+              <span className="text-[#181614] font-medium">
                 {todayMission?.estimated_time ? todayMission.estimated_time.replace(' remaining', '') : '45 min'}
               </span>
             </div>
 
-            {/* Actions: Resume learning & View mission steps */}
+            {/* Actions: Burnt Orange Resume button & subtle link */}
             <div className="flex items-center gap-5 pt-3">
               <button
                 type="button"
                 onClick={() => onContinueLesson(todayMission)}
-                className="rounded-full bg-white text-black font-medium px-6 py-2.5 text-sm hover:bg-neutral-200 transition-colors shadow-lg cursor-pointer"
+                className="rounded-full bg-[#c25e2e] text-[#faf6ee] font-medium px-6 py-2.5 text-sm hover:bg-[#ad4f22] transition-colors shadow-md cursor-pointer"
               >
                 Resume learning →
               </button>
@@ -263,33 +263,33 @@ function DashboardReferenceOverview({
               <button
                 type="button"
                 onClick={onExploreCatalog}
-                className="text-sm text-neutral-400 hover:text-white transition-colors cursor-pointer"
+                className="text-sm text-[#665e56] hover:text-[#181614] transition-colors cursor-pointer"
               >
                 View mission steps
               </button>
             </div>
           </div>
 
-          {/* Right Column: SVG Circular Progress Ring */}
+          {/* Right Column: Burnt Orange SVG Circular Progress Ring */}
           <div className="shrink-0 flex items-center justify-center md:pr-4">
             <div className="relative w-[140px] h-[140px] flex items-center justify-center">
               <svg width="140" height="140" className="transform -rotate-90">
-                {/* Background Ring Track */}
+                {/* Background Ring Track in Warm Ivory Tone */}
                 <circle
                   cx="70"
                   cy="70"
                   r={radius}
                   fill="none"
-                  stroke="rgba(255, 255, 255, 0.08)"
+                  stroke="#e2d8c6"
                   strokeWidth="3"
                 />
-                {/* Foreground Active Progress Arc */}
+                {/* Foreground Active Progress Arc in Burnt Orange */}
                 <circle
                   cx="70"
                   cy="70"
                   r={radius}
                   fill="none"
-                  stroke="#ffffff"
+                  stroke="#c25e2e"
                   strokeWidth="3"
                   strokeDasharray={circumference}
                   strokeDashoffset={strokeDashoffset}
@@ -298,9 +298,9 @@ function DashboardReferenceOverview({
                 />
               </svg>
 
-              {/* Progress Indicator Dot on Perimeter */}
+              {/* Progress Indicator Dot on Perimeter in Burnt Orange */}
               <div
-                className="absolute w-2 h-2 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.9)] pointer-events-none"
+                className="absolute w-2.5 h-2.5 rounded-full bg-[#c25e2e] shadow-[0_0_8px_rgba(194,94,46,0.6)] pointer-events-none"
                 style={{
                   left: `${dotX}px`,
                   top: `${dotY}px`,
@@ -311,12 +311,12 @@ function DashboardReferenceOverview({
               {/* Inside Center Metrics */}
               <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
                 <div className="flex items-baseline">
-                  <span className="text-3xl font-light text-white tracking-tight">
+                  <span className="text-3xl font-light text-[#181614] tracking-tight">
                     {displayProgress}
                   </span>
-                  <span className="text-base font-light text-white ml-0.5">%</span>
+                  <span className="text-base font-light text-[#181614] ml-0.5">%</span>
                 </div>
-                <span className="text-[11px] text-neutral-400 font-normal mt-0.5">
+                <span className="text-[11px] text-[#786f66] font-normal mt-0.5">
                   {completedSteps} of {totalSteps} steps
                 </span>
               </div>
@@ -328,30 +328,30 @@ function DashboardReferenceOverview({
       {/* ──────────────── 3. CONTINUE LEARNING ──────────────── */}
       <section aria-label="Continue Learning" className="space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-medium text-white">Continue learning</h3>
+          <h3 className="text-sm font-medium text-[#faf6ee]">Continue learning</h3>
           <button
             type="button"
             onClick={() => onNavigateTab('courses')}
-            className="text-xs text-neutral-400 hover:text-white transition-colors cursor-pointer"
+            className="text-xs text-[#a8a199] hover:text-[#e87a48] transition-colors cursor-pointer"
           >
             All courses
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pb-8 border-b border-white/[0.08]">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pb-8 border-b border-[#262320]">
           {continueCourses.map((c) => (
             <div key={c.id} className="space-y-2.5">
               <div className="flex items-center justify-between text-sm">
-                <span className="font-normal text-white">{c.title}</span>
-                <span className="text-xs text-neutral-400">{c.progress}%</span>
+                <span className="font-normal text-[#faf6ee]">{c.title}</span>
+                <span className="text-xs text-[#e87a48] font-medium">{c.progress}%</span>
               </div>
-              <p className="text-xs text-neutral-400 font-normal">
+              <p className="text-xs text-[#a8a199] font-normal">
                 {c.subtitle}
               </p>
-              {/* Thin hairline progress bar */}
-              <div className="h-[2.5px] w-full bg-white/10 rounded-full overflow-hidden">
+              {/* Thin hairline progress bar in Burnt Orange on Soft Black track */}
+              <div className="h-[2.5px] w-full bg-[#262320] rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-white rounded-full transition-all duration-500"
+                  className="h-full bg-[#c25e2e] rounded-full transition-all duration-500"
                   style={{ width: `${c.progress}%` }}
                 />
               </div>
@@ -364,21 +364,21 @@ function DashboardReferenceOverview({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-2">
         {/* Column 1: Roadmap progress */}
         <section aria-label="Roadmap Progress" className="space-y-4">
-          <div className="flex items-center justify-between text-xs text-neutral-400 font-normal">
+          <div className="flex items-center justify-between text-xs text-[#a8a199] font-normal">
             <span>Roadmap progress</span>
-            <span>47% overall</span>
+            <span className="text-[#e87a48] font-medium">47% overall</span>
           </div>
 
           <div className="space-y-4">
             {roadmapStages.map((stage, idx) => (
               <div key={idx} className="space-y-2">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-neutral-300 font-normal">{stage.label}</span>
-                  <span className="text-neutral-400">{stage.percent}%</span>
+                  <span className="text-[#faf6ee] font-normal">{stage.label}</span>
+                  <span className="text-[#a8a199]">{stage.percent}%</span>
                 </div>
-                <div className="h-[2px] w-full bg-white/10 rounded-full overflow-hidden">
+                <div className="h-[2px] w-full bg-[#262320] rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-white rounded-full transition-all duration-500"
+                    className="h-full bg-[#c25e2e] rounded-full transition-all duration-500"
                     style={{ width: `${stage.percent}%` }}
                   />
                 </div>
@@ -389,12 +389,12 @@ function DashboardReferenceOverview({
 
         {/* Column 2: Projects */}
         <section aria-label="Projects" className="space-y-4">
-          <div className="flex items-center justify-between text-xs text-neutral-400 font-normal">
+          <div className="flex items-center justify-between text-xs text-[#a8a199] font-normal">
             <span>Projects</span>
             <button
               type="button"
               onClick={() => onNavigateTab('projects')}
-              className="text-neutral-400 hover:text-white transition-colors cursor-pointer"
+              className="text-[#a8a199] hover:text-[#e87a48] transition-colors cursor-pointer"
             >
               All projects
             </button>
@@ -404,15 +404,15 @@ function DashboardReferenceOverview({
             {projectsList.map((p, idx) => (
               <div key={idx} className="space-y-2">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-white font-normal">{p.title}</span>
-                  <span className="text-neutral-400">{p.steps}</span>
+                  <span className="text-[#faf6ee] font-normal">{p.title}</span>
+                  <span className="text-[#a8a199]">{p.steps}</span>
                 </div>
-                <p className="text-[11px] text-neutral-400 font-normal">
+                <p className="text-[11px] text-[#a8a199] font-normal">
                   {p.subtitle}
                 </p>
-                <div className="h-[2px] w-full bg-white/10 rounded-full overflow-hidden">
+                <div className="h-[2px] w-full bg-[#262320] rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-white rounded-full transition-all duration-500"
+                    className="h-full bg-[#c25e2e] rounded-full transition-all duration-500"
                     style={{ width: `${p.progress}%` }}
                   />
                 </div>
@@ -423,12 +423,12 @@ function DashboardReferenceOverview({
 
         {/* Column 3: Achievements */}
         <section aria-label="Achievements" className="space-y-4">
-          <div className="flex items-center justify-between text-xs text-neutral-400 font-normal">
+          <div className="flex items-center justify-between text-xs text-[#a8a199] font-normal">
             <span>Achievements</span>
             <button
               type="button"
               onClick={() => onNavigateTab('portfolio')}
-              className="text-neutral-400 hover:text-white transition-colors cursor-pointer"
+              className="text-[#a8a199] hover:text-[#e87a48] transition-colors cursor-pointer"
             >
               View all
             </button>
@@ -437,16 +437,16 @@ function DashboardReferenceOverview({
           <div className="space-y-4">
             {achievementsList.map((ach, idx) => (
               <div key={idx} className="flex items-center gap-3.5">
-                {/* Circular badge */}
-                <div className="h-8 w-8 rounded-full border border-white/20 bg-white/[0.04] flex items-center justify-center shrink-0 text-white text-xs font-normal">
+                {/* Circular badge in Burnt Orange / Warm Ivory */}
+                <div className="h-8 w-8 rounded-full border border-[#c25e2e]/40 bg-[#c25e2e]/10 flex items-center justify-center shrink-0 text-[#e87a48] text-xs font-normal">
                   {ach.type === 'number' && <span>{ach.badgeText}</span>}
                   {ach.type === 'check' && <Check className="h-3.5 w-3.5 stroke-[2.5]" />}
-                  {ach.type === 'star' && <Star className="h-3.5 w-3.5 fill-white" />}
+                  {ach.type === 'star' && <Star className="h-3.5 w-3.5 fill-current" />}
                 </div>
 
                 <div className="flex flex-col">
-                  <span className="text-xs text-white font-normal">{ach.title}</span>
-                  <span className="text-[11px] text-neutral-400 font-normal mt-0.5">
+                  <span className="text-xs text-[#faf6ee] font-normal">{ach.title}</span>
+                  <span className="text-[11px] text-[#a8a199] font-normal mt-0.5">
                     {ach.subtitle}
                   </span>
                 </div>

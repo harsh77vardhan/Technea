@@ -82,45 +82,45 @@ function DockedAIMentorCompanion({
   return (
     <aside
       aria-label="AI Technical Mentor"
-      className="flex flex-col h-full justify-between bg-[#06070a]/90 backdrop-blur-xl text-[#f8fafc] select-none p-6 relative overflow-hidden"
+      className="flex flex-col h-full justify-between bg-[#141312] border-l border-[#262320] text-[#faf6ee] select-none p-6 relative overflow-hidden"
     >
       {/* ──────────────── TOP HEADER ──────────────── */}
       <div className="space-y-6">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
-            {/* 3D Chrome Metallic Orb matching reference */}
+            {/* 3D Warm Bronze & Burnt Orange Metallic Orb */}
             <div
               className="relative h-8 w-8 rounded-full shrink-0 shadow-[inset_-2px_-2px_6px_rgba(0,0,0,0.8),0_4px_10px_rgba(0,0,0,0.6)]"
               style={{
                 background:
-                  'radial-gradient(circle at 35% 30%, #ffffff 0%, #cbd5e1 15%, #64748b 45%, #1e293b 80%, #05070d 100%)',
-                boxShadow: '0 0 12px rgba(255, 255, 255, 0.15)',
+                  'radial-gradient(circle at 35% 30%, #fbf8f2 0%, #e0c8b0 18%, #8c5332 50%, #3d2315 80%, #170d07 100%)',
+                boxShadow: '0 0 14px rgba(194, 94, 46, 0.25)',
               }}
             >
-              <div className="absolute inset-0 rounded-full border border-white/25 pointer-events-none" />
+              <div className="absolute inset-0 rounded-full border border-[#fbf8f2]/25 pointer-events-none" />
             </div>
 
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold text-white tracking-tight">
+                <span className="text-sm font-semibold text-[#faf6ee] tracking-tight">
                   AI Mentor
                 </span>
-                <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-white/[0.06] border border-white/10 text-neutral-400">
+                <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-[#c25e2e]/15 border border-[#c25e2e]/30 text-[#e87a48]">
                   2.0
                 </span>
               </div>
-              <p className="text-xs text-neutral-400 font-normal mt-0.5">
+              <p className="text-xs text-[#a8a199] font-normal mt-0.5">
                 Aware of your current lesson
               </p>
             </div>
           </div>
 
           {/* Top Right Controls: Minimize & Expand */}
-          <div className="flex items-center gap-1 text-neutral-400 pt-0.5">
+          <div className="flex items-center gap-1 text-[#a8a199] pt-0.5">
             <button
               type="button"
               onClick={onMinimize}
-              className="p-1 rounded-md hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer"
+              className="p-1 rounded-md hover:text-[#faf6ee] hover:bg-[#faf6ee]/5 transition-colors cursor-pointer"
               title="Minimize panel"
             >
               <Minus className="h-3.5 w-3.5" />
@@ -128,7 +128,7 @@ function DockedAIMentorCompanion({
             <button
               type="button"
               onClick={onExpand}
-              className="p-1 rounded-md hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer"
+              className="p-1 rounded-md hover:text-[#faf6ee] hover:bg-[#faf6ee]/5 transition-colors cursor-pointer"
               title="Expand to Fullscreen Studio"
             >
               <Maximize2 className="h-3.5 w-3.5" />
@@ -138,14 +138,14 @@ function DockedAIMentorCompanion({
 
         {/* View Toggle (Context vs Chat) if user has messages */}
         {mentorMessages.length > 1 && (
-          <div className="flex items-center gap-1 p-1 rounded-xl bg-white/[0.03] border border-white/[0.06] text-xs">
+          <div className="flex items-center gap-1 p-1 rounded-xl bg-[#1c1a18] border border-[#262320] text-xs">
             <button
               type="button"
               onClick={() => setActiveView('context')}
               className={`flex-1 py-1 rounded-lg text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                 activeView === 'context'
-                  ? 'bg-white/10 text-white font-medium'
-                  : 'text-neutral-400 hover:text-white'
+                  ? 'bg-[#c25e2e]/15 text-[#e87a48] font-medium border border-[#c25e2e]/30'
+                  : 'text-[#a8a199] hover:text-[#faf6ee]'
               }`}
             >
               <FileText className="h-3 w-3" />
@@ -156,8 +156,8 @@ function DockedAIMentorCompanion({
               onClick={() => setActiveView('chat')}
               className={`flex-1 py-1 rounded-lg text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                 activeView === 'chat'
-                  ? 'bg-white/10 text-white font-medium'
-                  : 'text-neutral-400 hover:text-white'
+                  ? 'bg-[#c25e2e]/15 text-[#e87a48] font-medium border border-[#c25e2e]/30'
+                  : 'text-[#a8a199] hover:text-[#faf6ee]'
               }`}
             >
               <MessageSquare className="h-3 w-3" />
@@ -171,40 +171,40 @@ function DockedAIMentorCompanion({
           <div className="space-y-6 pt-1">
             {/* Learning Context Section */}
             <div>
-              <h4 className="text-xs text-neutral-400 font-normal mb-3">
+              <h4 className="text-xs text-[#a8a199] font-normal mb-3">
                 Learning context
               </h4>
 
               <div className="space-y-2.5 text-xs">
                 <div className="flex items-center justify-between">
-                  <span className="text-neutral-400">Lesson</span>
-                  <span className="text-white font-normal truncate max-w-[170px]">
+                  <span className="text-[#a8a199]">Lesson</span>
+                  <span className="text-[#faf6ee] font-normal truncate max-w-[170px]">
                     {todayMission?.lesson_title || 'JWT authentication'}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-neutral-400">Project</span>
-                  <span className="text-white font-normal truncate max-w-[170px]">
+                  <span className="text-[#a8a199]">Project</span>
+                  <span className="text-[#faf6ee] font-normal truncate max-w-[170px]">
                     {activeRoadmap?.current_milestone?.title || 'Task API'}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-neutral-400">· Focus area</span>
-                  <span className="text-white font-normal truncate max-w-[170px]">
+                  <span className="text-[#a8a199]">· Focus area</span>
+                  <span className="text-[#faf6ee] font-normal truncate max-w-[170px]">
                     Token expiry &amp; security
                   </span>
                 </div>
               </div>
 
               {/* Thin hairline divider */}
-              <div className="border-b border-white/[0.08] my-5" />
+              <div className="border-b border-[#262320] my-5" />
 
               {/* Context Note matching reference */}
-              <p className="text-sm leading-relaxed text-neutral-300">
-                <span className="text-white font-normal">
+              <p className="text-sm leading-relaxed text-[#faf6ee]">
+                <span className="text-[#faf6ee] font-normal">
                   You&apos;re two steps from finishing today&apos;s mission.{' '}
                 </span>
-                <span className="text-neutral-400 font-normal">
+                <span className="text-[#a8a199] font-normal">
                   Want a short recap of token verification before you continue?
                 </span>
               </p>
@@ -212,7 +212,7 @@ function DockedAIMentorCompanion({
 
             {/* Quick Actions List */}
             <div>
-              <h4 className="text-xs text-neutral-400 font-normal mb-2.5">
+              <h4 className="text-xs text-[#a8a199] font-normal mb-2.5">
                 Quick actions
               </h4>
 
@@ -222,10 +222,10 @@ function DockedAIMentorCompanion({
                     key={action.id}
                     type="button"
                     onClick={() => handleQuickAction(action.label, action.prompt)}
-                    className="w-full flex items-center justify-between py-2 text-xs text-neutral-300 hover:text-white transition-colors cursor-pointer group"
+                    className="w-full flex items-center justify-between py-2 text-xs text-[#faf6ee] hover:text-[#e87a48] transition-colors cursor-pointer group"
                   >
                     <span>{action.label}</span>
-                    <ChevronRight className="h-3.5 w-3.5 text-neutral-500 group-hover:text-white transition-colors" />
+                    <ChevronRight className="h-3.5 w-3.5 text-[#a8a199] group-hover:text-[#e87a48] transition-colors" />
                   </button>
                 ))}
               </div>
@@ -236,12 +236,12 @@ function DockedAIMentorCompanion({
         {/* ──────────────── VIEW B: LIVE CHAT STREAM ──────────────── */}
         {activeView === 'chat' && (
           <div className="flex flex-col h-[380px] space-y-3">
-            <div className="flex items-center justify-between pb-2 border-b border-white/[0.06] text-[11px] text-neutral-400">
+            <div className="flex items-center justify-between pb-2 border-b border-[#262320] text-[11px] text-[#a8a199]">
               <span>Synchronized Session</span>
               <button
                 type="button"
                 onClick={resetMentorSession}
-                className="hover:text-white transition-colors cursor-pointer flex items-center gap-1"
+                className="hover:text-[#faf6ee] transition-colors cursor-pointer flex items-center gap-1"
                 title="Reset conversation"
               >
                 <RotateCcw className="h-3 w-3" />
@@ -263,8 +263,8 @@ function DockedAIMentorCompanion({
                   <div
                     className={`max-w-[92%] rounded-2xl px-3.5 py-2.5 ${
                       msg.sender === 'user'
-                        ? 'bg-white text-black font-medium'
-                        : 'bg-white/[0.04] border border-white/10 text-neutral-200'
+                        ? 'bg-[#c25e2e] text-[#faf6ee] font-medium'
+                        : 'bg-[#1c1a18] border border-[#2e2a26] text-[#faf6ee]'
                     }`}
                   >
                     {msg.sender === 'mentor' ? (
@@ -277,9 +277,9 @@ function DockedAIMentorCompanion({
               ))}
 
               {isMentorTyping && (
-                <div className="flex items-center gap-2 px-3 py-2 rounded-2xl bg-white/[0.04] border border-white/10 text-neutral-400 text-xs w-fit">
-                  <Sparkles className="h-3.5 w-3.5 text-white animate-spin" />
-                  <span className="font-mono text-[11px]">Thinking...</span>
+                <div className="flex items-center gap-2 px-3 py-2 rounded-2xl bg-[#1c1a18] border border-[#2e2a26] text-[#a8a199] text-xs w-fit">
+                  <Sparkles className="h-3.5 w-3.5 text-[#e87a48] animate-spin" />
+                  <span className="font-mono text-[11px]">Synthesizing...</span>
                 </div>
               )}
             </div>
@@ -287,23 +287,23 @@ function DockedAIMentorCompanion({
         )}
       </div>
 
-      {/* ──────────────── BOTTOM INPUT PILL MATCHING REFERENCE ──────────────── */}
+      {/* ──────────────── BOTTOM INPUT PILL IN BURNT ORANGE PALETTE ──────────────── */}
       <div className="pt-4">
-        <div className="flex items-center justify-between gap-2 rounded-full bg-white/[0.04] border border-white/10 px-4 py-2 focus-within:border-white/30 transition-colors">
+        <div className="flex items-center justify-between gap-2 rounded-full bg-[#1c1a18] border border-[#2e2a26] px-4 py-2 focus-within:border-[#c25e2e]/50 transition-colors">
           <input
             type="text"
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Ask about your lesson, code, or plan..."
-            className="flex-1 bg-transparent text-xs text-white placeholder-neutral-500 outline-none font-normal"
+            className="flex-1 bg-transparent text-xs text-[#faf6ee] placeholder-[#8c8378] outline-none font-normal"
           />
 
           <button
             type="button"
             onClick={handleSend}
             disabled={!inputText.trim() || isMentorTyping}
-            className="h-7 w-7 rounded-full bg-white text-black flex items-center justify-center shrink-0 hover:bg-neutral-200 disabled:opacity-40 disabled:hover:bg-white transition-all cursor-pointer shadow-md"
+            className="h-7 w-7 rounded-full bg-[#c25e2e] text-[#faf6ee] flex items-center justify-center shrink-0 hover:bg-[#ad4f22] disabled:opacity-40 transition-all cursor-pointer shadow-md"
             title="Send"
           >
             <ArrowUp className="h-3.5 w-3.5 stroke-[2.5]" />
