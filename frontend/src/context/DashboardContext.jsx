@@ -14,6 +14,7 @@ import {
   setActiveRoadmapApi,
   setActiveLearningPathApi,
   toggleLessonProgressApi,
+  toggleStepProgressApi,
   toggleRoadmapMilestoneApi,
   updateProjectStatusApi,
   sendAiChatApi,
@@ -51,6 +52,20 @@ export function DashboardProvider({ children }) {
     }
   }, [])
 
+  // Synchronize document theme attribute and classes across DOM
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.documentElement.setAttribute('data-theme', theme)
+      if (theme === 'dark') {
+        document.documentElement.classList.add('dark')
+        document.documentElement.classList.remove('light')
+      } else {
+        document.documentElement.classList.add('light')
+        document.documentElement.classList.remove('dark')
+      }
+    }
+  }, [theme])
+
   // Telemetry & Metrics (Strict real data from backend/database)
   const [summaryData, setSummaryData] = useState(null)
   const [dailyActivity, setDailyActivity] = useState(null)
@@ -75,6 +90,28 @@ export function DashboardProvider({ children }) {
   })
   const [continueLearningData, setContinueLearningData] = useState(null)
 
+  // Synchronize localStorage changes across browser tabs
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const handleStorageChange = (e) => {
+      if (e.key === 'technea_dashboard_theme' && e.newValue) {
+        setTheme(e.newValue === 'light' ? 'light' : 'dark')
+      }
+      if (e.key === 'technea_active_roadmap' && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue)
+          setActiveRoadmap(parsed)
+        } catch (err) {
+          console.warn('Could not sync active roadmap from storage event:', err)
+        }
+      }
+    }
+
+    window.addEventListener('storage', handleStorageChange)
+    return () => window.removeEventListener('storage', handleStorageChange)
+  }, [])
+
   // Toast notification system
   const [toast, setToast] = useState(null)
   const showToast = useCallback((message, type = 'info') => {
@@ -98,6 +135,8 @@ export function DashboardProvider({ children }) {
 
   // In-memory workspace cache to eliminate redundant network roundtrips
   const workspaceCacheRef = useRef({ data: null, timestamp: 0 })
+  const activeFetchPromiseRef = useRef(null)
+  const isCatalogFetchingRef = useRef(false)
 
   // Helper to unpack workspace payload into state
   const applyWorkspaceData = useCallback((ws) => {
@@ -136,92 +175,149 @@ export function DashboardProvider({ children }) {
       const matchedWsActive =
         (preferredActiveId && ws.saved_roadmaps.find((r) => String(r.id) === String(preferredActiveId))) ||
         (preferredActiveTitle && ws.saved_roadmaps.find((r) => (r.title || '').toLowerCase() === preferredActiveTitle)) ||
-        ws.saved_roadmaps.find((r) => r.is_active) ||
-        ws.saved_roadmaps[0] ||
         null
 
       if (matchedWsActive) {
         setActiveRoadmap((prev) => {
-          // If user explicitly has an active roadmap stored in localStorage, preserve it unless matched
-          if (preferredActiveTitle && prev && (prev.title || '').toLowerCase() === preferredActiveTitle) {
-            return { ...prev, ...matchedWsActive, is_active: true }
+          const updated = { ...(prev || {}), ...matchedWsActive, is_active: true }
+          if (typeof window !== 'undefined') {
+            try {
+              localStorage.setItem('technea_active_roadmap', JSON.stringify(updated))
+              localStorage.setItem('technea_active_roadmap_id', String(updated.id))
+            } catch (err) {
+              console.warn('Failed to save refreshed active roadmap to localStorage:', err)
+            }
           }
-          if (prev && preferredActiveId && String(prev.id) === String(preferredActiveId)) {
-            return { ...prev, ...matchedWsActive, is_active: true }
+          return updated
+        })
+      } else {
+        // If the preferred active roadmap was not in ws.saved_roadmaps (e.g. freshly activated catalog path),
+        // PRESERVE the active roadmap from state / localStorage and keep it in savedRoadmaps
+        setActiveRoadmap((prev) => {
+          if (prev && (prev.title || prev.id)) {
+            const preserved = { ...prev, is_active: true }
+            setSavedRoadmaps((curSaved) => {
+              if (!curSaved.some((r) => String(r.id) === String(preserved.id) || r.title === preserved.title)) {
+                return [preserved, ...curSaved]
+              }
+              return curSaved
+            })
+            return preserved
           }
-          return matchedWsActive
+          const fallback = ws.saved_roadmaps.find((r) => r.is_active) || ws.saved_roadmaps[0] || null
+          return fallback
         })
       }
     }
 
     if (ws.continue_learning) {
-      setContinueLearningData(ws.continue_learning)
+      setContinueLearningData((prev) => {
+        if (!prev) return ws.continue_learning
+        let prefId = null
+        let prefTitle = null
+        if (typeof window !== 'undefined') {
+          prefId = localStorage.getItem('technea_active_roadmap_id')
+          try {
+            const stored = localStorage.getItem('technea_active_roadmap')
+            if (stored) {
+              const p = JSON.parse(stored)
+              prefId = prefId || String(p.id || '')
+              prefTitle = (p.title || '').toLowerCase()
+            }
+          } catch {
+            // Ignore parse errors from corrupted storage
+          }
+        }
+        const wsRoadmapId = String(ws.continue_learning.roadmap_id || '')
+        const wsRoadmapTitle = (ws.continue_learning.roadmap_title || '').toLowerCase()
+        if (
+          (prefId && wsRoadmapId === prefId) ||
+          (prefTitle && wsRoadmapTitle === prefTitle)
+        ) {
+          return ws.continue_learning
+        }
+        return prev
+      })
     }
-  }, [])
+  }, [setActiveRoadmap])
 
-  // Consolidated data refresh function
-  const refreshDashboard = useCallback(async (force = true) => {
-    if (!user) return
+  // Consolidated data refresh function with deduplication and in-memory cache
+  const refreshDashboard = useCallback(
+    async (force = false) => {
+      if (!user) return null
 
-    // Serve from cache if fresh and not forced
-    const now = Date.now()
-    if (!force && workspaceCacheRef.current.data && now - workspaceCacheRef.current.timestamp < 45000) {
-      applyWorkspaceData(workspaceCacheRef.current.data)
-      setIsLoading(false)
-      return
-    }
-
-    try {
-      // 1. Try single consolidated endpoint first
-      const wsData = await getDashboardWorkspaceApi()
-      if (wsData && wsData.summary) {
-        applyWorkspaceData(wsData)
-        workspaceCacheRef.current = { data: wsData, timestamp: now }
-        return
+      // Serve from cache if fresh and not forced (45s TTL)
+      const now = Date.now()
+      if (!force && workspaceCacheRef.current.data && now - workspaceCacheRef.current.timestamp < 45000) {
+        applyWorkspaceData(workspaceCacheRef.current.data)
+        setIsLoading(false)
+        return workspaceCacheRef.current.data
       }
-    } catch {
-      // 2. Fallback to parallel multi-endpoint requests if consolidated endpoint is unavailable
-      try {
-        const [summaryRes, dailyRes, achRes, roadmapsRes, recProjRes, myProjRes] =
-          await Promise.allSettled([
-            getDashboardSummaryApi(),
-            getDailyActivityApi(),
-            getAchievementsApi(),
-            getMyRoadmapsApi(),
-            getRecommendedProjectsApi(),
-            getMyProjectsApi(),
-          ])
 
-        if (summaryRes.status === 'fulfilled' && summaryRes.value) {
-          setSummaryData(summaryRes.value)
-        }
-        if (dailyRes.status === 'fulfilled' && dailyRes.value) {
-          setDailyActivity(dailyRes.value)
-        }
-        if (achRes.status === 'fulfilled' && Array.isArray(achRes.value)) {
-          setAchievements(achRes.value)
-        }
-        if (roadmapsRes.status === 'fulfilled' && Array.isArray(roadmapsRes.value)) {
-          const roadmaps = roadmapsRes.value
-          setSavedRoadmaps(roadmaps)
-          const active = roadmaps.find((r) => r.is_active) || roadmaps[0] || null
-          if (active) setActiveRoadmap(active)
-        }
-        if (recProjRes.status === 'fulfilled' && Array.isArray(recProjRes.value)) {
-          setRecommendedProjects(recProjRes.value)
-        }
-        if (myProjRes.status === 'fulfilled' && Array.isArray(myProjRes.value)) {
-          setMyProjects(myProjRes.value)
-        }
-      } catch (fallbackErr) {
-        console.warn('Dashboard data refresh partial error:', fallbackErr)
+      // Deduplicate in-flight fetch: reuse pending promise if already running
+      if (!force && activeFetchPromiseRef.current) {
+        return activeFetchPromiseRef.current
       }
-    } finally {
-      setIsLoading(false)
-    }
-  }, [user, applyWorkspaceData])
 
-  // Initial load
+      const fetchPromise = (async () => {
+        try {
+          // 1. Try single consolidated endpoint first
+          const wsData = await getDashboardWorkspaceApi()
+          if (wsData && wsData.summary) {
+            applyWorkspaceData(wsData)
+            workspaceCacheRef.current = { data: wsData, timestamp: Date.now() }
+            return wsData
+          }
+        } catch {
+          // 2. Fallback to parallel multi-endpoint requests if consolidated endpoint is unavailable
+          try {
+            const [summaryRes, dailyRes, achRes, roadmapsRes, recProjRes, myProjRes] =
+              await Promise.allSettled([
+                getDashboardSummaryApi(),
+                getDailyActivityApi(),
+                getAchievementsApi(),
+                getMyRoadmapsApi(),
+                getRecommendedProjectsApi(),
+                getMyProjectsApi(),
+              ])
+
+            if (summaryRes.status === 'fulfilled' && summaryRes.value) {
+              setSummaryData(summaryRes.value)
+            }
+            if (dailyRes.status === 'fulfilled' && dailyRes.value) {
+              setDailyActivity(dailyRes.value)
+            }
+            if (achRes.status === 'fulfilled' && Array.isArray(achRes.value)) {
+              setAchievements(achRes.value)
+            }
+            if (roadmapsRes.status === 'fulfilled' && Array.isArray(roadmapsRes.value)) {
+              const roadmaps = roadmapsRes.value
+              setSavedRoadmaps(roadmaps)
+              const active = roadmaps.find((r) => r.is_active) || roadmaps[0] || null
+              if (active) setActiveRoadmap(active)
+            }
+            if (recProjRes.status === 'fulfilled' && Array.isArray(recProjRes.value)) {
+              setRecommendedProjects(recProjRes.value)
+            }
+            if (myProjRes.status === 'fulfilled' && Array.isArray(myProjRes.value)) {
+              setMyProjects(myProjRes.value)
+            }
+          } catch (fallbackErr) {
+            console.warn('Dashboard data refresh partial error:', fallbackErr)
+          }
+        } finally {
+          setIsLoading(false)
+          activeFetchPromiseRef.current = null
+        }
+      })()
+
+      activeFetchPromiseRef.current = fetchPromise
+      return fetchPromise
+    },
+    [user, applyWorkspaceData, setActiveRoadmap]
+  )
+
+  // Initial load utilizing cached data or in-flight deduplication
   useEffect(() => {
     let isMounted = true
 
@@ -230,29 +326,7 @@ export function DashboardProvider({ children }) {
         if (isMounted) setIsLoading(false)
         return
       }
-
-      // Check cache for instant 0ms paint
-      const now = Date.now()
-      if (workspaceCacheRef.current.data && now - workspaceCacheRef.current.timestamp < 45000) {
-        applyWorkspaceData(workspaceCacheRef.current.data)
-        if (isMounted) setIsLoading(false)
-        return
-      }
-
-      try {
-        const wsData = await getDashboardWorkspaceApi()
-        if (!isMounted) return
-        if (wsData && wsData.summary) {
-          applyWorkspaceData(wsData)
-          workspaceCacheRef.current = { data: wsData, timestamp: now }
-        }
-      } catch {
-        // Fallback to parallel fetching
-        if (!isMounted) return
-        await refreshDashboard(true)
-      } finally {
-        if (isMounted) setIsLoading(false)
-      }
+      await refreshDashboard(false)
     }
 
     loadInitialData()
@@ -260,19 +334,25 @@ export function DashboardProvider({ children }) {
     return () => {
       isMounted = false
     }
-  }, [user, applyWorkspaceData, refreshDashboard])
+  }, [user, refreshDashboard])
 
-  // Pre-load roadmap catalog for instant search and roadmaps discovery
+  // Pre-load roadmap catalog with deduplication guard for instant search and discovery
   useEffect(() => {
-    if (catalogRoadmaps.length > 0) return
+    if (catalogRoadmaps.length > 0 || isCatalogFetchingRef.current) return
     let isSubscribed = true
+    isCatalogFetchingRef.current = true
+
     getRoadmapCatalogApi({ limit: 250 })
       .then((catVal) => {
         if (!isSubscribed) return
         if (Array.isArray(catVal)) setCatalogRoadmaps(catVal)
         else if (catVal?.items) setCatalogRoadmaps(catVal.items)
       })
-      .catch((err) => console.warn('Could not load catalog roadmaps:', err))
+      .catch((err) => {
+        console.warn('Could not load catalog roadmaps:', err)
+        isCatalogFetchingRef.current = false
+      })
+
     return () => {
       isSubscribed = false
     }
@@ -321,27 +401,56 @@ export function DashboardProvider({ children }) {
       // 4. Invalidate workspace cache to prevent stale paints
       workspaceCacheRef.current = { data: null, timestamp: 0 }
 
-      // 5. Derive optimistic continueLearningData matching the new active roadmap
-      const firstStep =
-        (Array.isArray(newActive.roadmap_steps) && newActive.roadmap_steps[0]) ||
-        newActive.roadmap_data?.phases?.[0]?.milestones?.[0] ||
-        (Array.isArray(newActive.milestones) && newActive.milestones[0]) ||
-        newActive.current_milestone
+      // 5. Derive optimistic continueLearningData matching the new active roadmap (first uncompleted step)
+      const completedIds = new Set(
+        (newActive.completed_milestone_ids || []).map(String)
+      )
+      if (typeof window !== 'undefined' && newActive.id) {
+        try {
+          const stored = localStorage.getItem(`technea_completed_steps_${newActive.id}`)
+          if (stored) {
+            const parsed = JSON.parse(stored)
+            if (Array.isArray(parsed)) parsed.forEach((id) => completedIds.add(String(id)))
+          }
+        } catch {
+          // Ignore parse errors from corrupted storage
+        }
+      }
 
-      const firstMilestoneTitle = firstStep?.title || 'Core Foundations'
-      const firstEstimatedTime = firstStep?.duration || firstStep?.estimated_time || '25 min'
+      let nextStep = null
+      if (Array.isArray(newActive.roadmap_steps) && newActive.roadmap_steps.length > 0) {
+        nextStep = newActive.roadmap_steps.find((s) => !completedIds.has(String(s.id))) || newActive.roadmap_steps[0]
+      } else if (newActive.roadmap_data?.phases && Array.isArray(newActive.roadmap_data.phases)) {
+        for (const phase of newActive.roadmap_data.phases) {
+          for (const ms of phase.milestones || []) {
+            if (!completedIds.has(String(ms.id))) {
+              nextStep = ms
+              break
+            }
+          }
+          if (nextStep) break
+        }
+        if (!nextStep && newActive.roadmap_data.phases[0]?.milestones?.[0]) {
+          nextStep = newActive.roadmap_data.phases[0].milestones[0]
+        }
+      } else if (Array.isArray(newActive.milestones) && newActive.milestones.length > 0) {
+        nextStep = newActive.milestones.find((m) => !completedIds.has(String(m.id))) || newActive.milestones[0]
+      }
+
+      const nextMilestoneTitle = nextStep?.title || 'Core Foundations'
+      const nextEstimatedTime = nextStep?.duration || nextStep?.estimated_time || '25 min'
 
       setContinueLearningData({
         roadmap_id: newActive.id,
         roadmap_title: newActive.title,
-        milestone_id: String(firstStep?.id || '1'),
-        milestone_title: firstMilestoneTitle,
-        phase_title: newActive.roadmap_data?.phases?.[0]?.title || `${newActive.title} Modules`,
-        lesson_id: firstStep?.id || 1,
-        lesson_title: firstStep?.title || `Foundations of ${newActive.title}`,
-        course_id: firstStep?.course_id || newActive.id || 1,
-        course_title: newActive.title,
-        duration: firstEstimatedTime,
+        milestone_id: String(nextStep?.id || '1'),
+        milestone_title: nextMilestoneTitle,
+        phase_title: nextStep?.phase_title || newActive.roadmap_data?.phases?.[0]?.title || `${newActive.title} Modules`,
+        lesson_id: nextStep?.lesson_id || nextStep?.id || 1,
+        lesson_title: nextStep?.title || `Foundations of ${newActive.title}`,
+        course_id: nextStep?.course_id || null,
+        course_title: nextStep?.course_title || newActive.title,
+        duration: nextEstimatedTime,
         progress_percent: newActive.progress_percent || 0,
       })
 
@@ -369,19 +478,20 @@ export function DashboardProvider({ children }) {
         console.warn('Dashboard telemetry refresh error:', err)
       }
     },
-    [refreshDashboard, showToast]
+    [refreshDashboard, showToast, setActiveRoadmap]
   )
 
   // Toggle Daily Task Checklist
   const toggleDailyTask = useCallback(
     async (taskId, isCompleted) => {
+      workspaceCacheRef.current = { data: null, timestamp: 0 }
       try {
         const updated = await toggleDailyTaskApi({ task_id: taskId, is_completed: isCompleted })
         setDailyActivity(updated)
         if (isCompleted) {
           showToast('Daily task checked off! +10 XP', 'success')
         }
-        await refreshDashboard()
+        await refreshDashboard(true)
       } catch (err) {
         console.warn('Could not toggle daily task via API, using optimistic update:', err)
         setDailyActivity((prev) => {
@@ -405,6 +515,62 @@ export function DashboardProvider({ children }) {
   // Toggle Lesson Progress with Automatic Cascading
   const completeLesson = useCallback(
     async (courseId, lessonId, isCompleted = true) => {
+      // 1. Optimistic XP and daily activity updates in DashboardContext
+      setSummaryData((prev) => {
+        if (!prev) return prev
+        const xpDelta = isCompleted ? 20 : -20
+        const lessonDelta = isCompleted ? 1 : -1
+        return {
+          ...prev,
+          xp_points: Math.max(0, (prev.xp_points || 0) + xpDelta),
+          total_completed_lessons: Math.max(0, (prev.total_completed_lessons || 0) + lessonDelta),
+        }
+      })
+
+      setDailyActivity((prev) => {
+        const currentTasks = new Set(prev?.completed_tasks || [])
+        if (isCompleted) currentTasks.add('lesson')
+        else currentTasks.delete('lesson')
+        return {
+          ...prev,
+          completed_tasks: Array.from(currentTasks),
+          streak_count: Math.max(1, prev?.streak_count || 1),
+          earned_today_xp: Math.max(0, (prev?.earned_today_xp || 0) + (isCompleted ? 20 : -20)),
+        }
+      })
+
+      // 2. Persist lesson completion to localStorage
+      if (typeof window !== 'undefined' && courseId) {
+        try {
+          const key = `technea_completed_lessons_${courseId}`
+          const stored = localStorage.getItem(key)
+          const ids = stored ? JSON.parse(stored) : []
+          const nextIds = isCompleted
+            ? Array.from(new Set([...ids.map(String), String(lessonId)]))
+            : ids.map(String).filter((id) => id !== String(lessonId))
+          localStorage.setItem(key, JSON.stringify(nextIds))
+        } catch (e) {
+          console.warn('Failed to update completed lessons in localStorage:', e)
+        }
+      }
+
+      // 3. Optimistically advance continueLearningData if current lesson was completed
+      setContinueLearningData((prev) => {
+        if (!prev) return prev
+        if (String(prev.course_id) === String(courseId) && String(prev.lesson_id) === String(lessonId) && isCompleted) {
+          return {
+            ...prev,
+            lesson_id: Number(lessonId) + 1,
+            lesson_title: 'Next Lesson',
+          }
+        }
+        return prev
+      })
+
+      // 4. Invalidate workspace cache to ensure fresh backend paint
+      workspaceCacheRef.current = { data: null, timestamp: 0 }
+
+      // 5. Backend sync
       try {
         const res = await toggleLessonProgressApi({
           course_id: courseId,
@@ -414,46 +580,107 @@ export function DashboardProvider({ children }) {
         if (isCompleted) {
           showToast('Lesson completed! Progress synchronized • +20 XP', 'success')
         }
-        await refreshDashboard()
+        await refreshDashboard(true)
         return res
       } catch (err) {
-        console.error('Failed to toggle lesson progress:', err)
-        throw err
+        console.warn('Failed to toggle lesson progress via API (offline or guest):', err)
+        if (isCompleted) {
+          showToast('Lesson progress saved locally • +20 XP', 'success')
+        }
+        return { completed_lesson_ids: [lessonId] }
       }
     },
     [refreshDashboard, showToast]
   )
 
-  // Toggle Milestone Progress
+  // Toggle Milestone Progress (handles both catalog learning paths & AI roadmaps)
   const toggleMilestone = useCallback(
-    async (roadmapId, milestoneId, isCompleted) => {
+    async (roadmapId, milestoneId, isCompleted = true) => {
+      // 1. Optimistic active roadmap milestone update
+      setActiveRoadmap((prev) => {
+        if (!prev) return prev
+        const prevIds = new Set((prev.completed_milestone_ids || []).map(String))
+        if (isCompleted) prevIds.add(String(milestoneId))
+        else prevIds.delete(String(milestoneId))
+        const total = prev.total_steps_count || prev.milestones?.length || prev.roadmap_steps?.length || 4
+        const updated = {
+          ...prev,
+          completed_milestone_ids: Array.from(prevIds),
+          progress_percent: Math.min(100, Math.round((prevIds.size / Math.max(1, total)) * 100)),
+        }
+        if (typeof window !== 'undefined') {
+          try {
+            localStorage.setItem('technea_active_roadmap', JSON.stringify(updated))
+            localStorage.setItem(`technea_completed_steps_${roadmapId}`, JSON.stringify(Array.from(prevIds)))
+          } catch {
+            // Ignore quota exceeded
+          }
+        }
+        return updated
+      })
+
+      // 2. Optimistic summary XP and milestone update
+      setSummaryData((prev) => {
+        if (!prev) return prev
+        return {
+          ...prev,
+          xp_points: Math.max(0, (prev.xp_points || 0) + (isCompleted ? 50 : -50)),
+          total_completed_milestones: Math.max(0, (prev.total_completed_milestones || 0) + (isCompleted ? 1 : -1)),
+        }
+      })
+
+      // 3. Invalidate workspace cache
+      workspaceCacheRef.current = { data: null, timestamp: 0 }
+
+      // 4. API sync: dispatch to either curated step progress or user generated roadmap milestone
       try {
-        const updated = await toggleRoadmapMilestoneApi(roadmapId, {
-          milestone_id: milestoneId,
-          is_completed: isCompleted,
-        })
+        let updated = null
+        if (activeRoadmap?.is_generated === false) {
+          updated = await toggleStepProgressApi({
+            path_id: Number(roadmapId),
+            step_id: Number(milestoneId),
+            is_completed: isCompleted,
+          })
+        } else {
+          try {
+            updated = await toggleRoadmapMilestoneApi(roadmapId, {
+              milestone_id: String(milestoneId),
+              is_completed: isCompleted,
+            })
+          } catch {
+            updated = await toggleStepProgressApi({
+              path_id: Number(roadmapId),
+              step_id: Number(milestoneId),
+              is_completed: isCompleted,
+            })
+          }
+        }
         if (isCompleted) {
           showToast('Milestone achieved! Next mission unlocked • +50 XP', 'success')
         }
-        await refreshDashboard()
+        await refreshDashboard(true)
         return updated
       } catch (err) {
-        console.error('Failed to toggle milestone:', err)
-        throw err
+        console.warn('Backend milestone sync notice (using offline optimistic state):', err)
+        if (isCompleted) {
+          showToast('Milestone saved locally • +50 XP', 'success')
+        }
+        return null
       }
     },
-    [refreshDashboard, showToast]
+    [activeRoadmap, refreshDashboard, showToast, setActiveRoadmap]
   )
 
   // Update Project Status
   const updateProject = useCallback(
     async (projectId, status, githubUrl) => {
+      workspaceCacheRef.current = { data: null, timestamp: 0 }
       try {
         const payload = { status }
         if (githubUrl !== undefined) payload.github_url = githubUrl
         const updated = await updateProjectStatusApi(projectId, payload)
         showToast(`Project updated: ${status.replace('_', ' ')}`, 'success')
-        await refreshDashboard()
+        await refreshDashboard(true)
         return updated
       } catch (err) {
         console.error('Failed to update project status:', err)
@@ -491,6 +718,17 @@ export function DashboardProvider({ children }) {
     const completedSet = new Set(
       (activeRoadmap.completed_milestone_ids || []).map((id) => String(id))
     )
+    if (typeof window !== 'undefined' && activeRoadmap.id) {
+      try {
+        const stored = localStorage.getItem(`technea_completed_steps_${activeRoadmap.id}`)
+        if (stored) {
+          const parsed = JSON.parse(stored)
+          if (Array.isArray(parsed)) parsed.forEach((id) => completedSet.add(String(id)))
+        }
+      } catch {
+        // Ignore parse errors from corrupted storage
+      }
+    }
 
     // CASE 1: Curated catalog roadmap with sequential roadmap_steps
     if (Array.isArray(activeRoadmap.roadmap_steps) && activeRoadmap.roadmap_steps.length > 0) {
@@ -512,7 +750,7 @@ export function DashboardProvider({ children }) {
             description: step.description,
             estimated_time: step.duration || '25 min',
             skills: step.topics || [],
-            course_id: step.course_id || activeRoadmap.id || 1,
+            course_id: step.course_id || null,
             lesson_id: step.id || idx + 1,
           }
         }
@@ -526,7 +764,7 @@ export function DashboardProvider({ children }) {
           locked: !isDone && !isCurrent,
           estimated_time: step.duration || '25 min',
           skills: step.topics || [],
-          course_id: step.course_id || activeRoadmap.id || 1,
+          course_id: step.course_id || null,
           lesson_id: step.id || idx + 1,
         })
       })
@@ -583,7 +821,7 @@ export function DashboardProvider({ children }) {
             locked: !isDone && !isCurrent,
             estimated_time: ms.estimated_time || '35 mins',
             skills: ms.skills || ms.key_skills || [],
-            course_id: ms.courses?.[0]?.id || ms.course_id || 1,
+            course_id: ms.courses?.[0]?.id || ms.course_id || null,
             lesson_id: ms.courses?.[0]?.lesson_id || ms.lesson_id || 1,
           })
         })
@@ -646,7 +884,7 @@ export function DashboardProvider({ children }) {
         progress_percent: 0,
         estimated_time: '20 minutes remaining',
         reward_xp: 20,
-        course_id: 1,
+        course_id: null,
         lesson_id: 1,
       }
     }
@@ -671,7 +909,7 @@ export function DashboardProvider({ children }) {
         progress_percent: continueLearningData.progress_percent ?? activeRoadmapNormalized.progress_percent ?? 0,
         estimated_time: continueLearningData.duration ? `${continueLearningData.duration} remaining` : '25 minutes remaining',
         reward_xp: 20,
-        course_id: continueLearningData.course_id || 1,
+        course_id: continueLearningData.course_id || null,
         lesson_id: continueLearningData.lesson_id || 1,
       }
     }
@@ -694,8 +932,8 @@ export function DashboardProvider({ children }) {
       progress_percent: activeRoadmapNormalized.progress_percent || 0,
       estimated_time: currentMs?.estimated_time ? `${currentMs.estimated_time} remaining` : '25 minutes remaining',
       reward_xp: 20,
-      course_id: currentMs?.course_id || activeRoadmapNormalized.id || 1,
-      lesson_id: currentMs?.lesson_id || 1,
+      course_id: currentMs?.course_id || continueLearningData?.course_id || null,
+      lesson_id: currentMs?.lesson_id || continueLearningData?.lesson_id || 1,
     }
   }, [continueLearningData, activeRoadmapNormalized])
 
@@ -712,7 +950,28 @@ export function DashboardProvider({ children }) {
     }
   }, [activeRoadmapNormalized, todayMission, dailyActivity, summaryData, user])
 
-  // Send AI Mentor Message with injected context
+  // Synchronized refs to decouple mentor callbacks and eliminate re-renders across consumers
+  const mentorMessagesRef = useRef(mentorMessages)
+  useEffect(() => {
+    mentorMessagesRef.current = mentorMessages
+  }, [mentorMessages])
+
+  const aiMentorContextRef = useRef(aiMentorContext)
+  useEffect(() => {
+    aiMentorContextRef.current = aiMentorContext
+  }, [aiMentorContext])
+
+  const activeRoadmapNormalizedRef = useRef(activeRoadmapNormalized)
+  useEffect(() => {
+    activeRoadmapNormalizedRef.current = activeRoadmapNormalized
+  }, [activeRoadmapNormalized])
+
+  const todayMissionRef = useRef(todayMission)
+  useEffect(() => {
+    todayMissionRef.current = todayMission
+  }, [todayMission])
+
+  // Send AI Mentor Message with stable callback reference
   const sendMentorMessage = useCallback(
     async (text) => {
       if (!text || !text.trim()) return
@@ -728,17 +987,18 @@ export function DashboardProvider({ children }) {
       setIsMentorTyping(true)
 
       try {
-        const historyPayload = mentorMessages
-          .filter((m) => m.id !== 'init-1')
-          .map((m) => ({
-            role: m.sender === 'user' ? 'user' : 'assistant',
-            content: m.content,
-          }))
+        const historyPayload = [
+          ...mentorMessagesRef.current.filter((m) => m.id !== 'init-1'),
+          userMsg,
+        ].map((m) => ({
+          role: m.sender === 'user' ? 'user' : 'assistant',
+          content: m.content,
+        }))
 
         const res = await sendAiChatApi({
           message: text.trim(),
           conversation_history: historyPayload,
-          context: aiMentorContext,
+          context: aiMentorContextRef.current,
         })
 
         const aiMsg = {
@@ -753,11 +1013,13 @@ export function DashboardProvider({ children }) {
         setMentorMessages((prev) => [...prev, aiMsg])
       } catch (err) {
         console.error('AI Mentor chat failure:', err)
+        const currentNorm = activeRoadmapNormalizedRef.current
+        const currentToday = todayMissionRef.current
         const errMsg = {
           id: `msg-${Date.now() + 2}`,
           sender: 'mentor',
           content:
-            `I am synchronized with your active roadmap "${activeRoadmapNormalized?.title || 'Technea Workspace'}" and milestone "${todayMission?.milestone_title || todayMission?.lesson_title || 'Core Foundations'}". How would you like to proceed with your practice today?`,
+            `I am synchronized with your active roadmap "${currentNorm?.title || 'Technea Workspace'}" and milestone "${currentToday?.milestone_title || currentToday?.lesson_title || 'Core Foundations'}". How would you like to proceed with your practice today?`,
           suggestions: ['Explain current concept', 'Give me a code challenge', 'Review my progress'],
           related_actions: [],
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -767,19 +1029,20 @@ export function DashboardProvider({ children }) {
         setIsMentorTyping(false)
       }
     },
-    [mentorMessages, aiMentorContext, activeRoadmapNormalized?.title, todayMission]
+    []
   )
 
   const resetMentorSession = useCallback(() => {
+    const currentNorm = activeRoadmapNormalizedRef.current
     setMentorMessages([
       {
         id: 'init-1',
         sender: 'mentor',
-        content: `Workspace context re-synchronized with active track: ${activeRoadmapNormalized?.title || 'Technea'}. How may I guide your next step?`,
+        content: `Workspace context re-synchronized with active track: ${currentNorm?.title || 'Technea'}. How may I guide your next step?`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       },
     ])
-  }, [activeRoadmapNormalized])
+  }, [])
 
   const value = useMemo(
     () => ({
@@ -811,7 +1074,6 @@ export function DashboardProvider({ children }) {
       toggleDailyTask,
       updateProject,
       refreshDashboard,
-      toast,
       showToast,
       theme,
       setTheme: setExplicitTheme,
@@ -844,7 +1106,6 @@ export function DashboardProvider({ children }) {
       toggleDailyTask,
       updateProject,
       refreshDashboard,
-      toast,
       showToast,
       theme,
       setExplicitTheme,

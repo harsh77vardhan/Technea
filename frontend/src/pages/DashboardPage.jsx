@@ -137,14 +137,22 @@ export default function DashboardPage({
 
   // Direct lesson navigation
   const handleContinueLesson = useCallback((mission) => {
-    const courseId = mission?.course_id || continueLearningData?.course_id || 182
-    const lessonId = mission?.lesson_id || continueLearningData?.lesson_id || 241
-    const targetUrl = `/courses/${courseId}?lesson=${lessonId}`
+    const courseId =
+      mission?.course_id ||
+      continueLearningData?.course_id ||
+      activeRoadmap?.course_id ||
+      null
+    const lessonId = mission?.lesson_id || continueLearningData?.lesson_id || 1
+    const targetUrl = courseId
+      ? `/courses/${courseId}?lesson=${lessonId}`
+      : activeRoadmap?.id
+      ? `/courses?path=${activeRoadmap.id}`
+      : '/courses'
     if (typeof window !== 'undefined') {
       window.history.pushState({}, '', targetUrl)
       window.dispatchEvent(new PopStateEvent('popstate'))
     }
-  }, [continueLearningData])
+  }, [continueLearningData, activeRoadmap])
 
   // Filter catalog roadmaps with multi-faceted criteria
   const filteredCatalog = useMemo(() => {
@@ -152,12 +160,12 @@ export default function DashboardPage({
     if (roadmapSearch.trim()) {
       const q = roadmapSearch.toLowerCase().trim()
       list = list.filter((rm) =>
-        rm.title?.toLowerCase().includes(q) ||
-        rm.description?.toLowerCase().includes(q) ||
-        rm.category?.toLowerCase().includes(q) ||
-        rm.target_role?.toLowerCase().includes(q) ||
-        (Array.isArray(rm.skills_covered) && rm.skills_covered.some((s) => s.toLowerCase().includes(q))) ||
-        (Array.isArray(rm.related_concepts) && rm.related_concepts.some((c) => c.toLowerCase().includes(q)))
+        (typeof rm.title === 'string' && rm.title.toLowerCase().includes(q)) ||
+        (typeof rm.description === 'string' && rm.description.toLowerCase().includes(q)) ||
+        (typeof rm.category === 'string' && rm.category.toLowerCase().includes(q)) ||
+        (typeof rm.target_role === 'string' && rm.target_role.toLowerCase().includes(q)) ||
+        (Array.isArray(rm.skills_covered) && rm.skills_covered.some((s) => String(s || '').toLowerCase().includes(q))) ||
+        (Array.isArray(rm.related_concepts) && rm.related_concepts.some((c) => String(c || '').toLowerCase().includes(q)))
       )
     }
     if (filterDifficulty !== 'all') {
@@ -177,6 +185,9 @@ export default function DashboardPage({
     if (filterCategory !== 'all') {
       list = list.filter((rm) => {
         const cat = `${rm.category || ''} ${rm.target_role || ''} ${rm.title || ''}`.toLowerCase()
+        if (filterCategory === 'AI' || filterCategory === 'AI & ML') {
+          return /\b(ai|ml|machine learning|artificial intelligence|deep learning|llm|neural|data science)\b/i.test(cat)
+        }
         return cat.includes(filterCategory.toLowerCase().replace('&', ''))
       })
     }
@@ -355,6 +366,7 @@ export default function DashboardPage({
                 onContinueLesson={handleContinueLesson}
                 onExploreCatalog={onOpenExplorer}
                 onNavigateTab={setActiveTab}
+                onInspectRoadmap={(rm) => setSelectedRoadmapForDetail(rm || activeRoadmap)}
               />
             </motion.div>
           )}
@@ -793,71 +805,92 @@ export default function DashboardPage({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {filteredCatalog.slice(0, 18).map((catRm) => {
-                    const isAlreadyActive =
-                      activeRoadmap &&
-                      (String(catRm.id) === String(activeRoadmap.id) ||
-                        (catRm.title && activeRoadmap.title && catRm.title.toLowerCase() === activeRoadmap.title.toLowerCase()))
+                {filteredCatalog.length === 0 ? (
+                  <div className="p-12 text-center rounded-3xl border border-[#ded3bf] bg-[#faf6ee] text-[#181614] space-y-3">
+                    <Compass className="h-8 w-8 text-[#c25e2e] mx-auto opacity-80" />
+                    <h4 className="text-base font-medium">No roadmaps matched your search</h4>
+                    <p className="text-xs text-[#665e56] max-w-sm mx-auto">
+                      Try adjusting your keywords or clearing the category filter to explore all available engineering tracks.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRoadmapSearch('')
+                        setFilterCategory('all')
+                        setFilterDifficulty('all')
+                      }}
+                      className="px-4 py-2 rounded-full bg-[#c25e2e] text-[#faf6ee] text-xs font-medium hover:bg-[#ad4f22] transition-colors cursor-pointer"
+                    >
+                      Reset Filters
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {filteredCatalog.slice(0, 18).map((catRm) => {
+                      const isAlreadyActive =
+                        activeRoadmap &&
+                        (String(catRm.id) === String(activeRoadmap.id) ||
+                          (catRm.title && activeRoadmap.title && catRm.title.toLowerCase() === activeRoadmap.title.toLowerCase()))
 
-                    return (
-                      <div
-                        key={catRm.id}
-                        onClick={() => setSelectedRoadmapForDetail(catRm)}
-                        className="group p-5 rounded-3xl border border-[#e5decb] bg-[#faf6ee] text-[#181614] hover:shadow-xl transition-all flex flex-col justify-between cursor-pointer relative"
-                      >
-                        <div>
-                          <div className="flex items-center justify-between text-xs text-[#8c8278] mb-2">
-                            <span className="px-2 py-0.5 rounded-md bg-[#ede5d5] text-[#665e56] font-medium">
-                              {catRm.category || 'Engineering'}
+                      return (
+                        <div
+                          key={catRm.id}
+                          onClick={() => setSelectedRoadmapForDetail(catRm)}
+                          className="group p-5 rounded-3xl border border-[#e5decb] bg-[#faf6ee] text-[#181614] hover:shadow-xl transition-all flex flex-col justify-between cursor-pointer relative"
+                        >
+                          <div>
+                            <div className="flex items-center justify-between text-xs text-[#8c8278] mb-2">
+                              <span className="px-2 py-0.5 rounded-md bg-[#ede5d5] text-[#665e56] font-medium">
+                                {catRm.category || 'Engineering'}
+                              </span>
+                              <span className="font-medium text-[#c25e2e]">{catRm.difficulty || 'Intermediate'}</span>
+                            </div>
+
+                            <h3 className="text-base font-medium text-[#181614] mb-1.5 group-hover:text-[#c25e2e] transition-colors tracking-tight">
+                              {catRm.title}
+                            </h3>
+
+                            <p className="text-xs text-[#665e56] line-clamp-3 leading-relaxed mb-3">
+                              {catRm.description}
+                            </p>
+
+                            {/* Quick skills tags */}
+                            <div className="flex flex-wrap gap-1.5 mb-2">
+                              {((catRm.skills_covered || ['Foundations', 'Patterns', 'Labs']).slice(0, 3)).map((sk) => (
+                                <span
+                                  key={sk}
+                                  className="text-[10px] px-2 py-0.5 rounded-full bg-[#f3ecdf] text-[#786f66]"
+                                >
+                                  {sk}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="mt-4 pt-3 border-t border-[#ded3bf] flex items-center justify-between">
+                            <span className="text-xs text-[#8c8278]">
+                              {catRm.duration || '6 Weeks'}
                             </span>
-                            <span className="font-medium text-[#c25e2e]">{catRm.difficulty || 'Intermediate'}</span>
-                          </div>
 
-                          <h3 className="text-base font-medium text-[#181614] mb-1.5 group-hover:text-[#c25e2e] transition-colors tracking-tight">
-                            {catRm.title}
-                          </h3>
-
-                          <p className="text-xs text-[#665e56] line-clamp-3 leading-relaxed mb-3">
-                            {catRm.description}
-                          </p>
-
-                          {/* Quick skills tags */}
-                          <div className="flex flex-wrap gap-1.5 mb-2">
-                            {((catRm.skills_covered || ['Foundations', 'Patterns', 'Labs']).slice(0, 3)).map((sk) => (
-                              <span
-                                key={sk}
-                                className="text-[10px] px-2 py-0.5 rounded-full bg-[#f3ecdf] text-[#786f66]"
-                              >
-                                {sk}
-                              </span>
-                            ))}
+                            <div className="flex items-center gap-2">
+                              {isAlreadyActive ? (
+                                <span className="inline-flex items-center gap-1 text-xs text-[#c25e2e] font-medium">
+                                  <CheckCircle2 className="h-3.5 w-3.5" />
+                                  Active
+                                </span>
+                              ) : (
+                                <span className="text-xs text-[#c25e2e] group-hover:text-[#ad4f22] font-medium flex items-center gap-1">
+                                  <span>Inspect Tree</span>
+                                  <ArrowRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform" />
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
-
-                        <div className="mt-4 pt-3 border-t border-[#ded3bf] flex items-center justify-between">
-                          <span className="text-xs text-[#8c8278]">
-                            {catRm.duration || '6 Weeks'}
-                          </span>
-
-                          <div className="flex items-center gap-2">
-                            {isAlreadyActive ? (
-                              <span className="inline-flex items-center gap-1 text-xs text-[#c25e2e] font-medium">
-                                <CheckCircle2 className="h-3.5 w-3.5" />
-                                Active
-                              </span>
-                            ) : (
-                              <span className="text-xs text-[#c25e2e] group-hover:text-[#ad4f22] font-medium flex items-center gap-1">
-                                <span>Inspect Tree</span>
-                                <ArrowRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform" />
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
             </motion.div>
           )}
@@ -1210,6 +1243,40 @@ export default function DashboardPage({
               </div>
             </motion.div>
           )}
+
+          {/* ══════════════ TAB 5: AI MENTOR STUDIO ══════════════ */}
+          {activeTab === 'mentor' && (
+            <motion.div
+              key="mentor"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.2 }}
+              className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto space-y-6"
+            >
+              <div>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border border-[#c25e2e]/20 bg-[#c25e2e]/10 text-[#c25e2e] mb-3">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  <span>AI Learning OS</span>
+                </div>
+                <h1 className={`text-2xl sm:text-3xl font-light tracking-tight ${isLight ? 'text-[#181614]' : 'text-[#fbf8f2]'}`}>
+                  AI Technical Mentor Studio
+                </h1>
+                <p className={`text-xs sm:text-sm mt-1 ${isLight ? 'text-[#6e665d]' : 'text-[#a8a199]'}`}>
+                  Real-time architectural guidance, code reviews, and milestone explanations synchronized with {activeRoadmap?.title || 'your active roadmap'}.
+                </p>
+              </div>
+
+              <div className={`rounded-3xl border overflow-hidden shadow-xl h-[650px] flex flex-col ${
+                isLight ? 'bg-[#faf6ee] border-[#e5decb]' : 'bg-[#141210] border-[#262320]'
+              }`}>
+                <DockedAIMentorCompanion
+                  onMinimize={() => setActiveTab('overview')}
+                  onExpand={() => setIsMentorFullscreen(true)}
+                />
+              </div>
+            </motion.div>
+          )}
         </AnimatePresence>
       </main>
 
@@ -1231,8 +1298,13 @@ export default function DashboardPage({
       {/* ──────────────── 5. FLOATING AI MENTOR PILL & FULLSCREEN STUDIO ──────────────── */}
       <Suspense fallback={<FloatingAIMentorFallback />}>
         <FloatingAIMentorCompanion
-          isDocked={isMentorDocked && activeTab === 'overview'}
-          onRestoreDock={() => setIsMentorDocked(true)}
+          isDocked={isMentorDocked && (activeTab === 'overview' || activeTab === 'mentor')}
+          onRestoreDock={() => {
+            setIsMentorDocked(true)
+            if (activeTab !== 'overview' && activeTab !== 'mentor') {
+              setActiveTab('overview')
+            }
+          }}
           isFullscreen={isMentorFullscreen}
           onCloseFullscreen={() => setIsMentorFullscreen(false)}
         />
@@ -1246,7 +1318,11 @@ export default function DashboardPage({
           onClose={() => setSelectedRoadmapForDetail(null)}
           onStartLearning={(rm) => {
             setSelectedRoadmapForDetail(null)
-            if (onSelectPath) onSelectPath(rm)
+            if (rm) {
+              switchActiveRoadmap(rm)
+              handleContinueLesson(rm)
+              if (typeof onSelectPath === 'function') onSelectPath(rm)
+            }
           }}
         />
       )}

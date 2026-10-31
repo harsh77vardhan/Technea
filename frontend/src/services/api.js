@@ -90,8 +90,14 @@ async function request(endpoint, options = {}) {
     defaultHeaders['Authorization'] = `Bearer ${token}`
   }
 
+  // Setup abort controller for 25-second timeout to prevent indefinite hangs
+  const timeoutMs = options.timeout || 25000
+  const controller = new AbortController()
+  const timerId = setTimeout(() => controller.abort(), timeoutMs)
+
   const config = {
     ...options,
+    signal: options.signal || controller.signal,
     headers: {
       ...defaultHeaders,
       ...options.headers,
@@ -100,8 +106,17 @@ async function request(endpoint, options = {}) {
 
   try {
     const response = await fetch(url, config)
+    clearTimeout(timerId)
 
     if (!response.ok) {
+      // Automatic session cleanup & event dispatch on 401 Unauthorized
+      if (response.status === 401) {
+        setAuthToken(null)
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('technea:auth:unauthorized'))
+        }
+      }
+
       let errorMessage = `API request failed with status ${response.status} (${response.statusText})`
       let errorData = null
       try {
@@ -127,6 +142,9 @@ async function request(endpoint, options = {}) {
 
       const error = new Error(errorMessage)
       error.status = response.status
+      error.isNotFound = response.status === 404
+      error.isServerError = response.status >= 500
+      error.isUnauthorized = response.status === 401
       error.response = {
         status: response.status,
         statusText: response.statusText,
@@ -140,8 +158,27 @@ async function request(endpoint, options = {}) {
       return null
     }
 
-    return await response.json()
+    try {
+      return await response.json()
+    } catch (parseErr) {
+      console.warn(`[API JSON Parse Warning] ${url}:`, parseErr.message)
+      return null
+    }
   } catch (error) {
+    clearTimeout(timerId)
+    if (error.name === 'AbortError') {
+      const timeoutError = new Error(`Network request timed out after ${timeoutMs}ms: ${url}`)
+      timeoutError.status = 408
+      timeoutError.isTimeout = true
+      timeoutError.isNetworkError = true
+      console.error(`[API Timeout] ${options.method || 'GET'} ${url}`)
+      throw timeoutError
+    }
+
+    if (!error.status) {
+      error.isNetworkError = true
+      error.status = 0
+    }
     console.error(`[API Error] ${options.method || 'GET'} ${url}:`, error.message)
     throw error
   }
@@ -438,15 +475,43 @@ export async function getCourses(params = {}) {
 
 
 /**
- * Fetch a single course by ID
- * @param {number|string} id - Course identifier
+ * Fetch a single course by numeric ID or string slug
+ * @param {number|string} slugOrId - Course identifier (ID or slug)
  * @returns {Promise<Object>}
  */
-export async function getCourseById(id) {
-  if (!isNumericId(id)) {
-    throw new Error(`Invalid course ID: ${id}`)
+export async function getCourseById(slugOrId) {
+  if (!slugOrId && slugOrId !== 0) {
+    throw new Error('A valid course ID or slug is required')
   }
-  return request(`/courses/${id}`)
+
+  // 1. If numeric ID (e.g. 10 or "10")
+  if (isNumericId(slugOrId)) {
+    return request(`/courses/${slugOrId}`)
+  }
+
+  // 2. String slug or title lookup with fallback
+  const slugStr = String(slugOrId).trim()
+  const allCourses = await getCourses()
+  const targetNorm = slugStr.toLowerCase().replace(/[^a-z0-9]/g, '')
+
+  const matched = (allCourses || []).find((c) => {
+    if (String(c.id) === slugStr) return true
+    const cSlug = slugifyTitle(c.title || '')
+    if (cSlug === slugStr.toLowerCase()) return true
+    const cNorm = (c.title || '').toLowerCase().replace(/[^a-z0-9]/g, '')
+    if (cNorm === targetNorm || cNorm.includes(targetNorm) || targetNorm.includes(cNorm)) return true
+    return false
+  })
+
+  if (matched && isNumericId(matched.id)) {
+    return request(`/courses/${matched.id}`)
+  }
+
+  if (matched) {
+    return matched
+  }
+
+  throw new Error(`Course with ID or slug '${slugOrId}' not found`)
 }
 
 /**

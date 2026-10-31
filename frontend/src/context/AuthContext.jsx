@@ -155,8 +155,18 @@ export function AuthProvider({ children }) {
 
     rehydrateSession()
 
+    const handleUnauthorized = () => {
+      setAuthToken(null)
+      if (isMounted) {
+        setUser(null)
+        setTokenState(null)
+      }
+    }
+    window.addEventListener('technea:auth:unauthorized', handleUnauthorized)
+
     return () => {
       isMounted = false
+      window.removeEventListener('technea:auth:unauthorized', handleUnauthorized)
     }
   }, [])
 

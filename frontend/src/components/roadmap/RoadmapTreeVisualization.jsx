@@ -99,8 +99,8 @@ export default function RoadmapTreeVisualization({
             description: ms.description || 'Master core architectural skills and practical implementation.',
             estimated_time: ms.estimated_time || '35 mins',
             skills: ms.skills || ms.key_skills || ['Syntax', 'Architecture'],
-            course_id: ms.courses?.[0]?.id || ms.course_id || 182,
-            lesson_id: ms.courses?.[0]?.lesson_id || ms.lesson_id || 241,
+            course_id: ms.courses?.[0]?.id || ms.course_id || roadmap?.course_id || null,
+            lesson_id: ms.courses?.[0]?.lesson_id || ms.lesson_id || mIdx + 1,
             isCompleted: isDone,
             isCurrent,
             isLocked,
@@ -110,11 +110,12 @@ export default function RoadmapTreeVisualization({
           }
         })
 
+        const phTitle = typeof ph?.title === 'string' ? ph.title : `Phase ${pIdx + 1}`
         return {
           id: `branch-${pIdx}`,
-          name: ph.title.replace(/^Phase\s+\d+:\s*/i, ''),
-          fullTitle: ph.title,
-          description: ph.description || 'Progressive learning phase',
+          name: phTitle.replace(/^Phase\s+\d+:\s*/i, ''),
+          fullTitle: phTitle,
+          description: ph?.description || 'Progressive learning phase',
           milestones,
           branchProject: ph.milestones?.find((m) => m.project_ideas?.length)?.project_ideas?.[0] || null,
         }
@@ -171,8 +172,8 @@ export default function RoadmapTreeVisualization({
           description: st.description || 'Master core architectural skills and practical implementation.',
           estimated_time: st.duration || '45 mins',
           skills: Array.isArray(fallbackSkills) ? fallbackSkills : [fallbackSkills],
-          course_id: st.course_id || 182,
-          lesson_id: st.lesson_id || 241,
+          course_id: st.course_id || roadmap?.course_id || null,
+          lesson_id: st.lesson_id || st.step_number || sIdx + 1,
           isCompleted: isDone,
           isCurrent,
           isLocked,

@@ -6,6 +6,7 @@ import {
   Folder,
   Award,
   Settings,
+  Sparkles,
   LogOut,
   Sun,
   Moon,
@@ -25,12 +26,13 @@ function DashboardLeftSidebar({
   const firstName = fullName.split(' ')[0]
   const avatarUrl = getAvatarUrl(user?.avatar_url)
 
-  // 6 Clean Nav Items matching source of truth reference
+  // 7 Clean Nav Items matching source of truth reference
   const navItems = [
     { id: 'overview', label: 'Overview', icon: LayoutGrid },
     { id: 'roadmaps', label: 'Roadmaps', icon: Compass },
     { id: 'courses', label: 'Courses', icon: BookOpen },
     { id: 'projects', label: 'Projects', icon: Folder },
+    { id: 'mentor', label: 'AI Mentor', icon: Sparkles },
     { id: 'portfolio', label: 'Portfolio', icon: Award },
     { id: 'settings', label: 'Settings', icon: Settings },
   ]

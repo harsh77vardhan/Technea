@@ -986,11 +986,12 @@ export default function LearningPathDetailPage({
                 <RoadmapTreeVisualization
                   roadmap={currentPath}
                   completedMilestoneIds={completedStepIds}
-                  onSelectMilestone={(ms) => {
-                    if (ms?.course_id) handleStartCourse(ms.course_id)
+                  onStartLesson={(ms) => {
+                    const courseObj = ms?.course_id ? { id: ms.course_id } : ms
+                    handleStartCourse(courseObj)
                   }}
-                  onToggleMilestoneComplete={(ms) => {
-                    handleToggleStep(ms.id)
+                  onToggleMilestone={(stepId, isDone) => {
+                    handleToggleStep(stepId, isDone)
                   }}
                   theme={theme}
                 />

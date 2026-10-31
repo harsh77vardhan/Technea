@@ -131,7 +131,7 @@ async def get_learning_path(
     summary="Set learning path as user's main active focus",
 )
 async def set_active_learning_path(
-    path_id: int,
+    path_id: str,
     current_user: CurrentUserDep,
     db: DatabaseDep,
 ) -> LearningPathResponse:

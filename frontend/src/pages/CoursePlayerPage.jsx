@@ -1,31 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
-import {
-  ArrowLeft,
-  ChevronLeft,
-  ChevronRight,
-  Clock,
-  User,
-  Play,
-  Check,
-  CheckCircle2,
-  Circle,
-  RotateCcw,
-  AlertCircle,
-  ListVideo,
-  MonitorPlay,
-  ExternalLink,
-  BookOpen,
-  Share2,
-  FileText,
-  Code,
-  HelpCircle,
-  Bot,
-  Sparkles,
-  Send,
-  Terminal,
-  Zap,
-  Award,
-} from 'lucide-react'
+import { useState, useEffect, useMemo, useCallback, useRef, memo } from 'react'
 import {
   getCourseById,
   getCourseLessons,
@@ -37,7 +10,7 @@ import {
 } from '../services/api'
 import { useAuth } from '../context/useAuth'
 import { useDashboard } from '../context/useDashboard'
-import ImageWithFallback from '../components/common/ImageWithFallback'
+import '../styles/learningWorkspace.css'
 
 /**
  * Validates whether an ID is a valid database numeric ID
@@ -48,6 +21,77 @@ function isNumericId(val) {
   return Number.isInteger(num) && num > 0
 }
 
+const COMMAND_ITEMS = [
+  { id: 'toggle-play', title: 'Play / pause lesson video' },
+  { id: 'next-lesson', title: 'Next lesson' },
+  { id: 'prev-lesson', title: 'Previous lesson' },
+  { id: 'mark-complete', title: 'Mark complete' },
+  { id: 'toggle-focus', title: 'Toggle focus mode' },
+  { id: 'toggle-theme', title: 'Toggle theme (Light / Dark)' },
+  { id: 'explain-simply', title: 'Ask AI Mentor to explain simply' },
+]
+
+/**
+ * Isolated StreakBanner component manages its own 1-second interval
+ * to eliminate periodic re-renders across the entire CoursePlayerPage.
+ */
+const StreakBanner = memo(function StreakBanner({ todayCompleted }) {
+  const [streakCountdown, setStreakCountdown] = useState('')
+
+  useEffect(() => {
+    const updateCountdown = () => {
+      const now = new Date()
+      const midnight = new Date(now)
+      midnight.setHours(24, 0, 0, 0)
+      const diffSec = Math.max(0, Math.floor((midnight - now) / 1000))
+      const h = String(Math.floor(diffSec / 3600)).padStart(2, '0')
+      const m = String(Math.floor((diffSec % 3600) / 60)).padStart(2, '0')
+      const s = String(diffSec % 60).padStart(2, '0')
+      setStreakCountdown(`${h}:${m}:${s}`)
+    }
+
+    updateCountdown()
+    const timer = setInterval(updateCountdown, 1000)
+    return () => clearInterval(timer)
+  }, [])
+
+  return (
+    <div className={`gl ${todayCompleted ? 'ok' : ''}`}>
+      <i />
+      <span>
+        {todayCompleted
+          ? '7-day streak locked in. Master another lesson or project!'
+          : `Finish 1 lesson to lock in your streak · ${streakCountdown} left today`}
+      </span>
+    </div>
+  )
+})
+
+/**
+ * Memoized VideoIframe prevents iframe destruction / DOM reconciliation
+ * on minor state changes such as seeking, note typing, or AI streaming.
+ */
+const VideoIframe = memo(function VideoIframe({
+  videoId,
+  title,
+  embedUrl,
+  onIframeLoad,
+  iframeRef,
+}) {
+  return (
+    <iframe
+      ref={iframeRef}
+      key={videoId}
+      title={title}
+      src={embedUrl}
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+      allowFullScreen
+      className="absolute inset-0 w-full h-full border-0 z-[2]"
+      onLoad={onIframeLoad}
+    />
+  )
+})
+
 export default function CoursePlayerPage({
   course = null,
   path = null,
@@ -55,6 +99,16 @@ export default function CoursePlayerPage({
   onSelectCourse = () => {},
 }) {
   const { user } = useAuth()
+  const {
+    activeRoadmap,
+    completeLesson,
+    toggleMilestone,
+    theme: dashboardTheme,
+    toggleTheme: dashboardToggleTheme,
+    summaryData,
+    dailyActivity,
+  } = useDashboard()
+
   const [courseData, setCourseData] = useState(course)
   const [lessons, setLessons] = useState(course?.lessons || [])
   const [relatedCourses, setRelatedCourses] = useState([])
@@ -62,7 +116,91 @@ export default function CoursePlayerPage({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [retryKey, setRetryKey] = useState(0)
-  const [copiedLink, setCopiedLink] = useState(false)
+
+  // Local UI & interactive FX states
+  const [isFocusMode, setIsFocusMode] = useState(false)
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false)
+  const handleIframeLoad = useCallback(() => setIsVideoPlaying(true), [])
+  const [playbackSpeed, setPlaybackSpeed] = useState(1.0)
+  const [seekProgress, setSeekProgress] = useState(0)
+  const [toastMessage, setToastMessage] = useState('')
+  const [isToastVisible, setIsToastVisible] = useState(false)
+  const [levelUpNumber, setLevelUpNumber] = useState(null)
+  const [isLevelUpActive, setIsLevelUpActive] = useState(false)
+  const [isPaletteOpen, setIsPaletteOpen] = useState(false)
+  const [paletteQuery, setPaletteQuery] = useState('')
+  const [paletteSelectedIdx, setPaletteSelectedIdx] = useState(0)
+  const paletteInputRef = useRef(null)
+
+  // Animated XP state (Strict real data with live telemetry synchronization)
+  const realXp = summaryData?.xp_points ?? user?.total_xp ?? 0
+  const [earnedXpDelta, setEarnedXpDelta] = useState(0)
+  const currentXp = realXp + earnedXpDelta
+
+  // Streak state synchronized with daily activity
+  const streakCount = dailyActivity?.streak_count ?? (user?.streak_count || 0)
+  const isTodayLessonDone = Boolean(
+    dailyActivity?.completed_tasks?.includes('lesson') ||
+    (dailyActivity?.earned_today_xp && dailyActivity.earned_today_xp > 0)
+  )
+  const [localCompleted, setLocalCompleted] = useState(false)
+  const todayCompleted = isTodayLessonDone || localCompleted
+
+  // Canvas and animation refs
+  const bgCanvasRef = useRef(null)
+  const fxCanvasRef = useRef(null)
+  const particlesRef = useRef([])
+  const fxAnimIdRef = useRef(null)
+  const isFxRunningRef = useRef(false)
+  const flashTimeoutRef = useRef(null)
+  const toastTimeoutRef = useRef(null)
+  const levelUpTimer1Ref = useRef(null)
+  const levelUpTimer2Ref = useRef(null)
+  const aiStreamTimerRef = useRef(null)
+  const notesDebounceRef = useRef(null)
+
+  // Practice & Quiz state
+  const [practiceCode, setPracticeCode] = useState(
+    '# Write your solution here\nname = "Technea"\nage = 21\nis_learning = True\n\nprint(name, age)'
+  )
+  const [practiceOutput, setPracticeOutput] = useState('Store a value and print it.')
+  const [isPracticeSolved, setIsPracticeSolved] = useState(false)
+  const [quizAnswerStates, setQuizAnswerStates] = useState({}) // { [optionIndex]: 'good' | 'bad' }
+
+  // Notes state (auto-saved per lesson)
+  const [notesStore, setNotesStore] = useState({})
+
+  // AI Chat state
+  const [aiFeed, setAiFeed] = useState([
+    {
+      role: 'assistant',
+      content: 'I am your AI Mentor for this session. Ask me questions, request examples, or explore how this fits into your active roadmap.',
+    },
+  ])
+  const [aiInput, setAiInput] = useState('')
+  const [isAiStreaming, setIsAiStreaming] = useState(false)
+  const aiFeedRef = useRef(null)
+  const iframeRef = useRef(null)
+
+  const sendPlayerCommand = useCallback((func, args = []) => {
+    try {
+      if (iframeRef.current && iframeRef.current.contentWindow) {
+        iframeRef.current.contentWindow.postMessage(
+          JSON.stringify({ event: 'command', func, args }),
+          '*'
+        )
+      }
+    } catch (e) {
+      console.warn('YouTube postMessage error:', e)
+    }
+  }, [])
+
+  // Auto-scroll AI feed as messages and tokens arrive
+  useEffect(() => {
+    if (aiFeedRef.current) {
+      aiFeedRef.current.scrollTop = aiFeedRef.current.scrollHeight
+    }
+  }, [aiFeed, isAiStreaming])
 
   const courseId = course?.id
   const pathId = path?.id
@@ -71,7 +209,7 @@ export default function CoursePlayerPage({
   const courseTitle = courseData?.title || course?.title || 'Interactive Course'
   const instructor = courseData?.instructor || 'Technea Faculty'
   const platform = courseData?.platform || 'YouTube'
-  const duration = courseData?.duration || 'Course'
+  const duration = courseData?.duration || '12 Hours'
   const category = courseData?.category || path?.category || 'Programming'
   const difficulty = courseData?.level || path?.level || 'Beginner'
 
@@ -133,42 +271,71 @@ export default function CoursePlayerPage({
     const resolveAndLoadCourse = async () => {
       setLoading(true)
       setError(null)
-      setActiveLessonIndex(0)
 
       try {
         let targetCourseId = courseId
-        let resolvedCourse = course
+        let finalCourse = null
 
-        // 1. If target course ID is missing or not a database integer, resolve using active learning path ID
-        const activePathId = pathId || learningPathId
-        if (!isNumericId(targetCourseId) && isNumericId(activePathId)) {
-          const pathCourses = await getCourses({ learning_path_id: activePathId })
-          if (pathCourses && pathCourses.length > 0) {
-            targetCourseId = pathCourses[0].id
-            resolvedCourse = pathCourses[0]
+        // 1. If explicit numeric courseId is provided, attempt to load it
+        if (isNumericId(targetCourseId)) {
+          try {
+            finalCourse = await getCourseById(targetCourseId)
+          } catch (err) {
+            console.warn(`Course ID ${targetCourseId} not found, checking active roadmap/track:`, err.message)
+            finalCourse = null
           }
         }
 
-        // 2. If still no valid numeric course ID, attempt fallback matching by path title or skill
-        if (!isNumericId(targetCourseId)) {
-          if (pathTitle) {
+        // 2. If no valid course loaded yet, attempt resolution via learning path (from props or activeRoadmap)
+        const activePathId = pathId || learningPathId || activeRoadmap?.id
+        if (!finalCourse && isNumericId(activePathId)) {
+          try {
+            const pathCourses = await getCourses({ learning_path_id: activePathId })
+            if (pathCourses && pathCourses.length > 0) {
+              targetCourseId = pathCourses[0].id
+              finalCourse = pathCourses[0]
+            }
+          } catch (err) {
+            console.warn('Could not load courses for path ID:', activePathId, err)
+          }
+        }
+
+        // 3. Fallback: match by activeRoadmap title or pathTitle
+        const titleToMatch = pathTitle || activeRoadmap?.title || ''
+        if (!finalCourse && titleToMatch) {
+          try {
             const allCourses = await getCourses()
-            const lowerTitle = pathTitle.toLowerCase()
+            const lowerTitle = titleToMatch.toLowerCase()
             const matched = (allCourses || []).find((c) => {
               const cTitle = (c.title || '').toLowerCase()
               return cTitle.includes(lowerTitle) || lowerTitle.includes(cTitle)
             })
             if (matched) {
               targetCourseId = matched.id
-              resolvedCourse = matched
+              finalCourse = matched
             } else if (allCourses && allCourses.length > 0) {
               targetCourseId = allCourses[0].id
-              resolvedCourse = allCourses[0]
+              finalCourse = allCourses[0]
             }
+          } catch (err) {
+            console.warn('Could not query catalog courses fallback:', err)
           }
         }
 
-        if (!isNumericId(targetCourseId)) {
+        // 4. Absolute fallback: load first available course
+        if (!finalCourse) {
+          try {
+            const allCourses = await getCourses()
+            if (allCourses && allCourses.length > 0) {
+              targetCourseId = allCourses[0].id
+              finalCourse = allCourses[0]
+            }
+          } catch (err) {
+            console.warn('Catalog course fallback failed:', err)
+          }
+        }
+
+        if (!finalCourse) {
           if (isMounted) {
             setError('No courses found for this learning track.')
             setLoading(false)
@@ -176,16 +343,13 @@ export default function CoursePlayerPage({
           return
         }
 
-        // 3. Fetch full course details, lessons, and related courses for this specific course
-        const [fullCourse, courseLessons, related] = await Promise.all([
-          getCourseById(targetCourseId),
-          getCourseLessons(targetCourseId).catch(() => []),
-          getRelatedCourses(targetCourseId, 4).catch(() => []),
+        const [courseLessons, related] = await Promise.all([
+          getCourseLessons(finalCourse.id).catch(() => []),
+          getRelatedCourses(finalCourse.id, 4).catch(() => []),
         ])
 
         if (!isMounted) return
 
-        const finalCourse = fullCourse || resolvedCourse
         setCourseData(finalCourse)
         const combinedLessons =
           courseLessons && courseLessons.length > 0
@@ -216,13 +380,16 @@ export default function CoursePlayerPage({
 
         if (targetLessonParam) {
           matchedIndex = combinedLessons.findIndex(
-            (l) => String(l.id) === String(targetLessonParam) || String(l.lesson_order) === String(targetLessonParam)
+            (l) =>
+              String(l.id) === String(targetLessonParam) ||
+              String(l.lesson_order) === String(targetLessonParam)
           )
         }
 
         if (matchedIndex === -1 && currentCompleted.length > 0) {
+          const completedSet = new Set(currentCompleted.map(String))
           matchedIndex = combinedLessons.findIndex(
-            (l) => !currentCompleted.includes(l.id)
+            (l) => !completedSet.has(String(l.id))
           )
         }
 
@@ -231,7 +398,6 @@ export default function CoursePlayerPage({
         } else {
           setActiveLessonIndex(0)
         }
-
       } catch (err) {
         if (!isMounted) return
         console.error('Failed to load course player data:', err)
@@ -245,9 +411,9 @@ export default function CoursePlayerPage({
     return () => {
       isMounted = false
     }
-  }, [course, courseId, pathId, learningPathId, pathTitle, retryKey])
+  }, [course, courseId, pathId, learningPathId, pathTitle, activeRoadmap?.id, activeRoadmap?.title, retryKey])
 
-  // Active lesson and YouTube video ID without any hardcoded fallback
+  // Active lesson and YouTube video ID
   const activeLesson = lessons[activeLessonIndex] || null
   const currentVideoId =
     activeLesson?.youtube_video_id ||
@@ -259,87 +425,216 @@ export default function CoursePlayerPage({
     return `https://www.youtube.com/embed/${currentVideoId}?autoplay=1&rel=0&modestbranding=1&enablejsapi=1`
   }, [currentVideoId])
 
-  // Dashboard integration for automatic progress cascading & XP
-  const { completeLesson, activeRoadmap, showToast: dashboardToast } = useDashboard()
-
-  // Tabbed Learning Deck states (Notes, Practice, Quiz, AI Mentor)
-  const [learningTab, setLearningTab] = useState('notes') // 'notes' | 'practice' | 'quiz' | 'ai'
-  const lessonKey = activeLesson?.id ? String(activeLesson.id) : 'default'
-
-  const [notesStore, setNotesStore] = useState({})
-  const personalNotes =
-    notesStore[lessonKey] ??
-    (typeof window !== 'undefined'
-      ? localStorage.getItem(`technea_notes_${lessonKey}`) || ''
-      : '')
-
-  const handleNotesChange = (text) => {
-    setNotesStore((prev) => ({ ...prev, [lessonKey]: text }))
-    try {
-      localStorage.setItem(`technea_notes_${lessonKey}`, text)
-    } catch (e) {
-      console.warn(e)
-    }
-  }
-
-  const [practiceCode, setPracticeCode] = useState(
-    '# Write your solution here\ndef process_data(items):\n    # TODO: Implement filtering & deduplication\n    return [item for item in items if item]\n'
+  // Normalized Set of completed lesson IDs for bulletproof string/number ID type matching
+  const completedLessonSet = useMemo(
+    () => new Set((completedLessonIds || []).map((id) => String(id))),
+    [completedLessonIds]
   )
-  const [practiceOutput, setPracticeOutput] = useState(null)
-  const [isEvaluatingPractice, setIsEvaluatingPractice] = useState(false)
 
-  const [quizStateByLesson, setQuizStateByLesson] = useState({})
-  const currentQuiz = quizStateByLesson[lessonKey] || {
-    answers: {},
-    submitted: false,
-    score: null,
-  }
-  const quizAnswers = currentQuiz.answers
-  const quizSubmitted = currentQuiz.submitted
-  const quizScore = currentQuiz.score
+  // Completion calculation
+  const completedCount = useMemo(() => {
+    return lessons.filter((l) => completedLessonSet.has(String(l.id))).length
+  }, [lessons, completedLessonSet])
 
-  const handleUpdateQuizAnswer = (qIdx, optIdx) => {
-    if (quizSubmitted) return
-    setQuizStateByLesson((prev) => {
-      const cur = prev[lessonKey] || { answers: {}, submitted: false, score: null }
-      return {
-        ...prev,
-        [lessonKey]: {
-          ...cur,
-          answers: { ...cur.answers, [qIdx]: optIdx },
+  const progressPercent = useMemo(() => {
+    if (!lessons.length) return 0
+    return Math.round((completedCount / lessons.length) * 100)
+  }, [completedCount, lessons.length])
+
+  // Group lessons into structured modules for the Journey Timeline
+  const modules = useMemo(() => {
+    if (!lessons.length) {
+      return [
+        {
+          title: 'Getting Started',
+          lessons: [
+            { id: 1, title: 'Introduction & Setup', duration: '14 min', order: 1 },
+            { id: 2, title: 'Core Environment Configuration', duration: '18 min', order: 2 },
+          ],
         },
+      ]
+    }
+
+    const chunkSize = Math.max(2, Math.ceil(lessons.length / 4))
+    const list = []
+    const titles = [
+      'Foundations & Core Principles',
+      'Architecture & Applied Patterns',
+      'Data Modeling & State Transitions',
+      'Integration & Production Deliverables',
+    ]
+
+    for (let i = 0; i < lessons.length; i += chunkSize) {
+      const chunk = lessons.slice(i, i + chunkSize)
+      const moduleIndex = Math.floor(i / chunkSize)
+      list.push({
+        title: titles[moduleIndex % titles.length] || `Module ${moduleIndex + 1}`,
+        lessons: chunk,
+        startIndex: i,
+      })
+    }
+    return list
+  }, [lessons])
+
+  // Level & Ring calculation (250 XP per level, memoized)
+  const { currentLevel, ringOffset } = useMemo(() => {
+    const lvl = Math.floor(currentXp / 250) + 1
+    const ratio = (currentXp % 250) / 250
+    return {
+      currentLevel: lvl,
+      ringOffset: 119.4 * (1 - ratio),
+    }
+  }, [currentXp])
+
+  // Floating Toast notification
+  const triggerToast = useCallback((msg) => {
+    setToastMessage(msg)
+    setIsToastVisible(true)
+    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current)
+    toastTimeoutRef.current = setTimeout(() => {
+      setIsToastVisible(false)
+    }, 2400)
+  }, [])
+
+  // Confetti Particle Explosion with Single RAF Guard & Tab Visibility Check
+  const triggerBurst = useCallback(() => {
+    const canvas = fxCanvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    canvas.width = window.innerWidth
+    canvas.height = window.innerHeight
+
+    document.body.classList.add('flash')
+    if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current)
+    flashTimeoutRef.current = setTimeout(() => {
+      document.body.classList.remove('flash')
+    }, 800)
+
+    const isDark = dashboardTheme !== 'light'
+    const colors = isDark
+      ? ['255,255,255', '255,90,31', '77,255,180']
+      : ['0,0,0', '255,90,31', '22,163,74']
+
+    for (let i = 0; i < 90; i++) {
+      particlesRef.current.push({
+        x: window.innerWidth / 2,
+        y: window.innerHeight * 0.55,
+        vx: (Math.random() - 0.5) * 14,
+        vy: -Math.random() * 14 - 3,
+        l: 70,
+        c: colors[Math.floor(Math.random() * colors.length)],
+      })
+    }
+
+    // Do not spawn concurrent animation loops if particles are already animating
+    if (isFxRunningRef.current) return
+    isFxRunningRef.current = true
+
+    const animateParticles = () => {
+      if (document.hidden) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height)
+        particlesRef.current = []
+        isFxRunningRef.current = false
+        fxAnimIdRef.current = null
+        return
       }
-    })
-  }
 
-  const handleRetakeQuiz = () => {
-    setQuizStateByLesson((prev) => ({
-      ...prev,
-      [lessonKey]: { answers: {}, submitted: false, score: null },
-    }))
-  }
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      particlesRef.current = particlesRef.current.filter((p) => p.l > 0)
+      particlesRef.current.forEach((p) => {
+        p.x += p.vx
+        p.y += p.vy
+        p.vy += 0.35
+        p.l--
+        ctx.fillStyle = `rgba(${p.c},${p.l / 70})`
+        ctx.fillRect(p.x, p.y, 3, 3)
+      })
 
-  const [playerAiMessages, setPlayerAiMessages] = useState([
-    {
-      role: 'assistant',
-      content:
-        'I am your AI Technical Mentor for this lesson. Ask me conceptual questions, edge cases, code reviews, or how this maps to your active roadmap.',
+      if (particlesRef.current.length > 0) {
+        fxAnimIdRef.current = requestAnimationFrame(animateParticles)
+      } else {
+        // Halt requestAnimationFrame when all particles finish
+        ctx.clearRect(0, 0, canvas.width, canvas.height)
+        isFxRunningRef.current = false
+        fxAnimIdRef.current = null
+      }
+    }
+
+    fxAnimIdRef.current = requestAnimationFrame(animateParticles)
+  }, [dashboardTheme])
+
+  // XP addition with level up check
+  const addXp = useCallback(
+    (points) => {
+      setEarnedXpDelta((prev) => {
+        const next = prev + points
+        const newLvl = Math.floor((realXp + next) / 250) + 1
+        const oldLvl = Math.floor((realXp + prev) / 250) + 1
+        if (newLvl > oldLvl) {
+          setLevelUpNumber(newLvl)
+          setIsLevelUpActive(true)
+          if (levelUpTimer1Ref.current) clearTimeout(levelUpTimer1Ref.current)
+          levelUpTimer1Ref.current = setTimeout(() => {
+            triggerBurst()
+          }, 300)
+          if (levelUpTimer2Ref.current) clearTimeout(levelUpTimer2Ref.current)
+          levelUpTimer2Ref.current = setTimeout(() => {
+            setIsLevelUpActive(false)
+          }, 2600)
+        }
+        return next
+      })
+
+      // Floating XP popup
+      const chipEl = document.getElementById('xp-chip')
+      if (chipEl) {
+        const r = chipEl.getBoundingClientRect()
+        const f = document.createElement('div')
+        f.className = 'fxp'
+        f.textContent = `+${points} XP`
+        f.style.left = `${r.left + 10}px`
+        f.style.top = `${r.bottom + 6}px`
+        document.body.appendChild(f)
+        setTimeout(() => {
+          f.remove()
+        }, 1200)
+      }
     },
-  ])
-  const [playerAiInput, setPlayerAiInput] = useState('')
-  const [isAiResponding, setIsAiResponding] = useState(false)
+    [realXp, triggerBurst]
+  )
 
-  // Toggle lesson completed status with automatic cascading
+  // Toggle Lesson Completion
   const handleToggleComplete = useCallback(
     async (lessonId) => {
-      const isCompleted = !completedLessonIds.includes(lessonId)
+      const strId = String(lessonId)
+      const isCompleted = !completedLessonSet.has(strId)
       const next = isCompleted
-        ? [...completedLessonIds, lessonId]
-        : completedLessonIds.filter((id) => id !== lessonId)
+        ? [...completedLessonIds.filter((id) => String(id) !== strId), lessonId]
+        : completedLessonIds.filter((id) => String(id) !== strId)
 
       setCompletedLessonIds(next)
 
-      // Sync with backend and trigger automatic XP & milestone unlock
+      if (isCompleted) {
+        addXp(20)
+        triggerBurst()
+        triggerToast('+20 XP · Lesson Completed!')
+        setLocalCompleted(true)
+      }
+
+      // Check if this completes the course or current module/milestone
+      if (isCompleted && activeRoadmap?.id && toggleMilestone) {
+        const nextSet = new Set(next.map((id) => String(id)))
+        const isAllDone = lessons.length > 0 && lessons.every((l) => nextSet.has(String(l.id)))
+        if (isAllDone) {
+          const currentMsId = activeRoadmap.current_milestone?.id || activeRoadmap.milestones?.[0]?.id
+          if (currentMsId) {
+            toggleMilestone(activeRoadmap.id, currentMsId, true).catch(() => {})
+          }
+        }
+      }
+
       if (user && isNumericId(courseData?.id) && isNumericId(lessonId)) {
         try {
           if (completeLesson) {
@@ -356,256 +651,591 @@ export default function CoursePlayerPage({
         }
       }
     },
-    [user, courseData, completedLessonIds, completeLesson]
+    [completedLessonIds, completedLessonSet, user, courseData, completeLesson, toggleMilestone, activeRoadmap, lessons, addXp, triggerBurst, triggerToast]
   )
 
-  // Practice Challenge evaluation
-  const handleRunPractice = () => {
-    setIsEvaluatingPractice(true)
-    setTimeout(() => {
-      setIsEvaluatingPractice(false)
-      const passed = practiceCode.length > 30 && !practiceCode.includes('TODO: Implement')
-      setPracticeOutput({
-        status: passed ? 'success' : 'hint',
-        tests: [
-          { name: 'Input validation and type assertions', passed: true },
-          { name: 'Deterministic execution & purity', passed: passed },
-          { name: 'Edge cases (null, empty, boundary bounds)', passed: true },
-        ],
-        message: passed
-          ? 'All unit tests passed! Modular architectural requirements verified (+10 XP bonus earned).'
-          : 'Almost there! Replace the TODO with complete function logic to pass all verification tests.',
-      })
-      if (passed && dashboardToast) {
-        dashboardToast('Practice challenge verified! +10 XP bonus earned.', 'success')
+  // Lesson switching
+  const goToLesson = useCallback(
+    (index) => {
+      const validIndex = Math.max(0, Math.min(lessons.length - 1, index))
+      setActiveLessonIndex(validIndex)
+      setSeekProgress(0)
+      setQuizAnswerStates({})
+      setIsPracticeSolved(false)
+
+      // Update URL search param ?lesson= with pushState for history navigation
+      const nextLesson = lessons[validIndex]
+      if (nextLesson?.id) {
+        const url = new URL(window.location.href)
+        if (url.searchParams.get('lesson') !== String(nextLesson.id)) {
+          url.searchParams.set('lesson', String(nextLesson.id))
+          window.history.pushState({}, '', url.toString())
+        }
       }
-    }, 600)
-  }
 
-  // Diagnostic Quiz Questions for active lesson
-  const quizQuestions = useMemo(() => {
-    const title = (activeLesson?.title || courseTitle || '').toLowerCase()
-    if (title.includes('syntax') || title.includes('variable') || title.includes('foundation') || title.includes('intro')) {
-      return [
-        {
-          id: 1,
-          q: 'Which characteristic best describes immutable data structures in robust software systems?',
-          options: [
-            'Their internal values cannot be modified after initial creation, eliminating hidden mutations.',
-            'They always execute in O(n^2) computational space.',
-            'They must only be declared in the global scope.',
-            'They cannot be passed into functions as arguments.',
-          ],
-          correct: 0,
-          explanation: 'Immutability ensures data cannot change unexpectedly, preventing concurrency bugs and side effects.',
-        },
-        {
-          id: 2,
-          q: 'In modern clean code architecture, what is the primary benefit of pure functions?',
-          options: [
-            'They mutate external database state directly without validation.',
-            'Same inputs reliably produce identical outputs with zero hidden side-effects.',
-            'They bypass memory allocation completely.',
-            'They can only be called from CLI scripts.',
-          ],
-          correct: 1,
-          explanation: 'Pure functions are deterministic and do not cause hidden state mutations, making them easy to test and debug.',
-        },
-        {
-          id: 3,
-          q: 'When structuring scalable applications, why should concerns be separated into modular layers?',
-          options: [
-            'To arbitrarily increase line count and complexity.',
-            'To isolate responsibilities so modules can be independently developed, tested, and maintained.',
-            'To force synchronous execution across threads.',
-            'To eliminate the need for version control.',
-          ],
-          correct: 1,
-          explanation: 'Separation of concerns prevents tight coupling and allows parts of the system to change without breaking others.',
-        },
-      ]
-    }
-    return [
-      {
-        id: 1,
-        q: 'What is the main advantage of asynchronous non-blocking I/O operations?',
-        options: [
-          'The CPU thread continues processing other tasks while waiting for I/O responses.',
-          'It completely eliminates network latency across data centers.',
-          'It forces single-threaded operations to execute on GPU cores.',
-          'It guarantees data persistence without disk access.',
-        ],
-        correct: 0,
-        explanation: 'Non-blocking I/O prevents threads from being blocked while waiting for slower network or filesystem responses.',
-      },
-      {
-        id: 2,
-        q: 'How does state encapsulation improve frontend and distributed systems resilience?',
-        options: [
-          'By preventing components from accessing user inputs.',
-          'By providing a predictable single source of truth and clear lifecycle transitions.',
-          'By enforcing global mutable singleton variables everywhere.',
-          'By disabling error boundaries.',
-        ],
-        correct: 1,
-        explanation: 'Predictable state transitions prevent race conditions and make debugging state changes straightforward.',
-      },
-      {
-        id: 3,
-        q: 'Which strategy is most effective for guarding against unhandled API exceptions in production?',
-        options: [
-          'Swallowing all errors with empty catch blocks silently.',
-          'Structured try/catch error handling, logging telemetry, and returning meaningful status codes.',
-          'Restarting the container on every 404 response.',
-          'Removing error handling to keep code concise.',
-        ],
-        correct: 1,
-        explanation: 'Defensive error handling with appropriate logging and status codes keeps systems stable and serviceable.',
-      },
-    ]
-  }, [activeLesson, courseTitle])
-
-  const handleSubmitQuiz = async () => {
-    let correctCount = 0
-    quizQuestions.forEach((q, idx) => {
-      if (quizAnswers[idx] === q.correct) {
-        correctCount++
-      }
-    })
-    setQuizStateByLesson((prev) => {
-      const cur = prev[lessonKey] || { answers: {}, submitted: false, score: null }
-      return { ...prev, [lessonKey]: { ...cur, submitted: true, score: correctCount } }
-    })
-
-    // Requirement 8: If passed (>= 2 out of 3), automatically mark lesson complete, award +20 XP, unlock next node!
-    if (correctCount >= 2 && activeLesson?.id) {
-      if (!completedLessonIds.includes(activeLesson.id)) {
-        await handleToggleComplete(activeLesson.id)
-      }
-      if (dashboardToast) {
-        dashboardToast(
-          `Quiz passed (${correctCount}/${quizQuestions.length})! +20 XP awarded, next milestone unlocked!`,
-          'success'
-        )
-      }
-    }
-  }
-
-  // AI Mentor Chat handler
-  const handleSendAiMessage = async (promptText) => {
-    const text = promptText || playerAiInput
-    if (!text.trim() || isAiResponding) return
-
-    const newMessages = [...playerAiMessages, { role: 'user', content: text }]
-    setPlayerAiMessages(newMessages)
-    setPlayerAiInput('')
-    setIsAiResponding(true)
-
-    try {
-      const res = await sendAiChatApi({
-        message: text,
-        context: {
-          course_title: courseTitle,
-          lesson_title: activeLesson?.title || courseTitle,
-          active_roadmap: activeRoadmap?.title || 'Engineering Track',
-          current_milestone: activeRoadmap?.current_milestone?.title || 'Core Foundations',
-        },
-      })
-      const reply = res?.reply || res?.message || 'Great question! In this module, focus on how the interface interacts with the underlying data model. Let me know if you would like a code walkthrough.'
-      setPlayerAiMessages([...newMessages, { role: 'assistant', content: reply }])
-    } catch {
-      setPlayerAiMessages([
-        ...newMessages,
-        {
-          role: 'assistant',
-          content: 'Here is an architectural breakdown: focusing on clean separation of concerns ensures your implementation remains modular and testable as requirements grow.',
-        },
-      ])
-    } finally {
-      setIsAiResponding(false)
-    }
-  }
-
-  // Navigation handlers
-  const hasPrevious = activeLessonIndex > 0
-  const hasNext = activeLessonIndex < lessons.length - 1
-
-  const handlePreviousLesson = useCallback(() => {
-    if (hasPrevious) {
-      setActiveLessonIndex((prev) => prev - 1)
       window.scrollTo({ top: 0, behavior: 'smooth' })
+    },
+    [lessons]
+  )
+
+  // Sync active lesson with browser back/forward buttons (popstate)
+  useEffect(() => {
+    const handlePopState = () => {
+      const searchParams = new URLSearchParams(window.location.search)
+      const lessonParam = searchParams.get('lesson')
+      if (lessonParam && lessons.length > 0) {
+        const idx = lessons.findIndex(
+          (l) =>
+            String(l.id) === String(lessonParam) ||
+            String(l.lesson_order) === String(lessonParam)
+        )
+        if (idx !== -1) {
+          setActiveLessonIndex(idx)
+          setSeekProgress(0)
+          setQuizAnswerStates({})
+          setIsPracticeSolved(false)
+        }
+      }
     }
-  }, [hasPrevious])
+
+    window.addEventListener('popstate', handlePopState)
+    return () => {
+      window.removeEventListener('popstate', handlePopState)
+    }
+  }, [lessons])
+
+  const hasNext = activeLessonIndex < lessons.length - 1
+  const hasPrevious = activeLessonIndex > 0
 
   const handleNextLesson = useCallback(() => {
     if (hasNext) {
-      if (activeLesson?.id) {
-        setCompletedLessonIds((prev) =>
-          prev.includes(activeLesson.id) ? prev : [...prev, activeLesson.id]
-        )
+      if (activeLesson?.id && !completedLessonSet.has(String(activeLesson.id))) {
+        handleToggleComplete(activeLesson.id)
       }
-      setActiveLessonIndex((prev) => prev + 1)
-      window.scrollTo({ top: 0, behavior: 'smooth' })
+      goToLesson(activeLessonIndex + 1)
     }
-  }, [hasNext, activeLesson])
+  }, [hasNext, activeLesson, completedLessonSet, handleToggleComplete, goToLesson, activeLessonIndex])
 
-  const handleShare = useCallback(() => {
-    if (typeof navigator !== 'undefined' && navigator.clipboard) {
-      navigator.clipboard.writeText(window.location.href)
-      setCopiedLink(true)
-      setTimeout(() => setCopiedLink(false), 2000)
+  const handlePreviousLesson = useCallback(() => {
+    if (hasPrevious) {
+      goToLesson(activeLessonIndex - 1)
+    }
+  }, [hasPrevious, goToLesson, activeLessonIndex])
+
+  // Notes persistence per lesson
+  const currentLessonKey = activeLesson?.id ? String(activeLesson.id) : 'default'
+  const personalNotes =
+    notesStore[currentLessonKey] ??
+    (typeof window !== 'undefined'
+      ? localStorage.getItem(`technea_notes_${currentLessonKey}`) || ''
+      : '')
+
+  const handleNotesChange = useCallback((text) => {
+    setNotesStore((prev) => ({ ...prev, [currentLessonKey]: text }))
+    if (notesDebounceRef.current) clearTimeout(notesDebounceRef.current)
+    notesDebounceRef.current = setTimeout(() => {
+      try {
+        localStorage.setItem(`technea_notes_${currentLessonKey}`, text)
+      } catch (e) {
+        console.warn(e)
+      }
+    }, 400)
+  }, [currentLessonKey])
+
+  // Practice Challenge evaluation
+  const handleRunPractice = () => {
+    const hasPrint = practiceCode.includes('print(')
+    if (!hasPrint) {
+      setPracticeOutput('> Nothing printed. Add a print() call to test.')
+      return
+    }
+
+    const match = practiceCode.match(/print\((.+)\)/)
+    const varName = match ? match[1].trim() : ''
+    setPracticeOutput(`> ${varName || 'Technea'}\n> Execution finished with status 0.`)
+
+    if (!isPracticeSolved) {
+      setIsPracticeSolved(true)
+      addXp(25)
+      triggerBurst()
+      triggerToast('+25 XP · Challenge Solved!')
+    }
+  }
+
+  // Diagnostic Quiz Questions for current lesson
+  const currentQuiz = useMemo(() => {
+    const title = (activeLesson?.title || courseTitle || '').toLowerCase()
+    if (title.includes('variable') || title.includes('syntax') || title.includes('start') || title.includes('begin')) {
+      return {
+        q: 'Which characteristic best describes immutable data structures in robust software systems?',
+        options: [
+          'Values cannot be changed after creation, preventing accidental mutation bugs.',
+          'They execute with O(n^2) space overhead.',
+          'They can only be declared inside the global scope.',
+        ],
+        correct: 0,
+      }
+    }
+    if (title.includes('function') || title.includes('method') || title.includes('logic')) {
+      return {
+        q: 'In clean code architecture, why are pure functions preferred?',
+        options: [
+          'They mutate global storage directly.',
+          'Same inputs always produce identical outputs with zero hidden side effects.',
+          'They bypass memory allocation completely.',
+        ],
+        correct: 1,
+      }
+    }
+    return {
+      q: 'What is the primary benefit of modular architectural boundaries?',
+      options: [
+        'Arbitrarily increasing line counts.',
+        'Isolating responsibilities so modules can be independently tested and maintained.',
+        'Forcing synchronous execution across all threads.',
+      ],
+      correct: 1,
+    }
+  }, [activeLesson, courseTitle])
+
+  const handleSelectQuizOption = (optIndex) => {
+    const isCorrect = optIndex === currentQuiz.correct
+    setQuizAnswerStates((prev) => ({
+      ...prev,
+      [optIndex]: isCorrect ? 'good' : 'bad',
+    }))
+
+    if (isCorrect && quizAnswerStates[optIndex] !== 'good') {
+      addXp(10)
+      triggerBurst()
+      triggerToast('+10 XP · Correct Answer!')
+    }
+  }
+
+  // AI Mentor Chat stream
+  const handleSendAiMessage = useCallback(
+    async (overridePrompt) => {
+      const text = overridePrompt || aiInput
+      if (!text.trim() || isAiStreaming) return
+
+      const newMessages = [...aiFeed, { role: 'user', content: text }]
+      setAiFeed(newMessages)
+      setAiInput('')
+      setIsAiStreaming(true)
+
+      try {
+        const res = await sendAiChatApi({
+          message: text,
+          context: {
+            course_title: courseTitle,
+            lesson_title: activeLesson?.title || courseTitle,
+            active_roadmap: activeRoadmap?.title || 'Python Developer Roadmap',
+            current_milestone: activeRoadmap?.current_milestone?.title || 'Core Foundations',
+          },
+        })
+        const reply =
+          res?.response ||
+          res?.reply ||
+          res?.message ||
+          res?.answer ||
+          `In ${activeLesson?.title || courseTitle}, focus on clean separation of concerns and predictable state transitions. Try implementing the pattern in the practice workspace!`
+
+        // Typewriter streaming effect
+        let charIdx = 0
+        const placeholder = { role: 'assistant', content: '', streaming: true }
+        setAiFeed([...newMessages, placeholder])
+
+        if (aiStreamTimerRef.current) clearInterval(aiStreamTimerRef.current)
+        aiStreamTimerRef.current = setInterval(() => {
+          charIdx += 2
+          if (charIdx >= reply.length) {
+            if (aiStreamTimerRef.current) clearInterval(aiStreamTimerRef.current)
+            aiStreamTimerRef.current = null
+            setIsAiStreaming(false)
+            setAiFeed([...newMessages, { role: 'assistant', content: reply, streaming: false }])
+          } else {
+            setAiFeed([
+              ...newMessages,
+              { role: 'assistant', content: reply.slice(0, charIdx), streaming: true },
+            ])
+          }
+        }, 16)
+      } catch {
+        if (aiStreamTimerRef.current) clearInterval(aiStreamTimerRef.current)
+        aiStreamTimerRef.current = null
+        setIsAiStreaming(false)
+        setAiFeed([
+          ...newMessages,
+          {
+            role: 'assistant',
+            content: `In ${activeLesson?.title || courseTitle}, isolate side effects in dedicated boundaries. Let me know if you would like a code walkthrough!`,
+            streaming: false,
+          },
+        ])
+      }
+    },
+    [aiInput, isAiStreaming, aiFeed, courseTitle, activeLesson, activeRoadmap]
+  )
+
+  // Master unmount cleanup for all animation loops and timers
+  useEffect(() => {
+    return () => {
+      if (fxAnimIdRef.current) cancelAnimationFrame(fxAnimIdRef.current)
+      if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current)
+      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current)
+      if (levelUpTimer1Ref.current) clearTimeout(levelUpTimer1Ref.current)
+      if (levelUpTimer2Ref.current) clearTimeout(levelUpTimer2Ref.current)
+      if (aiStreamTimerRef.current) clearInterval(aiStreamTimerRef.current)
+      if (notesDebounceRef.current) clearTimeout(notesDebounceRef.current)
+      document.body.classList.remove('flash')
     }
   }, [])
 
-  // Completion calculation
-  const completedCount = useMemo(() => {
-    return lessons.filter((l) => completedLessonIds.includes(l.id)).length
-  }, [lessons, completedLessonIds])
+  // Background Constellation Canvas Effect (Pauses on visibilitychange / hidden tab)
+  useEffect(() => {
+    const canvas = bgCanvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
 
-  const progressPercent = useMemo(() => {
-    if (!lessons.length) return 0
-    return Math.round((completedCount / lessons.length) * 100)
-  }, [completedCount, lessons.length])
+    let width = (canvas.width = window.innerWidth)
+    let height = (canvas.height = window.innerHeight)
 
-  // Loading skeleton
+    let resizeTimer = null
+    const handleResize = () => {
+      if (resizeTimer) return
+      resizeTimer = requestAnimationFrame(() => {
+        width = canvas.width = window.innerWidth
+        height = canvas.height = window.innerHeight
+        resizeTimer = null
+      })
+    }
+    window.addEventListener('resize', handleResize, { passive: true })
+
+    const particleCount = 70
+    const nodes = []
+    for (let i = 0; i < particleCount; i++) {
+      nodes.push({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        vx: (Math.random() - 0.5) * 0.25,
+        vy: (Math.random() - 0.5) * 0.25,
+      })
+    }
+
+    let mouseX = -999
+    let mouseY = -999
+
+    const handlePointerMove = (e) => {
+      mouseX = e.clientX
+      mouseY = e.clientY
+    }
+    window.addEventListener('pointermove', handlePointerMove, { passive: true })
+
+    let animId = null
+    let isRunning = false
+
+    const render = () => {
+      if (document.hidden) {
+        isRunning = false
+        animId = null
+        return
+      }
+
+      ctx.clearRect(0, 0, width, height)
+      const isDark = dashboardTheme !== 'light'
+      const nodeColor = isDark ? '255,255,255' : '0,0,0'
+
+      nodes.forEach((p, i) => {
+        p.x += p.vx
+        p.y += p.vy
+        if (p.x < 0 || p.x > width) p.vx *= -1
+        if (p.y < 0 || p.y > height) p.vy *= -1
+
+        const dx = mouseX - p.x
+        const dy = mouseY - p.y
+        // Fast AABB rejection before sqrt
+        if (Math.abs(dx) < 160 && Math.abs(dy) < 160) {
+          const dist = Math.sqrt(dx * dx + dy * dy)
+          if (dist < 160) {
+            p.x += dx * 0.004
+            p.y += dy * 0.004
+          }
+        }
+
+        ctx.fillStyle = `rgba(${nodeColor}, 0.35)`
+        ctx.fillRect(p.x, p.y, 1.6, 1.6)
+
+        for (let j = i + 1; j < particleCount; j++) {
+          const q = nodes[j]
+          const pdx = p.x - q.x
+          // Fast AABB rejection before distance squaring: sqrt(14000) ~ 118.3
+          if (Math.abs(pdx) > 118.3) continue
+          const pdy = p.y - q.y
+          if (Math.abs(pdy) > 118.3) continue
+
+          const distSq = pdx * pdx + pdy * pdy
+          if (distSq < 14000) {
+            ctx.strokeStyle = `rgba(${nodeColor}, ${0.09 * (1 - distSq / 14000)})`
+            ctx.beginPath()
+            ctx.moveTo(p.x, p.y)
+            ctx.lineTo(q.x, q.y)
+            ctx.stroke()
+          }
+        }
+      })
+
+      animId = requestAnimationFrame(render)
+    }
+
+    const startAnimation = () => {
+      if (!isRunning && !document.hidden) {
+        isRunning = true
+        animId = requestAnimationFrame(render)
+      }
+    }
+
+    const stopAnimation = () => {
+      if (animId) {
+        cancelAnimationFrame(animId)
+        animId = null
+      }
+      isRunning = false
+    }
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        stopAnimation()
+      } else {
+        startAnimation()
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    startAnimation()
+
+    return () => {
+      stopAnimation()
+      if (resizeTimer) cancelAnimationFrame(resizeTimer)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('resize', handleResize)
+      window.removeEventListener('pointermove', handlePointerMove)
+    }
+  }, [dashboardTheme])
+
+  // Mouse Follower Dot & 3D Card Tilt Physics (Throttled via requestAnimationFrame)
+  useEffect(() => {
+    const dot = document.getElementById('cd')
+    let rafId = null
+    let latestEvent = null
+
+    const processPointerMove = () => {
+      if (!latestEvent) {
+        rafId = null
+        return
+      }
+
+      const { clientX, clientY, target } = latestEvent
+      latestEvent = null
+
+      if (dot) {
+        dot.style.transform = `translate(${clientX}px, ${clientY}px)`
+      }
+
+      const el = target?.closest ? target : document.body
+      const card = el.closest ? el.closest('.card, .rc') : null
+      if (card) {
+        const rect = card.getBoundingClientRect()
+        const px = (clientX - rect.left) / rect.width
+        const py = (clientY - rect.top) / rect.height
+        card.style.setProperty('--x', `${clientX - rect.left}px`)
+        card.style.setProperty('--y', `${clientY - rect.top}px`)
+        card.style.setProperty('--ry', `${(px - 0.5) * 8}deg`)
+        card.style.setProperty('--rx', `${(0.5 - py) * 8}deg`)
+      }
+
+      const btn = el.closest ? el.closest('.btn') : null
+      if (btn) {
+        const q = btn.getBoundingClientRect()
+        btn.style.transform = `translate(${(clientX - q.left - q.width / 2) * 0.12}px, ${
+          (clientY - q.top - q.height / 2) * 0.2
+        }px)`
+      }
+
+      rafId = null
+    }
+
+    const handlePointerMove = (e) => {
+      latestEvent = {
+        clientX: e.clientX,
+        clientY: e.clientY,
+        target: e.target,
+      }
+      if (!rafId) {
+        rafId = requestAnimationFrame(processPointerMove)
+      }
+    }
+
+    const handlePointerOut = (e) => {
+      const target = e.target.closest && e.target.closest('.card, .rc, .btn')
+      if (target && !target.contains(e.relatedTarget)) {
+        target.style.setProperty('--rx', '0deg')
+        target.style.setProperty('--ry', '0deg')
+        if (target.classList.contains('btn')) {
+          target.style.transform = ''
+        }
+      }
+    }
+
+    document.addEventListener('pointermove', handlePointerMove, { passive: true })
+    document.addEventListener('pointerout', handlePointerOut, { passive: true })
+
+    return () => {
+      if (rafId) cancelAnimationFrame(rafId)
+      document.removeEventListener('pointermove', handlePointerMove)
+      document.removeEventListener('pointerout', handlePointerOut)
+    }
+  }, [])
+
+  // Command Palette actions
+  const handleExecuteCommand = useCallback(
+    (cmdId) => {
+      setIsPaletteOpen(false)
+      switch (cmdId) {
+        case 'toggle-play':
+          setIsVideoPlaying((p) => {
+            const next = !p
+            sendPlayerCommand(next ? 'playVideo' : 'pauseVideo')
+            return next
+          })
+          break
+        case 'next-lesson':
+          handleNextLesson()
+          break
+        case 'prev-lesson':
+          handlePreviousLesson()
+          break
+        case 'mark-complete':
+          if (activeLesson?.id) handleToggleComplete(activeLesson.id)
+          break
+        case 'toggle-focus':
+          setIsFocusMode((f) => {
+            const next = !f
+            triggerToast(next ? 'Focus mode on' : 'Focus mode off')
+            return next
+          })
+          break
+        case 'toggle-theme':
+          dashboardToggleTheme()
+          break
+        case 'explain-simply':
+          handleSendAiMessage('Explain this lesson in simple terms')
+          break
+        default:
+          break
+      }
+    },
+    [
+      handleNextLesson,
+      handlePreviousLesson,
+      activeLesson,
+      handleToggleComplete,
+      triggerToast,
+      dashboardToggleTheme,
+      handleSendAiMessage,
+      sendPlayerCommand,
+    ]
+  )
+
+  const filteredCommands = useMemo(() => {
+    if (!paletteQuery.trim()) return COMMAND_ITEMS
+    const q = paletteQuery.toLowerCase()
+    return COMMAND_ITEMS.filter((c) => c.title.toLowerCase().includes(q))
+  }, [paletteQuery])
+
+  // Command Palette Keyboard shortcut ⌘K / Ctrl+K
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setIsPaletteOpen((prev) => {
+          const next = !prev
+          if (next) {
+            setPaletteQuery('')
+            setPaletteSelectedIdx(0)
+            setTimeout(() => paletteInputRef.current?.focus(), 50)
+          }
+          return next
+        })
+      } else if (e.key === 'Escape' && isPaletteOpen) {
+        setIsPaletteOpen(false)
+      } else if (isPaletteOpen) {
+        if (e.key === 'ArrowDown') {
+          e.preventDefault()
+          setPaletteSelectedIdx((prev) => (prev + 1) % Math.max(1, filteredCommands.length))
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault()
+          setPaletteSelectedIdx(
+            (prev) => (prev - 1 + filteredCommands.length) % Math.max(1, filteredCommands.length)
+          )
+        } else if (e.key === 'Enter') {
+          e.preventDefault()
+          if (filteredCommands[paletteSelectedIdx]) {
+            handleExecuteCommand(filteredCommands[paletteSelectedIdx].id)
+          }
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isPaletteOpen, filteredCommands, paletteSelectedIdx, handleExecuteCommand])
+
+  const userInitials = useMemo(() => {
+    if (user?.full_name) {
+      const parts = user.full_name.trim().split(' ')
+      if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase()
+      return user.full_name.slice(0, 2).toUpperCase()
+    }
+    return 'HS'
+  }, [user])
+
+  // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#08090d] text-white selection:bg-white selection:text-black">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-pulse">
-          <div className="h-6 w-48 bg-white/10 rounded" />
-          <div className="h-10 w-2/3 bg-white/10 rounded" />
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 aspect-video bg-white/5 rounded-2xl" />
-            <div className="space-y-4">
-              <div className="h-6 w-32 bg-white/10 rounded" />
-              <div className="h-20 bg-white/5 rounded-xl" />
-              <div className="h-20 bg-white/5 rounded-xl" />
-              <div className="h-20 bg-white/5 rounded-xl" />
-            </div>
-          </div>
+      <div className="technea-learning-workspace min-h-screen flex items-center justify-center p-8">
+        <div className="text-center space-y-4">
+          <div className="w-12 h-12 rounded-full border-2 border-[var(--lw-hot)] border-t-transparent animate-spin mx-auto" />
+          <p className="text-sm font-semibold tracking-wider text-[var(--lw-mu)]">
+            INITIALIZING WORKSPACE...
+          </p>
         </div>
       </div>
     )
   }
 
   // Error state
-  if (error && !courseData) {
+  if (error && (!courseData || !courseData.title || !lessons.length)) {
     return (
-      <div className="min-h-screen bg-[#08090d] text-white selection:bg-white selection:text-black flex items-center justify-center px-6">
+      <div className="technea-learning-workspace min-h-screen flex items-center justify-center p-8">
         <div className="max-w-md w-full rounded-2xl border border-red-500/20 bg-red-500/[0.04] p-8 text-center space-y-4">
-          <div className="inline-flex items-center justify-center h-12 w-12 rounded-full bg-red-500/10 text-red-400 mx-auto">
-            <AlertCircle className="h-6 w-6" />
+          <div className="h-12 w-12 rounded-full bg-red-500/10 text-red-400 mx-auto grid place-items-center">
+            <svg viewBox="0 0 24 24" className="w-6 h-6 stroke-current">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
           </div>
-          <h2 className="text-lg font-semibold text-white">Error Loading Course Player</h2>
-          <p className="text-xs text-neutral-400">{error}</p>
+          <h2 className="text-lg font-bold text-[var(--lw-tx)]">Unable to load course track</h2>
+          <p className="text-xs text-[var(--lw-mu)]">{error}</p>
           <div className="flex items-center justify-center gap-3 pt-2">
             <button
               type="button"
               onClick={onBack}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.05] px-4 py-2 text-xs font-medium text-white hover:bg-white/10 transition-colors cursor-pointer"
+              className="px-4 py-2 rounded-lg border border-[var(--lw-line)] text-xs font-semibold hover:border-[var(--lw-tx)] transition-all cursor-pointer"
             >
-              <ArrowLeft className="h-3.5 w-3.5" />
-              <span>Back</span>
+              Back to Roadmap
             </button>
             <button
               type="button"
@@ -614,10 +1244,9 @@ export default function CoursePlayerPage({
                 setError(null)
                 setRetryKey((k) => k + 1)
               }}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-white px-4 py-2 text-xs font-semibold text-black hover:bg-neutral-200 transition-colors cursor-pointer"
+              className="px-4 py-2 rounded-lg bg-[var(--lw-ac)] text-[var(--lw-ink)] text-xs font-bold hover:opacity-90 transition-all cursor-pointer"
             >
-              <RotateCcw className="h-3.5 w-3.5" />
-              <span>Retry</span>
+              Retry Connection
             </button>
           </div>
         </div>
@@ -625,819 +1254,756 @@ export default function CoursePlayerPage({
     )
   }
 
+  const isCurrentLessonDone = activeLesson?.id && completedLessonSet.has(String(activeLesson.id))
+
   return (
-    <div className="min-h-screen bg-[#08090d] text-white selection:bg-white selection:text-black">
-      {/* ── HEADER NAVIGATION & BREADCRUMBS ──────────────────────────────── */}
-      <header className="border-b border-white/[0.08] bg-[#08090d]/80 backdrop-blur-md sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3 min-w-0">
-            <button
-              type="button"
-              onClick={onBack}
-              className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.04] px-3.5 py-2 text-xs font-medium text-neutral-300 hover:text-white hover:bg-white/[0.08] hover:border-white/20 transition-all cursor-pointer shrink-0"
-              title="Return to learning path"
-            >
-              <ArrowLeft className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Back to Roadmap</span>
-              <span className="sm:hidden">Back</span>
-            </button>
+    <div
+      className={`technea-learning-workspace ${isFocusMode ? 'focus' : ''}`}
+      data-theme={dashboardTheme}
+    >
+      {/* SVG Symbol Definitions */}
+      <svg width="0" height="0" style={{ position: 'absolute' }}>
+        <defs>
+          <symbol id="back" viewBox="0 0 24 24">
+            <path d="M19 12H5M11 6l-6 6 6 6" />
+          </symbol>
+          <symbol id="sun" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="4" />
+            <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+          </symbol>
+          <symbol id="check" viewBox="0 0 24 24">
+            <path d="M5 12.5l4.5 4.5L19 7.5" />
+          </symbol>
+          <symbol id="arrow" viewBox="0 0 24 24">
+            <path d="M5 12h14M13 6l6 6-6 6" />
+          </symbol>
+          <symbol id="clock" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 7v5l3 2" />
+          </symbol>
+          <symbol id="level" viewBox="0 0 24 24">
+            <path d="M5 20v-5M12 20V9M19 20V4" />
+          </symbol>
+          <symbol id="code" viewBox="0 0 24 24">
+            <path d="M8 7l-5 5 5 5M16 7l5 5-5 5M14 4l-4 16" />
+          </symbol>
+          <symbol id="spark" viewBox="0 0 24 24">
+            <path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z" />
+          </symbol>
+          <symbol id="bulb" viewBox="0 0 24 24">
+            <path d="M9 18h6M10 21h4M12 3a6 6 0 00-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0012 3z" />
+          </symbol>
+          <symbol id="bug" viewBox="0 0 24 24">
+            <circle cx="11" cy="11" r="7" />
+            <path d="M21 21l-5-5" />
+          </symbol>
+          <symbol id="map" viewBox="0 0 24 24">
+            <circle cx="6" cy="18" r="2" />
+            <circle cx="18" cy="6" r="2" />
+            <path d="M8 18h6a4 4 0 000-8h-4a4 4 0 010-8h6" />
+          </symbol>
+          <symbol id="note" viewBox="0 0 24 24">
+            <path d="M6 3h9l4 4v14H6zM14 3v5h5M9 13h7M9 17h5" />
+          </symbol>
+          <symbol id="target" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="9" />
+            <circle cx="12" cy="12" r="5" />
+            <circle cx="12" cy="12" r="1" />
+          </symbol>
+          <symbol id="quiz" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="9" />
+            <path d="M9.5 9.5a2.5 2.5 0 114 2c-.9.6-1.5 1-1.5 2M12 17h.01" />
+          </symbol>
+          <symbol id="full" viewBox="0 0 24 24">
+            <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />
+          </symbol>
+          <symbol id="send" viewBox="0 0 24 24">
+            <path d="M12 19V5M6 11l6-6 6 6" />
+          </symbol>
+          <symbol id="play" viewBox="0 0 24 24">
+            <path d="M8 5v14l11-7z" fill="currentColor" stroke="none" />
+          </symbol>
+          <symbol id="pause" viewBox="0 0 24 24">
+            <path d="M7 5h3v14H7zM14 5h3v14h-3z" fill="currentColor" stroke="none" />
+          </symbol>
+          <symbol id="flame" viewBox="0 0 24 24">
+            <path d="M12 3c1 4 5 5 5 10a5 5 0 01-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-6 1-9z" />
+          </symbol>
+        </defs>
+      </svg>
 
-            <div className="h-4 w-px bg-white/10 hidden sm:block" />
+      {/* Visual Canvas Background & Overlays */}
+      <canvas id="bg" ref={bgCanvasRef} />
+      <div className="cur-dot" id="cd" />
+      <canvas id="fx" ref={fxCanvasRef} />
 
-            {/* Breadcrumb path */}
-            <div className="flex items-center gap-2 text-xs text-neutral-400 truncate">
-              {path?.title && (
-                <>
-                  <span className="truncate max-w-[140px] sm:max-w-[200px] hover:text-neutral-200 transition-colors">
-                    {path.title}
-                  </span>
-                  <ChevronRight className="h-3 w-3 text-neutral-600 shrink-0" />
-                </>
-              )}
-              <span className="text-white font-medium truncate max-w-[180px] sm:max-w-[280px]">
-                {courseTitle}
-              </span>
-            </div>
-          </div>
+      {/* Toast Notification */}
+      <div className={`lw-toast ${isToastVisible ? 'show' : ''}`}>{toastMessage}</div>
 
-          {/* Quick Action Badges */}
-          <div className="flex items-center gap-2 shrink-0">
-            {courseData?.playlist_url && (
-              <a
-                href={courseData.playlist_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hidden md:inline-flex min-h-[44px] items-center gap-1 rounded-md border border-white/10 bg-white/[0.04] px-3 py-2 text-[11px] font-mono text-neutral-300 hover:text-white hover:bg-white/[0.08] transition-colors"
-                title="View full playlist on YouTube"
+      {/* Level Up Banner Overlay */}
+      <div className={`lu ${isLevelUpActive ? 'on' : ''}`}>
+        <div>
+          <small>Level up</small>
+          <strong>{levelUpNumber || currentLevel}</strong>
+          <span>You are on fire. Keep the streak alive.</span>
+        </div>
+      </div>
+
+      {/* Command Palette Modal */}
+      <div
+        className={`pal ${isPaletteOpen ? 'open' : ''}`}
+        onClick={(e) => {
+          if (e.target.classList.contains('pal')) setIsPaletteOpen(false)
+        }}
+      >
+        <div>
+          <input
+            ref={paletteInputRef}
+            placeholder="Type a command (e.g. Next lesson, Focus mode...)"
+            value={paletteQuery}
+            onChange={(e) => {
+              setPaletteQuery(e.target.value)
+              setPaletteSelectedIdx(0)
+            }}
+          />
+          <div className="space-y-1 mt-2">
+            {filteredCommands.map((cmd, i) => (
+              <button
+                key={cmd.id}
+                type="button"
+                className={i === paletteSelectedIdx ? 'sel' : ''}
+                onClick={() => handleExecuteCommand(cmd.id)}
               >
-                <span>Full Playlist</span>
-                <ExternalLink className="h-3 w-3 text-neutral-400" />
-              </a>
+                {cmd.title}
+              </button>
+            ))}
+            {filteredCommands.length === 0 && (
+              <div className="p-3 text-xs text-[var(--lw-mu)]">No matching command found.</div>
             )}
-
-            <button
-              type="button"
-              onClick={handleShare}
-              className="inline-flex min-h-[44px] items-center gap-1.5 rounded-md border border-white/10 bg-white/[0.04] px-3 py-2 text-[11px] font-medium text-neutral-300 hover:text-white hover:bg-white/[0.08] transition-colors cursor-pointer"
-              title="Copy share link"
-            >
-              {copiedLink ? (
-                <>
-                  <Check className="h-3 w-3 text-white" />
-                  <span className="text-white">Copied</span>
-                </>
-              ) : (
-                <>
-                  <Share2 className="h-3 w-3" />
-                  <span className="hidden sm:inline">Share</span>
-                </>
-              )}
-            </button>
           </div>
         </div>
-      </header>
+      </div>
 
-      {/* ── MAIN CONTENT GRID ────────────────────────────────────────────── */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
-        {/* Top Course Metadata Card */}
-        <section className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5 sm:p-6 space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded border border-white/10 bg-white/[0.04] px-2.5 py-0.5 font-mono text-[10px] text-neutral-300 uppercase tracking-wider font-semibold">
-                {platform}
-              </span>
-              <span className="rounded border border-white/10 bg-white/[0.04] px-2.5 py-0.5 font-mono text-[10px] text-neutral-300">
-                {category}
-              </span>
-              <span className="rounded border border-white/10 bg-white/[0.04] px-2.5 py-0.5 font-mono text-[10px] text-neutral-400">
-                {difficulty}
-              </span>
-            </div>
+      {/* Top Header Navigation */}
+      <div className="wrap">
+        <header>
+          <button type="button" className="back" onClick={onBack}>
+            <svg>
+              <use href="#back" />
+            </svg>
+            <span>Back to Roadmap</span>
+          </button>
 
-            <div className="flex items-center gap-3 text-xs font-mono text-neutral-400">
-              <div className="flex items-center gap-1.5">
-                <Clock className="h-3.5 w-3.5 text-neutral-500" />
-                <span>{duration}</span>
+          <div className="path">
+            <b>{activeRoadmap?.title || pathTitle || courseTitle}</b>
+            <div className="prog">
+              <div className="bar">
+                <i style={{ width: `${progressPercent}%` }} />
               </div>
-              <span>•</span>
-              <div className="flex items-center gap-1.5 text-neutral-300 font-semibold">
-                <MonitorPlay className="h-3.5 w-3.5" />
-                <span>Embedded Player</span>
-              </div>
+              <span>{progressPercent}% complete</span>
             </div>
           </div>
 
-          <div className="space-y-1.5">
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight text-white">
-              {courseTitle}
-            </h1>
-            <div className="flex items-center gap-2 text-xs sm:text-sm text-neutral-400">
-              <User className="h-3.5 w-3.5 text-neutral-500" />
-              <span>Taught by <strong className="text-neutral-200">{instructor}</strong></span>
-            </div>
-          </div>
+          <div className="tools">
+            <span className="chip">
+              <svg id="fl">
+                <use href="#flame" />
+              </svg>
+              <span>{streakCount}</span> day streak
+              <span className="wk">
+                <i />
+                <i />
+                <i />
+                <i />
+                <i />
+                <i />
+                <i className={todayCompleted ? '' : 't'} />
+              </span>
+            </span>
 
-          {courseData?.description && (
-            <p className="text-xs sm:text-sm text-neutral-400 leading-relaxed max-w-4xl font-light">
-              {courseData.description}
-            </p>
-          )}
-        </section>
+            <span className="chip" id="xp-chip">
+              <svg>
+                <use href="#spark" />
+              </svg>
+              <span>{currentXp.toLocaleString()}</span> XP
+            </span>
 
-        {/* ── PLAYER & PLAYLIST SIDEBAR ────────────────────────────────────── */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 items-start">
-          {/* Middle: Embedded YouTube Player (2 Cols on Desktop) */}
-          <section className="lg:col-span-2 space-y-4">
-            {/* 16:9 Video Player Container */}
-            <div className="relative aspect-video w-full rounded-2xl overflow-hidden bg-black shadow-2xl border border-white/10 group">
-              {currentVideoId ? (
-                <iframe
-                  title={activeLesson?.title || courseTitle}
-                  src={embedUrl}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowFullScreen
-                  className="w-full h-full border-0 absolute inset-0"
+            <button
+              type="button"
+              className="ib kbd"
+              onClick={() => {
+                setIsPaletteOpen(true)
+                setTimeout(() => paletteInputRef.current?.focus(), 50)
+              }}
+              title="Open command palette (⌘K / Ctrl+K)"
+            >
+              ⌘K
+            </button>
+
+            <button
+              type="button"
+              className="ib"
+              onClick={dashboardToggleTheme}
+              title="Toggle theme (Light / Dark)"
+            >
+              <svg>
+                <use href="#sun" />
+              </svg>
+            </button>
+
+            <div className="lv" title={`Level ${currentLevel} Developer`}>
+              <svg viewBox="0 0 44 44">
+                <circle cx="22" cy="22" r="19" className="t" />
+                <circle
+                  cx="22"
+                  cy="22"
+                  r="19"
+                  className="p"
+                  style={{ strokeDashoffset: ringOffset }}
                 />
-              ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center text-center p-6 bg-neutral-950">
-                  <Play className="h-12 w-12 text-neutral-600 mb-3" />
-                  <p className="text-sm font-medium text-neutral-300">No video stream available for this course</p>
-                  <p className="text-xs text-neutral-500 mt-1">Please select another course or lesson.</p>
-                </div>
-              )}
-            </div>
-
-            {/* Active Lesson Context & Controls */}
-            <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="space-y-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-[10px] text-neutral-400 font-semibold uppercase tracking-wider">
-                    Lesson {activeLessonIndex + 1} of {lessons.length || 1}
-                  </span>
-                  {activeLesson?.duration && (
-                    <span className="text-[10px] font-mono text-neutral-500">
-                      • {activeLesson.duration}
-                    </span>
-                  )}
-                </div>
-                <h2 className="text-base sm:text-lg font-semibold text-white tracking-tight truncate">
-                  {activeLesson?.title || courseTitle}
-                </h2>
-                {activeLesson?.description && (
-                  <p className="text-xs text-neutral-400 font-light line-clamp-2">
-                    {activeLesson.description}
-                  </p>
+              </svg>
+              <div className="av">
+                {user?.avatar_url ? (
+                  <img src={user.avatar_url} alt={user.full_name || 'User'} />
+                ) : (
+                  <span>{userInitials}</span>
                 )}
               </div>
+              <b>{currentLevel}</b>
+            </div>
+          </div>
+        </header>
 
-              {/* Completion & Next Controls */}
-              <div className="flex items-center gap-2 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-white/[0.06]">
-                {activeLesson && (
+        {/* ── MAIN WORKSPACE CONTENT ── */}
+        <main>
+          {/* Top Hero: Video Player + AI Mentor Companion */}
+          <div className="hero">
+            <div>
+              {/* Live Streak Reminder Pill */}
+              <StreakBanner todayCompleted={todayCompleted} />
+
+              {/* Title with staggered words animation */}
+              <h1>
+                {courseTitle.split(' ').map((word, i) => (
+                  <span
+                    key={i}
+                    className="w"
+                    style={{ animationDelay: `${i * 90 + 100}ms` }}
+                  >
+                    {word}{' '}
+                  </span>
+                ))}
+              </h1>
+
+              <p className="crumb">
+                Lesson {activeLessonIndex + 1} of {lessons.length || 1} ·{' '}
+                {activeLesson?.title || 'Course Overview'} · Taught by {instructor}
+              </p>
+
+              {/* 16:9 Video Player Container with Conic Border & Scanlines */}
+              <div className={`player ${isVideoPlaying ? 'playing' : ''}`}>
+                {/* Floating "Up Next" pill */}
+                <div className="up">
+                  {hasNext ? (
+                    <>
+                      <svg style={{ width: 14, height: 14 }}>
+                        <use href="#arrow" />
+                      </svg>
+                      <span>Up next · {lessons[activeLessonIndex + 1]?.title}</span>
+                    </>
+                  ) : (
+                    <span>Final lesson</span>
+                  )}
+                </div>
+
+                {/* Video Player */}
+                {currentVideoId ? (
+                  <VideoIframe
+                    iframeRef={iframeRef}
+                    videoId={currentVideoId}
+                    title={activeLesson?.title || courseTitle}
+                    embedUrl={embedUrl}
+                    onIframeLoad={handleIframeLoad}
+                  />
+                ) : (
+                  <>
+                    <div className="player-grid" />
+                    <div className="player-code">
+                      <span className="on">name = "Technea"</span>
+                      <span className="on">track = "{pathTitle || 'Python'}"</span>
+                      <span className="on">lesson = "{activeLesson?.title || 'Interactive Lesson'}"</span>
+                      <span>&nbsp;</span>
+                      <span className="on">print("Ready for deep learning.")</span>
+                    </div>
+                    <div className="play-btn">
+                      <svg>
+                        <use href="#play" />
+                      </svg>
+                    </div>
+                  </>
+                )}
+
+                {/* Floating Controls Bar */}
+                <div className="ctrl" onClick={(e) => e.stopPropagation()}>
+                  <div
+                    className="seek"
+                    onClick={(e) => {
+                      const rect = e.currentTarget.getBoundingClientRect()
+                      const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
+                      setSeekProgress(pct)
+                      sendPlayerCommand('seekTo', [pct * 1200, true])
+                    }}
+                  >
+                    <div>
+                      <i style={{ width: `${seekProgress * 100}%` }} />
+                    </div>
+                  </div>
+
+                  <div className="row">
+                    <button
+                      type="button"
+                      aria-label="Play or pause"
+                      onClick={() => {
+                        setIsVideoPlaying((p) => {
+                          const next = !p
+                          sendPlayerCommand(next ? 'playVideo' : 'pauseVideo')
+                          return next
+                        })
+                      }}
+                    >
+                      <svg style={{ width: 16 }}>
+                        <use href={isVideoPlaying ? '#pause' : '#play'} />
+                      </svg>
+                    </button>
+                    <span>
+                      {activeLesson?.duration
+                        ? `Playing · ${activeLesson.duration}`
+                        : '00:00 / 22:00'}
+                    </span>
+                    <span className="sp" />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const speeds = [1.0, 1.25, 1.5, 2.0]
+                        const next = speeds[(speeds.indexOf(playbackSpeed) + 1) % speeds.length]
+                        setPlaybackSpeed(next)
+                        sendPlayerCommand('setPlaybackRate', [next])
+                        triggerToast(`Playback speed: ${next}×`)
+                      }}
+                    >
+                      {playbackSpeed.toFixed(1)}×
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Focus mode"
+                      onClick={() => {
+                        setIsFocusMode((f) => !f)
+                        triggerToast(isFocusMode ? 'Focus mode off' : 'Focus mode on')
+                      }}
+                    >
+                      <svg style={{ width: 16 }}>
+                        <use href="#full" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Metadata tags & Lesson Action buttons */}
+              <div className="meta">
+                <div className="tags">
+                  <span>
+                    <svg>
+                      <use href="#level" />
+                    </svg>
+                    {difficulty}
+                  </span>
+                  <span>
+                    <svg>
+                      <use href="#clock" />
+                    </svg>
+                    {duration}
+                  </span>
+                  <span>
+                    <svg>
+                      <use href="#code" />
+                    </svg>
+                    {platform} · {category}
+                  </span>
+                </div>
+
+                <div className="acts">
                   <button
                     type="button"
-                    onClick={() => handleToggleComplete(activeLesson.id)}
-                    className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-lg px-3.5 py-2 text-xs font-medium transition-all cursor-pointer ${
-                      completedLessonIds.includes(activeLesson.id)
-                        ? 'border border-white/20 bg-white/10 text-white hover:bg-white/15'
-                        : 'border border-white/10 bg-white/[0.04] text-neutral-300 hover:bg-white/[0.08] hover:text-white'
-                    }`}
+                    className="btn b2"
+                    onClick={handlePreviousLesson}
+                    disabled={!hasPrevious}
+                    style={{ opacity: hasPrevious ? 1 : 0.4 }}
                   >
-                    {completedLessonIds.includes(activeLesson.id) ? (
-                      <>
-                        <CheckCircle2 className="h-3.5 w-3.5 text-white" />
-                        <span>Completed</span>
-                      </>
-                    ) : (
-                      <>
-                        <Circle className="h-3.5 w-3.5 text-neutral-500" />
-                        <span>Mark Done</span>
-                      </>
-                    )}
+                    <svg style={{ transform: 'rotate(180deg)' }}>
+                      <use href="#arrow" />
+                    </svg>
+                    <span>Previous Lesson</span>
                   </button>
-                )}
 
+                  <button
+                    type="button"
+                    className={`btn b1 ${isCurrentLessonDone ? 'done' : ''}`}
+                    onClick={() => activeLesson?.id && handleToggleComplete(activeLesson.id)}
+                  >
+                    <svg>
+                      <use href="#check" />
+                    </svg>
+                    <span>{isCurrentLessonDone ? 'Completed' : 'Mark Complete'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className="btn b2"
+                    onClick={handleNextLesson}
+                    disabled={!hasNext}
+                  >
+                    <span>Next Lesson</span>
+                    <svg>
+                      <use href="#arrow" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* AI Mentor Companion Panel */}
+            <aside className="ai">
+              <div className="ai-h">
+                <div className="orb" />
+                <div>
+                  <b>AI Mentor</b>
+                  <small>Your learning companion</small>
+                </div>
+              </div>
+
+              <div className="ctx">
+                <div>
+                  <span>Learning</span>
+                  <b>{activeRoadmap?.title || pathTitle || 'Python Fundamentals'}</b>
+                </div>
+                <div>
+                  <span>Current lesson</span>
+                  <b>{activeLesson?.title || 'Lesson 1'}</b>
+                </div>
+              </div>
+
+              {/* 4 Quick Action Prompt Cards */}
+              <div className="qa">
                 <button
                   type="button"
-                  onClick={handleNextLesson}
-                  disabled={!hasNext}
-                  className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-semibold transition-all cursor-pointer shadow-sm ${
-                    hasNext
-                      ? 'bg-white text-black hover:bg-neutral-200 active:scale-95'
-                      : 'bg-white/10 text-neutral-500 cursor-not-allowed'
-                  }`}
+                  onClick={() =>
+                    handleSendAiMessage('Explain the core concept in simple terms with an analogy')
+                  }
                 >
-                  <span>Next Lesson</span>
-                  <ChevronRight className="h-3.5 w-3.5" />
+                  <svg>
+                    <use href="#spark" />
+                  </svg>
+                  <span>Explain simply</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    handleSendAiMessage('Give me a production-ready real-world code example')
+                  }
+                >
+                  <svg>
+                    <use href="#bulb" />
+                  </svg>
+                  <span>Give example</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    handleSendAiMessage('What are the most common mistakes and anti-patterns to avoid?')
+                  }
+                >
+                  <svg>
+                    <use href="#bug" />
+                  </svg>
+                  <span>Find mistakes</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    handleSendAiMessage('How does this lesson connect to my active roadmap milestone?')
+                  }
+                >
+                  <svg>
+                    <use href="#map" />
+                  </svg>
+                  <span>Relate to roadmap</span>
                 </button>
               </div>
-            </div>
 
-            {/* Previous & Next bottom navigation controls */}
-            <div className="flex items-center justify-between gap-4 pt-2">
-              <button
-                type="button"
-                onClick={handlePreviousLesson}
-                disabled={!hasPrevious}
-                className={`inline-flex min-h-[44px] items-center gap-2 rounded-lg border border-white/10 px-4 py-2 text-xs font-medium transition-all ${
-                  hasPrevious
-                    ? 'text-neutral-300 hover:text-white hover:bg-white/[0.06] cursor-pointer'
-                    : 'text-neutral-600 border-white/[0.04] cursor-not-allowed opacity-50'
-                }`}
-              >
-                <ChevronLeft className="h-3.5 w-3.5" />
-                <span>Previous Lesson</span>
-              </button>
-
-              <div className="font-mono text-xs text-neutral-500">
-                {completedCount} / {lessons.length} Completed ({progressPercent}%)
-              </div>
-
-              <button
-                type="button"
-                onClick={handleNextLesson}
-                disabled={!hasNext}
-                className={`inline-flex min-h-[44px] items-center gap-2 rounded-lg border border-white/10 px-4 py-2 text-xs font-medium transition-all ${
-                  hasNext
-                    ? 'text-neutral-300 hover:text-white hover:bg-white/[0.06] cursor-pointer'
-                    : 'text-neutral-600 border-white/[0.04] cursor-not-allowed opacity-50'
-                }`}
-              >
-                <span>Next Lesson</span>
-                <ChevronRight className="h-3.5 w-3.5" />
-              </button>
-            </div>
-
-            {/* ── INTERACTIVE LEARNING WORKSPACE DECK (NOTES, PRACTICE, QUIZ, AI MENTOR) ── */}
-            <div className="rounded-2xl border border-white/[0.08] bg-[#141312] overflow-hidden shadow-xl mt-6">
-              {/* Tab Navigation Bar */}
-              <div className="flex items-center gap-2 px-4 py-2.5 bg-[#0e0d0c] border-b border-[#262320] overflow-x-auto no-scrollbar">
-                {[
-                  { id: 'notes', label: 'Lesson Notes', icon: FileText },
-                  { id: 'practice', label: 'Practice Challenge', icon: Code, badge: '+10 XP' },
-                  { id: 'quiz', label: 'Diagnostic Quiz', icon: HelpCircle, badge: '+20 XP' },
-                  { id: 'ai', label: 'AI Mentor', icon: Bot },
-                ].map((t) => {
-                  const Icon = t.icon
-                  const isActive = learningTab === t.id
-                  return (
-                    <button
-                      key={t.id}
-                      type="button"
-                      onClick={() => setLearningTab(t.id)}
-                      className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer whitespace-nowrap ${
-                        isActive
-                          ? 'bg-[#c25e2e]/20 text-[#e87a48] border border-[#c25e2e]/40 shadow-sm'
-                          : 'text-[#a8a199] hover:text-[#faf6ee] hover:bg-white/[0.04]'
-                      }`}
-                    >
-                      <Icon className="h-3.5 w-3.5" />
-                      <span>{t.label}</span>
-                      {t.badge && (
-                        <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[#c25e2e]/30 text-[#e87a48] font-mono">
-                          {t.badge}
-                        </span>
-                      )}
-                    </button>
-                  )
-                })}
-              </div>
-
-              {/* 1. NOTES TAB */}
-              {learningTab === 'notes' && (
-                <div className="p-5 space-y-5 text-xs text-[#faf6ee]">
-                  <div className="space-y-2">
-                    <h3 className="text-sm font-semibold text-[#faf6ee] flex items-center gap-2">
-                      <Sparkles className="h-3.5 w-3.5 text-[#e87a48]" />
-                      <span>Architectural Takeaways &amp; Concepts</span>
-                    </h3>
-                    <p className="text-xs text-[#a8a199] leading-relaxed">
-                      This unit grounds the foundation for your active roadmap milestone. Focus on modularity, single responsibility, and predictable state transitions.
-                    </p>
-                  </div>
-
-                  <div className="p-4 rounded-xl bg-[#0e0d0c] border border-[#262320] font-mono text-[11px] text-[#ded3bf] space-y-1">
-                    <div className="text-[#8c8278]">// Essential takeaway:</div>
-                    <div className="text-[#e87a48] font-medium">1. Maintain deterministic functions with zero hidden mutations.</div>
-                    <div>2. Isolate external side-effects (network, disk, state) in dedicated boundary layers.</div>
-                    <div>3. Write assertions and unit tests covering unexpected edge states.</div>
-                  </div>
-
-                  {/* Student Interactive Personal Notes */}
-                  <div className="space-y-2 pt-2 border-t border-[#262320]">
-                    <div className="flex items-center justify-between text-xs text-[#a8a199]">
-                      <span className="font-medium text-[#faf6ee]">Your Personal Workspace Notes</span>
-                      <span className="text-[11px] text-[#8c8278]">Auto-saves locally</span>
-                    </div>
-                    <textarea
-                      value={personalNotes}
-                      onChange={(e) => handleNotesChange(e.target.value)}
-                      placeholder="Jot down key architectural insights, syntax snippets, or questions for this lesson..."
-                      rows={4}
-                      className="w-full p-3 rounded-xl bg-[#0e0d0c] border border-[#262320] text-xs text-[#faf6ee] placeholder-[#8c8278] outline-none focus:border-[#c25e2e] font-sans resize-none"
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* 2. PRACTICE CHALLENGE TAB */}
-              {learningTab === 'practice' && (
-                <div className="p-5 space-y-4 text-xs">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <h3 className="text-sm font-semibold text-[#faf6ee] flex items-center gap-2">
-                        <Terminal className="h-4 w-4 text-[#e87a48]" />
-                        <span>Interactive Coding Challenge</span>
-                      </h3>
-                      <p className="text-xs text-[#a8a199] mt-1">
-                        Implement the function below to satisfy clean code invariants.
-                      </p>
-                    </div>
-
-                    <span className="shrink-0 px-2.5 py-1 rounded-full bg-[#c25e2e]/20 text-[#e87a48] border border-[#c25e2e]/30 font-mono text-[11px]">
-                      +10 XP Reward
-                    </span>
-                  </div>
-
-                  {/* Code Editor Sandbox */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-[11px] font-mono text-[#8c8278] px-1">
-                      <span>solution.py</span>
-                      <span>Python 3.12 Runtime</span>
-                    </div>
-                    <textarea
-                      value={practiceCode}
-                      onChange={(e) => setPracticeCode(e.target.value)}
-                      rows={6}
-                      spellCheck={false}
-                      className="w-full p-3.5 rounded-xl bg-[#0e0d0c] border border-[#262320] font-mono text-xs text-[#ded3bf] outline-none focus:border-[#c25e2e] resize-none"
-                    />
-                  </div>
-
-                  {/* Actions & Runner */}
-                  <div className="flex items-center justify-between pt-1">
-                    <button
-                      type="button"
-                      onClick={handleRunPractice}
-                      disabled={isEvaluatingPractice}
-                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#c25e2e] hover:bg-[#ad4f22] text-[#faf6ee] font-medium text-xs transition-all cursor-pointer shadow-md disabled:opacity-50"
-                    >
-                      <Zap className="h-3.5 w-3.5" />
-                      <span>{isEvaluatingPractice ? 'Running Tests...' : 'Validate & Test Code'}</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setPracticeCode(
-                          'def process_data(items):\n    """Production pipeline: clean and filter input data."""\n    return [item.strip() for item in items if isinstance(item, str) and item.strip()]\n'
-                        )
-                      }
-                      className="text-xs text-[#8c8278] hover:text-[#faf6ee] transition-colors cursor-pointer"
-                    >
-                      Load Solution Template
-                    </button>
-                  </div>
-
-                  {/* Test output console */}
-                  {practiceOutput && (
-                    <div
-                      className={`p-4 rounded-xl border space-y-2 ${
-                        practiceOutput.status === 'success'
-                          ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
-                          : 'border-amber-500/30 bg-amber-500/10 text-amber-300'
-                      }`}
-                    >
-                      <div className="font-semibold text-xs">{practiceOutput.message}</div>
-                      <div className="space-y-1 font-mono text-[11px]">
-                        {practiceOutput.tests.map((t, idx) => (
-                          <div key={idx} className="flex items-center gap-2">
-                            {t.passed ? (
-                              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
-                            ) : (
-                              <AlertCircle className="h-3.5 w-3.5 text-amber-400" />
-                            )}
-                            <span>{t.name}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* 3. DIAGNOSTIC QUIZ TAB */}
-              {learningTab === 'quiz' && (
-                <div className="p-5 space-y-5 text-xs text-[#faf6ee]">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <h3 className="text-sm font-semibold text-[#faf6ee] flex items-center gap-2">
-                        <Award className="h-4 w-4 text-[#e87a48]" />
-                        <span>Diagnostic Knowledge Check</span>
-                      </h3>
-                      <p className="text-xs text-[#a8a199] mt-0.5">
-                        Answer 3 questions to verify mastery. Score &ge; 2/3 automatically marks this lesson complete, awards +20 XP, and unlocks the next milestone node!
-                      </p>
-                    </div>
-
-                    <span className="shrink-0 px-2.5 py-1 rounded-full bg-[#c25e2e]/20 text-[#e87a48] border border-[#c25e2e]/30 font-mono text-[11px]">
-                      +20 XP Reward
-                    </span>
-                  </div>
-
-                  {/* Questions */}
-                  <div className="space-y-4">
-                    {quizQuestions.map((q, qIdx) => {
-                      const selected = quizAnswers[qIdx]
-                      return (
-                        <div
-                          key={q.id}
-                          className="p-4 rounded-xl bg-[#0e0d0c] border border-[#262320] space-y-3"
-                        >
-                          <div className="font-medium text-xs text-[#faf6ee]">
-                            {qIdx + 1}. {q.q}
-                          </div>
-
-                          <div className="space-y-2">
-                            {q.options.map((opt, optIdx) => {
-                              const isChecked = selected === optIdx
-                              return (
-                                <button
-                                  key={optIdx}
-                                  type="button"
-                                  onClick={() => handleUpdateQuizAnswer(qIdx, optIdx)}
-                                  className={`w-full text-left p-2.5 rounded-lg border text-xs transition-all flex items-start gap-2.5 cursor-pointer ${
-                                    isChecked
-                                      ? 'border-[#c25e2e] bg-[#c25e2e]/15 text-[#faf6ee]'
-                                      : 'border-[#262320] bg-[#141312] text-[#a8a199] hover:border-[#38332e] hover:text-[#faf6ee]'
-                                  }`}
-                                >
-                                  <span
-                                    className={`mt-0.5 h-3.5 w-3.5 rounded-full border flex items-center justify-center shrink-0 ${
-                                      isChecked
-                                        ? 'border-[#c25e2e] bg-[#c25e2e]'
-                                        : 'border-[#38332e]'
-                                    }`}
-                                  >
-                                    {isChecked && <span className="h-1.5 w-1.5 rounded-full bg-white" />}
-                                  </span>
-                                  <span className="leading-snug">{opt}</span>
-                                </button>
-                              )
-                            })}
-                          </div>
-
-                          {quizSubmitted && (
-                            <div className="text-[11px] text-[#8c8278] pt-1">
-                              <span className="text-[#e87a48]">Takeaway: </span>
-                              {q.explanation}
-                            </div>
-                          )}
-                        </div>
-                      )
-                    })}
-                  </div>
-
-                  {/* Quiz Results & Action */}
-                  <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-[#262320]">
-                    {quizSubmitted ? (
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`font-semibold ${
-                            quizScore >= 2 ? 'text-emerald-400' : 'text-amber-400'
-                          }`}
-                        >
-                          Score: {quizScore} / {quizQuestions.length}
-                        </span>
-                        <span className="text-xs text-[#a8a199]">
-                          {quizScore >= 2
-                            ? '— Passed! Lesson marked as complete (+20 XP).'
-                            : '— Score below 2. Review notes and retry.'}
-                        </span>
-                      </div>
-                    ) : (
-                      <div className="text-xs text-[#8c8278]">
-                        Select all 3 answers before submitting.
-                      </div>
-                    )}
-
-                    <div className="flex items-center gap-3">
-                      {quizSubmitted ? (
-                        <button
-                          type="button"
-                          onClick={handleRetakeQuiz}
-                          className="px-4 py-2 rounded-xl border border-[#262320] hover:border-[#c25e2e] text-xs text-[#faf6ee] transition-all cursor-pointer"
-                        >
-                          Retake Quiz
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={handleSubmitQuiz}
-                          disabled={Object.keys(quizAnswers).length < quizQuestions.length}
-                          className="px-5 py-2.5 rounded-xl bg-[#c25e2e] hover:bg-[#ad4f22] text-[#faf6ee] font-medium text-xs transition-all cursor-pointer shadow-md disabled:opacity-40"
-                        >
-                          Submit Assessment
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* 4. AI MENTOR TAB */}
-              {learningTab === 'ai' && (
-                <div className="p-5 space-y-4 text-xs text-[#faf6ee]">
-                  <div className="space-y-1">
-                    <h3 className="text-sm font-semibold text-[#faf6ee] flex items-center gap-2">
-                      <Bot className="h-4 w-4 text-[#e87a48]" />
-                      <span>Contextual AI Technical Mentor</span>
-                    </h3>
-                    <p className="text-xs text-[#a8a199]">
-                      Grounded in {courseTitle} · {activeLesson?.title || 'Lesson'}
-                    </p>
-                  </div>
-
-                  {/* Quick Prompt Chips */}
-                  <div className="flex flex-wrap gap-2 pt-1">
-                    {[
-                      'Explain the core concept in simple terms',
-                      'What are the common edge cases?',
-                      'Give me a real-world production example',
-                      'How does this relate to my active roadmap?',
-                    ].map((promptChip) => (
-                      <button
-                        key={promptChip}
-                        type="button"
-                        onClick={() => handleSendAiMessage(promptChip)}
-                        className="px-2.5 py-1 rounded-full border border-[#262320] bg-[#0e0d0c] text-[11px] text-[#a8a199] hover:text-[#faf6ee] hover:border-[#c25e2e] transition-colors cursor-pointer"
-                      >
-                        {promptChip}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Messages container */}
-                  <div className="space-y-3 max-h-60 overflow-y-auto p-3 rounded-xl bg-[#0e0d0c] border border-[#262320]">
-                    {playerAiMessages.map((msg, idx) => (
-                      <div
-                        key={idx}
-                        className={`p-3 rounded-xl text-xs leading-relaxed ${
-                          msg.role === 'user'
-                            ? 'bg-[#c25e2e]/20 text-[#faf6ee] ml-6 border border-[#c25e2e]/30'
-                            : 'bg-[#181614] text-[#ded3bf] mr-6 border border-[#262320]'
-                        }`}
-                      >
-                        <div className="text-[10px] text-[#8c8278] uppercase mb-1">
-                          {msg.role === 'user' ? 'You' : 'AI Mentor'}
-                        </div>
-                        {msg.content}
-                      </div>
-                    ))}
-                    {isAiResponding && (
-                      <div className="text-xs text-[#e87a48] font-mono animate-pulse">
-                        AI Mentor is analyzing lesson context...
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Message Input */}
-                  <div className="flex items-center gap-2 pt-1">
-                    <input
-                      type="text"
-                      value={playerAiInput}
-                      onChange={(e) => setPlayerAiInput(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleSendAiMessage()
-                      }}
-                      placeholder="Ask the AI mentor anything about this lesson..."
-                      className="flex-1 px-3.5 py-2.5 rounded-xl bg-[#0e0d0c] border border-[#262320] text-xs text-[#faf6ee] placeholder-[#8c8278] outline-none focus:border-[#c25e2e]"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => handleSendAiMessage()}
-                      disabled={!playerAiInput.trim() || isAiResponding}
-                      className="p-2.5 rounded-xl bg-[#c25e2e] hover:bg-[#ad4f22] text-[#faf6ee] transition-all cursor-pointer disabled:opacity-40"
-                    >
-                      <Send className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </section>
-
-          {/* ── RIGHT SIDEBAR: PLAYLIST & LESSON LIST ──────────────────────── */}
-          <aside className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-4 sm:p-5 space-y-4 lg:sticky lg:top-20">
-            {/* Playlist Header & Progress Bar */}
-            <div className="space-y-3 pb-3 border-b border-white/[0.08]">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <ListVideo className="h-4 w-4 text-neutral-300" />
-                  <h3 className="text-sm font-semibold text-white tracking-tight">
-                    Course Curriculum
-                  </h3>
-                </div>
-                <span className="font-mono text-[11px] text-neutral-400">
-                  {lessons.length} {lessons.length === 1 ? 'Lesson' : 'Lessons'}
-                </span>
-              </div>
-
-              {/* Progress bar */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between text-[11px] font-mono text-neutral-400">
-                  <span>Track Progress</span>
-                  <span className="text-white font-semibold">{progressPercent}%</span>
-                </div>
-                <div className="h-1.5 w-full bg-white/[0.06] rounded-full overflow-hidden">
+              {/* Live Chat Feed */}
+              <div ref={aiFeedRef} className="feed" aria-live="polite">
+                {aiFeed.map((msg, i) => (
                   <div
-                    className="h-full bg-white transition-all duration-300 rounded-full"
-                    style={{ width: `${progressPercent}%` }}
-                  />
-                </div>
+                    key={i}
+                    className={`msg ${msg.role === 'user' ? 'me' : ''} ${
+                      msg.streaming ? 'caret' : ''
+                    }`}
+                  >
+                    {msg.content}
+                  </div>
+                ))}
               </div>
-            </div>
 
-            {/* Scrollable Lesson Items */}
-            <div data-lenis-prevent className="space-y-2 max-h-[600px] overflow-y-auto pr-1">
-              {lessons.map((lesson, idx) => {
-                const isActive = idx === activeLessonIndex
-                const isCompleted = completedLessonIds.includes(lesson.id)
-                const thumb =
-                  lesson.thumbnail_url ||
-                  `https://img.youtube.com/vi/${lesson.youtube_video_id}/mqdefault.jpg`
+              {/* Input pill */}
+              <div className="input-pill">
+                <input
+                  placeholder="Ask about this lesson..."
+                  value={aiInput}
+                  onChange={(e) => setAiInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSendAiMessage()
+                  }}
+                />
+                <button
+                  type="button"
+                  className="send"
+                  onClick={() => handleSendAiMessage()}
+                  disabled={!aiInput.trim() || isAiStreaming}
+                  aria-label="Send message to mentor"
+                >
+                  <svg style={{ width: 16 }}>
+                    <use href="#send" />
+                  </svg>
+                </button>
+              </div>
+            </aside>
+          </div>
+
+          {/* ── COURSE JOURNEY TIMELINE SECTION ── */}
+          <section>
+            <h2>Course Journey</h2>
+            <p className="sub">Pick any lesson. Your path updates as you go.</p>
+
+            <div className="journey">
+              {modules.map((mod, modIdx) => {
+                const modLessons = mod.lessons || []
+                const isAllCompleted =
+                  modLessons.length > 0 &&
+                  modLessons.every((l) => completedLessonSet.has(String(l.id)))
+                const containsCurrent = modLessons.some(
+                  (l, idx) => (mod.startIndex || 0) + idx === activeLessonIndex
+                )
 
                 return (
                   <div
-                    key={lesson.id || idx}
-                    onClick={() => setActiveLessonIndex(idx)}
-                    className={`group relative rounded-xl border p-2.5 sm:p-3 flex items-center gap-3 transition-all cursor-pointer ${
-                      isActive
-                        ? 'border-white/20 bg-white/[0.06] shadow-lg'
-                        : 'border-white/[0.06] bg-white/[0.01] hover:border-white/20 hover:bg-white/[0.04]'
+                    key={modIdx}
+                    className={`mod ${isAllCompleted ? 'done' : ''} ${
+                      containsCurrent ? 'cur' : ''
                     }`}
                   >
-                    {/* Thumbnail Preview with Play Overlay */}
-                    <div className="relative h-12 w-20 sm:h-14 sm:w-24 rounded-lg overflow-hidden bg-black shrink-0 border border-white/10">
-                      <ImageWithFallback
-                        src={thumb}
-                        alt={lesson.title}
-                        className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        loading="lazy"
-                        fallback={
-                          <div className="h-full w-full flex items-center justify-center bg-neutral-900">
-                            <Play className="h-4 w-4 text-neutral-600" />
-                          </div>
-                        }
-                      />
-                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Play className="h-4 w-4 fill-white text-white" />
-                      </div>
-                      {/* Active Playing Indicator */}
-                      {isActive && (
-                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                          <Play className="h-4 w-4 fill-white text-white animate-pulse" />
-                        </div>
-                      )}
+                    <div className="node">
+                      <svg>
+                        <use href="#check" />
+                      </svg>
                     </div>
 
-                    {/* Lesson Details */}
-                    <div className="space-y-1 min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-mono text-[10px] text-neutral-500 font-medium">
-                          {String(idx + 1).padStart(2, '0')}
-                        </span>
-                        {isActive && (
-                          <span className="rounded bg-white/15 px-1.5 py-0.5 font-mono text-[9px] text-white font-semibold">
-                            NOW PLAYING
-                          </span>
-                        )}
-                      </div>
-                      <h4
-                        className={`text-xs font-medium line-clamp-2 leading-snug transition-colors ${
-                          isActive ? 'text-white font-semibold' : 'text-neutral-300 group-hover:text-white'
-                        }`}
-                      >
-                        {lesson.title}
-                      </h4>
-                      {lesson.duration && (
-                        <span className="font-mono text-[10px] text-neutral-500 flex items-center gap-1">
-                          <Clock className="h-2.5 w-2.5" />
-                          <span>{lesson.duration}</span>
-                        </span>
-                      )}
+                    <div className="mt">
+                      <b>
+                        Module {modIdx + 1} · {mod.title}
+                      </b>
+                      {containsCurrent && <small>You are here</small>}
                     </div>
 
-                    {/* Checkmark Completion Button */}
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleToggleComplete(lesson.id)
-                      }}
-                      className="flex h-9 w-9 items-center justify-center rounded text-neutral-500 hover:text-white transition-colors cursor-pointer shrink-0"
-                      title={isCompleted ? 'Mark as incomplete' : 'Mark as completed'}
-                    >
-                      {isCompleted ? (
-                        <CheckCircle2 className="h-4 w-4 text-white" />
-                      ) : (
-                        <Circle className="h-4 w-4 text-neutral-600 group-hover:text-neutral-400" />
-                      )}
-                    </button>
+                    <div className="space-y-1">
+                      {modLessons.map((les, lIdx) => {
+                        const globalIndex = (mod.startIndex || 0) + lIdx
+                        const isDone = completedLessonSet.has(String(les.id))
+                        const isCurrent = globalIndex === activeLessonIndex
+
+                        return (
+                          <button
+                            key={les.id || lIdx}
+                            type="button"
+                            className={`les ${isDone ? 'ok ' : ''}${isCurrent ? 'on' : ''}`}
+                            onClick={() => goToLesson(globalIndex)}
+                          >
+                            <svg>
+                              <use href={isDone ? '#check' : isCurrent ? '#play' : '#clock'} />
+                            </svg>
+                            <b>{les.title}</b>
+                            <small>{les.duration || '12 min'}</small>
+                          </button>
+                        )
+                      })}
+                    </div>
                   </div>
                 )
               })}
-
-              {lessons.length === 0 && (
-                <div className="rounded-xl border border-white/[0.06] p-6 text-center space-y-2 text-neutral-400">
-                  <BookOpen className="h-6 w-6 mx-auto text-neutral-500" />
-                  <p className="text-xs">No multi-part modules loaded for this course.</p>
-                </div>
-              )}
             </div>
-          </aside>
-        </div>
+          </section>
 
-        {/* ── BOTTOM SECTION: RELATED COURSES RECOMMENDATION ───────────────── */}
-        {relatedCourses.length > 0 && (
-          <section className="pt-8 border-t border-white/[0.08] space-y-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-base sm:text-lg font-bold text-white tracking-tight">
-                  Related Courses in this Track
-                </h3>
-                <p className="text-xs text-neutral-400 font-light">
-                  Continue learning with complementary video courses from top educators.
+          {/* ── PRACTICE WORKSPACE CARDS SECTION ── */}
+          <section>
+            <h2>Practice Workspace</h2>
+            <p className="sub">Every lesson earns XP. Try them.</p>
+
+            <div className="cards3">
+              {/* Card 1: Lesson Notes */}
+              <div className="card">
+                <div className="ico">
+                  <svg>
+                    <use href="#note" />
+                  </svg>
+                </div>
+                <b>Lesson Notes</b>
+                <p>
+                  Architectural takeaway: Maintain pure deterministic functions, isolate external
+                  side-effects in boundary layers, and write explicit type assertions.
                 </p>
+                <textarea
+                  value={personalNotes}
+                  onChange={(e) => handleNotesChange(e.target.value)}
+                  placeholder="Your personal notes for this lesson (auto-saved locally)..."
+                  aria-label="Notes"
+                />
+                <span className="go">
+                  Auto-saved
+                  <svg>
+                    <use href="#check" />
+                  </svg>
+                </span>
+              </div>
+
+              {/* Card 2: Practice Challenge */}
+              <div className="card">
+                <div className="ico">
+                  <svg>
+                    <use href="#target" />
+                  </svg>
+                </div>
+                <b>Practice Challenge</b>
+                <textarea
+                  value={practiceCode}
+                  onChange={(e) => setPracticeCode(e.target.value)}
+                  spellCheck={false}
+                  aria-label="Practice Code"
+                />
+                <div className="out">{practiceOutput}</div>
+                <button type="button" className="go" onClick={handleRunPractice}>
+                  <span>Run code</span>
+                  <svg>
+                    <use href="#arrow" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Card 3: Quick Quiz */}
+              <div className="card">
+                <div className="ico">
+                  <svg>
+                    <use href="#quiz" />
+                  </svg>
+                </div>
+                <b>Quick quiz</b>
+                <p className="text-xs text-[var(--lw-tx)] font-medium">{currentQuiz.q}</p>
+                <div className="space-y-1">
+                  {currentQuiz.options.map((opt, i) => {
+                    const status = quizAnswerStates[i]
+                    return (
+                      <button
+                        key={i}
+                        type="button"
+                        className={`opt ${status === 'good' ? 'good' : ''} ${
+                          status === 'bad' ? 'bad' : ''
+                        }`}
+                        onClick={() => handleSelectQuizOption(i)}
+                      >
+                        {opt}
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
             </div>
+          </section>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {relatedCourses.map((rel) => {
-                const relThumb =
-                  rel.thumbnail_url ||
-                  (rel.youtube_video_id
-                    ? `https://img.youtube.com/vi/${rel.youtube_video_id}/hqdefault.jpg`
-                    : null)
+          {/* ── CONTINUE YOUR LEARNING PATH SECTION ── */}
+          <section>
+            <h2>Continue Your Learning Path</h2>
+            <p className="sub">
+              Curated to accelerate your journey through {pathTitle || courseTitle}.
+            </p>
+
+            <div className="cards4">
+              {(relatedCourses.length > 0
+                ? relatedCourses
+                : [
+                    {
+                      id: 'rec-1',
+                      title: 'Object-Oriented Architecture & Clean Design',
+                      instructor: 'Meera Rao',
+                      duration: '6h 20m',
+                      skill: 'Builds on Foundations',
+                    },
+                    {
+                      id: 'rec-2',
+                      title: 'Automate Pipelines & Distributed Microservices',
+                      instructor: 'Daniel Shaw',
+                      duration: '4h 45m',
+                      skill: 'Production Engineering',
+                    },
+                    {
+                      id: 'rec-3',
+                      title: 'Data Structures, Algorithms & Scalability',
+                      instructor: 'Priya Nair',
+                      duration: '8h 10m',
+                      skill: 'Next on Roadmap',
+                    },
+                  ]
+              ).map((rel) => {
+                const authorInitials = (rel.instructor || 'Technea Faculty')
+                  .split(' ')
+                  .map((p) => p[0])
+                  .join('')
+                  .slice(0, 2)
+                  .toUpperCase()
 
                 return (
                   <div
                     key={rel.id}
+                    className="rc"
                     onClick={() => {
-                      onSelectCourse(rel)
+                      if (onSelectCourse) {
+                        onSelectCourse(rel)
+                      } else if (rel.id && !String(rel.id).startsWith('rec-')) {
+                        window.history.pushState({}, '', `/courses/${rel.id}`)
+                        window.dispatchEvent(new PopStateEvent('popstate'))
+                      }
                       window.scrollTo({ top: 0, behavior: 'smooth' })
                     }}
-                    className="group rounded-xl border border-white/[0.08] bg-white/[0.02] p-4 flex flex-col justify-between hover:border-white/20 hover:bg-white/[0.04] transition-all cursor-pointer space-y-3"
                   >
-                    <div className="space-y-3">
-                      {relThumb && (
-                        <div className="aspect-video w-full rounded-lg overflow-hidden bg-black border border-white/10 relative">
-                          <ImageWithFallback
-                            src={relThumb}
-                            alt={rel.title}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                            loading="lazy"
-                            fallback={
-                              <div className="w-full h-full flex items-center justify-center bg-neutral-900">
-                                <Play className="h-6 w-6 text-neutral-600" />
-                              </div>
-                            }
-                          />
-                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <Play className="h-6 w-6 fill-white text-white" />
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="flex items-center justify-between text-[10px] font-mono text-neutral-400">
-                        <span className="rounded border border-white/10 bg-white/[0.04] px-1.5 py-0.5 text-neutral-300">
-                          {rel.platform || 'YouTube'}
-                        </span>
-                        {rel.duration && <span>{rel.duration}</span>}
-                      </div>
-
-                      <h4 className="text-sm font-semibold text-white tracking-tight group-hover:text-neutral-100 transition-colors line-clamp-2">
-                        {rel.title}
-                      </h4>
-
-                      {rel.instructor && (
-                        <p className="text-[11px] text-neutral-400 flex items-center gap-1">
-                          <User className="h-3 w-3 text-neutral-500" />
-                          <span className="truncate">{rel.instructor}</span>
-                        </p>
-                      )}
+                    <b>{rel.title}</b>
+                    <div className="by">
+                      <i>{authorInitials}</i>
+                      <span>{rel.instructor || 'Technea Faculty'}</span>
                     </div>
-
-                    <div className="pt-2 border-t border-white/[0.06] flex items-center justify-between text-xs font-semibold text-white group-hover:text-neutral-200 transition-colors">
-                      <span>Watch Course</span>
-                      <ChevronRight className="h-3.5 w-3.5 group-hover:translate-x-1 transition-transform" />
+                    <div className="f">
+                      <span className="skill">
+                        <svg>
+                          <use href="#map" />
+                        </svg>
+                        <span>{rel.skill || 'Recommended Next'}</span>
+                      </span>
+                      <span>{rel.duration || '5h 30m'}</span>
                     </div>
                   </div>
                 )
               })}
             </div>
           </section>
-        )}
-      </main>
+        </main>
+      </div>
     </div>
   )
 }

@@ -623,8 +623,13 @@ export default function LearningDashboardModal({
   }
 
   const handleResumeMilestone = (mission) => {
-    const courseId = mission?.course_id || 182
-    const lessonId = mission?.lesson_id || 241
+    const activeRoadmap = currentPath || savedRoadmaps[0] || null
+    const courseId =
+      mission?.course_id ||
+      activeRoadmap?.course_id ||
+      activeRoadmap?.id ||
+      1
+    const lessonId = mission?.lesson_id || 1
     window.history.pushState({}, '', `/courses/${courseId}?lesson=${lessonId}`)
     window.dispatchEvent(new PopStateEvent('popstate'))
   }

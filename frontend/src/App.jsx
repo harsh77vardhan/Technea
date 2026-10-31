@@ -228,8 +228,14 @@ function AppContent() {
   const isSetupProfileRoute = currentPath === '/setup-profile'
 
   const isProfileRoute = currentPath.startsWith('/profile')
-  const isCourseRoute = currentPath.startsWith('/course/') || currentPath.startsWith('/courses/')
+  const isCourseRoute =
+    currentPath.startsWith('/course/') ||
+    currentPath.startsWith('/courses/') ||
+    currentPath === '/courses' ||
+    currentPath === '/course'
   const isPathRoute =
+    currentPath === '/paths' ||
+    currentPath === '/path' ||
     currentPath.startsWith('/path/') ||
     currentPath.startsWith('/paths/') ||
     currentPath.startsWith('/learning-path/') ||
@@ -246,9 +252,11 @@ function AppContent() {
   }
 
   let courseRouteId = null
+  let courseRoutePathId = null
   if (isCourseRoute) {
     const parts = currentPath.split('/').filter(Boolean)
     courseRouteId = parts[1] || null
+    courseRoutePathId = searchParams.get('path') || null
   }
 
   let pathRouteId = null
@@ -349,6 +357,21 @@ function AppContent() {
           <Suspense fallback={<SleekRouteLoadingFallback />}>
             <CoursePlayerPage
               course={courseRouteId ? { id: courseRouteId } : null}
+              path={courseRoutePathId ? { id: courseRoutePathId } : null}
+              onSelectCourse={(recCourse) => {
+                if (recCourse?.id && !String(recCourse.id).startsWith('rec-')) {
+                  window.history.pushState({}, '', `/courses/${recCourse.id}`)
+                  setCurrentPath(`/courses/${recCourse.id}`)
+                  setCurrentSearch('')
+                  window.dispatchEvent(new PopStateEvent('popstate'))
+                } else {
+                  const target = user ? '/dashboard' : '/paths'
+                  window.history.pushState({}, '', target)
+                  setCurrentPath(target)
+                  setCurrentSearch('')
+                  window.dispatchEvent(new PopStateEvent('popstate'))
+                }
+              }}
               onBack={() => {
                 const target = user ? '/dashboard' : '/'
                 window.history.pushState({}, '', target)
@@ -356,7 +379,6 @@ function AppContent() {
                 setCurrentSearch('')
                 window.dispatchEvent(new PopStateEvent('popstate'))
               }}
-
             />
           </Suspense>
         </ErrorBoundary>
@@ -366,15 +388,18 @@ function AppContent() {
             <LearningPathDetailPage
               path={pathRouteId ? { id: pathRouteId } : null}
               onBack={() => {
-                window.history.pushState({}, '', '/')
-                setCurrentPath('/')
+                const target = user ? '/dashboard' : '/'
+                window.history.pushState({}, '', target)
+                setCurrentPath(target)
                 setCurrentSearch('')
                 window.dispatchEvent(new PopStateEvent('popstate'))
               }}
               onStartLearning={(course) => {
-                if (course?.id) {
-                  window.history.pushState({}, '', `/courses/${course.id}`)
-                  setCurrentPath(`/courses/${course.id}`)
+                const targetId = course?.id || course?.course_id || course?.learning_path_id
+                if (targetId) {
+                  window.history.pushState({}, '', `/courses/${targetId}`)
+                  setCurrentPath(`/courses/${targetId}`)
+                  setCurrentSearch('')
                   window.dispatchEvent(new PopStateEvent('popstate'))
                 }
               }}

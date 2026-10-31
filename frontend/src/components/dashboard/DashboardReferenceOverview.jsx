@@ -1,4 +1,4 @@
-import { memo, useMemo } from 'react'
+import { memo, useMemo, useCallback } from 'react'
 import { Check, Star, Compass, ArrowRight } from 'lucide-react'
 import { useDashboard } from '../../context/useDashboard'
 
@@ -6,6 +6,7 @@ function DashboardReferenceOverview({
   onContinueLesson,
   onResumeMilestone,
   onNavigateTab = () => {},
+  onInspectRoadmap = () => {},
 }) {
   const {
     user,
@@ -26,21 +27,33 @@ function DashboardReferenceOverview({
   const firstName = fullName.split(' ')[0]
 
   // Direct lesson navigator
-  const handleContinue = (item) => {
-    const target = item || todayMission || continueLearningData
-    if (typeof onContinueLesson === 'function') {
-      onContinueLesson(target)
-      return
-    }
-    if (typeof onResumeMilestone === 'function') {
-      onResumeMilestone(target)
-      return
-    }
-    const courseId = target?.course_id || continueLearningData?.course_id || 182
-    const lessonId = target?.lesson_id || continueLearningData?.lesson_id || 241
-    window.history.pushState({}, '', `/courses/${courseId}?lesson=${lessonId}`)
-    window.dispatchEvent(new PopStateEvent('popstate'))
-  }
+  const handleContinue = useCallback(
+    (item) => {
+      const target = item || todayMission || continueLearningData
+      if (typeof onContinueLesson === 'function') {
+        onContinueLesson(target)
+        return
+      }
+      if (typeof onResumeMilestone === 'function') {
+        onResumeMilestone(target)
+        return
+      }
+      const courseId =
+        target?.course_id ||
+        continueLearningData?.course_id ||
+        activeRoadmap?.course_id ||
+        null
+      const lessonId = target?.lesson_id || continueLearningData?.lesson_id || 1
+      const targetUrl = courseId
+        ? `/courses/${courseId}?lesson=${lessonId}`
+        : activeRoadmap?.id
+        ? `/courses?path=${activeRoadmap.id}`
+        : '/courses'
+      window.history.pushState({}, '', targetUrl)
+      window.dispatchEvent(new PopStateEvent('popstate'))
+    },
+    [onContinueLesson, onResumeMilestone, todayMission, continueLearningData, activeRoadmap]
+  )
 
   // Dynamic time-aware greeting
   const currentHour = new Date().getHours()
@@ -51,34 +64,71 @@ function DashboardReferenceOverview({
     greetingTime = 'afternoon'
   }
 
-  // Stats computation from real backend data (0 when fresh, never hardcoded dummy values)
-  const xpPoints = summaryData?.xp_points ?? user?.total_xp ?? 0
-  const computedLevel = summaryData?.developer_level || (xpPoints > 0 ? `Level ${Math.floor(xpPoints / 400) + 1}` : 'Code Initiate')
-  const streakCount = dailyActivity?.streak_count ?? 0
+  // Stats computation and circular SVG ring math (properly memoized)
+  const ringStats = useMemo(() => {
+    const xpPoints = summaryData?.xp_points ?? user?.total_xp ?? 0
+    const computedLevel =
+      summaryData?.developer_level ||
+      (xpPoints > 0 ? `Level ${Math.floor(xpPoints / 400) + 1}` : 'Code Initiate')
+    const streakCount = dailyActivity?.streak_count ?? 0
 
-  // Active roadmap progress and steps
-  const totalStages = activeRoadmap?.total_steps_count || activeRoadmap?.milestones?.length || 1
-  const completedStages =
-    activeRoadmap?.completed_steps_count ||
-    activeRoadmap?.milestones?.filter((m) => m.completed)?.length ||
-    0
-  const currentStage = Math.min(totalStages, Math.max(1, completedStages + 1))
+    // Active roadmap progress and steps
+    const totalStages = activeRoadmap?.total_steps_count || activeRoadmap?.milestones?.length || 1
+    const completedStages =
+      activeRoadmap?.completed_steps_count ||
+      activeRoadmap?.milestones?.filter((m) => m.completed)?.length ||
+      0
+    const currentStage = Math.min(totalStages, Math.max(1, completedStages + 1))
 
-  // Mission progress percent and steps for SVG ring
-  const displayProgress = todayMission?.progress_percent ?? activeRoadmap?.progress_percent ?? 0
-  const totalSteps = Math.max(1, totalStages)
-  const completedSteps = Math.min(totalSteps, completedStages)
+    // Mission progress percent and steps for SVG ring
+    const displayProgress = todayMission?.progress_percent ?? activeRoadmap?.progress_percent ?? 0
+    const totalSteps = Math.max(1, totalStages)
+    const completedSteps = Math.min(totalSteps, completedStages)
 
-  // Circular SVG ring math
-  const radius = 52
-  const circumference = 2 * Math.PI * radius
-  const strokeDashoffset = circumference * (1 - Math.min(100, Math.max(0, displayProgress)) / 100)
+    // Circular SVG ring math
+    const radius = 52
+    const circumference = 2 * Math.PI * radius
+    const strokeDashoffset = circumference * (1 - Math.min(100, Math.max(0, displayProgress)) / 100)
 
-  // Indicator dot coordinate on circular perimeter
-  const angleDeg = -90 + (Math.min(100, Math.max(0, displayProgress)) / 100) * 360
-  const angleRad = (angleDeg * Math.PI) / 180
-  const dotX = 70 + radius * Math.cos(angleRad)
-  const dotY = 70 + radius * Math.sin(angleRad)
+    // Indicator dot coordinate on circular perimeter
+    const angleDeg = -90 + (Math.min(100, Math.max(0, displayProgress)) / 100) * 360
+    const angleRad = (angleDeg * Math.PI) / 180
+    const dotX = 70 + radius * Math.cos(angleRad)
+    const dotY = 70 + radius * Math.sin(angleRad)
+
+    return {
+      xpPoints,
+      computedLevel,
+      streakCount,
+      totalStages,
+      completedStages,
+      currentStage,
+      displayProgress,
+      totalSteps,
+      completedSteps,
+      radius,
+      circumference,
+      strokeDashoffset,
+      dotX,
+      dotY,
+    }
+  }, [summaryData, user, dailyActivity, activeRoadmap, todayMission])
+
+  const {
+    xpPoints,
+    computedLevel,
+    streakCount,
+    totalStages,
+    currentStage,
+    displayProgress,
+    totalSteps,
+    completedSteps,
+    radius,
+    circumference,
+    strokeDashoffset,
+    dotX,
+    dotY,
+  } = ringStats
 
   // Continue learning courses derived from active roadmap curriculum / real courses
   const continueCourses = useMemo(() => {
@@ -186,10 +236,10 @@ function DashboardReferenceOverview({
     if (activeRoadmap?.roadmap_data?.phases && activeRoadmap.roadmap_data.phases.length > 0) {
       return activeRoadmap.roadmap_data.phases.slice(0, 3).map((ph, idx) => {
         const isCurrent = idx === 0
+        const rawTitle = typeof ph?.title === 'string' ? ph.title : `Phase ${idx + 1}`
+        const cleanTitle = rawTitle.includes(':') ? rawTitle.split(':')[1]?.trim() || rawTitle : rawTitle
         return {
-          label: isCurrent
-            ? `${ph.title.split(':')[1]?.trim() || ph.title} · current`
-            : ph.title.split(':')[1]?.trim() || ph.title,
+          label: isCurrent ? `${cleanTitle} · current` : cleanTitle,
           percent: isCurrent ? (activeRoadmap.progress_percent || 0) : 0,
         }
       })
@@ -395,7 +445,13 @@ function DashboardReferenceOverview({
 
               <button
                 type="button"
-                onClick={() => onNavigateTab('roadmaps')}
+                onClick={() => {
+                  if (typeof onInspectRoadmap === 'function' && activeRoadmap) {
+                    onInspectRoadmap(activeRoadmap)
+                  } else {
+                    onNavigateTab('roadmaps')
+                  }
+                }}
                 className="text-sm text-[#665e56] hover:text-[#181614] transition-colors cursor-pointer"
               >
                 View mission steps

@@ -224,6 +224,7 @@ export default function PublicProfilePage({
   const handleNavigateUser = useCallback((newUsername) => {
     setOverrideUsername(newUsername)
     window.history.pushState({}, '', `/profile/${newUsername}`)
+    window.dispatchEvent(new PopStateEvent('popstate'))
   }, [])
 
   const handleOpenFollowers = useCallback(() => {
@@ -261,6 +262,7 @@ export default function PublicProfilePage({
       if (updated.username && updated.username !== currentUsername) {
         setOverrideUsername(updated.username)
         window.history.replaceState({}, '', `/profile/${updated.username}`)
+        window.dispatchEvent(new PopStateEvent('popstate'))
       }
     } else {
       setReloadTrigger((n) => n + 1)

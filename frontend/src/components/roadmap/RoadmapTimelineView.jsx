@@ -44,7 +44,8 @@ const OFFICIAL_DOCS_CATALOG = [
 ]
 
 function getOfficialDocsForMilestone(milestone) {
-  const text = `${milestone.title} ${milestone.category} ${(milestone.key_skills || []).join(' ')}`.toLowerCase()
+  if (!milestone) return []
+  const text = `${milestone.title || ''} ${milestone.category || ''} ${(milestone.key_skills || []).join(' ')}`.toLowerCase()
   const matched = OFFICIAL_DOCS_CATALOG.filter((doc) => text.includes(doc.keyword))
   if (matched.length > 0) return matched.slice(0, 3)
   return [
@@ -54,6 +55,7 @@ function getOfficialDocsForMilestone(milestone) {
 }
 
 function getInterviewQuestionsForMilestone(milestone) {
+  if (!milestone) return []
   const title = milestone.title || 'Technical Milestone'
   const skills = (milestone.key_skills || []).slice(0, 2).join(', ') || 'core principles'
 
@@ -74,6 +76,7 @@ function getInterviewQuestionsForMilestone(milestone) {
 }
 
 function getLessonsBreakdown(milestone) {
+  if (!milestone) return []
   if (milestone.lessons && Array.isArray(milestone.lessons) && milestone.lessons.length > 0) {
     return milestone.lessons
   }
@@ -213,7 +216,7 @@ export default function RoadmapTimelineView({
         return {
           ...phase,
           milestones: (phase.milestones || []).map((m) =>
-            m.id === milestoneId ? { ...m, title: tempMilestoneTitle.trim() } : m
+            String(m.id) === String(milestoneId) ? { ...m, title: tempMilestoneTitle.trim() } : m
           ),
         }
       })
@@ -227,7 +230,7 @@ export default function RoadmapTimelineView({
         if (phase.phase_number !== phaseNumber) return phase
         return {
           ...phase,
-          milestones: (phase.milestones || []).filter((m) => m.id !== milestoneId),
+          milestones: (phase.milestones || []).filter((m) => String(m.id) !== String(milestoneId)),
         }
       })
     )
@@ -439,7 +442,7 @@ export default function RoadmapTimelineView({
           const isPhaseExpanded = expandedPhases[phase.phase_number] !== false
           const phaseMilestones = phase.milestones || []
           const phaseCompletedCount = phaseMilestones.filter((m) =>
-            completedMilestones.includes(m.id)
+            completedMilestones.some((id) => String(id) === String(m.id))
           ).length
 
           return (
@@ -493,7 +496,9 @@ export default function RoadmapTimelineView({
                     className="border-t border-white/[0.06] px-3 sm:px-5 py-4 space-y-3"
                   >
                     {phaseMilestones.map((milestone, idx) => {
-                      const isChecked = completedMilestones.includes(milestone.id)
+                      const isChecked = completedMilestones.some(
+                        (id) => String(id) === String(milestone.id)
+                      )
                       const isDetailExpanded = expandedMilestones[milestone.id] ?? (idx === 0)
                       const activeTab = milestoneTabs[milestone.id] || 'curriculum'
                       const isEditingThis = editingMilestoneId === milestone.id

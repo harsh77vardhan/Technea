@@ -53,26 +53,28 @@ function DockedAIMentorCompanion({
     }
   }
 
+  const currentLessonTitle = todayMission?.lesson_title || 'Core Foundations'
+
   const handleQuickAction = (label, prompt) => {
     setActiveView('chat')
-    sendMentorMessage(prompt || `Can you help me with: ${label} for ${todayMission.lesson_title}?`)
+    sendMentorMessage(prompt || `Can you help me with: ${label} for ${currentLessonTitle}?`)
   }
 
   const quickActions = [
     {
       id: 'recap',
       label: 'Recap this lesson',
-      prompt: `Provide a concise architectural recap of "${todayMission.lesson_title}". Highlight key patterns and code considerations.`,
+      prompt: `Provide a concise architectural recap of "${currentLessonTitle}". Highlight key patterns and code considerations.`,
     },
     {
       id: 'review',
       label: 'Review my code',
-      prompt: `Please review my implementation approach for "${todayMission.lesson_title}". What security and performance aspects should I watch for?`,
+      prompt: `Please review my implementation approach for "${currentLessonTitle}". What security and performance aspects should I watch for?`,
     },
     {
       id: 'quiz',
       label: 'Quiz me',
-      prompt: `Quiz me with 3 rapid questions on "${todayMission.lesson_title}" to test my mastery.`,
+      prompt: `Quiz me with 3 rapid questions on "${currentLessonTitle}" to test my mastery.`,
     },
     {
       id: 'plan',

@@ -1,0 +1,1548 @@
+/* ==========================================================================
+   Technea Learning Workspace — Stylesheet
+   Faithfully recreated from prototype technealearningpage.html
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+
+@property --a {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+:root {
+  --lw-bg: #000;
+  --lw-s1: #0C0C0C;
+  --lw-s2: #151515;
+  --lw-s3: #222;
+  --lw-line: #262626;
+  --lw-tx: #FAFAFA;
+  --lw-mu: #8A8A8A;
+  --lw-ac: #FAFAFA;
+  --lw-ink: #000;
+  --lw-glow: rgba(255, 255, 255, 0.07);
+  --lw-hot: #FF5A1F;
+  --lw-ok: #4DFFB4;
+}
+
+[data-theme="light"],
+.technea-learning-workspace[data-theme="light"] {
+  --lw-bg: #FAFAFA;
+  --lw-s1: #ffffff;
+  --lw-s2: #F0F0F0;
+  --lw-s3: #E2E2E2;
+  --lw-line: #DADADA;
+  --lw-tx: #000000;
+  --lw-mu: #6E6E6E;
+  --lw-ac: #000000;
+  --lw-ink: #FAFAFA;
+  --lw-glow: rgba(0, 0, 0, 0.06);
+  --lw-hot: #c25e2e;
+  --lw-ok: #16a34a;
+}
+
+.technea-learning-workspace {
+  background: var(--lw-bg);
+  color: var(--lw-tx);
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  min-height: 100vh;
+  position: relative;
+  transition: background 0.4s ease, color 0.4s ease;
+  overflow-x: hidden;
+}
+
+.technea-learning-workspace * {
+  box-sizing: border-box;
+}
+
+.technea-learning-workspace svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex: none;
+}
+
+.technea-learning-workspace button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  border: 0;
+  background: none;
+}
+
+.technea-learning-workspace button:focus-visible,
+.technea-learning-workspace textarea:focus-visible,
+.technea-learning-workspace input:focus-visible {
+  outline: 2px solid var(--lw-ac);
+  outline-offset: 2px;
+}
+
+/* Layout container */
+.technea-learning-workspace .wrap {
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 0 40px;
+}
+
+/* Header */
+.technea-learning-workspace header {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  height: 76px;
+  border-bottom: 1px solid var(--lw-line);
+  position: sticky;
+  top: 0;
+  background: var(--lw-bg);
+  z-index: 30;
+  backdrop-filter: blur(12px);
+  transition: background 0.4s ease, border-color 0.4s ease;
+}
+
+.technea-learning-workspace .back {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  color: var(--lw-mu);
+  width: max-content;
+  transition: transform 0.2s ease, color 0.2s ease;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.technea-learning-workspace .back:hover {
+  color: var(--lw-tx);
+  transform: translateX(-3px);
+}
+
+.technea-learning-workspace .path {
+  text-align: center;
+}
+
+.technea-learning-workspace .path b {
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: -0.01em;
+}
+
+.technea-learning-workspace .prog {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 5px;
+  color: var(--lw-mu);
+  font-size: 12px;
+}
+
+.technea-learning-workspace .bar {
+  width: 140px;
+  height: 3px;
+  background: var(--lw-s3);
+  border-radius: 3px;
+  overflow: hidden;
+  box-shadow: 0 0 14px -2px var(--lw-hot);
+}
+
+.technea-learning-workspace .bar i {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg, var(--lw-tx), var(--lw-hot));
+  transition: width 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.technea-learning-workspace .tools {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.technea-learning-workspace .chip {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--lw-line);
+  border-radius: 99px;
+  font-weight: 600;
+  font-size: 13px;
+  background: var(--lw-s1);
+  transition: border-color 0.2s ease;
+}
+
+.technea-learning-workspace .chip svg {
+  width: 15px;
+  height: 15px;
+}
+
+.technea-learning-workspace .ib {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--lw-line);
+  display: grid;
+  place-items: center;
+  color: var(--lw-mu);
+  transition: color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+  background: var(--lw-s1);
+}
+
+.technea-learning-workspace .ib:hover {
+  color: var(--lw-tx);
+  border-color: var(--lw-tx);
+  transform: translateY(-1px);
+}
+
+.technea-learning-workspace .kbd {
+  font-size: 11px;
+  color: var(--lw-mu);
+  border: 1px solid var(--lw-line);
+  border-radius: 6px;
+  padding: 1px 8px;
+  height: 32px;
+  width: auto;
+  border-radius: 8px;
+}
+
+/* Streak Flame Animation */
+.technea-learning-workspace #fl {
+  color: var(--lw-hot);
+  filter: drop-shadow(0 0 6px var(--lw-hot));
+  transform-origin: 50% 100%;
+  animation: fk 1.4s ease-in-out infinite;
+}
+
+@keyframes fk {
+  50% {
+    transform: scale(1.25) rotate(-7deg);
+  }
+}
+
+.technea-learning-workspace .wk {
+  display: flex;
+  gap: 3px;
+  align-items: flex-end;
+  margin-left: 6px;
+}
+
+.technea-learning-workspace .wk i {
+  width: 4px;
+  height: 14px;
+  border-radius: 2px;
+  background: var(--lw-hot);
+}
+
+.technea-learning-workspace .wk i:nth-child(odd) {
+  height: 9px;
+}
+
+.technea-learning-workspace .wk i.t {
+  animation: tp 1.6s infinite;
+}
+
+@keyframes tp {
+  50% {
+    opacity: 0.2;
+  }
+}
+
+/* Level SVG Circular Avatar */
+.technea-learning-workspace .lv {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+}
+
+.technea-learning-workspace .lv svg {
+  position: absolute;
+  inset: 0;
+  width: 44px;
+  height: 44px;
+  transform: rotate(-90deg);
+  stroke-width: 2.5;
+}
+
+.technea-learning-workspace .lv .t {
+  stroke: var(--lw-s3);
+  fill: none;
+}
+
+.technea-learning-workspace .lv .p {
+  stroke: var(--lw-hot);
+  stroke-dasharray: 119.4;
+  stroke-dashoffset: 119.4;
+  fill: none;
+  transition: stroke-dashoffset 1s cubic-bezier(0.2, 0.8, 0.2, 1);
+  filter: drop-shadow(0 0 4px var(--lw-hot));
+}
+
+.technea-learning-workspace .av {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--lw-ac);
+  color: var(--lw-ink);
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 13px;
+  overflow: hidden;
+}
+
+.technea-learning-workspace .av img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.technea-learning-workspace .lv b {
+  position: absolute;
+  right: -5px;
+  bottom: -5px;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  background: var(--lw-hot);
+  color: #000;
+  font-size: 11px;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+  padding: 0 4px;
+}
+
+/* Main Layout */
+.technea-learning-workspace main {
+  padding: 44px 0 90px;
+}
+
+.technea-learning-workspace .hero {
+  display: grid;
+  grid-template-columns: 7fr 3fr;
+  gap: 32px;
+  align-items: start;
+  transition: all 0.4s ease;
+}
+
+.technea-learning-workspace.focus .hero {
+  grid-template-columns: 1fr 0fr;
+  gap: 0;
+}
+
+.technea-learning-workspace.focus .ai {
+  opacity: 0;
+  pointer-events: none;
+  height: 0;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  margin: 0;
+}
+
+/* Streak Alert Live Pill */
+.technea-learning-workspace .gl {
+  display: inline-flex;
+  gap: 10px;
+  align-items: center;
+  padding: 7px 14px;
+  border-radius: 99px;
+  border: 1px solid rgba(255, 90, 31, 0.45);
+  background: rgba(255, 90, 31, 0.1);
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  min-height: 32px;
+}
+
+.technea-learning-workspace .gl i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--lw-hot);
+  animation: pl 1.2s infinite;
+}
+
+@keyframes pl {
+  50% {
+    opacity: 0.2;
+    transform: scale(1.6);
+  }
+}
+
+.technea-learning-workspace .gl.ok {
+  border-color: rgba(77, 255, 180, 0.45);
+  background: rgba(77, 255, 180, 0.1);
+}
+
+.technea-learning-workspace .gl.ok i {
+  background: var(--lw-ok);
+  animation: none;
+}
+
+/* Title & Breadcrumbs */
+.technea-learning-workspace h1 {
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  margin-bottom: 6px;
+  color: var(--lw-tx);
+}
+
+.technea-learning-workspace .w {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(0.6em);
+  filter: blur(10px);
+  animation: wi 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+@keyframes wi {
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
+.technea-learning-workspace .crumb {
+  color: var(--lw-mu);
+  margin-bottom: 24px;
+  font-size: 14px;
+}
+
+/* Video Player Card Container */
+.technea-learning-workspace .player {
+  position: relative;
+  aspect-ratio: 16/9;
+  border-radius: 22px;
+  background: #050505;
+  border: 1px solid #2a2a2a;
+  overflow: hidden;
+  color: #FAFAFA;
+  transition: box-shadow 0.5s ease, border-color 0.5s ease;
+  box-shadow: 0 20px 60px -20px rgba(0, 0, 0, 0.8);
+}
+
+.technea-learning-workspace .player.playing {
+  border-color: #777;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15), 0 40px 120px -40px rgba(255, 90, 31, 0.35);
+}
+
+/* Conic Rotating Gradient Border */
+.technea-learning-workspace .player:after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 22px;
+  padding: 1.5px;
+  background: conic-gradient(from var(--a), transparent 0 60%, var(--lw-hot) 85%, #fff);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0.4;
+  transition: opacity 0.6s ease;
+  pointer-events: none;
+  animation: spin 4s linear infinite;
+  z-index: 5;
+}
+
+.technea-learning-workspace .player.playing:after {
+  opacity: 1;
+}
+
+@keyframes spin {
+  to {
+    --a: 360deg;
+  }
+}
+
+/* Scanline Effect */
+.technea-learning-workspace .player:before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 140px;
+  top: -140px;
+  background: linear-gradient(transparent, rgba(255, 255, 255, 0.08), transparent);
+  animation: scan 6s linear infinite;
+  pointer-events: none;
+  z-index: 6;
+}
+
+@keyframes scan {
+  to {
+    top: 100%;
+  }
+}
+
+/* Floating Up Next Pill */
+.technea-learning-workspace .up {
+  position: absolute;
+  right: 20px;
+  top: 20px;
+  padding: 8px 14px;
+  border-radius: 99px;
+  background: rgba(0, 0, 0, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(8px);
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  opacity: 0.9;
+  transform: none;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  z-index: 8;
+  color: #fff;
+}
+
+.technea-learning-workspace .player:hover .up {
+  opacity: 1;
+  transform: translateY(-2px);
+}
+
+/* Video Grid and Code Mock (Fallback when no video is loaded) */
+.technea-learning-workspace .player-grid {
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(70% 70% at 50% 45%, #000, transparent);
+  pointer-events: none;
+}
+
+.technea-learning-workspace .player-code {
+  position: absolute;
+  left: 8%;
+  top: 15%;
+  font: 14px/2 ui-monospace, Menlo, monospace;
+  color: #555;
+  pointer-events: none;
+}
+
+.technea-learning-workspace .player-code span {
+  display: block;
+  opacity: 0.25;
+  transition: 0.5s ease;
+}
+
+.technea-learning-workspace .player-code span.on {
+  opacity: 1;
+  color: #FAFAFA;
+}
+
+/* Play button with ripple */
+.technea-learning-workspace .play-btn {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(8px);
+  transition: transform 0.3s ease, background 0.3s ease, color 0.3s ease;
+  z-index: 7;
+  color: #fff;
+}
+
+.technea-learning-workspace .player:hover .play-btn {
+  transform: scale(1.08);
+  background: #fff;
+  color: #000;
+}
+
+.technea-learning-workspace .play-btn:before,
+.technea-learning-workspace .play-btn:after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  animation: rip 2.4s ease-out infinite;
+}
+
+.technea-learning-workspace .play-btn:after {
+  animation-delay: 1.2s;
+}
+
+@keyframes rip {
+  to {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+}
+
+.technea-learning-workspace .play-btn svg {
+  width: 28px;
+  height: 28px;
+  fill: currentColor;
+  stroke: none;
+  margin-left: 3px;
+}
+
+/* Player Custom Overlay Controls */
+.technea-learning-workspace .ctrl {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 16px 24px;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.85));
+  z-index: 8;
+  color: #fff;
+}
+
+.technea-learning-workspace .seek {
+  height: 20px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.technea-learning-workspace .seek div {
+  flex: 1;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+  position: relative;
+  transition: height 0.2s ease;
+}
+
+.technea-learning-workspace .seek:hover div {
+  height: 6px;
+}
+
+.technea-learning-workspace .seek i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0;
+  background: linear-gradient(90deg, #fff, var(--lw-hot));
+  border-radius: 3px;
+}
+
+.technea-learning-workspace .row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 12px;
+}
+
+.technea-learning-workspace .row .sp {
+  flex: 1;
+}
+
+.technea-learning-workspace .row button {
+  opacity: 0.8;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.technea-learning-workspace .row button:hover {
+  opacity: 1;
+  transform: scale(1.05);
+}
+
+/* Metadata Bar & Actions */
+.technea-learning-workspace .meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 26px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.technea-learning-workspace .tags {
+  display: flex;
+  gap: 24px;
+  color: var(--lw-mu);
+  font-weight: 500;
+}
+
+.technea-learning-workspace .tags span {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.technea-learning-workspace .acts {
+  display: flex;
+  gap: 12px;
+}
+
+.technea-learning-workspace .btn {
+  height: 46px;
+  padding: 0 22px;
+  border-radius: 99px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  font-size: 14px;
+}
+
+.technea-learning-workspace .b1 {
+  border: 1px solid var(--lw-line);
+  background: var(--lw-s1);
+  color: var(--lw-tx);
+}
+
+.technea-learning-workspace .b1:hover {
+  border-color: var(--lw-tx);
+}
+
+.technea-learning-workspace .b1.done {
+  background: var(--lw-s2);
+  color: var(--lw-ok);
+  border-color: rgba(77, 255, 180, 0.4);
+}
+
+.technea-learning-workspace .b1.rdy {
+  background: var(--lw-hot);
+  color: #000;
+  border-color: var(--lw-hot);
+  animation: rd 1.2s infinite;
+}
+
+@keyframes rd {
+  0% {
+    box-shadow: 0 0 0 0 var(--lw-hot);
+  }
+  100% {
+    box-shadow: 0 0 0 14px transparent;
+  }
+}
+
+.technea-learning-workspace .b2 {
+  background: var(--lw-ac);
+  color: var(--lw-ink);
+}
+
+.technea-learning-workspace .b2:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px -10px var(--lw-ac);
+}
+
+/* AI Mentor Companion Panel */
+.technea-learning-workspace .ai {
+  background: var(--lw-s1);
+  border: 1px solid var(--lw-line);
+  border-radius: 24px;
+  padding: 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  position: sticky;
+  top: 96px;
+  transition: all 0.4s ease;
+  box-shadow: 0 10px 40px -15px rgba(0, 0, 0, 0.4);
+}
+
+.technea-learning-workspace .ai-h {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+
+.technea-learning-workspace .orb {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff, var(--lw-hot) 55%, #2a0d00);
+  display: grid;
+  place-items: center;
+  animation: pulse 3.5s ease-in-out infinite;
+  box-shadow: 0 0 20px -4px var(--lw-hot);
+}
+
+@keyframes pulse {
+  50% {
+    box-shadow: 0 0 0 10px var(--lw-glow), 0 0 30px -2px var(--lw-hot);
+  }
+}
+
+.technea-learning-workspace .ai-h b {
+  display: block;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.technea-learning-workspace .ai-h small {
+  color: var(--lw-mu);
+  font-size: 12px;
+}
+
+.technea-learning-workspace .ctx {
+  background: var(--lw-s2);
+  border-radius: 16px;
+  padding: 16px 18px;
+  display: grid;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.technea-learning-workspace .ctx div {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.technea-learning-workspace .ctx span {
+  color: var(--lw-mu);
+}
+
+.technea-learning-workspace .ctx b {
+  font-weight: 600;
+  text-align: right;
+  color: var(--lw-tx);
+}
+
+/* 4 Quick Action Prompt Cards */
+.technea-learning-workspace .qa {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.technea-learning-workspace .qa button {
+  border: 1px solid var(--lw-line);
+  border-radius: 14px;
+  padding: 12px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  background: var(--lw-s2);
+}
+
+.technea-learning-workspace .qa button:hover {
+  background: var(--lw-ac);
+  color: var(--lw-ink);
+  transform: translateY(-2px);
+}
+
+.technea-learning-workspace .qa svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Chat Feed */
+.technea-learning-workspace .feed {
+  display: grid;
+  gap: 10px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.technea-learning-workspace .msg {
+  background: var(--lw-s2);
+  border-radius: 16px 16px 16px 4px;
+  padding: 12px 15px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--lw-tx);
+}
+
+.technea-learning-workspace .msg.me {
+  background: var(--lw-ac);
+  color: var(--lw-ink);
+  border-radius: 16px 16px 4px 16px;
+  justify-self: end;
+  max-width: 88%;
+}
+
+.technea-learning-workspace .caret:after {
+  content: "▍";
+  animation: bl 1s steps(1) infinite;
+  color: var(--lw-hot);
+}
+
+@keyframes bl {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* Input pill */
+.technea-learning-workspace .input-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--lw-line);
+  border-radius: 99px;
+  padding: 5px 5px 5px 16px;
+  background: var(--lw-s2);
+}
+
+.technea-learning-workspace .input-pill input {
+  flex: 1;
+  background: none;
+  border: 0;
+  color: var(--lw-tx);
+  font: inherit;
+  font-size: 13px;
+  min-width: 0;
+}
+
+.technea-learning-workspace .input-pill input::placeholder {
+  color: var(--lw-mu);
+}
+
+.technea-learning-workspace .input-pill input:focus-visible {
+  outline: 0;
+}
+
+.technea-learning-workspace .send {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--lw-ac);
+  color: var(--lw-ink);
+  display: grid;
+  place-items: center;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.technea-learning-workspace .send:hover {
+  transform: scale(1.08);
+}
+
+/* Section Dividers */
+.technea-learning-workspace section {
+  margin-top: 84px;
+}
+
+.technea-learning-workspace h2 {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin-bottom: 6px;
+  color: var(--lw-tx);
+}
+
+.technea-learning-workspace .sub {
+  color: var(--lw-mu);
+  margin-bottom: 30px;
+  font-size: 14px;
+}
+
+/* Course Journey Timeline */
+.technea-learning-workspace .journey {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 56px;
+}
+
+.technea-learning-workspace .mod {
+  position: relative;
+  padding: 0 0 30px 46px;
+}
+
+.technea-learning-workspace .mod:before {
+  content: "";
+  position: absolute;
+  left: 13px;
+  top: 30px;
+  bottom: -2px;
+  width: 1px;
+  background: var(--lw-line);
+  transition: background 0.4s ease;
+}
+
+.technea-learning-workspace .mod:last-child:before {
+  display: none;
+}
+
+.technea-learning-workspace .mod.done:before {
+  background: var(--lw-ok);
+}
+
+.technea-learning-workspace .node {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 27px;
+  height: 27px;
+  border-radius: 50%;
+  border: 1.5px solid var(--lw-line);
+  background: var(--lw-bg);
+  display: grid;
+  place-items: center;
+  transition: 0.4s ease;
+}
+
+.technea-learning-workspace .node svg {
+  width: 13px;
+  height: 13px;
+  stroke-width: 2.6;
+  opacity: 0;
+}
+
+.technea-learning-workspace .mod.done .node {
+  background: var(--lw-ok);
+  border-color: var(--lw-ok);
+  color: #000;
+}
+
+.technea-learning-workspace .mod.done .node svg {
+  opacity: 1;
+}
+
+.technea-learning-workspace .mod.cur .node {
+  border-color: var(--lw-hot);
+  color: var(--lw-hot);
+  box-shadow: 0 0 0 5px var(--lw-glow);
+  animation: np 2s ease-out infinite;
+}
+
+@keyframes np {
+  0% {
+    box-shadow: 0 0 0 0 currentColor;
+  }
+  100% {
+    box-shadow: 0 0 0 14px transparent;
+  }
+}
+
+.technea-learning-workspace .mt {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  margin-bottom: 10px;
+}
+
+.technea-learning-workspace .mt b {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--lw-tx);
+}
+
+.technea-learning-workspace .mt small {
+  color: var(--lw-hot);
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.technea-learning-workspace .les {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  color: var(--lw-mu);
+  transition: all 0.2s ease;
+  text-align: left;
+  border: 1px solid transparent;
+}
+
+.technea-learning-workspace .les:hover {
+  background: var(--lw-s1);
+  color: var(--lw-tx);
+  transform: translateX(4px);
+}
+
+.technea-learning-workspace .les b {
+  font-weight: 500;
+  flex: 1;
+  font-size: 13px;
+}
+
+.technea-learning-workspace .les small {
+  font-size: 12px;
+  font-family: ui-monospace, Menlo, monospace;
+}
+
+.technea-learning-workspace .les svg {
+  width: 15px;
+  height: 15px;
+}
+
+.technea-learning-workspace .les.on {
+  background: var(--lw-s1);
+  border-color: var(--lw-tx);
+  color: var(--lw-tx);
+  font-weight: 600;
+}
+
+.technea-learning-workspace .les.on svg {
+  color: var(--lw-hot);
+}
+
+.technea-learning-workspace .les.ok svg {
+  color: var(--lw-ok);
+}
+
+/* 3-Column Interactive Practice Workspace Cards */
+.technea-learning-workspace .cards3,
+.technea-learning-workspace .cards4 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.technea-learning-workspace .card,
+.technea-learning-workspace .rc {
+  position: relative;
+  background: var(--lw-s1);
+  border: 1px solid var(--lw-line);
+  border-radius: 22px;
+  padding: 26px;
+  overflow: hidden;
+  transition: border-color 0.3s ease, transform 0.2s ease;
+}
+
+.technea-learning-workspace .card:before,
+.technea-learning-workspace .rc:before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    260px circle at var(--x, 50%) var(--y, 0),
+    var(--lw-glow),
+    transparent 70%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.technea-learning-workspace .card:hover,
+.technea-learning-workspace .rc:hover {
+  border-color: #777;
+  transform: perspective(900px) translateY(-4px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+}
+
+.technea-learning-workspace .card:hover:before,
+.technea-learning-workspace .rc:hover:before {
+  opacity: 1;
+}
+
+.technea-learning-workspace .card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 320px;
+}
+
+.technea-learning-workspace .ico {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--lw-s2);
+  display: grid;
+  place-items: center;
+  color: var(--lw-hot);
+}
+
+.technea-learning-workspace .card b {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--lw-tx);
+}
+
+.technea-learning-workspace .card p {
+  color: var(--lw-mu);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.technea-learning-workspace .go {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  margin-top: auto;
+  font-size: 13px;
+  color: var(--lw-tx);
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.technea-learning-workspace .go:hover {
+  color: var(--lw-hot);
+  transform: translateX(2px);
+}
+
+.technea-learning-workspace .go svg {
+  width: 15px;
+  height: 15px;
+}
+
+.technea-learning-workspace textarea {
+  width: 100%;
+  flex: 1;
+  min-height: 92px;
+  background: var(--lw-bg);
+  border: 1px solid var(--lw-line);
+  border-radius: 12px;
+  color: var(--lw-tx);
+  font: 13px/1.7 ui-monospace, Menlo, monospace;
+  padding: 10px 12px;
+  resize: none;
+  outline: none;
+}
+
+.technea-learning-workspace .out {
+  font: 12px ui-monospace, Menlo, monospace;
+  color: var(--lw-ok);
+  min-height: 20px;
+}
+
+.technea-learning-workspace .opt {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--lw-line);
+  border-radius: 12px;
+  padding: 9px 13px;
+  margin-top: 8px;
+  transition: all 0.2s ease;
+  font-size: 13px;
+  background: var(--lw-s2);
+  color: var(--lw-tx);
+}
+
+.technea-learning-workspace .opt:hover {
+  border-color: var(--lw-tx);
+}
+
+.technea-learning-workspace .opt.good {
+  background: var(--lw-ok);
+  color: #000;
+  border-color: var(--lw-ok);
+  font-weight: 600;
+}
+
+.technea-learning-workspace .opt.bad {
+  opacity: 0.35;
+  text-decoration: line-through;
+}
+
+/* Continue Your Learning Path Recommendation Cards */
+.technea-learning-workspace .rc {
+  display: grid;
+  gap: 18px;
+  align-content: start;
+  cursor: pointer;
+}
+
+.technea-learning-workspace .rc b {
+  font-size: 16px;
+  line-height: 1.35;
+  font-weight: 700;
+  color: var(--lw-tx);
+}
+
+.technea-learning-workspace .by {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  color: var(--lw-mu);
+  font-size: 13px;
+}
+
+.technea-learning-workspace .by i {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--lw-s3);
+  display: grid;
+  place-items: center;
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--lw-tx);
+}
+
+.technea-learning-workspace .f {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--lw-mu);
+  border-top: 1px solid var(--lw-line);
+  padding-top: 14px;
+  font-size: 12px;
+}
+
+.technea-learning-workspace .skill {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  color: var(--lw-tx);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.technea-learning-workspace .skill svg {
+  width: 14px;
+  height: 14px;
+  color: var(--lw-hot);
+}
+
+/* Visual Canvas & FX Overlays */
+#bg,
+.cur-dot {
+  position: fixed;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+#bg {
+  width: 100vw;
+  height: 100vh;
+}
+
+.cur-dot {
+  width: 380px;
+  height: 380px;
+  margin: -190px 0 0 -190px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 90, 31, 0.1), transparent 65%);
+  transition: opacity 0.3s ease;
+  z-index: 1;
+}
+
+#fx {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 50;
+  width: 100vw;
+  height: 100vh;
+}
+
+/* Toast */
+.lw-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(32px + env(safe-area-inset-bottom, 0px));
+  transform: translate(-50%, 30px);
+  background: var(--lw-ac);
+  color: var(--lw-ink);
+  padding: 12px 22px;
+  border-radius: 99px;
+  font-weight: 700;
+  font-size: 13px;
+  opacity: 0;
+  transition: transform 0.4s ease, opacity 0.4s ease;
+  z-index: 60;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5);
+}
+
+.lw-toast.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+/* Level Up Modal Overlay */
+.lu {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  z-index: 90;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(circle, rgba(0, 0, 0, 0.88), transparent 70%);
+}
+
+.lu.on {
+  animation: lu 2.6s forwards;
+}
+
+@keyframes lu {
+  0% {
+    opacity: 0;
+    transform: scale(0.88);
+  }
+  14%,
+  78% {
+    opacity: 1;
+    transform: none;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.06);
+  }
+}
+
+.lu small {
+  display: block;
+  font-weight: 700;
+  color: var(--lw-hot);
+  font-size: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.lu strong {
+  display: block;
+  font-size: min(34vw, 200px);
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  background: linear-gradient(180deg, #fff, var(--lw-hot));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.lu span {
+  color: #FAFAFA;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+/* Floating +XP Notification */
+.fxp {
+  position: fixed;
+  font-weight: 800;
+  z-index: 80;
+  pointer-events: none;
+  animation: fu 1.2s forwards;
+  color: var(--lw-hot);
+  font-size: 18px;
+}
+
+@keyframes fu {
+  to {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+}
+
+/* Flash effect */
+body.flash:after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle, rgba(255, 90, 31, 0.35), transparent 60%);
+  animation: fo 0.8s forwards;
+  pointer-events: none;
+  z-index: 49;
+}
+
+@keyframes fo {
+  to {
+    opacity: 0;
+  }
+}
+
+/* Command Palette Modal */
+.pal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(8px);
+  display: none;
+  place-items: start center;
+  padding-top: 16vh;
+  z-index: 70;
+}
+
+.pal.open {
+  display: grid;
+}
+
+.pal div {
+  width: min(520px, 92vw);
+  background: var(--lw-s1);
+  border: 1px solid var(--lw-line);
+  border-radius: 20px;
+  padding: 10px;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7);
+}
+
+.pal input {
+  width: 100%;
+  background: none;
+  border: 0;
+  color: var(--lw-tx);
+  font: inherit;
+  font-size: 16px;
+  padding: 14px;
+}
+
+.pal input:focus-visible {
+  outline: 0;
+}
+
+.pal button {
+  width: 100%;
+  text-align: left;
+  padding: 12px 14px;
+  border-radius: 12px;
+  color: var(--lw-mu);
+  font-size: 14px;
+  transition: all 0.15s ease;
+}
+
+.pal button:hover,
+.pal button.sel {
+  background: var(--lw-s2);
+  color: var(--lw-tx);
+}
+
+/* Responsive queries */
+@media (max-width: 1000px) {
+  .technea-learning-workspace .hero,
+  .technea-learning-workspace .journey,
+  .technea-learning-workspace .cards3,
+  .technea-learning-workspace .cards4 {
+    grid-template-columns: 1fr;
+  }
+  .technea-learning-workspace .wrap {
+    padding: 0 20px;
+  }
+  .technea-learning-workspace .ai {
+    position: static;
+  }
+  .technea-learning-workspace header {
+    grid-template-columns: auto 1fr auto;
+  }
+  .technea-learning-workspace .path b,
+  .technea-learning-workspace .kbd {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .technea-learning-workspace .w {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+  .technea-learning-workspace * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

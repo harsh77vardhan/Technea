@@ -118,7 +118,7 @@ function FloatingAIMentorCompanion({
                 </h2>
                 <p className="text-xs text-[#a8a199] font-normal">
                   Active Track: {activeRoadmap?.title || 'Full-Stack AI Engineer'} • Lesson:{' '}
-                  {todayMission.lesson_title}
+                  {todayMission?.lesson_title || 'Core Foundations'}
                 </p>
               </div>
             </div>
