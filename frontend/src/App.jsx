@@ -202,6 +202,7 @@ function AppContent() {
 
   // Reset scroll to top immediately on route changes and ensure Lenis is started
   useEffect(() => {
+    if (currentPath === '/dashboard') return
     if (lenis) {
       lenis.start()
       lenis.scrollTo(0, { immediate: true })
@@ -481,6 +482,20 @@ export default function App() {
         syncTouch: false,
         anchors: { offset: -70 },
         respectReducedMotion: true,
+        prevent: (node) =>
+          Boolean(node?.closest?.('[data-lenis-prevent]')) ||
+          Boolean(document.getElementById('dashboard-root')) ||
+          (typeof window !== 'undefined' && window.location.pathname.startsWith('/dashboard')),
+        virtualScroll: () => {
+          if (
+            typeof window !== 'undefined' &&
+            (window.location.pathname.startsWith('/dashboard') ||
+              Boolean(document.getElementById('dashboard-root')))
+          ) {
+            return false
+          }
+          return true
+        },
       }}
     >
       <AuthProvider>

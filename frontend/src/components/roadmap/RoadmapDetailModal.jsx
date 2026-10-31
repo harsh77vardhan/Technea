@@ -259,7 +259,10 @@ export default function RoadmapDetailModal({
           </header>
 
           {/* ── SEGMENTED SUB-NAVIGATION ───────────────────────────────────── */}
-          <div className="shrink-0 px-6 sm:px-8 border-b border-[#262320] bg-[#121110] flex items-center gap-2 py-2 overflow-x-auto no-scrollbar z-10">
+          <div
+            data-lenis-prevent="true"
+            className="shrink-0 px-6 sm:px-8 border-b border-[#262320] bg-[#121110] flex items-center gap-2 py-2 overflow-x-auto no-scrollbar [touch-action:pan-x] overscroll-x-contain z-10"
+          >
             {[
               { id: 'tree', label: 'Visual Skill Tree', icon: Layers },
               { id: 'overview', label: 'Curriculum & Outcomes', icon: Briefcase },
@@ -287,7 +290,11 @@ export default function RoadmapDetailModal({
           </div>
 
           {/* ── SCROLLABLE BODY CONTENT ────────────────────────────────────── */}
-          <div className="flex-1 overflow-y-auto p-6 sm:p-8 space-y-8 z-10 relative">
+          <div
+            data-lenis-prevent="true"
+            tabIndex={0}
+            className="flex-1 overflow-y-auto overscroll-y-contain [touch-action:pan-y] [-webkit-overflow-scrolling:touch] outline-none p-6 sm:p-8 space-y-8 z-10 relative"
+          >
             {/* ══════════ TAB 1: VISUAL SKILL TREE ══════════ */}
             {activeTab === 'tree' && (
               <RoadmapTreeVisualization

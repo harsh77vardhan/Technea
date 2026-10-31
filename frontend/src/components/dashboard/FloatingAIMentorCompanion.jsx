@@ -96,6 +96,7 @@ function FloatingAIMentorCompanion({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
+          data-lenis-prevent="true"
           className="fixed inset-0 z-50 bg-[#0e0d0c]/98 backdrop-blur-3xl flex flex-col p-4 sm:p-6 text-[#faf6ee]"
         >
           {/* Top Bar */}
@@ -153,7 +154,10 @@ function FloatingAIMentorCompanion({
           {/* 3-Column Studio Body */}
           <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 mt-4 overflow-hidden">
             {/* Left Column: Roadmap Context & Milestones (3 Cols) */}
-            <div className="hidden lg:flex lg:col-span-3 flex-col rounded-2xl bg-[#141312] border border-[#262320] p-4 space-y-4 overflow-y-auto">
+            <div
+              data-lenis-prevent="true"
+              className="hidden lg:flex lg:col-span-3 flex-col rounded-2xl bg-[#141312] border border-[#262320] p-4 space-y-4 overflow-y-auto overscroll-y-contain [touch-action:pan-y] [-webkit-overflow-scrolling:touch]"
+            >
               <div className="flex items-center gap-2 text-xs font-medium text-[#faf6ee]">
                 <Compass className="h-4 w-4 text-[#e87a48]" />
                 <span>Curriculum Milestones</span>
@@ -182,7 +186,11 @@ function FloatingAIMentorCompanion({
 
             {/* Center Column: Live Conversational Stream (5 Cols) */}
             <div className="col-span-1 lg:col-span-5 flex flex-col rounded-2xl bg-[#141312] border border-[#262320] overflow-hidden">
-              <div ref={chatScrollRef} className="flex-1 overflow-y-auto p-4 space-y-3 text-xs">
+              <div
+                ref={chatScrollRef}
+                data-lenis-prevent="true"
+                className="flex-1 overflow-y-auto overscroll-y-contain [touch-action:pan-y] [-webkit-overflow-scrolling:touch] p-4 space-y-3 text-xs"
+              >
                 {mentorMessages.map((msg) => (
                   <div
                     key={msg.id}

@@ -82,6 +82,7 @@ function DockedAIMentorCompanion({
   return (
     <aside
       aria-label="AI Technical Mentor"
+      data-lenis-prevent="true"
       className="flex flex-col h-full justify-between bg-[#141312] border-l border-[#262320] text-[#faf6ee] select-none p-6 relative overflow-hidden"
     >
       {/* ──────────────── TOP HEADER ──────────────── */}
@@ -251,7 +252,8 @@ function DockedAIMentorCompanion({
 
             <div
               ref={chatScrollRef}
-              className="flex-1 overflow-y-auto space-y-3 pr-1 text-xs"
+              data-lenis-prevent="true"
+              className="flex-1 overflow-y-auto overscroll-y-contain [touch-action:pan-y] [-webkit-overflow-scrolling:touch] space-y-3 pr-1 text-xs"
             >
               {mentorMessages.map((msg) => (
                 <div

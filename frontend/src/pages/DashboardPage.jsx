@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, lazy, Suspense } from 'react'
+import { useState, useCallback, useMemo, useRef, useEffect, lazy, Suspense } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Compass,
@@ -55,6 +55,64 @@ export default function DashboardPage({
 
   const [isMentorDocked, setIsMentorDocked] = useState(true)
   const [isMentorFullscreen, setIsMentorFullscreen] = useState(false)
+  const mainScrollRef = useRef(null)
+
+  // Focus main container on mount for immediate native keyboard scrolling readiness
+  useEffect(() => {
+    mainScrollRef.current?.focus({ preventScroll: true })
+  }, [])
+
+  // Reset scroll to top smoothly when switching dashboard tabs
+  useEffect(() => {
+    if (mainScrollRef.current) {
+      mainScrollRef.current.scrollTop = 0
+    }
+  }, [activeTab])
+
+  // Support native keyboard scrolling (Page Up/Down, Space, Arrow Keys, Home/End)
+  useEffect(() => {
+    const handleGlobalKeyDown = (e) => {
+      const activeEl = document.activeElement
+      const tagName = activeEl?.tagName?.toLowerCase()
+      if (
+        tagName === 'input' ||
+        tagName === 'textarea' ||
+        tagName === 'select' ||
+        activeEl?.isContentEditable
+      ) {
+        return
+      }
+
+      const scrollKeys = ['ArrowDown', 'ArrowUp', 'PageDown', 'PageUp', 'Home', 'End', ' ']
+      if (scrollKeys.includes(e.key) && mainScrollRef.current) {
+        // If focus is currently on the outer document/body, perform native scroll and ensure main has focus
+        if (activeEl === document.body || activeEl === document.documentElement) {
+          e.preventDefault()
+          const scrollMap = {
+            ArrowDown: 60,
+            ArrowUp: -60,
+            PageDown: window.innerHeight * 0.75,
+            PageUp: -window.innerHeight * 0.75,
+            ' ': e.shiftKey ? -window.innerHeight * 0.75 : window.innerHeight * 0.75,
+          }
+          if (e.key === 'Home') {
+            mainScrollRef.current.scrollTo({ top: 0, behavior: 'smooth' })
+          } else if (e.key === 'End') {
+            mainScrollRef.current.scrollTo({
+              top: mainScrollRef.current.scrollHeight,
+              behavior: 'smooth',
+            })
+          } else if (scrollMap[e.key] !== undefined) {
+            mainScrollRef.current.scrollBy({ top: scrollMap[e.key], behavior: 'auto' })
+          }
+          mainScrollRef.current.focus({ preventScroll: true })
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleGlobalKeyDown)
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown)
+  }, [])
 
   // Direct lesson navigation
   const handleContinueLesson = useCallback((mission) => {
@@ -111,13 +169,21 @@ export default function DashboardPage({
   }, [catalogRoadmaps, roadmapSearch, filterDifficulty, filterDuration, filterCategory, filterTechnology])
 
   return (
-    <div className="relative w-full h-screen min-h-screen flex flex-col lg:flex-row bg-[#0e0d0c] text-[#faf6ee] overflow-hidden select-none">
+    <div
+      id="dashboard-root"
+      data-lenis-prevent="true"
+      className="relative w-full h-screen min-h-screen flex flex-col lg:flex-row bg-[#0e0d0c] text-[#faf6ee] overflow-hidden"
+    >
       {/* Subtle background warm burnt orange nebulae */}
       <div className="pointer-events-none absolute -top-40 -left-40 h-96 w-96 rounded-full bg-[#c25e2e]/8 blur-[140px]" />
       <div className="pointer-events-none absolute -bottom-40 -right-40 h-96 w-96 rounded-full bg-[#d97b48]/6 blur-[140px]" />
 
       {/* ──────────────── 1. DESKTOP NAVIGATION SIDEBAR ──────────────── */}
-      <aside aria-label="Dashboard Sidebar" className="hidden lg:block w-56 shrink-0 h-full z-20">
+      <aside
+        aria-label="Dashboard Sidebar"
+        data-lenis-prevent="true"
+        className="hidden lg:block w-56 shrink-0 h-full z-20"
+      >
         <DashboardLeftSidebar
           activeTab={activeTab}
           onSelectTab={setActiveTab}
@@ -129,6 +195,7 @@ export default function DashboardPage({
       {/* ──────────────── 2. MOBILE TOP NAVIGATION BAR ──────────────── */}
       <header
         aria-label="Mobile Navigation"
+        data-lenis-prevent="true"
         className="lg:hidden shrink-0 flex items-center justify-between px-4 py-3 bg-[#141312] border-b border-[#262320] z-30"
       >
         <div className="flex items-center gap-2.5">
@@ -139,7 +206,10 @@ export default function DashboardPage({
         </div>
 
         {/* Horizontal mobile tab scroller */}
-        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
+        <div
+          data-lenis-prevent="true"
+          className="flex items-center gap-1 overflow-x-auto no-scrollbar [touch-action:pan-x] overscroll-x-contain"
+        >
           {['overview', 'roadmaps', 'courses', 'projects', 'portfolio', 'settings'].map((tab) => (
             <button
               key={tab}
@@ -158,7 +228,14 @@ export default function DashboardPage({
       </header>
 
       {/* ──────────────── 3. MAIN OPERATING DECK (CENTER COLUMN) ──────────────── */}
-      <main className="flex-1 h-full overflow-y-auto p-4 sm:p-6 lg:p-10 space-y-6 z-10 relative">
+      <main
+        ref={mainScrollRef}
+        id="dashboard-main-deck"
+        data-lenis-prevent="true"
+        tabIndex={0}
+        aria-label="Dashboard Content Area"
+        className="flex-1 h-full overflow-y-auto overflow-x-hidden overscroll-y-contain [touch-action:pan-y] [-webkit-overflow-scrolling:touch] outline-none focus:outline-none p-4 sm:p-6 lg:p-10 space-y-6 z-10 relative"
+      >
         <AnimatePresence mode="wait">
           {/* ══════════════ TAB 1: OVERVIEW (SOURCE OF TRUTH DECK) ══════════════ */}
           {activeTab === 'overview' && (
