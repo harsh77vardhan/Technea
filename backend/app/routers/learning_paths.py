@@ -142,7 +142,7 @@ async def set_active_learning_path(
     from app.models.progress import UserLearningPath
     from app.models.user_roadmap import UserGeneratedRoadmap
 
-    path = await db.get(LearningPath, path_id)
+    path = await learning_path_service.get_by_slug_or_id(db, slug_or_id=path_id)
     if not path:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -154,6 +154,15 @@ async def set_active_learning_path(
     ugr_res = await db.execute(ugr_stmt)
     for ugr in ugr_res.scalars().all():
         ugr.is_active = False
+
+    # Deactivate other user learning paths
+    other_ulp_stmt = select(UserLearningPath).where(
+        UserLearningPath.user_id == current_user.id,
+        UserLearningPath.learning_path_id != path_id,
+    )
+    other_ulp_res = await db.execute(other_ulp_stmt)
+    for other_ulp in other_ulp_res.scalars().all():
+        other_ulp.status = "enrolled"
 
     # Ensure UserLearningPath exists and update last_accessed_at to now
     now = datetime.now(timezone.utc)
@@ -177,5 +186,7 @@ async def set_active_learning_path(
         ulp.status = "active"
 
     await db.commit()
+    # Refresh to ensure relationships stay bound to session
+    await db.refresh(path, ["roadmap_steps"])
     return LearningPathResponse.model_validate(path)
 

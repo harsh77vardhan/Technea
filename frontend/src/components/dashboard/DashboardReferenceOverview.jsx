@@ -5,7 +5,6 @@ import { useDashboard } from '../../context/useDashboard'
 function DashboardReferenceOverview({
   onContinueLesson,
   onResumeMilestone,
-  onExploreCatalog = () => {},
   onNavigateTab = () => {},
 }) {
   const {
@@ -84,31 +83,57 @@ function DashboardReferenceOverview({
   // Continue learning courses derived from active roadmap curriculum / real courses
   const continueCourses = useMemo(() => {
     const list = []
-    if (continueLearningData?.course_id) {
+    const activeId = String(activeRoadmap?.id || '')
+    const activeTitle = (activeRoadmap?.title || '').toLowerCase()
+    const clRoadmapId = String(continueLearningData?.roadmap_id || '')
+    const clRoadmapTitle = (continueLearningData?.roadmap_title || '').toLowerCase()
+    const clMatches =
+      (activeId && clRoadmapId && activeId === clRoadmapId) ||
+      (activeTitle && clRoadmapTitle && activeTitle === clRoadmapTitle)
+
+    if (continueLearningData?.course_id && clMatches) {
       list.push({
         id: continueLearningData.course_id,
-        title: continueLearningData.course_title || 'Web Foundations',
+        title: continueLearningData.course_title || continueLearningData.lesson_title || 'Core Foundations',
         progress: continueLearningData.progress_percent || 0,
         subtitle: `${continueLearningData.milestone_title || 'Module 1'} · ${continueLearningData.duration || '25 min left'}`,
         course_id: continueLearningData.course_id,
         lesson_id: continueLearningData.lesson_id || 1,
       })
     }
-    if (activeRoadmap?.milestones) {
+
+    if (Array.isArray(activeRoadmap?.milestones)) {
       for (const ms of activeRoadmap.milestones) {
-        if (ms.course_id && !list.some((item) => item.id === ms.course_id)) {
+        if (!list.some((item) => item.title === ms.title)) {
           list.push({
-            id: ms.course_id,
+            id: ms.course_id || ms.id,
             title: ms.title,
-            progress: ms.completed ? 100 : (ms.current ? activeRoadmap.progress_percent || 0 : 0),
+            progress: ms.completed ? 100 : ms.current ? (activeRoadmap.progress_percent || 0) : 0,
             subtitle: `${ms.estimated_time || '25 min left'} · Practical Lab`,
-            course_id: ms.course_id,
+            course_id: ms.course_id || activeRoadmap.id || 1,
             lesson_id: ms.lesson_id || 1,
           })
         }
         if (list.length >= 3) break
       }
     }
+
+    if (list.length < 3 && Array.isArray(activeRoadmap?.roadmap_steps)) {
+      for (const step of activeRoadmap.roadmap_steps) {
+        if (!list.some((item) => item.title === step.title)) {
+          list.push({
+            id: step.id,
+            title: step.title,
+            progress: 0,
+            subtitle: `${step.duration || '25 min left'} · Step ${step.step_number || 1}`,
+            course_id: step.course_id || activeRoadmap.id || 1,
+            lesson_id: step.id || 1,
+          })
+        }
+        if (list.length >= 3) break
+      }
+    }
+
     if (list.length < 3 && activeRoadmap?.roadmap_data?.phases) {
       for (const phase of activeRoadmap.roadmap_data.phases) {
         for (const ms of phase.milestones || []) {
@@ -130,30 +155,19 @@ function DashboardReferenceOverview({
         if (list.length >= 3) break
       }
     }
-    if (list.length === 0 && Array.isArray(summaryData?.enrolled_paths)) {
-      summaryData.enrolled_paths.slice(0, 3).forEach((p) => {
-        list.push({
-          id: p.id,
-          title: p.title,
-          progress: p.progress_percent || 0,
-          subtitle: `${p.category || 'Engineering'} · ${p.duration || 'Self-paced'}`,
-          course_id: p.id,
-          lesson_id: 1,
-        })
-      })
-    }
+
     if (list.length === 0 && activeRoadmap) {
       list.push({
         id: activeRoadmap.id,
         title: activeRoadmap.title,
         progress: activeRoadmap.progress_percent || 0,
         subtitle: `${activeRoadmap.target_role || 'Core Track'} · In Progress`,
-        course_id: 182,
-        lesson_id: 241,
+        course_id: 1,
+        lesson_id: 1,
       })
     }
     return list
-  }, [continueLearningData, activeRoadmap, summaryData])
+  }, [continueLearningData, activeRoadmap])
 
   // Roadmap stages progress derived from active roadmap's real milestones/phases
   const roadmapStages = useMemo(() => {
@@ -161,6 +175,12 @@ function DashboardReferenceOverview({
       return activeRoadmap.milestones.slice(0, 3).map((m) => ({
         label: m.completed ? m.title : m.current ? `${m.title} · current` : m.title,
         percent: m.completed ? 100 : m.current ? (activeRoadmap.progress_percent || 0) : 0,
+      }))
+    }
+    if (activeRoadmap?.roadmap_steps && activeRoadmap.roadmap_steps.length > 0) {
+      return activeRoadmap.roadmap_steps.slice(0, 3).map((step, idx) => ({
+        label: idx === 0 ? `${step.title} · current` : step.title,
+        percent: idx === 0 ? (activeRoadmap.progress_percent || 0) : 0,
       }))
     }
     if (activeRoadmap?.roadmap_data?.phases && activeRoadmap.roadmap_data.phases.length > 0) {
@@ -375,7 +395,7 @@ function DashboardReferenceOverview({
 
               <button
                 type="button"
-                onClick={onExploreCatalog}
+                onClick={() => onNavigateTab('roadmaps')}
                 className="text-sm text-[#665e56] hover:text-[#181614] transition-colors cursor-pointer"
               >
                 View mission steps

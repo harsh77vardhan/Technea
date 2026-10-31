@@ -1325,8 +1325,8 @@ class ProgressService:
                                             "id": str(s.id),
                                             "title": s.title,
                                             "description": s.description,
-                                            "skills": s.key_skills or [],
-                                            "estimated_time": f"{s.estimated_weeks or 1} weeks",
+                                            "skills": getattr(s, "topics", None) or getattr(s, "key_skills", None) or [],
+                                            "estimated_time": getattr(s, "duration", None) or f"{getattr(s, 'estimated_weeks', 1)} weeks",
                                             "learning_path_id": lp.id,
                                         }
                                         for s in p_steps
@@ -1394,7 +1394,7 @@ class ProgressService:
                         .where(
                             or_(
                                 Course.title.ilike(f"%{search_kw}%"),
-                                Course.category.ilike(f"%{search_kw}%"),
+                                Course.description.ilike(f"%{search_kw}%"),
                             )
                         )
                         .order_by(Course.id.asc())

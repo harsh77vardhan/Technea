@@ -61,8 +61,18 @@ export function DashboardProvider({ children }) {
   const [myProjects, setMyProjects] = useState([])
   const [isLoading, setIsLoading] = useState(true)
 
-  // Active Roadmap Selection (Single Source of Truth)
-  const [activeRoadmap, setActiveRoadmap] = useState(null)
+  // Active Roadmap Selection (Single Source of Truth, persisted in localStorage & backend)
+  const [activeRoadmap, setActiveRoadmap] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('technea_active_roadmap')
+        if (stored) return JSON.parse(stored)
+      } catch (err) {
+        console.warn('Could not parse stored active roadmap:', err)
+      }
+    }
+    return null
+  })
   const [continueLearningData, setContinueLearningData] = useState(null)
 
   // Toast notification system
@@ -95,17 +105,55 @@ export function DashboardProvider({ children }) {
     if (ws.summary) setSummaryData(ws.summary)
     if (ws.daily_activity) setDailyActivity(ws.daily_activity)
     if (Array.isArray(ws.achievements)) setAchievements(ws.achievements)
-    if (Array.isArray(ws.saved_roadmaps)) {
-      setSavedRoadmaps(ws.saved_roadmaps)
-      const active = ws.saved_roadmaps.find((r) => r.is_active) || ws.saved_roadmaps[0] || null
-      if (active) setActiveRoadmap(active)
-    }
     if (Array.isArray(ws.recommended_projects)) {
       setRecommendedProjects(ws.recommended_projects)
     }
     if (Array.isArray(ws.my_projects)) {
       setMyProjects(ws.my_projects)
     }
+
+    if (Array.isArray(ws.saved_roadmaps)) {
+      setSavedRoadmaps(ws.saved_roadmaps)
+
+      // Preferred active roadmap ID from localStorage
+      let preferredActiveId = null
+      let preferredActiveTitle = null
+      if (typeof window !== 'undefined') {
+        preferredActiveId = localStorage.getItem('technea_active_roadmap_id')
+        try {
+          const stored = localStorage.getItem('technea_active_roadmap')
+          if (stored) {
+            const parsed = JSON.parse(stored)
+            preferredActiveId = preferredActiveId || String(parsed.id || '')
+            preferredActiveTitle = (parsed.title || '').toLowerCase()
+          }
+        } catch {
+          // ignore
+        }
+      }
+
+      // Find active roadmap in returned workspace
+      const matchedWsActive =
+        (preferredActiveId && ws.saved_roadmaps.find((r) => String(r.id) === String(preferredActiveId))) ||
+        (preferredActiveTitle && ws.saved_roadmaps.find((r) => (r.title || '').toLowerCase() === preferredActiveTitle)) ||
+        ws.saved_roadmaps.find((r) => r.is_active) ||
+        ws.saved_roadmaps[0] ||
+        null
+
+      if (matchedWsActive) {
+        setActiveRoadmap((prev) => {
+          // If user explicitly has an active roadmap stored in localStorage, preserve it unless matched
+          if (preferredActiveTitle && prev && (prev.title || '').toLowerCase() === preferredActiveTitle) {
+            return { ...prev, ...matchedWsActive, is_active: true }
+          }
+          if (prev && preferredActiveId && String(prev.id) === String(preferredActiveId)) {
+            return { ...prev, ...matchedWsActive, is_active: true }
+          }
+          return matchedWsActive
+        })
+      }
+    }
+
     if (ws.continue_learning) {
       setContinueLearningData(ws.continue_learning)
     }
@@ -231,26 +279,94 @@ export function DashboardProvider({ children }) {
   }, [catalogRoadmaps.length])
 
 
-  // Switch Active Roadmap
+  // Switch Active Roadmap (Centralized Single Source of Truth)
   const switchActiveRoadmap = useCallback(
     async (target) => {
       if (!target) return
-      try {
-        if (target.roadmap_data !== undefined || target.goal !== undefined) {
-          // AI Generated Roadmap
-          await setActiveRoadmapApi(target.id)
-        } else {
-          // Curated Catalog Path
-          await setActiveLearningPathApi(target.id)
+
+      // Construct immediate active roadmap state
+      const newActive = {
+        ...target,
+        is_active: true,
+        progress_percent: target.progress_percent ?? 0,
+      }
+
+      // 1. Immediately update centralized active roadmap state
+      setActiveRoadmap(newActive)
+
+      // 2. Persist in localStorage for instant reload & offline resilience
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('technea_active_roadmap', JSON.stringify(newActive))
+          localStorage.setItem('technea_active_roadmap_id', String(newActive.id))
+        } catch (e) {
+          console.warn('Failed to persist active roadmap to localStorage:', e)
         }
-        setActiveRoadmap(target)
-        showToast(`Active roadmap switched to: ${target.title}`, 'success')
-        // Refresh telemetry and progress
-        await refreshDashboard()
+      }
+
+      // 3. Mark active in savedRoadmaps list immediately
+      setSavedRoadmaps((prev) => {
+        const exists = prev.some(
+          (r) => String(r.id) === String(newActive.id) || (r.title && r.title === newActive.title)
+        )
+        if (!exists) {
+          return [{ ...newActive, is_active: true }, ...prev.map((r) => ({ ...r, is_active: false }))]
+        }
+        return prev.map((r) => ({
+          ...r,
+          is_active: String(r.id) === String(newActive.id) || (r.title && r.title === newActive.title),
+        }))
+      })
+
+      // 4. Invalidate workspace cache to prevent stale paints
+      workspaceCacheRef.current = { data: null, timestamp: 0 }
+
+      // 5. Derive optimistic continueLearningData matching the new active roadmap
+      const firstStep =
+        (Array.isArray(newActive.roadmap_steps) && newActive.roadmap_steps[0]) ||
+        newActive.roadmap_data?.phases?.[0]?.milestones?.[0] ||
+        (Array.isArray(newActive.milestones) && newActive.milestones[0]) ||
+        newActive.current_milestone
+
+      const firstMilestoneTitle = firstStep?.title || 'Core Foundations'
+      const firstEstimatedTime = firstStep?.duration || firstStep?.estimated_time || '25 min'
+
+      setContinueLearningData({
+        roadmap_id: newActive.id,
+        roadmap_title: newActive.title,
+        milestone_id: String(firstStep?.id || '1'),
+        milestone_title: firstMilestoneTitle,
+        phase_title: newActive.roadmap_data?.phases?.[0]?.title || `${newActive.title} Modules`,
+        lesson_id: firstStep?.id || 1,
+        lesson_title: firstStep?.title || `Foundations of ${newActive.title}`,
+        course_id: firstStep?.course_id || newActive.id || 1,
+        course_title: newActive.title,
+        duration: firstEstimatedTime,
+        progress_percent: newActive.progress_percent || 0,
+      })
+
+      showToast(`Active roadmap switched to: ${newActive.title}`, 'success')
+
+      // 6. Synchronize with backend API
+      try {
+        if (newActive.is_generated === true) {
+          await setActiveRoadmapApi(newActive.id)
+        } else {
+          try {
+            await setActiveLearningPathApi(newActive.id)
+          } catch {
+            await setActiveRoadmapApi(newActive.id)
+          }
+        }
       } catch (err) {
-        console.error('Failed to switch active roadmap:', err)
-        // Optimistic switch anyway
-        setActiveRoadmap(target)
+        console.warn('Backend active roadmap sync notice:', err)
+      }
+
+      // 7. Refresh background telemetry
+      try {
+        await refreshDashboard(true)
+      } catch (err) {
+        console.warn('Dashboard telemetry refresh error:', err)
       }
     },
     [refreshDashboard, showToast]
@@ -347,33 +463,101 @@ export function DashboardProvider({ children }) {
     [refreshDashboard, showToast]
   )
 
-  // Normalized Active Roadmap Computations
+  // Normalized Active Roadmap Computations (Single Source of Truth)
   const activeRoadmapNormalized = useMemo(() => {
     if (!activeRoadmap) {
-      // Fallback to first enrolled path from summary if available
       const firstEnrolled = summaryData?.enrolled_paths?.[0]
       if (firstEnrolled) {
         return {
           id: firstEnrolled.id,
           title: firstEnrolled.title,
           category: firstEnrolled.category,
-          progress_percent: firstEnrolled.progress_percent,
-          completed_steps_count: firstEnrolled.completed_steps_count,
-          total_steps_count: firstEnrolled.total_steps_count,
-          next_step_title: firstEnrolled.next_step_title,
+          progress_percent: firstEnrolled.progress_percent || 0,
+          completed_steps_count: firstEnrolled.completed_steps_count || 0,
+          total_steps_count: firstEnrolled.total_steps_count || 4,
+          next_step_title: firstEnrolled.next_step_title || 'Core Foundations',
           is_generated: false,
           milestones: [],
+          current_milestone: {
+            id: '1',
+            title: firstEnrolled.next_step_title || 'Core Foundations',
+            estimated_time: '25 min',
+          },
         }
       }
       return null
     }
 
-    // AI Generated Roadmap or Enrolled Path with phases
-    if (activeRoadmap.roadmap_data && activeRoadmap.roadmap_data.phases) {
+    const completedSet = new Set(
+      (activeRoadmap.completed_milestone_ids || []).map((id) => String(id))
+    )
+
+    // CASE 1: Curated catalog roadmap with sequential roadmap_steps
+    if (Array.isArray(activeRoadmap.roadmap_steps) && activeRoadmap.roadmap_steps.length > 0) {
+      const flatMilestones = []
+      let nextUncompletedFound = false
+      let currentMilestoneObj = null
+
+      activeRoadmap.roadmap_steps.forEach((step, idx) => {
+        const stepId = String(step.id || `step-${idx + 1}`)
+        const isDone = completedSet.has(stepId)
+        let isCurrent = false
+
+        if (!isDone && !nextUncompletedFound) {
+          isCurrent = true
+          nextUncompletedFound = true
+          currentMilestoneObj = {
+            id: stepId,
+            title: step.title,
+            description: step.description,
+            estimated_time: step.duration || '25 min',
+            skills: step.topics || [],
+            course_id: step.course_id || activeRoadmap.id || 1,
+            lesson_id: step.id || idx + 1,
+          }
+        }
+
+        flatMilestones.push({
+          id: stepId,
+          title: step.title,
+          description: step.description,
+          completed: isDone,
+          current: isCurrent,
+          locked: !isDone && !isCurrent,
+          estimated_time: step.duration || '25 min',
+          skills: step.topics || [],
+          course_id: step.course_id || activeRoadmap.id || 1,
+          lesson_id: step.id || idx + 1,
+        })
+      })
+
+      if (!currentMilestoneObj && flatMilestones.length > 0) {
+        currentMilestoneObj = flatMilestones[0]
+      }
+
+      const totalCount = Math.max(1, flatMilestones.length)
+      const completedCount = completedSet.size
+      const computedPercent = Math.min(100, Math.round((completedCount / totalCount) * 100))
+
+      return {
+        id: activeRoadmap.id,
+        title: activeRoadmap.title,
+        goal: activeRoadmap.goal,
+        target_role: activeRoadmap.target_role || activeRoadmap.category || 'Engineering Track',
+        progress_percent: activeRoadmap.progress_percent ?? computedPercent,
+        completed_steps_count: completedCount,
+        total_steps_count: totalCount,
+        next_step_title: currentMilestoneObj?.title || 'Core Foundations',
+        current_milestone: currentMilestoneObj,
+        milestones: flatMilestones,
+        roadmap_steps: activeRoadmap.roadmap_steps,
+        is_generated: false,
+      }
+    }
+
+    // CASE 2: AI Generated Roadmap or Enrolled Path with phases
+    if (activeRoadmap.roadmap_data && Array.isArray(activeRoadmap.roadmap_data.phases)) {
       const phases = activeRoadmap.roadmap_data.phases || []
-      const completedSet = new Set(
-        (activeRoadmap.completed_milestone_ids || []).map((id) => String(id))
-      )
       const flatMilestones = []
       let nextUncompletedFound = false
       let currentMilestoneObj = null
@@ -383,16 +567,11 @@ export function DashboardProvider({ children }) {
           const msId = String(ms.id || `ph-${pIdx}-ms-${mIdx}`)
           const isDone = completedSet.has(msId)
           let isCurrent = false
-          let isLocked = false
 
-          if (isDone) {
-            // Completed
-          } else if (!nextUncompletedFound) {
+          if (!isDone && !nextUncompletedFound) {
             isCurrent = true
             nextUncompletedFound = true
             currentMilestoneObj = { ...ms, id: msId, phase_title: ph.title }
-          } else {
-            isLocked = true
           }
 
           flatMilestones.push({
@@ -401,7 +580,7 @@ export function DashboardProvider({ children }) {
             description: ms.description,
             completed: isDone,
             current: isCurrent,
-            locked: isLocked,
+            locked: !isDone && !isCurrent,
             estimated_time: ms.estimated_time || '35 mins',
             skills: ms.skills || ms.key_skills || [],
             course_id: ms.courses?.[0]?.id || ms.course_id || 1,
@@ -409,6 +588,10 @@ export function DashboardProvider({ children }) {
           })
         })
       })
+
+      if (!currentMilestoneObj && flatMilestones.length > 0) {
+        currentMilestoneObj = flatMilestones[0]
+      }
 
       const totalCount = Math.max(1, flatMilestones.length)
       const completedCount = completedSet.size
@@ -419,7 +602,7 @@ export function DashboardProvider({ children }) {
         title: activeRoadmap.title,
         goal: activeRoadmap.goal,
         target_role: activeRoadmap.target_role || 'Full Stack Engineer',
-        progress_percent: activeRoadmap.progress_percent || computedPercent,
+        progress_percent: activeRoadmap.progress_percent ?? computedPercent,
         completed_steps_count: completedCount,
         total_steps_count: totalCount,
         next_step_title: currentMilestoneObj?.title || 'Review & Capstone Practice',
@@ -429,39 +612,31 @@ export function DashboardProvider({ children }) {
       }
     }
 
-    // Default object for curated path or milestones array
+    // CASE 3: Direct array of milestones
     const rawMilestones = Array.isArray(activeRoadmap.milestones) ? activeRoadmap.milestones : []
+    const flatMilestones = rawMilestones.map((m, idx) => ({
+      ...m,
+      id: String(m.id || `m-${idx + 1}`),
+      current: idx === 0,
+    }))
+    const currentMs = flatMilestones.find((m) => m.current) || flatMilestones[0] || null
+
     return {
       id: activeRoadmap.id,
       title: activeRoadmap.title,
       category: activeRoadmap.category || 'Engineering',
       progress_percent: activeRoadmap.progress_percent || 0,
       completed_steps_count: activeRoadmap.completed_steps_count || 0,
-      total_steps_count: activeRoadmap.total_steps_count || Math.max(1, rawMilestones.length),
-      next_step_title: activeRoadmap.next_step_title || 'Foundations',
-      milestones: rawMilestones,
+      total_steps_count: activeRoadmap.total_steps_count || Math.max(1, flatMilestones.length),
+      next_step_title: currentMs?.title || activeRoadmap.next_step_title || 'Foundations',
+      current_milestone: currentMs,
+      milestones: flatMilestones,
       is_generated: false,
     }
   }, [activeRoadmap, summaryData])
 
-  // Today's Learning Mission (Derived single source of truth from backend continue_learning)
+  // Today's Learning Mission (Derived single source of truth from active roadmap)
   const todayMission = useMemo(() => {
-    if (continueLearningData) {
-      const completedCount = activeRoadmapNormalized?.completed_steps_count || 0
-      const seqNum = String(completedCount + 1).padStart(2, '0')
-      return {
-        sequence_label: `${seqNum} / ${continueLearningData.milestone_title || 'Core Foundations'}`,
-        skill_name: continueLearningData.roadmap_title || activeRoadmapNormalized?.title || 'Learning Mission',
-        lesson_title: continueLearningData.lesson_title || 'Next Lesson',
-        milestone_title: continueLearningData.milestone_title || 'Core Foundations',
-        progress_percent: continueLearningData.progress_percent ?? activeRoadmapNormalized?.progress_percent ?? 0,
-        estimated_time: continueLearningData.duration ? `${continueLearningData.duration} remaining` : '25 minutes remaining',
-        reward_xp: 20,
-        course_id: continueLearningData.course_id || 1,
-        lesson_id: continueLearningData.lesson_id || 1,
-      }
-    }
-
     if (!activeRoadmapNormalized) {
       return {
         sequence_label: '01 / Getting Started',
@@ -476,6 +651,32 @@ export function DashboardProvider({ children }) {
       }
     }
 
+    // Check if continueLearningData matches our current active roadmap
+    const activeId = String(activeRoadmapNormalized.id || '')
+    const activeTitle = (activeRoadmapNormalized.title || '').toLowerCase()
+    const clRoadmapId = String(continueLearningData?.roadmap_id || '')
+    const clRoadmapTitle = (continueLearningData?.roadmap_title || '').toLowerCase()
+    const clMatches =
+      (activeId && clRoadmapId && activeId === clRoadmapId) ||
+      (activeTitle && clRoadmapTitle && activeTitle === clRoadmapTitle)
+
+    if (continueLearningData && clMatches) {
+      const completedCount = activeRoadmapNormalized.completed_steps_count || 0
+      const seqNum = String(completedCount + 1).padStart(2, '0')
+      return {
+        sequence_label: `${seqNum} / ${continueLearningData.milestone_title || 'Core Foundations'}`,
+        skill_name: continueLearningData.roadmap_title || activeRoadmapNormalized.title,
+        lesson_title: continueLearningData.lesson_title || continueLearningData.milestone_title || 'Next Lesson',
+        milestone_title: continueLearningData.milestone_title || 'Core Foundations',
+        progress_percent: continueLearningData.progress_percent ?? activeRoadmapNormalized.progress_percent ?? 0,
+        estimated_time: continueLearningData.duration ? `${continueLearningData.duration} remaining` : '25 minutes remaining',
+        reward_xp: 20,
+        course_id: continueLearningData.course_id || 1,
+        lesson_id: continueLearningData.lesson_id || 1,
+      }
+    }
+
+    // Derive directly from the active roadmap single source of truth
     const currentMs =
       activeRoadmapNormalized.current_milestone ||
       activeRoadmapNormalized.milestones?.find((m) => m.current) ||
@@ -483,16 +684,17 @@ export function DashboardProvider({ children }) {
 
     const completedCount = activeRoadmapNormalized.completed_steps_count || 0
     const seqNum = String(completedCount + 1).padStart(2, '0')
+    const msTitle = currentMs?.title || activeRoadmapNormalized.next_step_title || 'Core Foundations'
 
     return {
-      sequence_label: `${seqNum} / ${currentMs?.title || activeRoadmapNormalized.next_step_title || 'Core Practice'}`,
+      sequence_label: `${seqNum} / ${msTitle}`,
       skill_name: activeRoadmapNormalized.title,
-      lesson_title: currentMs?.title || activeRoadmapNormalized.next_step_title || 'Mastering Modern Architecture',
-      milestone_title: currentMs?.title || activeRoadmapNormalized.next_step_title || 'Core Practice',
+      lesson_title: msTitle,
+      milestone_title: msTitle,
       progress_percent: activeRoadmapNormalized.progress_percent || 0,
       estimated_time: currentMs?.estimated_time ? `${currentMs.estimated_time} remaining` : '25 minutes remaining',
       reward_xp: 20,
-      course_id: currentMs?.course_id || 1,
+      course_id: currentMs?.course_id || activeRoadmapNormalized.id || 1,
       lesson_id: currentMs?.lesson_id || 1,
     }
   }, [continueLearningData, activeRoadmapNormalized])
