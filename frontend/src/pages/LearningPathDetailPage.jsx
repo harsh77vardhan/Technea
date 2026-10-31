@@ -23,7 +23,7 @@ import { useAuth } from '../context/useAuth'
 import { getTrackTheme, getTrackProjects, getTrackMetrics } from '../utils/trackThemes'
 
 import PathDetailHero from '../components/detail/PathDetailHero'
-import InteractiveRoadmap from '../components/detail/InteractiveRoadmap'
+import RoadmapTreeVisualization from '../components/roadmap/RoadmapTreeVisualization'
 import AILearningCompanionCard from '../components/detail/AILearningCompanionCard'
 import FeaturedCoursesSection from '../components/detail/FeaturedCoursesSection'
 import CapstoneProjectsSection from '../components/detail/CapstoneProjectsSection'
@@ -980,15 +980,21 @@ export default function LearningPathDetailPage({
               </div>
             </section>
 
-            {/* Interactive Timeline Roadmap */}
+            {/* Interactive Timeline Roadmap & Branch Skill Tree */}
             {(activeTab === 'all' || activeTab === 'roadmap') && (
-              <InteractiveRoadmap
-                steps={journeySteps}
-                completedStepIds={completedStepIds}
-                onToggleStep={handleToggleStep}
-                theme={theme}
-                trackTitle={currentPath?.title}
-              />
+              <div className="space-y-6">
+                <RoadmapTreeVisualization
+                  roadmap={currentPath}
+                  completedMilestoneIds={completedStepIds}
+                  onSelectMilestone={(ms) => {
+                    if (ms?.course_id) handleStartCourse(ms.course_id)
+                  }}
+                  onToggleMilestoneComplete={(ms) => {
+                    handleToggleStep(ms.id)
+                  }}
+                  theme={theme}
+                />
+              </div>
             )}
 
             {/* Curated Masterclasses & Courses */}

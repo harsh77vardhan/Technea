@@ -1,5 +1,5 @@
 import { memo, useMemo } from 'react'
-import { Check, Star } from 'lucide-react'
+import { Check, Star, Compass, ArrowRight } from 'lucide-react'
 import { useDashboard } from '../../context/useDashboard'
 
 function DashboardReferenceOverview({
@@ -263,10 +263,16 @@ function DashboardReferenceOverview({
           <div className="flex flex-col text-left">
             <span className="text-xs text-[#a8a199] font-normal">Roadmap</span>
             <div className="text-sm font-medium text-[#faf6ee] tracking-tight mt-0.5 flex items-center gap-1.5">
-              <span>{activeRoadmap?.title || 'Full-Stack AI Engineer'}</span>
-              <span className="text-xs font-normal text-[#a8a199]">
-                Stage {currentStage} of {totalStages}
-              </span>
+              <span>{activeRoadmap?.title || 'None Selected'}</span>
+              {activeRoadmap ? (
+                <span className="text-xs font-normal text-[#a8a199]">
+                  Stage {currentStage} of {totalStages}
+                </span>
+              ) : (
+                <span className="text-xs font-normal text-[#a8a199]">
+                  · Choose path
+                </span>
+              )}
             </div>
           </div>
 
@@ -293,16 +299,54 @@ function DashboardReferenceOverview({
 
       {/* ──────────────── 2. TODAY'S LEARNING MISSION HERO CARD (WARM IVORY SURFACE) ──────────────── */}
       <section aria-label="Today's Mission">
-        <div className="rounded-[28px] border border-[#e5decb] bg-[#faf6ee] p-8 sm:p-9 shadow-xl relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-8 text-[#181614]">
-          {/* Left Column: Mission Content */}
-          <div className="flex-1 max-w-2xl space-y-4">
-            <span className="text-xs font-mono uppercase tracking-[0.2em] text-[#c25e2e] font-semibold">
-              TODAY&apos;S MISSION
-            </span>
+        {!activeRoadmap ? (
+          <div className="rounded-[28px] border border-[#e5decb] bg-[#faf6ee] p-8 sm:p-9 shadow-xl relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-8 text-[#181614]">
+            <div className="flex-1 max-w-2xl space-y-4">
+              <span className="text-xs font-mono uppercase tracking-[0.2em] text-[#c25e2e] font-semibold flex items-center gap-2">
+                <Compass className="w-3.5 h-3.5" />
+                GET STARTED
+              </span>
 
-            <h2 className="text-2xl sm:text-3xl font-normal tracking-tight text-[#181614] leading-snug">
-              {todayMission?.lesson_title || 'Introduction to Technea Learning Workspace'}
-            </h2>
+              <h2 className="text-2xl sm:text-3xl font-normal tracking-tight text-[#181614] leading-snug">
+                No active roadmap selected yet
+              </h2>
+
+              <p className="text-sm text-[#665e56] font-normal leading-relaxed">
+                Choose a structured learning path from 330+ curated engineering roadmaps. Your active roadmap will become your single source of truth for daily missions, milestone projects, and AI mentoring.
+              </p>
+
+              <div className="flex items-center gap-5 pt-3">
+                <button
+                  type="button"
+                  onClick={() => onNavigateTab('roadmaps')}
+                  className="inline-flex items-center gap-2 rounded-full bg-[#c25e2e] text-[#faf6ee] font-medium px-6 py-2.5 text-sm hover:bg-[#ad4f22] transition-colors shadow-md cursor-pointer"
+                >
+                  Explore Roadmaps
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            <div className="shrink-0 flex items-center justify-center md:pr-4">
+              <div className="w-[140px] h-[140px] rounded-full border border-dashed border-[#d5cbba] flex flex-col items-center justify-center text-center p-4 bg-[#f3ecdf]/50">
+                <Compass className="w-8 h-8 text-[#c25e2e] stroke-[1.5] mb-2 animate-pulse" />
+                <span className="text-[11px] text-[#786f66] font-normal uppercase tracking-wider">
+                  Select Track
+                </span>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-[28px] border border-[#e5decb] bg-[#faf6ee] p-8 sm:p-9 shadow-xl relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-8 text-[#181614]">
+            {/* Left Column: Mission Content */}
+            <div className="flex-1 max-w-2xl space-y-4">
+              <span className="text-xs font-mono uppercase tracking-[0.2em] text-[#c25e2e] font-semibold">
+                TODAY&apos;S MISSION
+              </span>
+
+              <h2 className="text-2xl sm:text-3xl font-normal tracking-tight text-[#181614] leading-snug">
+                {todayMission?.lesson_title || 'Introduction to Technea Learning Workspace'}
+              </h2>
 
             {/* Milestone & Time Left Metadata */}
             <div className="flex items-center gap-2 text-sm text-[#665e56] font-normal pt-1">
@@ -390,7 +434,8 @@ function DashboardReferenceOverview({
             </div>
           </div>
         </div>
-      </section>
+      )}
+    </section>
 
       {/* ──────────────── 3. CONTINUE LEARNING ──────────────── */}
       <section aria-label="Continue Learning" className="space-y-4">

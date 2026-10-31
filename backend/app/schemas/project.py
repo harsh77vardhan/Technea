@@ -22,6 +22,9 @@ class ProjectResponse(BaseModel):
     github_url: str | None = None
     started_at: datetime | None = None
     completed_at: datetime | None = None
+    is_unlocked: bool = True
+    unlock_milestone_number: int | None = None
+    unlock_milestone_title: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 

@@ -56,15 +56,41 @@ class ProjectService:
 
         # Fetch user status if logged in
         user_status_map: dict[int, UserProject] = {}
+        completed_milestone_count = 0
         if user_id:
             up_stmt = select(UserProject).where(UserProject.user_id == user_id)
             up_res = await db.execute(up_stmt)
             for up in up_res.scalars().all():
                 user_status_map[up.project_id] = up
 
+            count_stmt = select(func.count(UserRoadmapProgress.id)).where(
+                UserRoadmapProgress.user_id == user_id,
+                UserRoadmapProgress.is_completed.is_(True),
+            )
+            count_res = await db.execute(count_stmt)
+            completed_milestone_count = count_res.scalar() or 0
+
         output: list[ProjectResponse] = []
         for p in projects:
             up = user_status_map.get(p.id)
+            diff_low = p.difficulty.lower()
+            if "beg" in diff_low:
+                unlock_num = 1
+                unlock_title = "Milestone 1: Foundations"
+            elif "inter" in diff_low:
+                unlock_num = 3
+                unlock_title = "Milestone 3: Architecture & Design Patterns"
+            else:
+                unlock_num = 5
+                unlock_title = "Milestone 5: Advanced Systems & APIs"
+
+            is_unlocked = (
+                not user_id
+                or unlock_num <= 1
+                or completed_milestone_count >= unlock_num
+                or (up is not None and up.status in ["in_progress", "completed"])
+            )
+
             output.append(
                 ProjectResponse(
                     id=p.id,
@@ -82,6 +108,9 @@ class ProjectService:
                     github_url=up.github_url if up else None,
                     started_at=up.started_at if up else None,
                     completed_at=up.completed_at if up else None,
+                    is_unlocked=is_unlocked,
+                    unlock_milestone_number=unlock_num,
+                    unlock_milestone_title=unlock_title,
                 )
             )
         return output
@@ -100,6 +129,7 @@ class ProjectService:
             return None
 
         up = None
+        completed_milestone_count = 0
         if user_id:
             up_stmt = select(UserProject).where(
                 UserProject.user_id == user_id,
@@ -107,6 +137,31 @@ class ProjectService:
             )
             up_res = await db.execute(up_stmt)
             up = up_res.scalar_one_or_none()
+
+            count_stmt = select(func.count(UserRoadmapProgress.id)).where(
+                UserRoadmapProgress.user_id == user_id,
+                UserRoadmapProgress.is_completed.is_(True),
+            )
+            count_res = await db.execute(count_stmt)
+            completed_milestone_count = count_res.scalar() or 0
+
+        diff_low = p.difficulty.lower()
+        if "beg" in diff_low:
+            unlock_num = 1
+            unlock_title = "Milestone 1: Foundations"
+        elif "inter" in diff_low:
+            unlock_num = 3
+            unlock_title = "Milestone 3: Architecture & Design Patterns"
+        else:
+            unlock_num = 5
+            unlock_title = "Milestone 5: Advanced Systems & APIs"
+
+        is_unlocked = (
+            not user_id
+            or unlock_num <= 1
+            or completed_milestone_count >= unlock_num
+            or (up is not None and up.status in ["in_progress", "completed"])
+        )
 
         return ProjectResponse(
             id=p.id,
@@ -124,6 +179,9 @@ class ProjectService:
             github_url=up.github_url if up else None,
             started_at=up.started_at if up else None,
             completed_at=up.completed_at if up else None,
+            is_unlocked=is_unlocked,
+            unlock_milestone_number=unlock_num,
+            unlock_milestone_title=unlock_title,
         )
 
     async def get_recommended_projects(

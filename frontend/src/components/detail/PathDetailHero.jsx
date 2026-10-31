@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import {
   ArrowLeft,
@@ -11,6 +11,7 @@ import {
   Terminal,
 } from 'lucide-react'
 import LearningSnapshotCard from './LearningSnapshotCard'
+import { useDashboard } from '../../context/useDashboard'
 
 function getConciseDescription(path) {
   const title = (path?.title || '').toLowerCase()
@@ -61,6 +62,35 @@ export default function PathDetailHero({
   onResetProgress,
 }) {
   const [copied, setCopied] = useState(false)
+  const [isActivating, setIsActivating] = useState(false)
+
+  const { activeRoadmap, switchActiveRoadmap, showToast } = useDashboard()
+
+  const isActive = useMemo(() => {
+    if (!activeRoadmap || !path) return false
+    return (
+      String(activeRoadmap.id) === String(path.id) ||
+      (activeRoadmap.title && path.title && activeRoadmap.title.toLowerCase() === path.title.toLowerCase())
+    )
+  }, [activeRoadmap, path])
+
+  const handleSetActive = useCallback(async () => {
+    if (!path || isActive || isActivating) return
+    setIsActivating(true)
+    try {
+      await switchActiveRoadmap(path)
+      if (showToast) {
+        showToast(`Active roadmap set to: ${path.title}! Workspace synchronized.`, 'success')
+      }
+    } catch (err) {
+      console.error('Failed to set active roadmap:', err)
+      if (showToast) {
+        showToast('Failed to set active roadmap.', 'error')
+      }
+    } finally {
+      setIsActivating(false)
+    }
+  }, [path, isActive, isActivating, switchActiveRoadmap, showToast])
 
   const handleShare = useCallback(() => {
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
@@ -141,6 +171,13 @@ export default function PathDetailHero({
                 <Clock className="h-3 w-3 text-neutral-400" />
                 <span>{duration}</span>
               </span>
+
+              {isActive && (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-[#c25e2e]/40 bg-[#c25e2e]/15 px-3 py-1 text-xs font-mono text-[#e87a48]">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#c25e2e] animate-ping" />
+                  Active Focus
+                </span>
+              )}
             </div>
 
             {/* Bold Headline & Concise Editorial Voice */}
@@ -167,6 +204,20 @@ export default function PathDetailHero({
                 <span>Start Learning</span>
                 <ArrowRight className="h-3.5 w-3.5 text-neutral-600 group-hover:text-black group-hover:translate-x-0.5 transition-transform" />
               </motion.button>
+
+              <button
+                type="button"
+                onClick={handleSetActive}
+                disabled={isActive || isActivating}
+                className={`inline-flex items-center gap-2 rounded-xl px-4 py-3 text-xs sm:text-sm font-medium transition-all cursor-pointer border ${
+                  isActive
+                    ? 'border-[#c25e2e]/50 bg-[#c25e2e]/15 text-[#e87a48]'
+                    : 'border-white/10 bg-white/[0.04] text-neutral-200 hover:text-white hover:bg-white/[0.08] hover:border-white/20'
+                }`}
+              >
+                <Check className={`h-3.5 w-3.5 ${isActive ? 'text-[#e87a48]' : 'text-neutral-400'}`} />
+                <span>{isActive ? '✓ Main Active Roadmap' : isActivating ? 'Activating...' : 'Set as Active Roadmap'}</span>
+              </button>
 
               <button
                 type="button"
