@@ -77,8 +77,16 @@ class RoomMemberResponse(BaseModel):
     joined_at: datetime
     study_status: str | None = None
     study_state: str = "studying"  # 'studying', 'break', 'away'
+    role: str = "member"  # 'owner', 'host', 'moderator', 'member'
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class UpdateMemberRoleRequest(BaseModel):
+    """Request payload to change a member's role in the room."""
+
+    role: str = Field(..., pattern="^(owner|host|moderator|member)$")
+
 
 
 class UpdateStudyStatusRequest(BaseModel):
@@ -235,6 +243,11 @@ class SessionHistoryResponse(BaseModel):
     duration_minutes: int
     participants_count: int
     ended_at: datetime
+    # Phase 3: AI Study Session Summary
+    ai_summary: str | None = None
+    topics_covered: str | None = None
+    questions_discussed_count: int = 0
+    recommended_next_step: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -254,3 +267,116 @@ class RoomNotificationResponse(BaseModel):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class SyncContentResponse(BaseModel):
+    """Schema for synchronized room content state."""
+
+    room_id: int
+    sync_content_title: str | None = None
+    sync_content_url: str | None = None
+    sync_content_type: str = "video"
+    sync_is_playing: bool = False
+    sync_playback_time: float = 0.0
+    sync_playback_speed: float = 1.0
+    sync_updated_at: datetime | None = None
+    host_name: str | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class UpdateSyncContentRequest(BaseModel):
+    """Request payload to control synchronized playback."""
+
+    title: str | None = Field(None, max_length=255)
+    url: str | None = Field(None, max_length=500)
+    content_type: str = Field("video", max_length=50)
+    is_playing: bool = False
+    playback_time: float = Field(0.0, ge=0.0)
+    playback_speed: float = Field(1.0, ge=0.25, le=3.0)
+
+
+class CodeSnippetResponse(BaseModel):
+    """Schema for collaborative room code space."""
+
+    room_id: int
+    code_content: str = ""
+    language: str = "python"
+    title: str = "DSA Practice Snippet"
+    last_edited_by_name: str | None = None
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class UpdateCodeSnippetRequest(BaseModel):
+    """Request payload to update collaborative code space."""
+
+    code_content: str = Field(..., max_length=100000)
+    language: str = Field("python", max_length=50)
+    title: str = Field("DSA Practice Snippet", max_length=255)
+
+
+class WhiteboardResponse(BaseModel):
+    """Schema for collaborative room whiteboard."""
+
+    room_id: int
+    whiteboard_data: str = ""
+    last_edited_by_name: str | None = None
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class UpdateWhiteboardRequest(BaseModel):
+    """Request payload to update collaborative room whiteboard."""
+
+    whiteboard_data: str = Field(..., max_length=500000)
+
+
+class WebRTCPeerResponse(BaseModel):
+    """Schema for a peer active in live voice/video/screen session."""
+
+    user_id: uuid.UUID
+    user_name: str
+    avatar_url: str | None = None
+    is_audio_active: bool = False
+    is_muted: bool = True
+    is_video_active: bool = False
+    is_screen_sharing: bool = False
+    last_heartbeat: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class WebRTCSignalRequest(BaseModel):
+    """Request payload to send a WebRTC signaling message."""
+
+    target_user_id: uuid.UUID | None = None  # None means broadcast to all
+    signal_type: str = Field(..., pattern="^(offer|answer|ice-candidate|join|leave|status)$")
+    payload: str = Field(..., max_length=50000)
+
+
+class WebRTCSignalResponse(BaseModel):
+    """Schema for a WebRTC signaling message."""
+
+    id: int
+    room_id: int
+    from_user_id: uuid.UUID
+    from_user_name: str
+    target_user_id: uuid.UUID | None = None
+    signal_type: str
+    payload: str
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class UpdateWebRTCStatusRequest(BaseModel):
+    """Request payload to update user voice/video/screen share status."""
+
+    is_audio_active: bool = False
+    is_muted: bool = True
+    is_video_active: bool = False
+    is_screen_sharing: bool = False
+

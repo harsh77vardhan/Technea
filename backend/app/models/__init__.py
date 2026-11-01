@@ -36,6 +36,8 @@ from app.models.community import (
     RoomSessionHistory,
     RoomSharedNote,
     RoomNotification,
+    RoomActivePeer,
+    RoomWebRTCSignal,
 )
 from app.models.achievement import (
     Achievement,
@@ -75,6 +77,8 @@ __all__ = [
     "RoomSessionHistory",
     "RoomSharedNote",
     "RoomNotification",
+    "RoomActivePeer",
+    "RoomWebRTCSignal",
     "Achievement",
     "UserAchievement",
     "Follow",

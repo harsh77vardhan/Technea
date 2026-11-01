@@ -1283,6 +1283,157 @@ export async function markRoomNotificationsReadApi(roomId) {
 }
 
 /* ==========================================================================
+   Phase 3: Advanced Collaborative Learning Endpoints
+   ========================================================================== */
+
+/**
+ * Update member role (owner, host, moderator, member)
+ * @param {number|string} roomId
+ * @param {string} userId
+ * @param {string} role
+ * @returns {Promise<Object>}
+ */
+export async function updateMemberRoleApi(roomId, userId, role) {
+  return request(`/community/rooms/${roomId}/members/${userId}/role`, {
+    method: 'PUT',
+    body: JSON.stringify({ role }),
+  })
+}
+
+/**
+ * Fetch current synchronized content playback state
+ * @param {number|string} roomId
+ * @returns {Promise<Object>}
+ */
+export async function getSyncContentApi(roomId) {
+  return request(`/community/rooms/${roomId}/sync-content`)
+}
+
+/**
+ * Update synchronized content playback (play, pause, seek, speed, content)
+ * @param {number|string} roomId
+ * @param {Object} data - { title?, url?, content_type?, is_playing, playback_time, playback_speed }
+ * @returns {Promise<Object>}
+ */
+export async function updateSyncContentApi(roomId, data) {
+  return request(`/community/rooms/${roomId}/sync-content`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+/**
+ * Fetch collaborative code snippet
+ * @param {number|string} roomId
+ * @returns {Promise<Object>}
+ */
+export async function getCodeSnippetApi(roomId) {
+  return request(`/community/rooms/${roomId}/code`)
+}
+
+/**
+ * Update collaborative code snippet
+ * @param {number|string} roomId
+ * @param {Object} data - { code_content, language, title }
+ * @returns {Promise<Object>}
+ */
+export async function updateCodeSnippetApi(roomId, data) {
+  return request(`/community/rooms/${roomId}/code`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  })
+}
+
+/**
+ * Fetch collaborative whiteboard state
+ * @param {number|string} roomId
+ * @returns {Promise<Object>}
+ */
+export async function getWhiteboardApi(roomId) {
+  return request(`/community/rooms/${roomId}/whiteboard`)
+}
+
+/**
+ * Update collaborative whiteboard state
+ * @param {number|string} roomId
+ * @param {Object} data - { whiteboard_data }
+ * @returns {Promise<Object>}
+ */
+export async function updateWhiteboardApi(roomId, data) {
+  return request(`/community/rooms/${roomId}/whiteboard`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  })
+}
+
+/**
+ * Join live voice/video session
+ * @param {number|string} roomId
+ * @returns {Promise<Object>}
+ */
+export async function joinWebRTCCallApi(roomId) {
+  return request(`/community/rooms/${roomId}/webrtc/join`, {
+    method: 'POST',
+  })
+}
+
+/**
+ * Leave live voice/video session
+ * @param {number|string} roomId
+ * @returns {Promise<Object>}
+ */
+export async function leaveWebRTCCallApi(roomId) {
+  return request(`/community/rooms/${roomId}/webrtc/leave`, {
+    method: 'POST',
+  })
+}
+
+/**
+ * Update voice/video status (mute, video, screen sharing)
+ * @param {number|string} roomId
+ * @param {Object} data - { is_audio_active, is_muted, is_video_active, is_screen_sharing }
+ * @returns {Promise<Object>}
+ */
+export async function updateWebRTCStatusApi(roomId, data) {
+  return request(`/community/rooms/${roomId}/webrtc/status`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+/**
+ * Get active live peers in room
+ * @param {number|string} roomId
+ * @returns {Promise<Array>}
+ */
+export async function getWebRTCActivePeersApi(roomId) {
+  return request(`/community/rooms/${roomId}/webrtc/peers`)
+}
+
+/**
+ * Send WebRTC signaling message
+ * @param {number|string} roomId
+ * @param {Object} data - { target_user_id?, signal_type, payload }
+ * @returns {Promise<Object>}
+ */
+export async function sendWebRTCSignalApi(roomId, data) {
+  return request(`/community/rooms/${roomId}/webrtc/signal`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+/**
+ * Get pending WebRTC signals
+ * @param {number|string} roomId
+ * @param {number} [sinceId=0]
+ * @returns {Promise<Array>}
+ */
+export async function getWebRTCSignalsApi(roomId, sinceId = 0) {
+  return request(`/community/rooms/${roomId}/webrtc/signals?since_id=${sinceId}`)
+}
+
+/* ==========================================================================
    Context-Aware AI Technical Mentor Endpoints
    ========================================================================== */
 

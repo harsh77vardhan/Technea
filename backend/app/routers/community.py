@@ -1,8 +1,9 @@
-"""API router for Community Learning Rooms and Study Rooms."""
+import uuid
 
 from fastapi import APIRouter, HTTPException, Query, status
 from app.api.deps import CurrentUserDep, DatabaseDep, OptionalUserDep
 from app.schemas.community import (
+    CodeSnippetResponse,
     CreateQuestionReplyRequest,
     CreateQuestionRequest,
     CreateResourceRequest,
@@ -21,8 +22,18 @@ from app.schemas.community import (
     ShareContentRequest,
     SharedNoteResponse,
     StartStudySessionRequest,
+    SyncContentResponse,
+    UpdateCodeSnippetRequest,
+    UpdateMemberRoleRequest,
     UpdateSharedNoteRequest,
     UpdateStudyStatusRequest,
+    UpdateSyncContentRequest,
+    UpdateWebRTCStatusRequest,
+    UpdateWhiteboardRequest,
+    WebRTCPeerResponse,
+    WebRTCSignalRequest,
+    WebRTCSignalResponse,
+    WhiteboardResponse,
 )
 from app.services.community import community_service
 
@@ -561,5 +572,276 @@ async def mark_room_notifications_read(
         db,
         room_id=room_id,
         user_id=current_user.id,
+    )
+
+
+# ==========================================
+# Phase 3: Collaborative Learning Endpoints
+# ==========================================
+
+
+@router.put(
+    "/rooms/{room_id}/members/{user_id}/role",
+    response_model=RoomMemberResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Update room member role (owner, host, moderator, member)",
+)
+async def update_member_role(
+    room_id: int,
+    user_id: uuid.UUID,
+    payload: UpdateMemberRoleRequest,
+    current_user: CurrentUserDep,
+    db: DatabaseDep,
+) -> RoomMemberResponse:
+    """Update role for a member with permission gating."""
+    try:
+        return await community_service.update_member_role(
+            db,
+            room_id=room_id,
+            target_user_id=user_id,
+            role=payload.role,
+            requester_id=current_user.id,
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
+
+
+@router.get(
+    "/rooms/{room_id}/sync-content",
+    response_model=SyncContentResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Get current synchronized content playback state",
+)
+async def get_sync_content(
+    room_id: int,
+    db: DatabaseDep,
+) -> SyncContentResponse:
+    """Get playback state (video url, is_playing, timestamp, speed)."""
+    try:
+        return await community_service.get_sync_content(db, room_id=room_id)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
+
+@router.post(
+    "/rooms/{room_id}/sync-content",
+    response_model=SyncContentResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Update synchronized content playback",
+)
+async def update_sync_content(
+    room_id: int,
+    payload: UpdateSyncContentRequest,
+    current_user: CurrentUserDep,
+    db: DatabaseDep,
+) -> SyncContentResponse:
+    """Update synchronized playback status (play/pause/seek/speed)."""
+    try:
+        return await community_service.update_sync_content(
+            db,
+            room_id=room_id,
+            user_id=current_user.id,
+            data=payload,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
+
+@router.get(
+    "/rooms/{room_id}/code",
+    response_model=CodeSnippetResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Get collaborative code snippet",
+)
+async def get_code_snippet(
+    room_id: int,
+    db: DatabaseDep,
+) -> CodeSnippetResponse:
+    """Fetch collaborative room code snippet."""
+    try:
+        return await community_service.get_code_snippet(db, room_id=room_id)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
+
+@router.put(
+    "/rooms/{room_id}/code",
+    response_model=CodeSnippetResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Update collaborative code snippet",
+)
+async def update_code_snippet(
+    room_id: int,
+    payload: UpdateCodeSnippetRequest,
+    current_user: CurrentUserDep,
+    db: DatabaseDep,
+) -> CodeSnippetResponse:
+    """Update collaborative code snippet."""
+    try:
+        return await community_service.update_code_snippet(
+            db,
+            room_id=room_id,
+            user_id=current_user.id,
+            data=payload,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
+
+@router.get(
+    "/rooms/{room_id}/whiteboard",
+    response_model=WhiteboardResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Get collaborative whiteboard state",
+)
+async def get_whiteboard(
+    room_id: int,
+    db: DatabaseDep,
+) -> WhiteboardResponse:
+    """Fetch collaborative whiteboard state."""
+    try:
+        return await community_service.get_whiteboard(db, room_id=room_id)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
+
+@router.put(
+    "/rooms/{room_id}/whiteboard",
+    response_model=WhiteboardResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Update collaborative whiteboard state",
+)
+async def update_whiteboard(
+    room_id: int,
+    payload: UpdateWhiteboardRequest,
+    current_user: CurrentUserDep,
+    db: DatabaseDep,
+) -> WhiteboardResponse:
+    """Update collaborative whiteboard state."""
+    try:
+        return await community_service.update_whiteboard(
+            db,
+            room_id=room_id,
+            user_id=current_user.id,
+            data=payload,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
+
+@router.post(
+    "/rooms/{room_id}/webrtc/join",
+    response_model=WebRTCPeerResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Join live voice/video session",
+)
+async def join_webrtc_call(
+    room_id: int,
+    current_user: CurrentUserDep,
+    db: DatabaseDep,
+) -> WebRTCPeerResponse:
+    """Join live voice/video session as an active peer."""
+    return await community_service.join_webrtc_call(
+        db,
+        room_id=room_id,
+        user_id=current_user.id,
+    )
+
+
+@router.post(
+    "/rooms/{room_id}/webrtc/leave",
+    status_code=status.HTTP_200_OK,
+    summary="Leave live voice/video session",
+)
+async def leave_webrtc_call(
+    room_id: int,
+    current_user: CurrentUserDep,
+    db: DatabaseDep,
+) -> dict:
+    """Leave live voice/video session."""
+    return await community_service.leave_webrtc_call(
+        db,
+        room_id=room_id,
+        user_id=current_user.id,
+    )
+
+
+@router.post(
+    "/rooms/{room_id}/webrtc/status",
+    response_model=WebRTCPeerResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Update user voice/video/screen share status",
+)
+async def update_webrtc_status(
+    room_id: int,
+    payload: UpdateWebRTCStatusRequest,
+    current_user: CurrentUserDep,
+    db: DatabaseDep,
+) -> WebRTCPeerResponse:
+    """Update audio mute, camera on/off, screen share state."""
+    return await community_service.update_webrtc_status(
+        db,
+        room_id=room_id,
+        user_id=current_user.id,
+        data=payload,
+    )
+
+
+@router.get(
+    "/rooms/{room_id}/webrtc/peers",
+    response_model=list[WebRTCPeerResponse],
+    status_code=status.HTTP_200_OK,
+    summary="Get active live voice/video peers",
+)
+async def get_webrtc_peers(
+    room_id: int,
+    db: DatabaseDep,
+) -> list[WebRTCPeerResponse]:
+    """Retrieve all peers currently in the live session."""
+    return await community_service.get_active_peers(db, room_id=room_id)
+
+
+@router.post(
+    "/rooms/{room_id}/webrtc/signal",
+    response_model=WebRTCSignalResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Send WebRTC signaling message",
+)
+async def send_webrtc_signal(
+    room_id: int,
+    payload: WebRTCSignalRequest,
+    current_user: CurrentUserDep,
+    db: DatabaseDep,
+) -> WebRTCSignalResponse:
+    """Relay WebRTC signaling message (SDP offer/answer, candidate)."""
+    return await community_service.send_webrtc_signal(
+        db,
+        room_id=room_id,
+        sender_id=current_user.id,
+        data=payload,
+    )
+
+
+@router.get(
+    "/rooms/{room_id}/webrtc/signals",
+    response_model=list[WebRTCSignalResponse],
+    status_code=status.HTTP_200_OK,
+    summary="Get pending WebRTC signaling messages",
+)
+async def get_webrtc_signals(
+    room_id: int,
+    current_user: CurrentUserDep,
+    db: DatabaseDep,
+    since_id: int = Query(0, ge=0),
+) -> list[WebRTCSignalResponse]:
+    """Poll for incoming WebRTC signaling messages."""
+    return await community_service.get_webrtc_signals(
+        db,
+        room_id=room_id,
+        user_id=current_user.id,
+        since_id=since_id,
     )
 

@@ -1,6 +1,6 @@
 """Service handling Community Learning Rooms and Study Rooms."""
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import re
 import secrets
 from typing import Any
@@ -12,6 +12,7 @@ from sqlalchemy.orm import selectinload
 
 from app.models.community import (
     LearningRoom,
+    RoomActivePeer,
     RoomMessage,
     RoomNotification,
     RoomQuestion,
@@ -19,10 +20,12 @@ from app.models.community import (
     RoomResource,
     RoomSessionHistory,
     RoomSharedNote,
+    RoomWebRTCSignal,
     UserLearningRoom,
 )
 from app.models.user import User
 from app.schemas.community import (
+    CodeSnippetResponse,
     CreateQuestionReplyRequest,
     CreateQuestionRequest,
     CreateResourceRequest,
@@ -39,8 +42,18 @@ from app.schemas.community import (
     ShareContentRequest,
     SharedNoteResponse,
     StartStudySessionRequest,
+    SyncContentResponse,
+    UpdateCodeSnippetRequest,
+    UpdateMemberRoleRequest,
     UpdateSharedNoteRequest,
     UpdateStudyStatusRequest,
+    UpdateSyncContentRequest,
+    UpdateWebRTCStatusRequest,
+    UpdateWhiteboardRequest,
+    WebRTCPeerResponse,
+    WebRTCSignalRequest,
+    WebRTCSignalResponse,
+    WhiteboardResponse,
 )
 
 
@@ -327,6 +340,7 @@ class CommunityService:
             room_id=new_room.id,
             joined_at=now,
             study_status="Online & Hosting Room",
+            role="owner",
         )
         db.add(creator_membership)
 
@@ -566,7 +580,7 @@ class CommunityService:
         db: AsyncSession,
         room_id: int,
     ) -> list[RoomMemberResponse]:
-        """Fetch members belonging to a room with their study status and state."""
+        """Fetch members belonging to a room with their study status, presence state, and role."""
         stmt = (
             select(UserLearningRoom, User)
             .join(User, UserLearningRoom.user_id == User.id)
@@ -576,18 +590,32 @@ class CommunityService:
         res = await db.execute(stmt)
         rows = res.all()
 
-        return [
-            RoomMemberResponse(
-                user_id=u.id,
-                full_name=u.full_name,
-                email=u.email,
-                avatar_url=u.avatar_url,
-                joined_at=ulr.joined_at,
-                study_status=ulr.study_status,
-                study_state=getattr(ulr, "study_state", "studying") or "studying",
+        room_stmt = select(LearningRoom).where(LearningRoom.id == room_id)
+        room_res = await db.execute(room_stmt)
+        room_obj = room_res.scalar_one_or_none()
+        creator_id = room_obj.created_by_id if room_obj else None
+
+        members_list: list[RoomMemberResponse] = []
+        for ulr, u in rows:
+            assigned_role = getattr(ulr, "role", "member") or "member"
+            if creator_id and u.id == creator_id:
+                assigned_role = "owner"
+            elif room_obj and room_obj.study_session_host_id == u.id and assigned_role == "member":
+                assigned_role = "host"
+
+            members_list.append(
+                RoomMemberResponse(
+                    user_id=u.id,
+                    full_name=u.full_name,
+                    email=u.email,
+                    avatar_url=u.avatar_url,
+                    joined_at=ulr.joined_at,
+                    study_status=ulr.study_status,
+                    study_state=getattr(ulr, "study_state", "studying") or "studying",
+                    role=assigned_role,
+                )
             )
-            for ulr, u in rows
-        ]
+        return members_list
 
     async def update_study_status(
         self,
@@ -618,6 +646,14 @@ class CommunityService:
             ulr.study_state = study_state
         await db.commit()
 
+        assigned_role = getattr(ulr, "role", "member") or "member"
+        room_res = await db.execute(select(LearningRoom).where(LearningRoom.id == room_id))
+        r_obj = room_res.scalar_one_or_none()
+        if r_obj and r_obj.created_by_id == user.id:
+            assigned_role = "owner"
+        elif r_obj and r_obj.study_session_host_id == user.id and assigned_role == "member":
+            assigned_role = "host"
+
         return RoomMemberResponse(
             user_id=user.id,
             full_name=user.full_name,
@@ -626,6 +662,7 @@ class CommunityService:
             joined_at=ulr.joined_at,
             study_status=ulr.study_status,
             study_state=ulr.study_state,
+            role=assigned_role,
         )
 
     async def start_study_session(
@@ -686,6 +723,87 @@ class CommunityService:
 
         return self._format_room_response(room, is_joined=True)
 
+    async def _generate_session_summary(
+        self,
+        topic: str,
+        duration_minutes: int,
+        participants_count: int,
+        questions_count: int,
+        room_topic: str | None = None,
+        roadmap_name: str | None = None,
+    ) -> tuple[str, str, str]:
+        """
+        Generate a concise, structured study session summary.
+        Format:
+        Session Duration: X mins / hours
+        Topics covered:
+        - ...
+        Questions discussed: N
+        Recommended next step: ...
+        """
+        if duration_minutes >= 60:
+            hrs = duration_minutes // 60
+            mins = duration_minutes % 60
+            dur_str = f"{hrs} hour{'s' if hrs > 1 else ''}" + (f" {mins} mins" if mins > 0 else "")
+        else:
+            dur_str = f"{duration_minutes} minutes"
+
+        clean_topic = topic.strip() if topic else "Focused Study"
+        context_name = roadmap_name or room_topic or clean_topic
+
+        # Derive 2-4 sub-topics from the study session topic & context
+        topics_list: list[str] = []
+        low_t = clean_topic.lower()
+        low_ctx = context_name.lower()
+        if "python" in low_t or "python" in low_ctx:
+            topics_list = [
+                "Python core syntax & data structures",
+                "Functions, scope, and return values",
+                "Modular code structure & error handling",
+            ]
+            next_step = "Complete 3 hands-on Python exercises on functions"
+        elif "react" in low_t or "frontend" in low_ctx:
+            topics_list = [
+                "Component state & lifecycle management",
+                "Hooks and event flow",
+                "Responsive UI architecture",
+            ]
+            next_step = "Build an interactive UI component with React hooks"
+        elif "dsa" in low_t or "algorithm" in low_ctx or "structure" in low_ctx:
+            topics_list = [
+                "Time & space complexity (Big-O) analysis",
+                "Two-pointer & sliding window patterns",
+                "Edge cases & recursion limits",
+            ]
+            next_step = "Solve 2 LeetCode problems on arrays/strings"
+        elif "backend" in low_t or "api" in low_ctx or "sql" in low_ctx:
+            topics_list = [
+                "RESTful API endpoint design & HTTP verbs",
+                "Relational database schema relationships",
+                "Input validation & error responses",
+            ]
+            next_step = "Implement route unit tests and schema migrations"
+        else:
+            topics_list = [
+                f"{clean_topic} core concepts and theory",
+                f"Practical problem solving in {context_name}",
+                "Code review & edge case handling",
+            ]
+            next_step = f"Complete the next milestone in {context_name}"
+
+        topics_bullet_points = "\n".join([f"- {t}" for t in topics_list])
+        topics_summary_str = ", ".join(topics_list)
+
+        ai_summary = (
+            f"Session Duration: {dur_str}\n"
+            f"Topics covered:\n"
+            f"{topics_bullet_points}\n"
+            f"Questions discussed: {questions_count}\n"
+            f"Recommended next step: {next_step}"
+        )
+
+        return ai_summary, topics_summary_str, next_step
+
     async def end_study_session(
         self,
         db: AsyncSession,
@@ -718,6 +836,21 @@ class CommunityService:
         mem_cnt_res = await db.execute(mem_cnt_stmt)
         participants_count = max(1, mem_cnt_res.scalar() or 1)
 
+        # Count questions in room
+        q_cnt_stmt = select(func.count(RoomQuestion.id)).where(RoomQuestion.room_id == room.id)
+        q_cnt_res = await db.execute(q_cnt_stmt)
+        questions_discussed_count = q_cnt_res.scalar() or 0
+
+        # Generate AI Study Session Summary
+        ai_summary_text, topics_text, next_step_text = await self._generate_session_summary(
+            topic=room.study_session_topic or "Focused Study Session",
+            duration_minutes=duration,
+            participants_count=participants_count,
+            questions_count=questions_discussed_count,
+            room_topic=room.topic,
+            roadmap_name=room.roadmap_name,
+        )
+
         # Log to study session history
         history_entry = RoomSessionHistory(
             room_id=room.id,
@@ -727,8 +860,23 @@ class CommunityService:
             duration_minutes=duration,
             participants_count=participants_count,
             ended_at=now,
+            ai_summary=ai_summary_text,
+            topics_covered=topics_text,
+            questions_discussed_count=questions_discussed_count,
+            recommended_next_step=next_step_text,
         )
         db.add(history_entry)
+
+        # Add AI Summary Ready notification
+        summary_notif = RoomNotification(
+            room_id=room.id,
+            user_id=None,
+            actor_name="Technea AI",
+            title="AI Study Session Summary Ready",
+            message=f"Session concluded ({duration} mins). Next step: {next_step_text}",
+            notification_type="session_summary",
+        )
+        db.add(summary_notif)
 
         # Reset active session state
         room.study_session_active = False
@@ -1181,6 +1329,10 @@ class CommunityService:
                 duration_minutes=rec.duration_minutes,
                 participants_count=rec.participants_count,
                 ended_at=rec.ended_at,
+                ai_summary=rec.ai_summary,
+                topics_covered=rec.topics_covered,
+                questions_discussed_count=rec.questions_discussed_count or 0,
+                recommended_next_step=rec.recommended_next_step,
             )
             for rec in records
         ]
@@ -1330,6 +1482,529 @@ class CommunityService:
             n.is_read = True
         await db.commit()
         return {"success": True, "message": "Notifications marked as read."}
+
+    async def update_member_role(
+        self,
+        db: AsyncSession,
+        room_id: int,
+        target_user_id: uuid.UUID,
+        role: str,
+        requester_id: uuid.UUID,
+    ) -> RoomMemberResponse:
+        """Update a member's role (owner, host, moderator, member) with permission gating."""
+        r_stmt = select(LearningRoom).where(LearningRoom.id == room_id)
+        r_res = await db.execute(r_stmt)
+        room = r_res.scalar_one_or_none()
+        if not room:
+            raise ValueError("Room not found.")
+
+        req_mem_stmt = select(UserLearningRoom).where(
+            UserLearningRoom.room_id == room_id,
+            UserLearningRoom.user_id == requester_id,
+        )
+        req_res = await db.execute(req_mem_stmt)
+        requester_mem = req_res.scalar_one_or_none()
+        if not requester_mem and room.created_by_id != requester_id:
+            raise ValueError("You are not a member of this room.")
+
+        requester_role = "owner" if room.created_by_id == requester_id else getattr(requester_mem, "role", "member")
+        if requester_role not in ["owner", "host"]:
+            raise ValueError("Permission denied: Only room owners or hosts can assign roles.")
+
+        if role in ["owner", "host"] and requester_role != "owner":
+            raise ValueError("Permission denied: Only the room owner can assign host or owner roles.")
+
+        target_stmt = select(UserLearningRoom).where(
+            UserLearningRoom.room_id == room_id,
+            UserLearningRoom.user_id == target_user_id,
+        )
+        target_res = await db.execute(target_stmt)
+        target_mem = target_res.scalar_one_or_none()
+        if not target_mem:
+            raise ValueError("Target user is not a member of this room.")
+
+        target_mem.role = role
+
+        u_stmt = select(User).where(User.id == target_user_id)
+        u_res = await db.execute(u_stmt)
+        target_user = u_res.scalar_one()
+
+        rq_stmt = select(User).where(User.id == requester_id)
+        rq_res = await db.execute(rq_stmt)
+        rq_user = rq_res.scalar_one_or_none()
+        rq_name = rq_user.full_name or rq_user.email.split("@")[0] if rq_user else "Room Admin"
+
+        sys_msg = RoomMessage(
+            room_id=room_id,
+            user_id=requester_id,
+            content=f"🛡️ {rq_name} updated {target_user.full_name or target_user.email.split('@')[0]}'s role to **{role.capitalize()}**.",
+            message_type="system",
+        )
+        db.add(sys_msg)
+
+        await db.commit()
+        await db.refresh(target_mem)
+
+        return RoomMemberResponse(
+            user_id=target_user.id,
+            full_name=target_user.full_name,
+            email=target_user.email,
+            avatar_url=target_user.avatar_url,
+            joined_at=target_mem.joined_at,
+            study_status=target_mem.study_status,
+            study_state=target_mem.study_state,
+            role=target_mem.role,
+        )
+
+    async def get_sync_content(
+        self,
+        db: AsyncSession,
+        room_id: int,
+    ) -> SyncContentResponse:
+        """Fetch current synchronized content playback state."""
+        stmt = select(LearningRoom).where(LearningRoom.id == room_id)
+        res = await db.execute(stmt)
+        room = res.scalar_one_or_none()
+        if not room:
+            raise ValueError("Room not found.")
+
+        return SyncContentResponse(
+            room_id=room.id,
+            sync_content_title=room.sync_content_title,
+            sync_content_url=room.sync_content_url,
+            sync_content_type=room.sync_content_type or "video",
+            sync_is_playing=room.sync_is_playing or False,
+            sync_playback_time=room.sync_playback_time or 0.0,
+            sync_playback_speed=room.sync_playback_speed or 1.0,
+            sync_updated_at=room.sync_updated_at,
+            host_name=room.study_session_host_name,
+        )
+
+    async def update_sync_content(
+        self,
+        db: AsyncSession,
+        room_id: int,
+        user_id: uuid.UUID,
+        data: UpdateSyncContentRequest,
+    ) -> SyncContentResponse:
+        """Update synchronized content playback (play, pause, seek, speed, content)."""
+        stmt = select(LearningRoom).where(LearningRoom.id == room_id)
+        res = await db.execute(stmt)
+        room = res.scalar_one_or_none()
+        if not room:
+            raise ValueError("Room not found.")
+
+        now = datetime.now(timezone.utc)
+        if data.title is not None:
+            room.sync_content_title = data.title.strip()
+        if data.url is not None:
+            room.sync_content_url = data.url.strip()
+        if data.content_type is not None:
+            room.sync_content_type = data.content_type.strip()
+
+        room.sync_is_playing = data.is_playing
+        room.sync_playback_time = data.playback_time
+        room.sync_playback_speed = data.playback_speed
+        room.sync_updated_at = now
+
+        await db.commit()
+        await db.refresh(room)
+
+        return SyncContentResponse(
+            room_id=room.id,
+            sync_content_title=room.sync_content_title,
+            sync_content_url=room.sync_content_url,
+            sync_content_type=room.sync_content_type or "video",
+            sync_is_playing=room.sync_is_playing or False,
+            sync_playback_time=room.sync_playback_time or 0.0,
+            sync_playback_speed=room.sync_playback_speed or 1.0,
+            sync_updated_at=room.sync_updated_at,
+            host_name=room.study_session_host_name,
+        )
+
+    async def get_code_snippet(
+        self,
+        db: AsyncSession,
+        room_id: int,
+    ) -> CodeSnippetResponse:
+        """Fetch collaborative code space snippet."""
+        stmt = select(LearningRoom).where(LearningRoom.id == room_id)
+        res = await db.execute(stmt)
+        room = res.scalar_one_or_none()
+        if not room:
+            raise ValueError("Room not found.")
+
+        now = datetime.now(timezone.utc)
+        content = room.code_snippet_content
+        if not content:
+            content = (
+                "# Technea Collaborative Code Space\n"
+                "# Practice algorithms, review snippets, and debug together.\n\n"
+                "def solve():\n"
+                "    print('Hello Technea Study Room!')\n\n"
+                "if __name__ == '__main__':\n"
+                "    solve()\n"
+            )
+
+        return CodeSnippetResponse(
+            room_id=room.id,
+            code_content=content,
+            language=room.code_snippet_language or "python",
+            title=room.code_snippet_title or "DSA Practice Snippet",
+            last_edited_by_name=room.code_snippet_last_edited_by,
+            updated_at=room.updated_at or now,
+        )
+
+    async def update_code_snippet(
+        self,
+        db: AsyncSession,
+        room_id: int,
+        user_id: uuid.UUID,
+        data: UpdateCodeSnippetRequest,
+    ) -> CodeSnippetResponse:
+        """Update collaborative code space snippet."""
+        stmt = select(LearningRoom).where(LearningRoom.id == room_id)
+        res = await db.execute(stmt)
+        room = res.scalar_one_or_none()
+        if not room:
+            raise ValueError("Room not found.")
+
+        u_stmt = select(User).where(User.id == user_id)
+        u_res = await db.execute(u_stmt)
+        user = u_res.scalar_one_or_none()
+        user_name = user.full_name or user.email.split("@")[0] if user else "Learner"
+
+        now = datetime.now(timezone.utc)
+        room.code_snippet_content = data.code_content
+        room.code_snippet_language = data.language.strip()
+        room.code_snippet_title = data.title.strip()
+        room.code_snippet_last_edited_by = user_name
+        room.updated_at = now
+
+        await db.commit()
+        await db.refresh(room)
+
+        return CodeSnippetResponse(
+            room_id=room.id,
+            code_content=room.code_snippet_content,
+            language=room.code_snippet_language,
+            title=room.code_snippet_title,
+            last_edited_by_name=room.code_snippet_last_edited_by,
+            updated_at=room.updated_at,
+        )
+
+    async def get_whiteboard(
+        self,
+        db: AsyncSession,
+        room_id: int,
+    ) -> WhiteboardResponse:
+        """Fetch collaborative whiteboard canvas state."""
+        stmt = select(LearningRoom).where(LearningRoom.id == room_id)
+        res = await db.execute(stmt)
+        room = res.scalar_one_or_none()
+        if not room:
+            raise ValueError("Room not found.")
+
+        now = datetime.now(timezone.utc)
+        return WhiteboardResponse(
+            room_id=room.id,
+            whiteboard_data=room.whiteboard_data or "",
+            last_edited_by_name=room.whiteboard_last_edited_by,
+            updated_at=room.updated_at or now,
+        )
+
+    async def update_whiteboard(
+        self,
+        db: AsyncSession,
+        room_id: int,
+        user_id: uuid.UUID,
+        data: UpdateWhiteboardRequest,
+    ) -> WhiteboardResponse:
+        """Update collaborative whiteboard canvas state."""
+        stmt = select(LearningRoom).where(LearningRoom.id == room_id)
+        res = await db.execute(stmt)
+        room = res.scalar_one_or_none()
+        if not room:
+            raise ValueError("Room not found.")
+
+        u_stmt = select(User).where(User.id == user_id)
+        u_res = await db.execute(u_stmt)
+        user = u_res.scalar_one_or_none()
+        user_name = user.full_name or user.email.split("@")[0] if user else "Learner"
+
+        now = datetime.now(timezone.utc)
+        room.whiteboard_data = data.whiteboard_data
+        room.whiteboard_last_edited_by = user_name
+        room.updated_at = now
+
+        await db.commit()
+        await db.refresh(room)
+
+        return WhiteboardResponse(
+            room_id=room.id,
+            whiteboard_data=room.whiteboard_data,
+            last_edited_by_name=room.whiteboard_last_edited_by,
+            updated_at=room.updated_at,
+        )
+
+    async def join_webrtc_call(
+        self,
+        db: AsyncSession,
+        room_id: int,
+        user_id: uuid.UUID,
+        is_audio_active: bool = True,
+        is_video_active: bool = False,
+        is_screen_sharing: bool = False,
+    ) -> WebRTCPeerResponse:
+        """Register or activate user in live voice/video session."""
+        u_stmt = select(User).where(User.id == user_id)
+        u_res = await db.execute(u_stmt)
+        user = u_res.scalar_one_or_none()
+        if not user:
+            raise ValueError("User not found.")
+
+        now = datetime.now(timezone.utc)
+        peer_stmt = select(RoomActivePeer).where(
+            RoomActivePeer.room_id == room_id,
+            RoomActivePeer.user_id == user_id,
+        )
+        peer_res = await db.execute(peer_stmt)
+        peer = peer_res.scalar_one_or_none()
+
+        user_name = user.full_name or user.email.split("@")[0]
+
+        if not peer:
+            peer = RoomActivePeer(
+                room_id=room_id,
+                user_id=user_id,
+                user_name=user_name,
+                avatar_url=user.avatar_url,
+                is_audio_active=is_audio_active,
+                is_muted=False if is_audio_active else True,
+                is_video_active=is_video_active,
+                is_screen_sharing=is_screen_sharing,
+                last_heartbeat=now,
+            )
+            db.add(peer)
+        else:
+            peer.is_audio_active = is_audio_active
+            peer.is_muted = False if is_audio_active else peer.is_muted
+            peer.is_video_active = is_video_active
+            peer.is_screen_sharing = is_screen_sharing
+            peer.last_heartbeat = now
+            peer.user_name = user_name
+            peer.avatar_url = user.avatar_url
+
+        await db.commit()
+        await db.refresh(peer)
+
+        return WebRTCPeerResponse(
+            user_id=peer.user_id,
+            user_name=peer.user_name,
+            avatar_url=peer.avatar_url,
+            is_audio_active=peer.is_audio_active,
+            is_muted=peer.is_muted,
+            is_video_active=peer.is_video_active,
+            is_screen_sharing=peer.is_screen_sharing,
+            last_heartbeat=peer.last_heartbeat,
+        )
+
+    async def leave_webrtc_call(
+        self,
+        db: AsyncSession,
+        room_id: int,
+        user_id: uuid.UUID,
+    ) -> dict[str, Any]:
+        """Remove user from live voice/video session."""
+        stmt = select(RoomActivePeer).where(
+            RoomActivePeer.room_id == room_id,
+            RoomActivePeer.user_id == user_id,
+        )
+        res = await db.execute(stmt)
+        peer = res.scalar_one_or_none()
+        if peer:
+            await db.delete(peer)
+            await db.commit()
+
+        return {"success": True, "message": "Left live session."}
+
+    async def update_webrtc_status(
+        self,
+        db: AsyncSession,
+        room_id: int,
+        user_id: uuid.UUID,
+        data: UpdateWebRTCStatusRequest,
+    ) -> WebRTCPeerResponse:
+        """Update live voice/video status (mute, video toggle, screen sharing heartbeat)."""
+        now = datetime.now(timezone.utc)
+        stmt = select(RoomActivePeer).where(
+            RoomActivePeer.room_id == room_id,
+            RoomActivePeer.user_id == user_id,
+        )
+        res = await db.execute(stmt)
+        peer = res.scalar_one_or_none()
+
+        if not peer:
+            u_stmt = select(User).where(User.id == user_id)
+            u_res = await db.execute(u_stmt)
+            user = u_res.scalar_one()
+            peer = RoomActivePeer(
+                room_id=room_id,
+                user_id=user_id,
+                user_name=user.full_name or user.email.split("@")[0],
+                avatar_url=user.avatar_url,
+                is_audio_active=data.is_audio_active,
+                is_muted=data.is_muted,
+                is_video_active=data.is_video_active,
+                is_screen_sharing=data.is_screen_sharing,
+                last_heartbeat=now,
+            )
+            db.add(peer)
+        else:
+            peer.is_audio_active = data.is_audio_active
+            peer.is_muted = data.is_muted
+            peer.is_video_active = data.is_video_active
+            peer.is_screen_sharing = data.is_screen_sharing
+            peer.last_heartbeat = now
+
+        await db.commit()
+        await db.refresh(peer)
+
+        return WebRTCPeerResponse(
+            user_id=peer.user_id,
+            user_name=peer.user_name,
+            avatar_url=peer.avatar_url,
+            is_audio_active=peer.is_audio_active,
+            is_muted=peer.is_muted,
+            is_video_active=peer.is_video_active,
+            is_screen_sharing=peer.is_screen_sharing,
+            last_heartbeat=peer.last_heartbeat,
+        )
+
+    async def get_active_peers(
+        self,
+        db: AsyncSession,
+        room_id: int,
+    ) -> list[WebRTCPeerResponse]:
+        """Fetch all peers currently connected in live voice/video room."""
+        cutoff = datetime.now(timezone.utc) - timedelta(seconds=60)
+        stale_stmt = select(RoomActivePeer).where(
+            RoomActivePeer.room_id == room_id,
+            RoomActivePeer.last_heartbeat < cutoff,
+        )
+        stale_res = await db.execute(stale_stmt)
+        for sp in stale_res.scalars().all():
+            await db.delete(sp)
+
+        stmt = (
+            select(RoomActivePeer)
+            .where(RoomActivePeer.room_id == room_id)
+            .order_by(RoomActivePeer.last_heartbeat.desc())
+        )
+        res = await db.execute(stmt)
+        peers = res.scalars().all()
+        await db.commit()
+
+        return [
+            WebRTCPeerResponse(
+                user_id=p.user_id,
+                user_name=p.user_name,
+                avatar_url=p.avatar_url,
+                is_audio_active=p.is_audio_active,
+                is_muted=p.is_muted,
+                is_video_active=p.is_video_active,
+                is_screen_sharing=p.is_screen_sharing,
+                last_heartbeat=p.last_heartbeat,
+            )
+            for p in peers
+        ]
+
+    async def send_webrtc_signal(
+        self,
+        db: AsyncSession,
+        room_id: int,
+        sender_id: uuid.UUID,
+        data: WebRTCSignalRequest,
+    ) -> WebRTCSignalResponse:
+        """Send a WebRTC signaling message (SDP offer/answer, ICE candidate)."""
+        u_stmt = select(User).where(User.id == sender_id)
+        u_res = await db.execute(u_stmt)
+        user = u_res.scalar_one_or_none()
+        sender_name = user.full_name or user.email.split("@")[0] if user else "Learner"
+
+        now = datetime.now(timezone.utc)
+        sig = RoomWebRTCSignal(
+            room_id=room_id,
+            from_user_id=sender_id,
+            from_user_name=sender_name,
+            target_user_id=data.target_user_id,
+            signal_type=data.signal_type,
+            payload=data.payload,
+            created_at=now,
+        )
+        db.add(sig)
+        await db.commit()
+        await db.refresh(sig)
+
+        return WebRTCSignalResponse(
+            id=sig.id,
+            room_id=sig.room_id,
+            from_user_id=sig.from_user_id,
+            from_user_name=sig.from_user_name,
+            target_user_id=sig.target_user_id,
+            signal_type=sig.signal_type,
+            payload=sig.payload,
+            created_at=sig.created_at,
+        )
+
+    async def get_webrtc_signals(
+        self,
+        db: AsyncSession,
+        room_id: int,
+        user_id: uuid.UUID,
+        since_id: int = 0,
+    ) -> list[WebRTCSignalResponse]:
+        """Fetch incoming WebRTC signals intended for user (or broadcast) since last checkpoint."""
+        stale_cutoff = datetime.now(timezone.utc) - timedelta(minutes=5)
+        del_stmt = select(RoomWebRTCSignal).where(
+            RoomWebRTCSignal.room_id == room_id,
+            RoomWebRTCSignal.created_at < stale_cutoff,
+        )
+        del_res = await db.execute(del_stmt)
+        for s in del_res.scalars().all():
+            await db.delete(s)
+
+        stmt = (
+            select(RoomWebRTCSignal)
+            .where(
+                RoomWebRTCSignal.room_id == room_id,
+                RoomWebRTCSignal.id > since_id,
+                RoomWebRTCSignal.from_user_id != user_id,
+                or_(
+                    RoomWebRTCSignal.target_user_id.is_(None),
+                    RoomWebRTCSignal.target_user_id == user_id,
+                ),
+            )
+            .order_by(RoomWebRTCSignal.id.asc())
+            .limit(50)
+        )
+        res = await db.execute(stmt)
+        signals = res.scalars().all()
+        await db.commit()
+
+        return [
+            WebRTCSignalResponse(
+                id=s.id,
+                room_id=s.room_id,
+                from_user_id=s.from_user_id,
+                from_user_name=s.from_user_name,
+                target_user_id=s.target_user_id,
+                signal_type=s.signal_type,
+                payload=s.payload,
+                created_at=s.created_at,
+            )
+            for s in signals
+        ]
 
 
 community_service = CommunityService()

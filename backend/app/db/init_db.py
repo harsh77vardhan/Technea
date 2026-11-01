@@ -473,6 +473,134 @@ async def run_study_rooms_phase2_schema_migrations(engine) -> None:
         logger.warning("Study rooms Phase 2 migration notice (continuing): %s", exc)
 
 
+async def run_study_rooms_phase3_schema_migrations(engine) -> None:
+    """Ensure Phase 3 synchronized content, code space, whiteboard, roles, AI summary, and WebRTC tables exist."""
+    lr_phase3_cols = [
+        ("sync_content_title", "ALTER TABLE learning_rooms ADD COLUMN IF NOT EXISTS sync_content_title VARCHAR(255)"),
+        ("sync_content_url", "ALTER TABLE learning_rooms ADD COLUMN IF NOT EXISTS sync_content_url VARCHAR(500)"),
+        ("sync_content_type", "ALTER TABLE learning_rooms ADD COLUMN IF NOT EXISTS sync_content_type VARCHAR(50) DEFAULT 'video' NOT NULL"),
+        ("sync_is_playing", "ALTER TABLE learning_rooms ADD COLUMN IF NOT EXISTS sync_is_playing BOOLEAN DEFAULT FALSE NOT NULL"),
+        ("sync_playback_time", "ALTER TABLE learning_rooms ADD COLUMN IF NOT EXISTS sync_playback_time DOUBLE PRECISION DEFAULT 0.0 NOT NULL"),
+        ("sync_playback_speed", "ALTER TABLE learning_rooms ADD COLUMN IF NOT EXISTS sync_playback_speed DOUBLE PRECISION DEFAULT 1.0 NOT NULL"),
+        ("sync_updated_at", "ALTER TABLE learning_rooms ADD COLUMN IF NOT EXISTS sync_updated_at TIMESTAMP WITH TIME ZONE"),
+        ("code_snippet_content", "ALTER TABLE learning_rooms ADD COLUMN IF NOT EXISTS code_snippet_content TEXT DEFAULT ''"),
+        ("code_snippet_language", "ALTER TABLE learning_rooms ADD COLUMN IF NOT EXISTS code_snippet_language VARCHAR(50) DEFAULT 'python' NOT NULL"),
+        ("code_snippet_title", "ALTER TABLE learning_rooms ADD COLUMN IF NOT EXISTS code_snippet_title VARCHAR(255) DEFAULT 'DSA Practice Snippet' NOT NULL"),
+        ("code_snippet_last_edited_by", "ALTER TABLE learning_rooms ADD COLUMN IF NOT EXISTS code_snippet_last_edited_by VARCHAR(255)"),
+        ("whiteboard_data", "ALTER TABLE learning_rooms ADD COLUMN IF NOT EXISTS whiteboard_data TEXT DEFAULT ''"),
+        ("whiteboard_last_edited_by", "ALTER TABLE learning_rooms ADD COLUMN IF NOT EXISTS whiteboard_last_edited_by VARCHAR(255)"),
+    ]
+
+    ulr_phase3_cols = [
+        ("role", "ALTER TABLE user_learning_rooms ADD COLUMN IF NOT EXISTS role VARCHAR(50) DEFAULT 'member' NOT NULL"),
+    ]
+
+    hist_phase3_cols = [
+        ("ai_summary", "ALTER TABLE room_session_history ADD COLUMN IF NOT EXISTS ai_summary TEXT"),
+        ("topics_covered", "ALTER TABLE room_session_history ADD COLUMN IF NOT EXISTS topics_covered TEXT"),
+        ("questions_discussed_count", "ALTER TABLE room_session_history ADD COLUMN IF NOT EXISTS questions_discussed_count INTEGER DEFAULT 0 NOT NULL"),
+        ("recommended_next_step", "ALTER TABLE room_session_history ADD COLUMN IF NOT EXISTS recommended_next_step VARCHAR(500)"),
+    ]
+
+    try:
+        async with engine.begin() as conn:
+            dialect_name = conn.dialect.name
+            if dialect_name == "postgresql":
+                # Check learning_rooms columns
+                lr_chk = await conn.execute(text("SELECT 1 FROM information_schema.tables WHERE table_name = 'learning_rooms'"))
+                if lr_chk.fetchone():
+                    for col_name, alter_query in lr_phase3_cols:
+                        chk = await conn.execute(
+                            text("SELECT column_name FROM information_schema.columns WHERE table_name='learning_rooms' AND column_name=:col"),
+                            {"col": col_name},
+                        )
+                        if not chk.fetchone():
+                            logger.info("Adding Phase 3 column '%s' to learning_rooms...", col_name)
+                            await conn.execute(text(alter_query))
+
+                # Check user_learning_rooms columns
+                ulr_chk = await conn.execute(text("SELECT 1 FROM information_schema.tables WHERE table_name = 'user_learning_rooms'"))
+                if ulr_chk.fetchone():
+                    for col_name, alter_query in ulr_phase3_cols:
+                        chk = await conn.execute(
+                            text("SELECT column_name FROM information_schema.columns WHERE table_name='user_learning_rooms' AND column_name=:col"),
+                            {"col": col_name},
+                        )
+                        if not chk.fetchone():
+                            logger.info("Adding Phase 3 column '%s' to user_learning_rooms...", col_name)
+                            await conn.execute(text(alter_query))
+
+                # Check room_session_history columns
+                hist_chk = await conn.execute(text("SELECT 1 FROM information_schema.tables WHERE table_name = 'room_session_history'"))
+                if hist_chk.fetchone():
+                    for col_name, alter_query in hist_phase3_cols:
+                        chk = await conn.execute(
+                            text("SELECT column_name FROM information_schema.columns WHERE table_name='room_session_history' AND column_name=:col"),
+                            {"col": col_name},
+                        )
+                        if not chk.fetchone():
+                            logger.info("Adding Phase 3 column '%s' to room_session_history...", col_name)
+                            await conn.execute(text(alter_query))
+
+                # Create room_active_peers table
+                await conn.execute(text("""
+                    CREATE TABLE IF NOT EXISTS room_active_peers (
+                        id SERIAL PRIMARY KEY,
+                        room_id INTEGER NOT NULL REFERENCES learning_rooms(id) ON DELETE CASCADE,
+                        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                        user_name VARCHAR(255) NOT NULL,
+                        avatar_url TEXT,
+                        is_audio_active BOOLEAN DEFAULT FALSE NOT NULL,
+                        is_muted BOOLEAN DEFAULT TRUE NOT NULL,
+                        is_video_active BOOLEAN DEFAULT FALSE NOT NULL,
+                        is_screen_sharing BOOLEAN DEFAULT FALSE NOT NULL,
+                        last_heartbeat TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+                        CONSTRAINT uq_room_active_peer UNIQUE (room_id, user_id)
+                    )
+                """))
+                await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_room_active_peers_room_id ON room_active_peers(room_id)"))
+                await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_room_active_peers_user_id ON room_active_peers(user_id)"))
+
+                # Create room_webrtc_signals table
+                await conn.execute(text("""
+                    CREATE TABLE IF NOT EXISTS room_webrtc_signals (
+                        id SERIAL PRIMARY KEY,
+                        room_id INTEGER NOT NULL REFERENCES learning_rooms(id) ON DELETE CASCADE,
+                        from_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                        from_user_name VARCHAR(255) NOT NULL,
+                        target_user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                        signal_type VARCHAR(50) NOT NULL,
+                        payload TEXT NOT NULL,
+                        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+                    )
+                """))
+                await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_room_webrtc_signals_room_id ON room_webrtc_signals(room_id)"))
+                await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_room_webrtc_signals_target ON room_webrtc_signals(target_user_id)"))
+            else:
+                # SQLite fallback
+                for col_name, _ in lr_phase3_cols:
+                    try:
+                        col_type = "BOOLEAN DEFAULT 0" if "BOOLEAN" in _ else ("FLOAT DEFAULT 0.0" if "PRECISION" in _ else "TEXT")
+                        await conn.execute(text(f"ALTER TABLE learning_rooms ADD COLUMN {col_name} {col_type}"))
+                    except Exception:
+                        pass
+                for col_name, _ in ulr_phase3_cols:
+                    try:
+                        await conn.execute(text(f"ALTER TABLE user_learning_rooms ADD COLUMN {col_name} VARCHAR(50) DEFAULT 'member'"))
+                    except Exception:
+                        pass
+                for col_name, _ in hist_phase3_cols:
+                    try:
+                        await conn.execute(text(f"ALTER TABLE room_session_history ADD COLUMN {col_name} TEXT"))
+                    except Exception:
+                        pass
+
+        logger.info("Study rooms Phase 3 collaboration schema verified successfully.")
+    except Exception as exc:
+        logger.warning("Study rooms Phase 3 migration notice (continuing): %s", exc)
+
+
+
 
 async def seed_initial_catalog_if_needed() -> None:
     """Check if skills table has records; if empty, seed the initial catalog idempotently."""
@@ -637,6 +765,7 @@ async def init_db() -> None:
     await run_roadmap_schema_migrations(engine)
     await run_study_rooms_schema_migrations(engine)
     await run_study_rooms_phase2_schema_migrations(engine)
+    await run_study_rooms_phase3_schema_migrations(engine)
     await seed_initial_catalog_if_needed()
     try:
         from app.db.seed_roadmaps_100 import seed_100_roadmaps

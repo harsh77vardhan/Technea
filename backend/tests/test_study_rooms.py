@@ -6,7 +6,11 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select
 
 from app.core.security import create_access_token
-from app.db.init_db import run_study_rooms_schema_migrations, run_study_rooms_phase2_schema_migrations
+from app.db.init_db import (
+    run_study_rooms_schema_migrations,
+    run_study_rooms_phase2_schema_migrations,
+    run_study_rooms_phase3_schema_migrations,
+)
 from app.db.session import async_session_maker, engine
 from app.main import app
 from app.models.user import User
@@ -17,6 +21,7 @@ async def cleanup_db_engine():
     """Ensure engine connections are disposed per test event loop."""
     await run_study_rooms_schema_migrations(engine)
     await run_study_rooms_phase2_schema_migrations(engine)
+    await run_study_rooms_phase3_schema_migrations(engine)
     yield
     await engine.dispose()
 
@@ -330,4 +335,186 @@ async def test_study_rooms_lifecycle():
         rec_phase2_rooms = res_rec_phase2.json()
         assert len(rec_phase2_rooms) >= 1
         assert any("Python" in r["name"] or "Python" in r["topic"] for r in rec_phase2_rooms)
+
+        # 20. Phase 3: AI Study Session Summary
+        res_summary_hist = await client.get(f"/api/v1/community/rooms/{pub_room_id}/history")
+        assert res_summary_hist.status_code == 200
+        histories = res_summary_hist.json()
+        assert len(histories) >= 1
+        latest_hist = histories[0]
+        assert latest_hist["ai_summary"] is not None
+        assert "Session Duration:" in latest_hist["ai_summary"]
+        assert "Topics covered:" in latest_hist["ai_summary"]
+        assert "Recommended next step:" in latest_hist["ai_summary"]
+        assert latest_hist["topics_covered"] is not None
+        assert latest_hist["recommended_next_step"] is not None
+
+        # 21. Phase 3: Room Roles & Permissions
+        # Create second user
+        user2_email = f"peer_user_{uuid.uuid4().hex[:8]}@technea.dev"
+        async with async_session_maker() as session:
+            user2 = User(
+                email=user2_email,
+                hashed_password="hashed_pw_test2",
+                full_name="Peer Study Partner",
+                username=f"peeruser_{uuid.uuid4().hex[:6]}",
+                profile_completed=True,
+                is_active=True,
+            )
+            session.add(user2)
+            await session.commit()
+            await session.refresh(user2)
+            user2_id = user2.id
+
+        token2 = create_access_token(subject=str(user2_id))
+        auth_headers2 = {"Authorization": f"Bearer {token2}"}
+
+        # User 2 joins the room
+        res_user2_join = await client.post(
+            f"/api/v1/community/rooms/{pub_room_id}/join",
+            headers=auth_headers2,
+        )
+        assert res_user2_join.status_code == 200
+        assert res_user2_join.json()["is_joined"] is True
+
+        # Owner updates User 2 role to moderator
+        res_role_update = await client.put(
+            f"/api/v1/community/rooms/{pub_room_id}/members/{user2_id}/role",
+            json={"role": "moderator"},
+            headers=auth_headers,
+        )
+        assert res_role_update.status_code == 200
+        assert res_role_update.json()["role"] == "moderator"
+
+        # Check members list reflects updated role
+        res_members_phase3 = await client.get(f"/api/v1/community/rooms/{pub_room_id}/members")
+        assert res_members_phase3.status_code == 200
+        phase3_members = res_members_phase3.json()
+        u2_member = next(m for m in phase3_members if m["user_id"] == str(user2_id))
+        assert u2_member["role"] == "moderator"
+
+        # 22. Phase 3: Synchronized Technea Content Study
+        res_get_sync = await client.get(f"/api/v1/community/rooms/{pub_room_id}/sync-content")
+        assert res_get_sync.status_code == 200
+        sync_state = res_get_sync.json()
+        assert sync_state["sync_is_playing"] is False
+
+        res_update_sync = await client.post(
+            f"/api/v1/community/rooms/{pub_room_id}/sync-content",
+            json={
+                "title": "Python Concurrency Masterclass",
+                "url": "https://www.youtube.com/watch?v=Xbl7XjFYsN4",
+                "content_type": "video",
+                "is_playing": True,
+                "playback_time": 142.5,
+                "playback_speed": 1.25,
+            },
+            headers=auth_headers,
+        )
+        assert res_update_sync.status_code == 200
+        updated_sync = res_update_sync.json()
+        assert updated_sync["sync_content_title"] == "Python Concurrency Masterclass"
+        assert updated_sync["sync_is_playing"] is True
+        assert updated_sync["sync_playback_time"] == 142.5
+        assert updated_sync["sync_playback_speed"] == 1.25
+
+        # 23. Phase 3: Collaborative Code Space
+        res_get_code = await client.get(f"/api/v1/community/rooms/{pub_room_id}/code")
+        assert res_get_code.status_code == 200
+        code_data = res_get_code.json()
+        assert "def solve" in code_data["code_content"]
+        assert code_data["language"] == "python"
+
+        res_update_code = await client.put(
+            f"/api/v1/community/rooms/{pub_room_id}/code",
+            json={
+                "code_content": "def two_sum(nums, target):\n    lookup = {}\n    for i, n in enumerate(nums):\n        if target - n in lookup:\n            return [lookup[target - n], i]\n        lookup[n] = i\n    return []\n",
+                "language": "python",
+                "title": "Two Sum Optimal Solution",
+            },
+            headers=auth_headers,
+        )
+        assert res_update_code.status_code == 200
+        updated_code = res_update_code.json()
+        assert "two_sum" in updated_code["code_content"]
+        assert updated_code["title"] == "Two Sum Optimal Solution"
+        assert updated_code["last_edited_by_name"] is not None
+
+        # 24. Phase 3: Collaborative Whiteboard
+        res_get_wb = await client.get(f"/api/v1/community/rooms/{pub_room_id}/whiteboard")
+        assert res_get_wb.status_code == 200
+
+        res_update_wb = await client.put(
+            f"/api/v1/community/rooms/{pub_room_id}/whiteboard",
+            json={
+                "whiteboard_data": '{"strokes":[{"points":[{"x":10,"y":20},{"x":50,"y":60}],"color":"#38bdf8","size":3}]}',
+            },
+            headers=auth_headers,
+        )
+        assert res_update_wb.status_code == 200
+        updated_wb = res_update_wb.json()
+        assert "#38bdf8" in updated_wb["whiteboard_data"]
+
+        # 25. Phase 3: Live Voice/Video WebRTC Signaling
+        res_join_voice = await client.post(
+            f"/api/v1/community/rooms/{pub_room_id}/webrtc/join",
+            headers=auth_headers,
+        )
+        assert res_join_voice.status_code == 200
+        peer_info = res_join_voice.json()
+        assert peer_info["is_audio_active"] is True
+        assert peer_info["user_id"] == str(user_id)
+
+        res_status_voice = await client.post(
+            f"/api/v1/community/rooms/{pub_room_id}/webrtc/status",
+            json={
+                "is_audio_active": True,
+                "is_muted": False,
+                "is_video_active": True,
+                "is_screen_sharing": False,
+            },
+            headers=auth_headers,
+        )
+        assert res_status_voice.status_code == 200
+        status_info = res_status_voice.json()
+        assert status_info["is_muted"] is False
+        assert status_info["is_video_active"] is True
+
+        res_peers = await client.get(f"/api/v1/community/rooms/{pub_room_id}/webrtc/peers")
+        assert res_peers.status_code == 200
+        peers = res_peers.json()
+        assert len(peers) >= 1
+        assert any(p["user_id"] == str(user_id) for p in peers)
+
+        # Send WebRTC signaling message
+        res_signal = await client.post(
+            f"/api/v1/community/rooms/{pub_room_id}/webrtc/signal",
+            json={
+                "target_user_id": str(user2_id),
+                "signal_type": "offer",
+                "payload": '{"type":"offer","sdp":"mock-sdp-data"}',
+            },
+            headers=auth_headers,
+        )
+        assert res_signal.status_code == 201
+        signal_data = res_signal.json()
+        assert signal_data["signal_type"] == "offer"
+
+        # Peer (User 2) reads pending signals
+        res_get_signals = await client.get(
+            f"/api/v1/community/rooms/{pub_room_id}/webrtc/signals?since_id=0",
+            headers=auth_headers2,
+        )
+        assert res_get_signals.status_code == 200
+        signals_received = res_get_signals.json()
+        assert len(signals_received) >= 1
+        assert signals_received[0]["signal_type"] == "offer"
+
+        # Leave voice
+        res_leave = await client.post(
+            f"/api/v1/community/rooms/{pub_room_id}/webrtc/leave",
+            headers=auth_headers,
+        )
+        assert res_leave.status_code == 200
+        assert res_leave.json()["success"] is True
 

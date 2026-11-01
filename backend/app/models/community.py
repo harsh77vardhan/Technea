@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 import uuid
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint, func
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -118,6 +118,69 @@ class LearningRoom(Base, IntIdMixin, TimestampMixin):
         default=25,
         nullable=False,
     )
+    # Phase 3: Synchronized Content
+    sync_content_title: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
+    )
+    sync_content_url: Mapped[str | None] = mapped_column(
+        String(500),
+        nullable=True,
+    )
+    sync_content_type: Mapped[str] = mapped_column(
+        String(50),
+        default="video",
+        nullable=False,
+    )
+    sync_is_playing: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False,
+    )
+    sync_playback_time: Mapped[float] = mapped_column(
+        Float,
+        default=0.0,
+        nullable=False,
+    )
+    sync_playback_speed: Mapped[float] = mapped_column(
+        Float,
+        default=1.0,
+        nullable=False,
+    )
+    sync_updated_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    # Phase 3: Collaborative Code Space
+    code_snippet_content: Mapped[str | None] = mapped_column(
+        Text,
+        default="",
+        nullable=True,
+    )
+    code_snippet_language: Mapped[str] = mapped_column(
+        String(50),
+        default="python",
+        nullable=False,
+    )
+    code_snippet_title: Mapped[str] = mapped_column(
+        String(255),
+        default="DSA Practice Snippet",
+        nullable=False,
+    )
+    code_snippet_last_edited_by: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
+    )
+    # Phase 3: Learning Whiteboard
+    whiteboard_data: Mapped[str | None] = mapped_column(
+        Text,
+        default="",
+        nullable=True,
+    )
+    whiteboard_last_edited_by: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
+    )
 
     members: Mapped[list["UserLearningRoom"]] = relationship(
         "UserLearningRoom",
@@ -160,6 +223,17 @@ class LearningRoom(Base, IntIdMixin, TimestampMixin):
         cascade="all, delete-orphan",
         order_by="RoomNotification.created_at.desc()",
     )
+    active_peers: Mapped[list["RoomActivePeer"]] = relationship(
+        "RoomActivePeer",
+        back_populates="room",
+        cascade="all, delete-orphan",
+    )
+    webrtc_signals: Mapped[list["RoomWebRTCSignal"]] = relationship(
+        "RoomWebRTCSignal",
+        back_populates="room",
+        cascade="all, delete-orphan",
+        order_by="RoomWebRTCSignal.created_at.desc()",
+    )
 
     def __repr__(self) -> str:
         return f"<LearningRoom(id={self.id}, name='{self.name}', slug='{self.slug}')>"
@@ -199,6 +273,11 @@ class UserLearningRoom(Base, IntIdMixin):
         default="studying",
         nullable=False,
     )  # 'studying', 'break', 'away'
+    role: Mapped[str] = mapped_column(
+        String(50),
+        default="member",
+        nullable=False,
+    )  # 'owner', 'host', 'moderator', 'member'
 
     user: Mapped["User"] = relationship(
         "User",
@@ -410,6 +489,24 @@ class RoomSessionHistory(Base, IntIdMixin, TimestampMixin):
         server_default=func.now(),
         nullable=False,
     )
+    # Phase 3: AI Study Session Summary
+    ai_summary: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+    topics_covered: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+    questions_discussed_count: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+        nullable=False,
+    )
+    recommended_next_step: Mapped[str | None] = mapped_column(
+        String(500),
+        nullable=True,
+    )
 
     room: Mapped["LearningRoom"] = relationship("LearningRoom", back_populates="session_history")
     host_user: Mapped["User"] = relationship("User", foreign_keys=[host_user_id])
@@ -507,4 +604,113 @@ class RoomNotification(Base, IntIdMixin, TimestampMixin):
 
     def __repr__(self) -> str:
         return f"<RoomNotification(id={self.id}, room_id={self.room_id}, type='{self.notification_type}')>"
+
+
+class RoomActivePeer(Base, IntIdMixin):
+    """Peer currently participating in live voice / video / screen call."""
+
+    __tablename__ = "room_active_peers"
+    __table_args__ = (
+        UniqueConstraint("room_id", "user_id", name="uq_room_active_peer"),
+    )
+
+    room_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("learning_rooms.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    user_name: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+    )
+    avatar_url: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+    is_audio_active: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False,
+    )
+    is_muted: Mapped[bool] = mapped_column(
+        Boolean,
+        default=True,
+        nullable=False,
+    )
+    is_video_active: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False,
+    )
+    is_screen_sharing: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False,
+    )
+    last_heartbeat: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+
+    room: Mapped["LearningRoom"] = relationship("LearningRoom", back_populates="active_peers")
+    user: Mapped["User"] = relationship("User", foreign_keys=[user_id])
+
+    def __repr__(self) -> str:
+        return f"<RoomActivePeer(user_id={self.user_id}, room_id={self.room_id}, audio={self.is_audio_active})>"
+
+
+class RoomWebRTCSignal(Base, IntIdMixin):
+    """WebRTC signaling messages (offers, answers, ICE candidates, state sync)."""
+
+    __tablename__ = "room_webrtc_signals"
+
+    room_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("learning_rooms.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    from_user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    from_user_name: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+    )
+    target_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
+    signal_type: Mapped[str] = mapped_column(
+        String(50),
+        nullable=False,
+    )  # 'offer', 'answer', 'ice-candidate', 'join', 'leave', 'status'
+    payload: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+
+    room: Mapped["LearningRoom"] = relationship("LearningRoom", back_populates="webrtc_signals")
+
+    def __repr__(self) -> str:
+        return f"<RoomWebRTCSignal(id={self.id}, type='{self.signal_type}', from={self.from_user_id})>"
+
 
