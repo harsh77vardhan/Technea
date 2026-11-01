@@ -62,6 +62,9 @@ class Settings(BaseSettings):
         "stun:stun.l.google.com:19302",
         "stun:stun1.l.google.com:19302",
         "stun:stun2.l.google.com:19302",
+        "stun:stun3.l.google.com:3478",
+        "stun:stun4.l.google.com:4347",
+        "stun:relay.metered.ca:80",
         "stun:stun.cloudflare.com:3478",
     ]
     TURN_SERVER_URL: str | None = None
@@ -72,7 +75,8 @@ class Settings(BaseSettings):
         """Return configured STUN and TURN ICE servers for WebRTC peer connections."""
         servers: list[dict[str, Any]] = [{"urls": self.STUN_SERVERS}]
         if self.TURN_SERVER_URL:
-            turn_cfg: dict[str, Any] = {"urls": self.TURN_SERVER_URL}
+            turn_urls = [u.strip() for u in self.TURN_SERVER_URL.split(",") if u.strip()]
+            turn_cfg: dict[str, Any] = {"urls": turn_urls if len(turn_urls) > 1 else turn_urls[0]}
             if self.TURN_SERVER_USERNAME:
                 turn_cfg["username"] = self.TURN_SERVER_USERNAME
             if self.TURN_SERVER_CREDENTIAL:

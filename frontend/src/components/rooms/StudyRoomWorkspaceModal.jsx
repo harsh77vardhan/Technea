@@ -1818,16 +1818,32 @@ async def create_goal(payload: GoalRequest):
             </div>
           </div>
 
-          {/* WebRTC Remote Audio Elements for all connected peers */}
-          <div className="hidden" aria-hidden="true">
+          {/* WebRTC Remote Audio Elements for all connected peers (offscreen, NEVER display:none) */}
+          <div
+            style={{
+              position: 'fixed',
+              top: -9999,
+              left: -9999,
+              width: 1,
+              height: 1,
+              opacity: 0,
+              pointerEvents: 'none',
+            }}
+            aria-hidden="true"
+          >
             {Object.entries(remoteStreams).map(([peerId, stream]) => (
               <audio
                 key={peerId}
                 autoPlay
                 playsInline
                 ref={(el) => {
-                  if (el && el.srcObject !== stream) {
-                    el.srcObject = stream
+                  if (el) {
+                    if (el.srcObject !== stream) {
+                      el.srcObject = stream
+                    }
+                    el.play().catch((err) => {
+                      console.warn(`[WebRTC Audio Autoplay Policy]: Autoplay deferred for peer ${peerId}:`, err)
+                    })
                   }
                 }}
               />
@@ -1849,8 +1865,11 @@ async def create_goal(payload: GoalRequest):
                     playsInline
                     muted
                     ref={(el) => {
-                      if (el && localMediaStream && el.srcObject !== localMediaStream) {
-                        el.srcObject = localMediaStream
+                      if (el && localMediaStream) {
+                        if (el.srcObject !== localMediaStream) {
+                          el.srcObject = localMediaStream
+                        }
+                        el.play().catch(() => {})
                       }
                     }}
                     className="w-full h-full object-cover scale-x-[-1]"
@@ -1877,8 +1896,13 @@ async def create_goal(payload: GoalRequest):
                           autoPlay
                           playsInline
                           ref={(el) => {
-                            if (el && el.srcObject !== peerStream) {
-                              el.srcObject = peerStream
+                            if (el) {
+                              if (el.srcObject !== peerStream) {
+                                el.srcObject = peerStream
+                              }
+                              el.play().catch((err) => {
+                                console.warn(`[WebRTC Video Autoplay] for peer ${p.user_id}:`, err)
+                              })
                             }
                           }}
                           className="w-full h-full object-cover"

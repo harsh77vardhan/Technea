@@ -23,6 +23,9 @@ const DEFAULT_ICE_SERVERS = [
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
   { urls: 'stun:stun2.l.google.com:19302' },
+  { urls: 'stun:stun3.l.google.com:3478' },
+  { urls: 'stun:stun4.l.google.com:4347' },
+  { urls: 'stun:relay.metered.ca:80' },
   { urls: 'stun:stun.cloudflare.com:3478' },
 ]
 
@@ -401,29 +404,84 @@ export class WebRTCManager {
       return this.peerConnections.get(remoteUserId)
     }
 
+    console.log(`[WebRTC] Initializing RTCPeerConnection for peer: ${remoteUserId}`)
     const pc = new RTCPeerConnection({
       iceServers: this.iceServers,
     })
 
-    // Attach local media tracks (Audio and Video)
-    if (this.localStream) {
-      this.localStream.getTracks().forEach((track) => {
-        pc.addTrack(track, this.localStream)
-      })
+    // Attach local Audio track or add Audio Transceiver
+    if (this.localAudioTrack && this.localStream) {
+      pc.addTrack(this.localAudioTrack, this.localStream)
+      console.log(`[WebRTC Tracks] Added microphone audio track (${this.localAudioTrack.id}) to ${remoteUserId}`)
+    } else {
+      pc.addTransceiver('audio', { direction: 'sendrecv' })
+      console.log(`[WebRTC Transceiver] Added audio transceiver (sendrecv) to ${remoteUserId}`)
     }
+
+    // Attach local Video track or add Video Transceiver so m=video is ALWAYS in SDP
+    if (this.localVideoTrack && this.localStream) {
+      pc.addTrack(this.localVideoTrack, this.localStream)
+      console.log(`[WebRTC Tracks] Added camera video track (${this.localVideoTrack.id}) to ${remoteUserId}`)
+    } else {
+      pc.addTransceiver('video', { direction: 'sendrecv' })
+      console.log(`[WebRTC Transceiver] Added video transceiver (sendrecv) to ${remoteUserId}`)
+    }
+
+    // Verify pc.getSenders()
+    const senders = pc.getSenders()
+    console.log(
+      `[WebRTC pc.getSenders() for ${remoteUserId}]:`,
+      senders.map((s) => ({
+        kind: s.track ? s.track.kind : (s.receiver ? s.receiver.track.kind : 'transceiver'),
+        hasTrack: Boolean(s.track),
+        trackId: s.track?.id || null,
+      }))
+    )
 
     // ICE Candidate generation
     pc.onicecandidate = (event) => {
       if (event.candidate) {
+        console.log(`[WebRTC ICE Candidate Generated] for ${remoteUserId}:`, event.candidate.candidate)
         this.sendSignal('ice-candidate', {
           target_user_id: remoteUserId,
           candidate: event.candidate.toJSON(),
         })
+      } else {
+        console.log(`[WebRTC ICE Candidate Gathering Complete] for ${remoteUserId}`)
       }
+    }
+
+    pc.onicecandidateerror = (event) => {
+      console.warn(`[WebRTC ICE Candidate Error] for ${remoteUserId}:`, event.errorCode, event.errorText)
+    }
+
+    // State change logging per requirements
+    pc.oniceconnectionstatechange = () => {
+      console.log(
+        `[WebRTC State for ${remoteUserId}] iceConnectionState: "${pc.iceConnectionState}", connectionState: "${pc.connectionState}", signalingState: "${pc.signalingState}"`
+      )
+      if (pc.iceConnectionState === 'failed') {
+        console.warn(`[WebRTC] ICE failed for ${remoteUserId}. Attempting restartIce...`)
+        pc.restartIce?.()
+      }
+    }
+
+    pc.onconnectionstatechange = () => {
+      console.log(
+        `[WebRTC State for ${remoteUserId}] connectionState: "${pc.connectionState}", iceConnectionState: "${pc.iceConnectionState}"`
+      )
+    }
+
+    pc.onsignalingstatechange = () => {
+      console.log(`[WebRTC State for ${remoteUserId}] signalingState: "${pc.signalingState}"`)
     }
 
     // Remote Track received
     pc.ontrack = (event) => {
+      console.log(
+        `[WebRTC ontrack] Received "${event.track.kind}" track from ${remoteUserId}: id=${event.track.id}, muted=${event.track.muted}`
+      )
+
       let stream = this.remoteStreams.get(remoteUserId)
       if (!stream) {
         stream = new MediaStream()
@@ -442,18 +500,18 @@ export class WebRTCManager {
         }
       }
 
-      this.onRemoteStreamChange?.(remoteUserId, stream)
-    }
-
-    // Connection state logging & cleanup
-    pc.onconnectionstatechange = () => {
-      const state = pc.connectionState
-      if (state === 'failed') {
-        console.warn(`PeerConnection with ${remoteUserId} failed. Restarting ICE...`)
-        pc.restartIce?.()
-      } else if (state === 'closed' || state === 'disconnected') {
-        console.info(`PeerConnection with ${remoteUserId} changed to ${state}`)
+      // Track unmuted event (media packets actively arriving)
+      event.track.onunmute = () => {
+        console.log(`[WebRTC Track Unmuted] Media packets actively flowing for ${event.track.kind} track from ${remoteUserId}!`)
+        const refreshed = new MediaStream(stream.getTracks())
+        this.remoteStreams.set(remoteUserId, refreshed)
+        this.onRemoteStreamChange?.(remoteUserId, refreshed)
       }
+
+      // Always pass a new MediaStream reference so React components re-bind srcObject
+      const freshStream = new MediaStream(stream.getTracks())
+      this.remoteStreams.set(remoteUserId, freshStream)
+      this.onRemoteStreamChange?.(remoteUserId, freshStream)
     }
 
     this.peerConnections.set(remoteUserId, pc)
@@ -466,15 +524,23 @@ export class WebRTCManager {
   async initiatePeerConnection(remoteUserId) {
     try {
       const pc = this.getOrCreatePeerConnection(remoteUserId)
+
       const offer = await pc.createOffer({
         offerToReceiveAudio: true,
         offerToReceiveVideo: true,
       })
+
+      const hasAudio = offer.sdp.includes('m=audio')
+      const hasVideo = offer.sdp.includes('m=video')
+      console.log(
+        `[WebRTC Offer SDP Created for ${remoteUserId}]: has m=audio: ${hasAudio}, has m=video: ${hasVideo}`
+      )
+
       await pc.setLocalDescription(offer)
 
       this.sendSignal('offer', {
         target_user_id: remoteUserId,
-        sdp: offer,
+        sdp: { type: pc.localDescription.type, sdp: pc.localDescription.sdp },
       })
     } catch (err) {
       console.error(`Failed to initiate offer to ${remoteUserId}:`, err)
@@ -486,6 +552,11 @@ export class WebRTCManager {
    */
   async handleOffer(fromUserId, sdp) {
     try {
+      const sdpStr = sdp.sdp || ''
+      console.log(
+        `[WebRTC Received Offer from ${fromUserId}]: has m=audio: ${sdpStr.includes('m=audio')}, has m=video: ${sdpStr.includes('m=video')}`
+      )
+
       const pc = this.getOrCreatePeerConnection(fromUserId)
       await pc.setRemoteDescription(new RTCSessionDescription(sdp))
 
@@ -493,11 +564,17 @@ export class WebRTCManager {
       await this.flushIceQueue(fromUserId)
 
       const answer = await pc.createAnswer()
+      const hasAudio = answer.sdp.includes('m=audio')
+      const hasVideo = answer.sdp.includes('m=video')
+      console.log(
+        `[WebRTC Answer SDP Created for ${fromUserId}]: has m=audio: ${hasAudio}, has m=video: ${hasVideo}`
+      )
+
       await pc.setLocalDescription(answer)
 
       this.sendSignal('answer', {
         target_user_id: fromUserId,
-        sdp: answer,
+        sdp: { type: pc.localDescription.type, sdp: pc.localDescription.sdp },
       })
     } catch (err) {
       console.error(`Failed to handle offer from ${fromUserId}:`, err)
@@ -509,6 +586,11 @@ export class WebRTCManager {
    */
   async handleAnswer(fromUserId, sdp) {
     try {
+      const sdpStr = sdp.sdp || ''
+      console.log(
+        `[WebRTC Received Answer from ${fromUserId}]: has m=audio: ${sdpStr.includes('m=audio')}, has m=video: ${sdpStr.includes('m=video')}`
+      )
+
       const pc = this.peerConnections.get(fromUserId)
       if (pc) {
         await pc.setRemoteDescription(new RTCSessionDescription(sdp))
@@ -524,15 +606,20 @@ export class WebRTCManager {
    */
   async handleIceCandidate(fromUserId, candidateInit) {
     try {
+      if (!candidateInit || (!candidateInit.candidate && candidateInit.candidate !== '')) {
+        return
+      }
+
       const pc = this.peerConnections.get(fromUserId)
       if (pc && pc.remoteDescription && pc.remoteDescription.type) {
         await pc.addIceCandidate(new RTCIceCandidate(candidateInit))
+        console.log(`[WebRTC Added ICE candidate successfully from ${fromUserId}]`)
       } else {
-        // Remote description not ready yet, queue the candidate
         if (!this.iceQueues.has(fromUserId)) {
           this.iceQueues.set(fromUserId, [])
         }
         this.iceQueues.get(fromUserId).push(candidateInit)
+        console.log(`[WebRTC Queued ICE candidate from ${fromUserId}]`)
       }
     } catch (err) {
       console.warn(`Failed to add ICE candidate from ${fromUserId}:`, err)
@@ -549,6 +636,7 @@ export class WebRTCManager {
     const pc = this.peerConnections.get(peerId)
     if (!pc) return
 
+    console.log(`[WebRTC Flushing ${queue.length} queued ICE candidates for ${peerId}]`)
     for (const candidate of queue) {
       try {
         await pc.addIceCandidate(new RTCIceCandidate(candidate))
@@ -568,6 +656,7 @@ export class WebRTCManager {
     if (this.localAudioTrack) {
       this.localAudioTrack.enabled = !this.isMuted
     }
+    console.log(`[WebRTC] Microphone ${this.isMuted ? 'MUTED' : 'UNMUTED'}`)
 
     // Broadcast updated status via signaling and sync to DB
     this.sendSignal('media-status', {
@@ -595,6 +684,7 @@ export class WebRTCManager {
 
     try {
       if (nextVideo) {
+        console.log('[WebRTC] Requesting camera stream via getUserMedia...')
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 24 } },
         })
@@ -602,25 +692,30 @@ export class WebRTCManager {
         this.localVideoTrack = newTrack
 
         if (this.localStream) {
-          // Remove old video track if any
           this.localStream.getVideoTracks().forEach((t) => this.localStream.removeTrack(t))
           this.localStream.addTrack(newTrack)
         }
 
-        // Add or replace track in all active peer connections
+        // Add or replace track on video transceiver in all active peer connections
         for (const [peerId, pc] of this.peerConnections.entries()) {
-          const sender = pc.getSenders().find((s) => s.track && s.track.kind === 'video')
-          if (sender) {
-            await sender.replaceTrack(newTrack)
+          const videoTransceiver = pc.getTransceivers().find(
+            (t) =>
+              (t.sender.track && t.sender.track.kind === 'video') ||
+              (t.receiver.track && t.receiver.track.kind === 'video')
+          )
+          if (videoTransceiver) {
+            videoTransceiver.direction = 'sendrecv'
+            await videoTransceiver.sender.replaceTrack(newTrack)
+            console.log(`[WebRTC] Replaced video track on existing transceiver for peer ${peerId}`)
           } else {
             pc.addTrack(newTrack, this.localStream)
-            // Trigger renegotiation offer
-            this.initiatePeerConnection(peerId)
+            console.log(`[WebRTC] Added video track to peer ${peerId}, initiating renegotiation offer...`)
+            await this.initiatePeerConnection(peerId)
           }
         }
         this.isVideoActive = true
       } else {
-        // Stop and remove local video track
+        console.log('[WebRTC] Closing camera and stopping video track...')
         if (this.localVideoTrack) {
           this.localVideoTrack.stop()
           if (this.localStream) {
@@ -629,16 +724,22 @@ export class WebRTCManager {
           this.localVideoTrack = null
         }
 
-        for (const [, pc] of this.peerConnections.entries()) {
-          const sender = pc.getSenders().find((s) => s.track && s.track.kind === 'video')
-          if (sender) {
-            await sender.replaceTrack(null)
+        for (const [peerId, pc] of this.peerConnections.entries()) {
+          const videoTransceiver = pc.getTransceivers().find(
+            (t) =>
+              (t.sender.track && t.sender.track.kind === 'video') ||
+              (t.receiver.track && t.receiver.track.kind === 'video')
+          )
+          if (videoTransceiver) {
+            await videoTransceiver.sender.replaceTrack(null)
+            videoTransceiver.direction = 'recvonly'
+            console.log(`[WebRTC] Removed video track from transceiver for peer ${peerId}`)
           }
         }
         this.isVideoActive = false
       }
 
-      this.onLocalStreamChange?.(this.localStream)
+      this.onLocalStreamChange?.(this.localStream ? new MediaStream(this.localStream.getTracks()) : null)
 
       // Broadcast status
       this.sendSignal('media-status', {
