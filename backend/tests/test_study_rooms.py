@@ -6,7 +6,7 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select
 
 from app.core.security import create_access_token
-from app.db.init_db import run_study_rooms_schema_migrations
+from app.db.init_db import run_study_rooms_schema_migrations, run_study_rooms_phase2_schema_migrations
 from app.db.session import async_session_maker, engine
 from app.main import app
 from app.models.user import User
@@ -16,6 +16,7 @@ from app.models.user import User
 async def cleanup_db_engine():
     """Ensure engine connections are disposed per test event loop."""
     await run_study_rooms_schema_migrations(engine)
+    await run_study_rooms_phase2_schema_migrations(engine)
     yield
     await engine.dispose()
 
@@ -212,9 +213,121 @@ async def test_study_rooms_lifecycle():
         assert len(resources) == 1
         assert resources[0]["title"] == "Asyncio Architecture Deep Dive"
 
-        # 12. Members list
+        # 12. Members list with presence state
         res_members = await client.get(f"/api/v1/community/rooms/{pub_room_id}/members")
         assert res_members.status_code == 200
         members = res_members.json()
         assert len(members) >= 1
         assert any(m["user_id"] == str(user_id) for m in members)
+
+        # 13. Phase 2: Presence state update (🟢 Studying, 🟡 Taking Break, 🔴 Away)
+        res_state_break = await client.put(
+            f"/api/v1/community/rooms/{pub_room_id}/study-status",
+            json={
+                "study_status": "5 min coffee break",
+                "study_state": "break",
+            },
+            headers=auth_headers,
+        )
+        assert res_state_break.status_code == 200
+        assert res_state_break.json()["study_state"] == "break"
+        assert res_state_break.json()["study_status"] == "5 min coffee break"
+
+        # 14. Phase 2: Start Study Session with Pomodoro Focus Timer and Host
+        res_pomo_session = await client.post(
+            f"/api/v1/community/rooms/{pub_room_id}/session/start",
+            json={
+                "topic": "Python Functions & Scope Deep Dive",
+                "timer_type": "pomodoro",
+                "timer_mode": "study",
+                "duration_minutes": 25,
+            },
+            headers=auth_headers,
+        )
+        assert res_pomo_session.status_code == 200
+        session_data = res_pomo_session.json()
+        assert session_data["study_session_active"] is True
+        assert session_data["study_session_topic"] == "Python Functions & Scope Deep Dive"
+        assert session_data["study_session_timer_type"] == "pomodoro"
+        assert session_data["study_session_host_name"] is not None
+
+        # 15. Phase 2: End Study Session & Verify Session History Logging
+        res_end_pomo = await client.post(
+            f"/api/v1/community/rooms/{pub_room_id}/session/end",
+            headers=auth_headers,
+        )
+        assert res_end_pomo.status_code == 200
+        assert res_end_pomo.json()["study_session_active"] is False
+
+        res_hist = await client.get(f"/api/v1/community/rooms/{pub_room_id}/history")
+        assert res_hist.status_code == 200
+        history_list = res_hist.json()
+        assert len(history_list) >= 1
+        assert history_list[0]["topic"] == "Python Functions & Scope Deep Dive"
+        assert history_list[0]["participants_count"] >= 1
+
+        # 16. Phase 2: Collaborative Shared Notes
+        res_get_notes = await client.get(f"/api/v1/community/rooms/{pub_room_id}/notes")
+        assert res_get_notes.status_code == 200
+        notes_data = res_get_notes.json()
+        assert "Shared Notes" in notes_data["title"]
+
+        res_save_notes = await client.put(
+            f"/api/v1/community/rooms/{pub_room_id}/notes",
+            json={
+                "title": "Python Functions Concepts",
+                "content": "# Key Takeaways\n1. Positional-only args using `/`\n2. Keyword-only args using `*`\n3. Closures and nonlocal bindings",
+            },
+            headers=auth_headers,
+        )
+        assert res_save_notes.status_code == 200
+        updated_notes = res_save_notes.json()
+        assert updated_notes["title"] == "Python Functions Concepts"
+        assert "Closures and nonlocal bindings" in updated_notes["content"]
+        assert updated_notes["last_edited_by_name"] is not None
+
+        # 17. Phase 2: Learning Content Sharing
+        res_share_content = await client.post(
+            f"/api/v1/community/rooms/{pub_room_id}/share-content",
+            json={
+                "title": "Python Lesson 4: Functions & Scope",
+                "content_type": "lesson",
+                "content_badge": "Python Lesson 4",
+                "action_url": "/learning?path=python&lesson=4",
+                "description": "Essential lesson on scope resolution rules (LEGB).",
+            },
+            headers=auth_headers,
+        )
+        assert res_share_content.status_code == 201
+        shared_card = res_share_content.json()
+        assert shared_card["content_badge"] == "Python Lesson 4"
+        assert shared_card["action_url"] == "/learning?path=python&lesson=4"
+        assert shared_card["resource_type"] == "lesson"
+
+        # 18. Phase 2: In-App Room Notifications
+        res_notifs = await client.get(
+            f"/api/v1/community/rooms/{pub_room_id}/notifications",
+            headers=auth_headers,
+        )
+        assert res_notifs.status_code == 200
+        notifs_list = res_notifs.json()
+        assert len(notifs_list) >= 1  # session_started, note_updated, content_shared
+        assert any(n["notification_type"] in ["session_started", "note_updated", "content_shared"] for n in notifs_list)
+
+        res_mark_read = await client.post(
+            f"/api/v1/community/rooms/{pub_room_id}/notifications/read",
+            headers=auth_headers,
+        )
+        assert res_mark_read.status_code == 200
+        assert res_mark_read.json()["success"] is True
+
+        # 19. Phase 2: Enhanced Recommendations with Current Milestone & Skills
+        res_rec_phase2 = await client.get(
+            "/api/v1/community/rooms/recommended?active_roadmap=Python%20Developer&current_milestone=Functions&skills=Python,FastAPI",
+            headers=auth_headers,
+        )
+        assert res_rec_phase2.status_code == 200
+        rec_phase2_rooms = res_rec_phase2.json()
+        assert len(rec_phase2_rooms) >= 1
+        assert any("Python" in r["name"] or "Python" in r["topic"] for r in rec_phase2_rooms)
+

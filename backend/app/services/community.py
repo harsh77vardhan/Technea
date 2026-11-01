@@ -13,9 +13,12 @@ from sqlalchemy.orm import selectinload
 from app.models.community import (
     LearningRoom,
     RoomMessage,
+    RoomNotification,
     RoomQuestion,
     RoomQuestionReply,
     RoomResource,
+    RoomSessionHistory,
+    RoomSharedNote,
     UserLearningRoom,
 )
 from app.models.user import User
@@ -28,9 +31,16 @@ from app.schemas.community import (
     LearningRoomResponse,
     RoomMemberResponse,
     RoomMessageResponse,
+    RoomNotificationResponse,
     RoomQuestionReplyResponse,
     RoomQuestionResponse,
     RoomResourceResponse,
+    SessionHistoryResponse,
+    ShareContentRequest,
+    SharedNoteResponse,
+    StartStudySessionRequest,
+    UpdateSharedNoteRequest,
+    UpdateStudyStatusRequest,
 )
 
 
@@ -77,6 +87,11 @@ class CommunityService:
             study_session_active=getattr(room, "study_session_active", False) or False,
             study_session_topic=getattr(room, "study_session_topic", None),
             study_session_started_at=getattr(room, "study_session_started_at", None),
+            study_session_host_id=getattr(room, "study_session_host_id", None),
+            study_session_host_name=getattr(room, "study_session_host_name", None),
+            study_session_timer_type=getattr(room, "study_session_timer_type", "pomodoro") or "pomodoro",
+            study_session_timer_mode=getattr(room, "study_session_timer_mode", "study") or "study",
+            study_session_duration_minutes=getattr(room, "study_session_duration_minutes", 25) or 25,
             recommendation_reason=recommendation_reason,
         )
 
@@ -153,10 +168,11 @@ class CommunityService:
         db: AsyncSession,
         user_id: uuid.UUID | None = None,
         active_roadmap: str | None = None,
-        skills: list[str] | None = None,
+        current_milestone: str | None = None,
+        skills: list[str] | str | None = None,
         interests: str | None = None,
     ) -> list[LearningRoomResponse]:
-        """Recommend rooms matching active roadmap, learning goals, or skills."""
+        """Recommend rooms matching active roadmap, current milestone, skills, or learning goals."""
         all_rooms_stmt = select(LearningRoom).order_by(desc(LearningRoom.active_learners_count))
         res = await db.execute(all_rooms_stmt)
         rooms = list(res.scalars().all())
@@ -178,9 +194,19 @@ class CommunityService:
                 user_goal = curr_user.learning_goal or ""
                 user_interests = curr_user.interests or ""
 
-        # Extract context tags from active roadmap or user profile
+        # Extract context tags from current milestone, active roadmap, or user profile
         search_terms: list[tuple[str, str]] = []  # (term, reason_template)
 
+        # 1. Highest priority: Current Milestone
+        if current_milestone and current_milestone.strip():
+            cm_clean = current_milestone.strip()
+            cm_lower = cm_clean.lower()
+            search_terms.append((cm_lower, f"Matches your current milestone: {cm_clean}"))
+            for word in cm_lower.split():
+                if len(word) > 3 and word not in ["module", "basics", "lesson", "chapter", "intro", "practice"]:
+                    search_terms.append((word, f"You are studying: {cm_clean}"))
+
+        # 2. Priority: Active Roadmap
         target_roadmap = active_roadmap or user_goal
         if target_roadmap:
             tr_lower = target_roadmap.lower()
@@ -200,8 +226,17 @@ class CommunityService:
             # Fallback general match
             search_terms.append((target_roadmap.split()[0].lower(), f"Matching your active roadmap '{target_roadmap}'"))
 
-        if user_interests:
-            for piece in user_interests.split(","):
+        # 3. Skills
+        if skills:
+            skill_list = skills if isinstance(skills, list) else [s.strip() for s in str(skills).split(",") if s.strip()]
+            for sk in skill_list:
+                if len(sk) > 1:
+                    search_terms.append((sk.lower(), f"Matches your skill: {sk}"))
+
+        # 4. Interests
+        combined_interests = f"{interests or ''},{user_interests or ''}".strip(",")
+        if combined_interests:
+            for piece in combined_interests.split(","):
                 p_clean = piece.strip().lower()
                 if p_clean and len(p_clean) > 2:
                     search_terms.append((p_clean, f"Based on your interest in {piece.strip()}"))
@@ -531,7 +566,7 @@ class CommunityService:
         db: AsyncSession,
         room_id: int,
     ) -> list[RoomMemberResponse]:
-        """Fetch members belonging to a room with their study status."""
+        """Fetch members belonging to a room with their study status and state."""
         stmt = (
             select(UserLearningRoom, User)
             .join(User, UserLearningRoom.user_id == User.id)
@@ -549,6 +584,7 @@ class CommunityService:
                 avatar_url=u.avatar_url,
                 joined_at=ulr.joined_at,
                 study_status=ulr.study_status,
+                study_state=getattr(ulr, "study_state", "studying") or "studying",
             )
             for ulr, u in rows
         ]
@@ -558,9 +594,10 @@ class CommunityService:
         db: AsyncSession,
         room_id: int,
         user_id: uuid.UUID,
-        study_status: str,
+        study_status: str | None = None,
+        study_state: str = "studying",
     ) -> RoomMemberResponse:
-        """Update a member's current study status inside a room."""
+        """Update a member's current study status and presence state inside a room."""
         stmt = (
             select(UserLearningRoom, User)
             .join(User, UserLearningRoom.user_id == User.id)
@@ -575,7 +612,10 @@ class CommunityService:
             raise ValueError("You must join this room before setting a study status.")
 
         ulr, user = row
-        ulr.study_status = study_status.strip()
+        if study_status is not None:
+            ulr.study_status = study_status.strip() if study_status.strip() else None
+        if study_state:
+            ulr.study_state = study_state
         await db.commit()
 
         return RoomMemberResponse(
@@ -585,6 +625,7 @@ class CommunityService:
             avatar_url=user.avatar_url,
             joined_at=ulr.joined_at,
             study_status=ulr.study_status,
+            study_state=ulr.study_state,
         )
 
     async def start_study_session(
@@ -593,31 +634,52 @@ class CommunityService:
         room_id: int,
         user_id: uuid.UUID,
         topic: str,
+        timer_type: str = "pomodoro",
+        timer_mode: str = "study",
+        duration_minutes: int = 25,
     ) -> LearningRoomResponse:
-        """Start a synchronized study focus session."""
+        """Start a synchronized study focus session with designated host, goal, and Pomodoro timer."""
         stmt = select(LearningRoom).where(LearningRoom.id == room_id)
         res = await db.execute(stmt)
         room = res.scalar_one_or_none()
         if not room:
             raise ValueError("Room not found.")
 
-        now = datetime.now(timezone.utc)
-        room.study_session_active = True
-        room.study_session_topic = topic.strip()
-        room.study_session_started_at = now
-
-        # Add system message in chat
         u_res = await db.execute(select(User).where(User.id == user_id))
         user_obj = u_res.scalar_one_or_none()
         user_name = user_obj.full_name or user_obj.email.split("@")[0] if user_obj else "Host"
 
+        now = datetime.now(timezone.utc)
+        clean_topic = topic.strip()
+        room.study_session_active = True
+        room.study_session_topic = clean_topic
+        room.study_session_started_at = now
+        room.study_session_host_id = user_id
+        room.study_session_host_name = user_name
+        room.study_session_timer_type = timer_type
+        room.study_session_timer_mode = timer_mode
+        room.study_session_duration_minutes = duration_minutes
+
+        # Add system message in chat
+        mode_label = "25m Pomodoro Study" if timer_type == "pomodoro" else f"{duration_minutes}m Sprint"
         sys_msg = RoomMessage(
             room_id=room.id,
             user_id=user_id,
-            content=f"{user_name} started a focused study session on '{topic.strip()}'. Let's learn together!",
+            content=f"🚀 {user_name} is hosting a Live Study Session!\nGoal: {clean_topic} • Duration: {mode_label}. Let's learn together!",
             message_type="system",
         )
         db.add(sys_msg)
+
+        # Create room notification
+        notif = RoomNotification(
+            room_id=room.id,
+            user_id=None,
+            actor_name=user_name,
+            title="Live Study Session Started",
+            message=f"{user_name} is hosting: {clean_topic}",
+            notification_type="session_started",
+        )
+        db.add(notif)
 
         await db.commit()
         await db.refresh(room)
@@ -630,24 +692,52 @@ class CommunityService:
         room_id: int,
         user_id: uuid.UUID,
     ) -> LearningRoomResponse:
-        """End an ongoing study session."""
+        """End an ongoing study session and log historical record."""
         stmt = select(LearningRoom).where(LearningRoom.id == room_id)
         res = await db.execute(stmt)
         room = res.scalar_one_or_none()
         if not room:
             raise ValueError("Room not found.")
 
-        room.study_session_active = False
-
-        # Add system message in chat
         u_res = await db.execute(select(User).where(User.id == user_id))
         user_obj = u_res.scalar_one_or_none()
         user_name = user_obj.full_name or user_obj.email.split("@")[0] if user_obj else "Host"
 
+        now = datetime.now(timezone.utc)
+
+        # Calculate session duration
+        duration = 0
+        if room.study_session_started_at:
+            delta = now - room.study_session_started_at
+            duration = max(1, int(delta.total_seconds() // 60))
+        else:
+            duration = getattr(room, "study_session_duration_minutes", 25) or 25
+
+        # Count active room members
+        mem_cnt_stmt = select(func.count(UserLearningRoom.id)).where(UserLearningRoom.room_id == room.id)
+        mem_cnt_res = await db.execute(mem_cnt_stmt)
+        participants_count = max(1, mem_cnt_res.scalar() or 1)
+
+        # Log to study session history
+        history_entry = RoomSessionHistory(
+            room_id=room.id,
+            host_user_id=room.study_session_host_id or user_id,
+            host_name=room.study_session_host_name or user_name,
+            topic=room.study_session_topic or "Focused Study Session",
+            duration_minutes=duration,
+            participants_count=participants_count,
+            ended_at=now,
+        )
+        db.add(history_entry)
+
+        # Reset active session state
+        room.study_session_active = False
+
+        # Add system message in chat
         sys_msg = RoomMessage(
             room_id=room.id,
             user_id=user_id,
-            content=f"{user_name} concluded the active study session. Great focus session everyone!",
+            content=f"🏁 Study Session concluded by {user_name}. Duration: {duration} mins • {participants_count} participants. Outstanding focus everyone!",
             message_type="system",
         )
         db.add(sys_msg)
@@ -954,6 +1044,8 @@ class CommunityService:
                 resource_type=r.resource_type,
                 url_or_content=r.url_or_content,
                 description=r.description,
+                content_badge=getattr(r, "content_badge", None),
+                action_url=getattr(r, "action_url", None),
                 created_at=r.created_at,
             )
             for r, u in rows
@@ -966,7 +1058,7 @@ class CommunityService:
         user_id: uuid.UUID,
         resource_data: CreateResourceRequest,
     ) -> RoomResourceResponse:
-        """Share a video, link, note, or PDF in the study room."""
+        """Share a video, link, note, PDF, or Technea content in the study room."""
         res_obj = RoomResource(
             room_id=room_id,
             user_id=user_id,
@@ -974,6 +1066,8 @@ class CommunityService:
             resource_type=resource_data.resource_type,
             url_or_content=resource_data.url_or_content.strip(),
             description=resource_data.description.strip() if resource_data.description else None,
+            content_badge=resource_data.content_badge.strip() if resource_data.content_badge else None,
+            action_url=resource_data.action_url.strip() if resource_data.action_url else None,
         )
         db.add(res_obj)
         await db.commit()
@@ -993,8 +1087,250 @@ class CommunityService:
             resource_type=res_obj.resource_type,
             url_or_content=res_obj.url_or_content,
             description=res_obj.description,
+            content_badge=res_obj.content_badge,
+            action_url=res_obj.action_url,
             created_at=res_obj.created_at,
         )
 
+    async def share_learning_content(
+        self,
+        db: AsyncSession,
+        room_id: int,
+        user_id: uuid.UUID,
+        content_data: ShareContentRequest,
+    ) -> RoomResourceResponse:
+        """Share Technea course, lesson, or roadmap step card inside study room."""
+        u_stmt = select(User).where(User.id == user_id)
+        u_res = await db.execute(u_stmt)
+        user = u_res.scalar_one()
+        user_name = user.full_name or user.email.split("@")[0]
+
+        res_obj = RoomResource(
+            room_id=room_id,
+            user_id=user_id,
+            title=content_data.title.strip(),
+            resource_type=content_data.content_type,
+            url_or_content=content_data.action_url.strip(),
+            description=content_data.description.strip() if content_data.description else None,
+            content_badge=content_data.content_badge.strip(),
+            action_url=content_data.action_url.strip(),
+        )
+        db.add(res_obj)
+
+        # Broadcast to room discussion chat
+        chat_msg = RoomMessage(
+            room_id=room_id,
+            user_id=user_id,
+            content=f"📌 Shared {content_data.content_badge}: **{content_data.title.strip()}**",
+            message_type="chat",
+        )
+        db.add(chat_msg)
+
+        # Create room notification
+        notif = RoomNotification(
+            room_id=room_id,
+            user_id=None,
+            actor_name=user_name,
+            title=f"Shared {content_data.content_badge}",
+            message=f"{user_name} shared '{content_data.title.strip()}'",
+            notification_type="content_shared",
+            link_url=content_data.action_url.strip(),
+        )
+        db.add(notif)
+
+        await db.commit()
+        await db.refresh(res_obj)
+
+        return RoomResourceResponse(
+            id=res_obj.id,
+            room_id=res_obj.room_id,
+            user_id=user.id,
+            user_name=user_name,
+            user_avatar=user.avatar_url,
+            title=res_obj.title,
+            resource_type=res_obj.resource_type,
+            url_or_content=res_obj.url_or_content,
+            description=res_obj.description,
+            content_badge=res_obj.content_badge,
+            action_url=res_obj.action_url,
+            created_at=res_obj.created_at,
+        )
+
+    async def get_session_history(
+        self,
+        db: AsyncSession,
+        room_id: int,
+    ) -> list[SessionHistoryResponse]:
+        """Fetch chronological log of previous study sessions."""
+        stmt = (
+            select(RoomSessionHistory)
+            .where(RoomSessionHistory.room_id == room_id)
+            .order_by(desc(RoomSessionHistory.ended_at))
+            .limit(30)
+        )
+        res = await db.execute(stmt)
+        records = res.scalars().all()
+
+        return [
+            SessionHistoryResponse(
+                id=rec.id,
+                room_id=rec.room_id,
+                host_user_id=rec.host_user_id,
+                host_name=rec.host_name,
+                topic=rec.topic,
+                duration_minutes=rec.duration_minutes,
+                participants_count=rec.participants_count,
+                ended_at=rec.ended_at,
+            )
+            for rec in records
+        ]
+
+    async def get_shared_note(
+        self,
+        db: AsyncSession,
+        room_id: int,
+    ) -> SharedNoteResponse:
+        """Fetch or initialize collaborative shared notes for a study room."""
+        stmt = select(RoomSharedNote).where(RoomSharedNote.room_id == room_id)
+        res = await db.execute(stmt)
+        note = res.scalar_one_or_none()
+
+        if not note:
+            # Initialize default shared note
+            now = datetime.now(timezone.utc)
+            note = RoomSharedNote(
+                room_id=room_id,
+                title="Shared Notes",
+                content="### Collaborative Study Notes\n\n- Discussing core concepts & syntax\n- Key takeaways and formulas\n- Code snippets and references\n",
+            )
+            db.add(note)
+            await db.commit()
+            await db.refresh(note)
+
+        return SharedNoteResponse(
+            id=note.id,
+            room_id=note.room_id,
+            title=note.title,
+            content=note.content,
+            last_edited_by_id=note.last_edited_by_id,
+            last_edited_by_name=note.last_edited_by_name,
+            updated_at=note.updated_at,
+        )
+
+    async def save_shared_note(
+        self,
+        db: AsyncSession,
+        room_id: int,
+        user_id: uuid.UUID,
+        note_data: UpdateSharedNoteRequest,
+    ) -> SharedNoteResponse:
+        """Save updates to collaborative room shared notes."""
+        stmt = select(RoomSharedNote).where(RoomSharedNote.room_id == room_id)
+        res = await db.execute(stmt)
+        note = res.scalar_one_or_none()
+
+        u_stmt = select(User).where(User.id == user_id)
+        u_res = await db.execute(u_stmt)
+        user = u_res.scalar_one_or_none()
+        user_name = user.full_name or user.email.split("@")[0] if user else "Learner"
+
+        now = datetime.now(timezone.utc)
+
+        if not note:
+            note = RoomSharedNote(
+                room_id=room_id,
+                title=note_data.title.strip() if note_data.title else "Shared Notes",
+                content=note_data.content,
+                last_edited_by_id=user_id,
+                last_edited_by_name=user_name,
+            )
+            db.add(note)
+        else:
+            if note_data.title:
+                note.title = note_data.title.strip()
+            note.content = note_data.content
+            note.last_edited_by_id = user_id
+            note.last_edited_by_name = user_name
+            note.updated_at = now
+
+        # Add lightweight notification
+        notif = RoomNotification(
+            room_id=room_id,
+            user_id=None,
+            actor_name=user_name,
+            title="Shared Notes Updated",
+            message=f"{user_name} updated the room's shared notes.",
+            notification_type="note_updated",
+        )
+        db.add(notif)
+
+        await db.commit()
+        await db.refresh(note)
+
+        return SharedNoteResponse(
+            id=note.id,
+            room_id=note.room_id,
+            title=note.title,
+            content=note.content,
+            last_edited_by_id=note.last_edited_by_id,
+            last_edited_by_name=note.last_edited_by_name,
+            updated_at=note.updated_at,
+        )
+
+    async def get_room_notifications(
+        self,
+        db: AsyncSession,
+        room_id: int,
+        user_id: uuid.UUID | None = None,
+    ) -> list[RoomNotificationResponse]:
+        """Fetch latest in-app room notifications."""
+        stmt = (
+            select(RoomNotification)
+            .where(
+                RoomNotification.room_id == room_id,
+                or_(RoomNotification.user_id.is_(None), RoomNotification.user_id == user_id)
+                if user_id
+                else RoomNotification.user_id.is_(None),
+            )
+            .order_by(desc(RoomNotification.created_at))
+            .limit(25)
+        )
+        res = await db.execute(stmt)
+        notifs = res.scalars().all()
+
+        return [
+            RoomNotificationResponse(
+                id=n.id,
+                room_id=n.room_id,
+                user_id=n.user_id,
+                actor_name=n.actor_name,
+                title=n.title,
+                message=n.message,
+                notification_type=n.notification_type,
+                link_url=n.link_url,
+                is_read=n.is_read,
+                created_at=n.created_at,
+            )
+            for n in notifs
+        ]
+
+    async def mark_room_notifications_read(
+        self,
+        db: AsyncSession,
+        room_id: int,
+        user_id: uuid.UUID,
+    ) -> dict[str, Any]:
+        """Mark all room notifications as read."""
+        stmt = select(RoomNotification).where(
+            RoomNotification.room_id == room_id,
+            RoomNotification.is_read.is_(False),
+        )
+        res = await db.execute(stmt)
+        for n in res.scalars().all():
+            n.is_read = True
+        await db.commit()
+        return {"success": True, "message": "Notifications marked as read."}
+
 
 community_service = CommunityService()
+

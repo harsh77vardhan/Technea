@@ -339,6 +339,140 @@ async def run_study_rooms_schema_migrations(engine) -> None:
         logger.warning("Study rooms schema migration notice (continuing): %s", exc)
 
 
+async def run_study_rooms_phase2_schema_migrations(engine) -> None:
+    """Ensure Phase 2 study session fields, notes, history, and notifications exist."""
+    lr_phase2_cols = [
+        ("study_session_host_id", "ALTER TABLE learning_rooms ADD COLUMN IF NOT EXISTS study_session_host_id UUID"),
+        ("study_session_host_name", "ALTER TABLE learning_rooms ADD COLUMN IF NOT EXISTS study_session_host_name VARCHAR(255)"),
+        ("study_session_timer_type", "ALTER TABLE learning_rooms ADD COLUMN IF NOT EXISTS study_session_timer_type VARCHAR(50) DEFAULT 'pomodoro' NOT NULL"),
+        ("study_session_timer_mode", "ALTER TABLE learning_rooms ADD COLUMN IF NOT EXISTS study_session_timer_mode VARCHAR(50) DEFAULT 'study' NOT NULL"),
+        ("study_session_duration_minutes", "ALTER TABLE learning_rooms ADD COLUMN IF NOT EXISTS study_session_duration_minutes INTEGER DEFAULT 25 NOT NULL"),
+    ]
+
+    ulr_phase2_cols = [
+        ("study_state", "ALTER TABLE user_learning_rooms ADD COLUMN IF NOT EXISTS study_state VARCHAR(50) DEFAULT 'studying' NOT NULL"),
+    ]
+
+    res_phase2_cols = [
+        ("content_badge", "ALTER TABLE room_resources ADD COLUMN IF NOT EXISTS content_badge VARCHAR(100)"),
+        ("action_url", "ALTER TABLE room_resources ADD COLUMN IF NOT EXISTS action_url VARCHAR(500)"),
+    ]
+
+    try:
+        async with engine.begin() as conn:
+            dialect_name = conn.dialect.name
+            if dialect_name == "postgresql":
+                # Check learning_rooms columns
+                lr_chk = await conn.execute(text("SELECT 1 FROM information_schema.tables WHERE table_name = 'learning_rooms'"))
+                if lr_chk.fetchone():
+                    for col_name, alter_query in lr_phase2_cols:
+                        chk = await conn.execute(
+                            text("SELECT column_name FROM information_schema.columns WHERE table_name='learning_rooms' AND column_name=:col"),
+                            {"col": col_name},
+                        )
+                        if not chk.fetchone():
+                            logger.info("Adding Phase 2 column '%s' to learning_rooms...", col_name)
+                            await conn.execute(text(alter_query))
+
+                # Check user_learning_rooms columns
+                ulr_chk = await conn.execute(text("SELECT 1 FROM information_schema.tables WHERE table_name = 'user_learning_rooms'"))
+                if ulr_chk.fetchone():
+                    for col_name, alter_query in ulr_phase2_cols:
+                        chk = await conn.execute(
+                            text("SELECT column_name FROM information_schema.columns WHERE table_name='user_learning_rooms' AND column_name=:col"),
+                            {"col": col_name},
+                        )
+                        if not chk.fetchone():
+                            logger.info("Adding Phase 2 column '%s' to user_learning_rooms...", col_name)
+                            await conn.execute(text(alter_query))
+
+                # Check room_resources columns
+                res_chk = await conn.execute(text("SELECT 1 FROM information_schema.tables WHERE table_name = 'room_resources'"))
+                if res_chk.fetchone():
+                    for col_name, alter_query in res_phase2_cols:
+                        chk = await conn.execute(
+                            text("SELECT column_name FROM information_schema.columns WHERE table_name='room_resources' AND column_name=:col"),
+                            {"col": col_name},
+                        )
+                        if not chk.fetchone():
+                            logger.info("Adding Phase 2 column '%s' to room_resources...", col_name)
+                            await conn.execute(text(alter_query))
+
+                # Create room_session_history table
+                await conn.execute(text("""
+                    CREATE TABLE IF NOT EXISTS room_session_history (
+                        id SERIAL PRIMARY KEY,
+                        room_id INTEGER NOT NULL REFERENCES learning_rooms(id) ON DELETE CASCADE,
+                        host_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+                        host_name VARCHAR(255) NOT NULL,
+                        topic VARCHAR(255) NOT NULL,
+                        duration_minutes INTEGER DEFAULT 0 NOT NULL,
+                        participants_count INTEGER DEFAULT 1 NOT NULL,
+                        ended_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+                        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+                        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+                    )
+                """))
+                await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_room_session_history_room_id ON room_session_history(room_id)"))
+                await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_room_session_history_ended_at ON room_session_history(ended_at)"))
+
+                # Create room_shared_notes table
+                await conn.execute(text("""
+                    CREATE TABLE IF NOT EXISTS room_shared_notes (
+                        id SERIAL PRIMARY KEY,
+                        room_id INTEGER NOT NULL UNIQUE REFERENCES learning_rooms(id) ON DELETE CASCADE,
+                        title VARCHAR(255) DEFAULT 'Shared Notes' NOT NULL,
+                        content TEXT DEFAULT '' NOT NULL,
+                        last_edited_by_id UUID REFERENCES users(id) ON DELETE SET NULL,
+                        last_edited_by_name VARCHAR(255),
+                        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+                        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+                    )
+                """))
+                await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_room_shared_notes_room_id ON room_shared_notes(room_id)"))
+
+                # Create room_notifications table
+                await conn.execute(text("""
+                    CREATE TABLE IF NOT EXISTS room_notifications (
+                        id SERIAL PRIMARY KEY,
+                        room_id INTEGER NOT NULL REFERENCES learning_rooms(id) ON DELETE CASCADE,
+                        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+                        actor_name VARCHAR(255) NOT NULL,
+                        title VARCHAR(255) NOT NULL,
+                        message TEXT NOT NULL,
+                        notification_type VARCHAR(50) DEFAULT 'info' NOT NULL,
+                        link_url VARCHAR(500),
+                        is_read BOOLEAN DEFAULT FALSE NOT NULL,
+                        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+                        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+                    )
+                """))
+                await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_room_notifications_room_id ON room_notifications(room_id)"))
+                await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_room_notifications_user_id ON room_notifications(user_id)"))
+                await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_room_notifications_created_at ON room_notifications(created_at)"))
+
+            else:
+                for col_name, _ in lr_phase2_cols:
+                    try:
+                        await conn.execute(text(f"ALTER TABLE learning_rooms ADD COLUMN {col_name} TEXT"))
+                    except Exception:
+                        pass
+                for col_name, _ in ulr_phase2_cols:
+                    try:
+                        await conn.execute(text(f"ALTER TABLE user_learning_rooms ADD COLUMN {col_name} TEXT"))
+                    except Exception:
+                        pass
+                for col_name, _ in res_phase2_cols:
+                    try:
+                        await conn.execute(text(f"ALTER TABLE room_resources ADD COLUMN {col_name} TEXT"))
+                    except Exception:
+                        pass
+
+        logger.info("Study rooms Phase 2 collaboration schema verified successfully.")
+    except Exception as exc:
+        logger.warning("Study rooms Phase 2 migration notice (continuing): %s", exc)
+
+
 
 async def seed_initial_catalog_if_needed() -> None:
     """Check if skills table has records; if empty, seed the initial catalog idempotently."""
@@ -502,6 +636,7 @@ async def init_db() -> None:
     await run_auth_migrations(engine)
     await run_roadmap_schema_migrations(engine)
     await run_study_rooms_schema_migrations(engine)
+    await run_study_rooms_phase2_schema_migrations(engine)
     await seed_initial_catalog_if_needed()
     try:
         from app.db.seed_roadmaps_100 import seed_100_roadmaps

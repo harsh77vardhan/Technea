@@ -43,9 +43,22 @@ const TOPIC_PILLS = [
 ]
 
 export default function StudyRoomsSection() {
-  const { theme, showToast, activeRoadmap, catalogRoadmaps } = useDashboard()
+  const { theme, showToast, activeRoadmap, catalogRoadmaps, continueLearningData } = useDashboard()
   const { user } = useAuth()
   const isLight = theme === 'light'
+
+  // Extract current milestone/lesson context for smart room recommendations
+  const currentMilestoneTitle = useMemo(() => {
+    return (
+      continueLearningData?.milestone_title ||
+      continueLearningData?.step_title ||
+      continueLearningData?.lessonTitle ||
+      activeRoadmap?.current_milestone ||
+      activeRoadmap?.milestones?.[0]?.title ||
+      activeRoadmap?.roadmap_steps?.[0]?.title ||
+      ''
+    )
+  }, [continueLearningData, activeRoadmap])
 
   // Data states
   const [rooms, setRooms] = useState([])
@@ -69,6 +82,8 @@ export default function StudyRoomsSection() {
         getCommunityRoomsApi(),
         getRecommendedRoomsApi({
           active_roadmap: activeRoadmap?.title || '',
+          current_milestone: currentMilestoneTitle,
+          skills: user?.interests || (activeRoadmap?.tech_stack?.join ? activeRoadmap.tech_stack.join(',') : ''),
           interests: user?.interests || '',
         }),
       ])
@@ -79,7 +94,7 @@ export default function StudyRoomsSection() {
     } finally {
       setIsLoading(false)
     }
-  }, [activeRoadmap, user, showToast])
+  }, [activeRoadmap, currentMilestoneTitle, user, showToast])
 
   useEffect(() => {
     let isMounted = true
@@ -89,6 +104,8 @@ export default function StudyRoomsSection() {
           getCommunityRoomsApi(),
           getRecommendedRoomsApi({
             active_roadmap: activeRoadmap?.title || '',
+            current_milestone: currentMilestoneTitle,
+            skills: user?.interests || (activeRoadmap?.tech_stack?.join ? activeRoadmap.tech_stack.join(',') : ''),
             interests: user?.interests || '',
           }),
         ])
@@ -107,7 +124,7 @@ export default function StudyRoomsSection() {
     return () => {
       isMounted = false
     }
-  }, [activeRoadmap, user])
+  }, [activeRoadmap, currentMilestoneTitle, user])
 
   // Handle Join or Enter Room
   const handleRoomAction = async (room) => {
@@ -306,13 +323,26 @@ export default function StudyRoomsSection() {
       {/* ──────────────── SMART RECOMMENDED SECTION ──────────────── */}
       {selectedTab === 'all' && recommendedRooms.length > 0 && !searchQuery && (
         <section className="space-y-3 pt-2">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-[#e87a48]" />
-            <h2 className="text-sm font-semibold tracking-tight">Recommended for You</h2>
-            {activeRoadmap?.title && (
-              <span className={`text-xs ${isLight ? 'text-[#7a7268]' : 'text-[#a8a199]'}`}>
-                • Based on your active roadmap
-              </span>
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-[#e87a48]" />
+              <h2 className="text-sm font-semibold tracking-tight">Recommended for You</h2>
+              {activeRoadmap?.title && (
+                <span className={`text-xs ${isLight ? 'text-[#7a7268]' : 'text-[#a8a199]'}`}>
+                  • Based on your active roadmap
+                </span>
+              )}
+            </div>
+
+            {currentMilestoneTitle && (
+              <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-medium border ${
+                isLight
+                  ? 'border-[#c25e2e]/25 bg-[#c25e2e]/10 text-[#c25e2e]'
+                  : 'border-[#c25e2e]/30 bg-[#c25e2e]/12 text-[#e87a48]'
+              }`}>
+                <span>You are learning:</span>
+                <strong className="font-semibold text-inherit">{currentMilestoneTitle}</strong>
+              </div>
             )}
           </div>
 
@@ -534,6 +564,8 @@ export default function StudyRoomsSection() {
           isOpen={Boolean(activeWorkspaceRoom)}
           room={activeWorkspaceRoom}
           user={user}
+          activeRoadmap={activeRoadmap}
+          continueLearningData={continueLearningData}
           onClose={() => setActiveWorkspaceRoom(null)}
           onRoomUpdated={(upd) => {
             setActiveWorkspaceRoom(upd)

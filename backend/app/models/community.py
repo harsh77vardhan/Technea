@@ -80,7 +80,7 @@ class LearningRoom(Base, IntIdMixin, TimestampMixin):
         default="users",
         nullable=False,
     )
-    # Study session (MVP)
+    # Study session (MVP & Phase 2 Collaboration)
     study_session_active: Mapped[bool] = mapped_column(
         Boolean,
         default=False,
@@ -93,6 +93,30 @@ class LearningRoom(Base, IntIdMixin, TimestampMixin):
     study_session_started_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
+    )
+    study_session_host_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    study_session_host_name: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
+    )
+    study_session_timer_type: Mapped[str] = mapped_column(
+        String(50),
+        default="pomodoro",
+        nullable=False,
+    )
+    study_session_timer_mode: Mapped[str] = mapped_column(
+        String(50),
+        default="study",
+        nullable=False,
+    )
+    study_session_duration_minutes: Mapped[int] = mapped_column(
+        Integer,
+        default=25,
+        nullable=False,
     )
 
     members: Mapped[list["UserLearningRoom"]] = relationship(
@@ -117,6 +141,24 @@ class LearningRoom(Base, IntIdMixin, TimestampMixin):
         back_populates="room",
         cascade="all, delete-orphan",
         order_by="RoomResource.created_at.desc()",
+    )
+    session_history: Mapped[list["RoomSessionHistory"]] = relationship(
+        "RoomSessionHistory",
+        back_populates="room",
+        cascade="all, delete-orphan",
+        order_by="RoomSessionHistory.ended_at.desc()",
+    )
+    shared_note: Mapped["RoomSharedNote | None"] = relationship(
+        "RoomSharedNote",
+        back_populates="room",
+        cascade="all, delete-orphan",
+        uselist=False,
+    )
+    notifications: Mapped[list["RoomNotification"]] = relationship(
+        "RoomNotification",
+        back_populates="room",
+        cascade="all, delete-orphan",
+        order_by="RoomNotification.created_at.desc()",
     )
 
     def __repr__(self) -> str:
@@ -152,6 +194,11 @@ class UserLearningRoom(Base, IntIdMixin):
         String(255),
         nullable=True,
     )
+    study_state: Mapped[str] = mapped_column(
+        String(50),
+        default="studying",
+        nullable=False,
+    )  # 'studying', 'break', 'away'
 
     user: Mapped["User"] = relationship(
         "User",
@@ -308,9 +355,156 @@ class RoomResource(Base, IntIdMixin, TimestampMixin):
         Text,
         nullable=True,
     )
+    content_badge: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+    )  # e.g. 'Course', 'Lesson', 'Roadmap Step'
+    action_url: Mapped[str | None] = mapped_column(
+        String(500),
+        nullable=True,
+    )
 
     room: Mapped["LearningRoom"] = relationship("LearningRoom", back_populates="resources")
     user: Mapped["User"] = relationship("User", foreign_keys=[user_id])
 
     def __repr__(self) -> str:
         return f"<RoomResource(id={self.id}, room_id={self.room_id}, type='{self.resource_type}')>"
+
+
+class RoomSessionHistory(Base, IntIdMixin, TimestampMixin):
+    """Log of previous study sessions held in a study room."""
+
+    __tablename__ = "room_session_history"
+
+    room_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("learning_rooms.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    host_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    host_name: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+    )
+    topic: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+    )
+    duration_minutes: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+        nullable=False,
+    )
+    participants_count: Mapped[int] = mapped_column(
+        Integer,
+        default=1,
+        nullable=False,
+    )
+    ended_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+
+    room: Mapped["LearningRoom"] = relationship("LearningRoom", back_populates="session_history")
+    host_user: Mapped["User"] = relationship("User", foreign_keys=[host_user_id])
+
+    def __repr__(self) -> str:
+        return f"<RoomSessionHistory(id={self.id}, room_id={self.room_id}, topic='{self.topic}')>"
+
+
+class RoomSharedNote(Base, IntIdMixin, TimestampMixin):
+    """Collaborative shared notes for a study room."""
+
+    __tablename__ = "room_shared_notes"
+    __table_args__ = (
+        UniqueConstraint("room_id", name="uq_room_shared_note"),
+    )
+
+    room_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("learning_rooms.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    title: Mapped[str] = mapped_column(
+        String(255),
+        default="Shared Notes",
+        nullable=False,
+    )
+    content: Mapped[str] = mapped_column(
+        Text,
+        default="",
+        nullable=False,
+    )
+    last_edited_by_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    last_edited_by_name: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
+    )
+
+    room: Mapped["LearningRoom"] = relationship("LearningRoom", back_populates="shared_note")
+    last_edited_by: Mapped["User"] = relationship("User", foreign_keys=[last_edited_by_id])
+
+    def __repr__(self) -> str:
+        return f"<RoomSharedNote(id={self.id}, room_id={self.room_id}, title='{self.title}')>"
+
+
+class RoomNotification(Base, IntIdMixin, TimestampMixin):
+    """In-app event notifications for study rooms."""
+
+    __tablename__ = "room_notifications"
+
+    room_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("learning_rooms.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    user_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )  # Recipient; null means all room members
+    actor_name: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+    )
+    title: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+    )
+    message: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+    )
+    notification_type: Mapped[str] = mapped_column(
+        String(50),
+        default="info",
+        nullable=False,
+    )  # 'session_started', 'member_joined', 'question_reply', 'content_shared', 'note_updated'
+    link_url: Mapped[str | None] = mapped_column(
+        String(500),
+        nullable=True,
+    )
+    is_read: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False,
+    )
+
+    room: Mapped["LearningRoom"] = relationship("LearningRoom", back_populates="notifications")
+
+    def __repr__(self) -> str:
+        return f"<RoomNotification(id={self.id}, room_id={self.room_id}, type='{self.notification_type}')>"
+

@@ -12,11 +12,16 @@ from app.schemas.community import (
     LearningRoomResponse,
     RoomMemberResponse,
     RoomMessageResponse,
+    RoomNotificationResponse,
     RoomQuestionReplyResponse,
     RoomQuestionResponse,
     RoomResourceResponse,
     SendMessageRequest,
+    SessionHistoryResponse,
+    ShareContentRequest,
+    SharedNoteResponse,
     StartStudySessionRequest,
+    UpdateSharedNoteRequest,
     UpdateStudyStatusRequest,
 )
 from app.services.community import community_service
@@ -62,14 +67,18 @@ async def get_recommended_rooms(
     db: DatabaseDep,
     current_user: OptionalUserDep,
     active_roadmap: str | None = Query(None, description="Current active roadmap title"),
+    current_milestone: str | None = Query(None, description="Current active milestone or module title"),
+    skills: str | None = Query(None, description="Comma-separated skills"),
     interests: str | None = Query(None, description="Comma-separated interests"),
 ) -> list[LearningRoomResponse]:
-    """Return rooms recommended based on user's active roadmap, topics, and learning goals."""
+    """Return rooms recommended based on user's active roadmap, current milestone, skills, and learning goals."""
     user_id = current_user.id if current_user else None
     return await community_service.get_recommended_rooms(
         db,
         user_id=user_id,
         active_roadmap=active_roadmap,
+        current_milestone=current_milestone,
+        skills=skills,
         interests=interests,
     )
 
@@ -201,7 +210,7 @@ async def get_room_members(
     "/rooms/{room_id}/study-status",
     response_model=RoomMemberResponse,
     status_code=status.HTTP_200_OK,
-    summary="Update current study status in a room",
+    summary="Update current study status and presence in a room",
 )
 async def update_study_status(
     room_id: int,
@@ -209,13 +218,14 @@ async def update_study_status(
     current_user: CurrentUserDep,
     db: DatabaseDep,
 ) -> RoomMemberResponse:
-    """Update current user's study status message in the room."""
+    """Update current user's study status message and presence state in the room."""
     try:
         return await community_service.update_study_status(
             db,
             room_id=room_id,
             user_id=current_user.id,
             study_status=payload.study_status,
+            study_state=payload.study_state,
         )
     except ValueError as e:
         raise HTTPException(
@@ -228,7 +238,7 @@ async def update_study_status(
     "/rooms/{room_id}/session/start",
     response_model=LearningRoomResponse,
     status_code=status.HTTP_200_OK,
-    summary="Start a synchronized study focus session",
+    summary="Start a synchronized study focus session with Pomodoro timer",
 )
 async def start_study_session(
     room_id: int,
@@ -236,13 +246,16 @@ async def start_study_session(
     current_user: CurrentUserDep,
     db: DatabaseDep,
 ) -> LearningRoomResponse:
-    """Start an active study focus session with a designated topic."""
+    """Start an active study focus session with a designated topic, host, and Pomodoro timer."""
     try:
         return await community_service.start_study_session(
             db,
             room_id=room_id,
             user_id=current_user.id,
             topic=payload.topic,
+            timer_type=payload.timer_type,
+            timer_mode=payload.timer_mode,
+            duration_minutes=payload.duration_minutes,
         )
     except ValueError as e:
         raise HTTPException(
@@ -442,3 +455,111 @@ async def create_room_resource(
         user_id=current_user.id,
         resource_data=payload,
     )
+
+
+@router.get(
+    "/rooms/{room_id}/history",
+    response_model=list[SessionHistoryResponse],
+    status_code=status.HTTP_200_OK,
+    summary="Get room previous study sessions history",
+)
+async def get_room_session_history(
+    room_id: int,
+    db: DatabaseDep,
+) -> list[SessionHistoryResponse]:
+    """Retrieve historical log of study focus sessions held in the room."""
+    return await community_service.get_session_history(db, room_id=room_id)
+
+
+@router.get(
+    "/rooms/{room_id}/notes",
+    response_model=SharedNoteResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Get room collaborative shared notes",
+)
+async def get_room_shared_notes(
+    room_id: int,
+    db: DatabaseDep,
+) -> SharedNoteResponse:
+    """Retrieve the collaborative shared notes document for the room."""
+    return await community_service.get_shared_note(db, room_id=room_id)
+
+
+@router.put(
+    "/rooms/{room_id}/notes",
+    response_model=SharedNoteResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Update room collaborative shared notes",
+)
+async def update_room_shared_notes(
+    room_id: int,
+    payload: UpdateSharedNoteRequest,
+    current_user: CurrentUserDep,
+    db: DatabaseDep,
+) -> SharedNoteResponse:
+    """Save updates to collaborative shared notes in the room."""
+    return await community_service.save_shared_note(
+        db,
+        room_id=room_id,
+        user_id=current_user.id,
+        note_data=payload,
+    )
+
+
+@router.post(
+    "/rooms/{room_id}/share-content",
+    response_model=RoomResourceResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Share Technea learning content (Course, Lesson, Roadmap step)",
+)
+async def share_room_content(
+    room_id: int,
+    payload: ShareContentRequest,
+    current_user: CurrentUserDep,
+    db: DatabaseDep,
+) -> RoomResourceResponse:
+    """Share a Technea learning module, lesson, or roadmap step card inside the room."""
+    return await community_service.share_learning_content(
+        db,
+        room_id=room_id,
+        user_id=current_user.id,
+        content_data=payload,
+    )
+
+
+@router.get(
+    "/rooms/{room_id}/notifications",
+    response_model=list[RoomNotificationResponse],
+    status_code=status.HTTP_200_OK,
+    summary="Get recent room in-app notifications",
+)
+async def get_room_notifications(
+    room_id: int,
+    current_user: CurrentUserDep,
+    db: DatabaseDep,
+) -> list[RoomNotificationResponse]:
+    """Retrieve recent notifications for the room."""
+    return await community_service.get_room_notifications(
+        db,
+        room_id=room_id,
+        user_id=current_user.id,
+    )
+
+
+@router.post(
+    "/rooms/{room_id}/notifications/read",
+    status_code=status.HTTP_200_OK,
+    summary="Mark room notifications as read",
+)
+async def mark_room_notifications_read(
+    room_id: int,
+    current_user: CurrentUserDep,
+    db: DatabaseDep,
+) -> dict:
+    """Mark all unread notifications in this room as read."""
+    return await community_service.mark_room_notifications_read(
+        db,
+        room_id=room_id,
+        user_id=current_user.id,
+    )
+

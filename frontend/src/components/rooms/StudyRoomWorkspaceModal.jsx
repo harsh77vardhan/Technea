@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   X,
@@ -7,6 +7,8 @@ import {
   HelpCircle,
   FileText,
   Play,
+  Pause,
+  RotateCcw,
   Link as LinkIcon,
   FileDown,
   Clock,
@@ -19,10 +21,15 @@ import {
   Radio,
   LogOut,
   ExternalLink,
+  Bell,
+  History,
+  Sparkles,
+  BookOpen,
+  CheckCircle2,
 } from 'lucide-react'
 import { useDashboard } from '../../context/useDashboard'
-import { getAvatarUrl } from '../../services/api'
 import {
+  getAvatarUrl,
   getRoomMessagesApi,
   sendRoomMessageApi,
   getRoomQuestionsApi,
@@ -36,6 +43,12 @@ import {
   startStudySessionApi,
   endStudySessionApi,
   toggleRoomJoinApi,
+  getRoomSessionHistoryApi,
+  getRoomSharedNotesApi,
+  updateRoomSharedNotesApi,
+  shareRoomContentApi,
+  getRoomNotificationsApi,
+  markRoomNotificationsReadApi,
 } from '../../services/api'
 
 export default function StudyRoomWorkspaceModal({
@@ -44,11 +57,13 @@ export default function StudyRoomWorkspaceModal({
   isOpen,
   onClose,
   onRoomUpdated,
+  activeRoadmap,
+  continueLearningData,
 }) {
   const { theme, showToast } = useDashboard()
   const isLight = theme === 'light'
 
-  const [activeTab, setActiveTab] = useState('chat') // 'chat' | 'questions' | 'resources' | 'members'
+  const [activeTab, setActiveTab] = useState('chat') // 'chat' | 'questions' | 'notes' | 'resources' | 'history' | 'members'
   const [roomOverride, setRoomOverride] = useState(null)
   const currentRoom = roomOverride || room
 
@@ -66,56 +81,104 @@ export default function StudyRoomWorkspaceModal({
   const [replyInputs, setReplyInputs] = useState({})
   const [isSubmittingQuestion, setIsSubmittingQuestion] = useState(false)
 
-  // Resources State
+  // Resources & Learning Content State
   const [resources, setResources] = useState([])
-  const [resourceFilter, setResourceFilter] = useState('all') // 'all' | 'video' | 'link' | 'note' | 'pdf'
+  const [resourceFilter, setResourceFilter] = useState('all') // 'all' | 'content' | 'video' | 'link' | 'note' | 'pdf'
   const [isSharingResource, setIsSharingResource] = useState(false)
+  const [isSharingContent, setIsSharingContent] = useState(false)
   const [resTitle, setResTitle] = useState('')
   const [resType, setResType] = useState('link')
   const [resUrl, setResUrl] = useState('')
   const [resDesc, setResDesc] = useState('')
   const [isSubmittingResource, setIsSubmittingResource] = useState(false)
 
-  // Members State
+  // Technea Content Sharing state
+  const [contentTitle, setContentTitle] = useState('')
+  const [contentType, setContentType] = useState('lesson')
+  const [contentBadge, setContentBadge] = useState('Lesson')
+  const [contentDesc, setContentDesc] = useState('')
+  const [contentUrl, setContentUrl] = useState('')
+  const [isSubmittingContent, setIsSubmittingContent] = useState(false)
+
+  // Members & Study Status State
   const [members, setMembers] = useState([])
   const [userStudyStatus, setUserStudyStatus] = useState('')
+  const [userStudyState, setUserStudyState] = useState('studying') // 'studying' | 'break' | 'away'
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
 
-  // Study Session State
+  // Shared Notes State
+  const [sharedNotes, setSharedNotes] = useState('')
+  const [notesMeta, setNotesMeta] = useState(null)
+  const [isSavingNotes, setIsSavingNotes] = useState(false)
+  const [notesSaveSuccess, setNotesSaveSuccess] = useState(false)
+  const notesTextareaRef = useRef(null)
+
+  // Session History State
+  const [sessionHistory, setSessionHistory] = useState([])
+
+  // Room Notifications State
+  const [notifications, setNotifications] = useState([])
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
+
+  // Study Session & Pomodoro Timer State
   const [isStartingSession, setIsStartingSession] = useState(false)
   const [sessionTopic, setSessionTopic] = useState('')
-  const [sessionTimer, setSessionTimer] = useState('00:00:00')
+  const [sessionTimerType, setSessionTimerType] = useState('pomodoro') // 'pomodoro' | 'stopwatch'
+  const sessionDurationMinutes = 25
+  const [isSubmittingSession, setIsSubmittingSession] = useState(false)
+
+  // Focus Timer local running state
+  const [pomodoroMode, setPomodoroMode] = useState('study') // 'study' (25m) | 'break' (5m)
+  const [pomodoroSecsRemaining, setPomodoroSecsRemaining] = useState(25 * 60)
+  const [pomodoroIsRunning, setPomodoroIsRunning] = useState(false)
+  const [stopwatchSecs, setStopwatchSecs] = useState(0)
 
   // Invite code copy feedback
   const [copiedCode, setCopiedCode] = useState(false)
 
-  // Fetch data on room open
-  const fetchRoomData = useCallback(async () => {
+  // Derived unread count
+  const unreadCount = notifications.filter((n) => !n.is_read).length
+
+  // Helper to re-fetch room data after actions
+  const reloadRoomData = async () => {
     const targetId = currentRoom?.id
     if (!targetId) return
     try {
-      const [msgs, qlist, rlist, mlist] = await Promise.all([
+      const [msgs, qlist, rlist, mlist, noteRes, notifRes, histRes] = await Promise.all([
         getRoomMessagesApi(targetId).catch(() => []),
         getRoomQuestionsApi(targetId).catch(() => []),
         getRoomResourcesApi(targetId).catch(() => []),
         getRoomMembersApi(targetId).catch(() => []),
+        getRoomSharedNotesApi(targetId).catch(() => null),
+        getRoomNotificationsApi(targetId).catch(() => []),
+        getRoomSessionHistoryApi(targetId).catch(() => []),
       ])
+
       setMessages(msgs || [])
       setQuestions(qlist || [])
       setResources(rlist || [])
       setMembers(mlist || [])
+      setNotifications(notifRes || [])
+      setSessionHistory(histRes || [])
+
+      if (noteRes) {
+        setSharedNotes(noteRes.content || '')
+        setNotesMeta(noteRes)
+      }
 
       if (user?.id && Array.isArray(mlist)) {
         const myMembership = mlist.find((m) => m.user_id === user.id)
-        if (myMembership?.study_status) {
-          setUserStudyStatus(myMembership.study_status)
+        if (myMembership) {
+          if (myMembership.study_status) setUserStudyStatus(myMembership.study_status)
+          if (myMembership.study_state) setUserStudyState(myMembership.study_state)
         }
       }
     } catch {
       // Fallback gracefully
     }
-  }, [currentRoom, user])
+  }
 
+  // Initial load on mount or room change
   useEffect(() => {
     let isMounted = true
     const targetId = currentRoom?.id
@@ -123,31 +186,59 @@ export default function StudyRoomWorkspaceModal({
 
     const loadData = async () => {
       try {
-        const [msgs, qlist, rlist, mlist] = await Promise.all([
+        const [msgs, qlist, rlist, mlist, noteRes, notifRes, histRes] = await Promise.all([
           getRoomMessagesApi(targetId).catch(() => []),
           getRoomQuestionsApi(targetId).catch(() => []),
           getRoomResourcesApi(targetId).catch(() => []),
           getRoomMembersApi(targetId).catch(() => []),
+          getRoomSharedNotesApi(targetId).catch(() => null),
+          getRoomNotificationsApi(targetId).catch(() => []),
+          getRoomSessionHistoryApi(targetId).catch(() => []),
         ])
+
         if (isMounted) {
           setMessages(msgs || [])
           setQuestions(qlist || [])
           setResources(rlist || [])
           setMembers(mlist || [])
+          setNotifications(notifRes || [])
+          setSessionHistory(histRes || [])
+
+          if (noteRes) {
+            setSharedNotes(noteRes.content || '')
+            setNotesMeta(noteRes)
+          }
+
           if (user?.id && Array.isArray(mlist)) {
             const myMembership = mlist.find((m) => m.user_id === user.id)
-            if (myMembership?.study_status) {
-              setUserStudyStatus(myMembership.study_status)
+            if (myMembership) {
+              if (myMembership.study_status) setUserStudyStatus(myMembership.study_status)
+              if (myMembership.study_state) setUserStudyState(myMembership.study_state)
             }
           }
         }
       } catch {
-        // Fallback
+        // Fallback gracefully
       }
     }
+
     loadData()
+
+    // Poll notifications & members periodically
+    const pollInterval = setInterval(() => {
+      if (isMounted && targetId) {
+        getRoomNotificationsApi(targetId)
+          .then((data) => isMounted && setNotifications(data || []))
+          .catch(() => {})
+        getRoomMembersApi(targetId)
+          .then((data) => isMounted && setMembers(data || []))
+          .catch(() => {})
+      }
+    }, 15000)
+
     return () => {
       isMounted = false
+      clearInterval(pollInterval)
     }
   }, [isOpen, currentRoom?.id, user?.id])
 
@@ -158,27 +249,103 @@ export default function StudyRoomWorkspaceModal({
     }
   }, [messages, activeTab])
 
-  // Study Session Live Stopwatch Timer
+  // Refresh session history when history tab is clicked
+  useEffect(() => {
+    let isMounted = true
+    if (activeTab === 'history' && currentRoom?.id) {
+      getRoomSessionHistoryApi(currentRoom.id)
+        .then((hist) => {
+          if (isMounted) setSessionHistory(hist || [])
+        })
+        .catch(() => {})
+    }
+    return () => {
+      isMounted = false
+    }
+  }, [activeTab, currentRoom?.id])
+
+  // Sync Focus Timer when room session status changes
   useEffect(() => {
     const isSessionActive = Boolean(currentRoom?.study_session_active && currentRoom?.study_session_started_at)
     if (!isSessionActive) {
-      return
+      const timeout = setTimeout(() => {
+        setPomodoroIsRunning(false)
+        setStopwatchSecs(0)
+      }, 0)
+      return () => clearTimeout(timeout)
     }
 
-    const updateTimer = () => {
-      const start = new Date(currentRoom.study_session_started_at).getTime()
-      const now = Date.now()
-      const diffSecs = Math.max(0, Math.floor((now - start) / 1000))
-      const h = String(Math.floor(diffSecs / 3600)).padStart(2, '0')
-      const m = String(Math.floor((diffSecs % 3600) / 60)).padStart(2, '0')
-      const s = String(diffSecs % 60).padStart(2, '0')
-      setSessionTimer(`${h}:${m}:${s}`)
+    const timerType = currentRoom?.study_session_timer_type || 'pomodoro'
+    const timerMode = currentRoom?.study_session_timer_mode || 'study'
+    const startMs = new Date(currentRoom.study_session_started_at).getTime()
+    const targetDurationSecs =
+      (currentRoom.study_session_duration_minutes || (timerMode === 'break' ? 5 : 25)) * 60
+
+    const syncTick = () => {
+      setPomodoroMode(timerMode)
+      const nowMs = Date.now()
+      const elapsedSecs = Math.max(0, Math.floor((nowMs - startMs) / 1000))
+
+      if (timerType === 'stopwatch') {
+        setStopwatchSecs(elapsedSecs)
+        setPomodoroIsRunning(true)
+      } else {
+        const remaining = Math.max(0, targetDurationSecs - elapsedSecs)
+        setPomodoroSecsRemaining(remaining)
+        setPomodoroIsRunning(remaining > 0)
+      }
     }
 
-    updateTimer()
-    const interval = setInterval(updateTimer, 1000)
+    const timeout = setTimeout(syncTick, 0)
+    return () => clearTimeout(timeout)
+  }, [
+    currentRoom?.study_session_active,
+    currentRoom?.study_session_started_at,
+    currentRoom?.study_session_timer_type,
+    currentRoom?.study_session_timer_mode,
+    currentRoom?.study_session_duration_minutes,
+  ])
+
+  // Focus Timer interval ticker
+  useEffect(() => {
+    if (!pomodoroIsRunning) return
+
+    const interval = setInterval(() => {
+      if (currentRoom?.study_session_timer_type === 'stopwatch') {
+        setStopwatchSecs((prev) => prev + 1)
+      } else {
+        setPomodoroSecsRemaining((prev) => {
+          if (prev <= 1) {
+            clearInterval(interval)
+            setPomodoroIsRunning(false)
+            showToast?.(
+              pomodoroMode === 'study'
+                ? '🎉 25-minute study sprint complete! Time for a well-deserved break.'
+                : '⚡ Break concluded! Ready to resume learning.'
+            )
+            return 0
+          }
+          return prev - 1
+        })
+      }
+    }, 1000)
+
     return () => clearInterval(interval)
-  }, [currentRoom?.study_session_active, currentRoom?.study_session_started_at])
+  }, [pomodoroIsRunning, currentRoom?.study_session_timer_type, pomodoroMode, showToast])
+
+  // Format time helpers
+  const formatPomodoro = (secs) => {
+    const m = String(Math.floor(secs / 60)).padStart(2, '0')
+    const s = String(secs % 60).padStart(2, '0')
+    return `${m}:${s}`
+  }
+
+  const formatStopwatch = (secs) => {
+    const h = String(Math.floor(secs / 3600)).padStart(2, '0')
+    const m = String(Math.floor((secs % 3600) / 60)).padStart(2, '0')
+    const s = String(secs % 60).padStart(2, '0')
+    return `${h}:${m}:${s}`
+  }
 
   // Handle Send Chat Message
   const handleSendMessage = async (e) => {
@@ -242,6 +409,7 @@ export default function StudyRoomWorkspaceModal({
         })
       )
       setReplyInputs((prev) => ({ ...prev, [questionId]: '' }))
+      showToast?.('Reply posted.')
     } catch (err) {
       showToast?.(err?.message || 'Failed to post reply.')
     }
@@ -258,7 +426,7 @@ export default function StudyRoomWorkspaceModal({
     }
   }
 
-  // Handle Share Resource
+  // Handle Share Generic Resource
   const handleCreateResource = async (e) => {
     e?.preventDefault()
     if (!resTitle.trim() || !resUrl.trim() || isSubmittingResource) return
@@ -284,16 +452,103 @@ export default function StudyRoomWorkspaceModal({
     }
   }
 
-  // Handle Update Study Status
-  const handleUpdateStatus = async (e) => {
+  // Handle Share Technea Content (Course / Lesson / Roadmap Step)
+  const handleShareTechneaContent = async (e) => {
     e?.preventDefault()
-    if (!userStudyStatus.trim() || isUpdatingStatus) return
+    if (!contentTitle.trim() || isSubmittingContent) return
+
+    setIsSubmittingContent(true)
+    try {
+      const newContent = await shareRoomContentApi(currentRoom.id, {
+        title: contentTitle.trim(),
+        content_type: contentType,
+        content_badge: contentBadge || 'Lesson',
+        description: contentDesc.trim() || `Technea ${contentBadge || 'Learning Module'}`,
+        action_url: contentUrl.trim() || '/dashboard',
+      })
+      setResources((prev) => [newContent, ...prev])
+      setContentTitle('')
+      setContentDesc('')
+      setContentUrl('')
+      setIsSharingContent(false)
+      showToast?.(`Shared ${contentBadge || 'Content'} with room!`)
+      reloadRoomData()
+    } catch (err) {
+      showToast?.(err?.message || 'Failed to share content.')
+    } finally {
+      setIsSubmittingContent(false)
+    }
+  }
+
+  // 1-Click Prefills for Technea Content Sharing
+  const prefillCurrentLesson = () => {
+    const lessonTitle =
+      continueLearningData?.step_title ||
+      continueLearningData?.milestone_title ||
+      continueLearningData?.lesson_title ||
+      'Interactive Learning Module'
+    setContentTitle(lessonTitle)
+    setContentType('lesson')
+    setContentBadge('Lesson')
+    setContentDesc(`From ${activeRoadmap?.title || 'Current Learning Milestone'}`)
+    setContentUrl('/learning')
+  }
+
+  const prefillActiveRoadmap = () => {
+    const roadmapTitle = activeRoadmap?.title || 'Full Stack Roadmap'
+    setContentTitle(roadmapTitle)
+    setContentType('roadmap')
+    setContentBadge('Roadmap step')
+    setContentDesc(activeRoadmap?.description || 'Active roadmap path on Technea')
+    setContentUrl('/dashboard')
+  }
+
+  // Handle Save Shared Notes
+  const handleSaveNotes = async () => {
+    if (isSavingNotes) return
+    setIsSavingNotes(true)
+    try {
+      const updated = await updateRoomSharedNotesApi(currentRoom.id, sharedNotes)
+      setNotesMeta(updated)
+      setNotesSaveSuccess(true)
+      setTimeout(() => setNotesSaveSuccess(false), 2500)
+      showToast?.('Shared notes saved.')
+    } catch (err) {
+      showToast?.(err?.message || 'Failed to save notes.')
+    } finally {
+      setIsSavingNotes(false)
+    }
+  }
+
+  // Insert markdown helpers into shared notes
+  const insertMarkdownSnippet = (prefix, suffix = '') => {
+    const textarea = notesTextareaRef.current
+    if (!textarea) return
+    const start = textarea.selectionStart
+    const end = textarea.selectionEnd
+    const selected = sharedNotes.substring(start, end)
+    const replacement = `${prefix}${selected || 'text'}${suffix}`
+    const updated = sharedNotes.substring(0, start) + replacement + sharedNotes.substring(end)
+    setSharedNotes(updated)
+    setTimeout(() => {
+      textarea.focus()
+      textarea.setSelectionRange(start + prefix.length, start + prefix.length + (selected.length || 4))
+    }, 10)
+  }
+
+  // Handle Update Study Status & Presence
+  const handleUpdateStatusAndPresence = async (e) => {
+    e?.preventDefault()
+    if (isUpdatingStatus) return
 
     setIsUpdatingStatus(true)
     try {
-      await updateStudyStatusApi(currentRoom.id, userStudyStatus.trim())
-      showToast?.('Study status updated!')
-      fetchRoomData()
+      await updateStudyStatusApi(currentRoom.id, {
+        study_status: userStudyStatus.trim() || 'Studying with peers',
+        study_state: userStudyState,
+      })
+      showToast?.('Study status & presence updated!')
+      reloadRoomData()
     } catch (err) {
       showToast?.(err?.message || 'Failed to update study status.')
     } finally {
@@ -304,18 +559,26 @@ export default function StudyRoomWorkspaceModal({
   // Handle Start Study Session
   const handleStartSession = async (e) => {
     e?.preventDefault()
-    if (!sessionTopic.trim()) return
+    if (!sessionTopic.trim() || isSubmittingSession) return
 
+    setIsSubmittingSession(true)
     try {
-      const updated = await startStudySessionApi(currentRoom.id, sessionTopic.trim())
+      const updated = await startStudySessionApi(currentRoom.id, {
+        topic: sessionTopic.trim(),
+        timer_type: sessionTimerType,
+        timer_mode: 'study',
+        duration_minutes: sessionTimerType === 'pomodoro' ? sessionDurationMinutes : 45,
+      })
       setRoomOverride(updated)
       onRoomUpdated?.(updated)
       setIsStartingSession(false)
       setSessionTopic('')
-      showToast?.('Study session started! Timer is running.')
-      fetchRoomData()
+      showToast?.('Study session started! Focus timer running.')
+      reloadRoomData()
     } catch (err) {
       showToast?.(err?.message || 'Failed to start study session.')
+    } finally {
+      setIsSubmittingSession(false)
     }
   }
 
@@ -324,12 +587,37 @@ export default function StudyRoomWorkspaceModal({
     try {
       const updated = await endStudySessionApi(currentRoom.id)
       setRoomOverride(updated)
-      setSessionTimer('00:00:00')
+      setPomodoroIsRunning(false)
       onRoomUpdated?.(updated)
-      showToast?.('Study session ended.')
-      fetchRoomData()
+      showToast?.('Study session ended and logged to Session History.')
+      reloadRoomData()
     } catch (err) {
       showToast?.(err?.message || 'Failed to end study session.')
+    }
+  }
+
+  // Pomodoro local controls
+  const togglePomodoroMode = (mode) => {
+    setPomodoroMode(mode)
+    const newSecs = mode === 'study' ? 25 * 60 : 5 * 60
+    setPomodoroSecsRemaining(newSecs)
+    setPomodoroIsRunning(false)
+  }
+
+  const resetPomodoro = () => {
+    const newSecs = pomodoroMode === 'study' ? 25 * 60 : 5 * 60
+    setPomodoroSecsRemaining(newSecs)
+    setPomodoroIsRunning(false)
+  }
+
+  // Mark all notifications read
+  const handleMarkNotificationsRead = async () => {
+    try {
+      await markRoomNotificationsReadApi(currentRoom.id)
+      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })))
+      showToast?.('All notifications marked as read.')
+    } catch {
+      // Fallback
     }
   }
 
@@ -358,9 +646,12 @@ export default function StudyRoomWorkspaceModal({
 
   if (!isOpen || !currentRoom) return null
 
+  // Filtered resources
   const filteredResources =
     resourceFilter === 'all'
       ? resources
+      : resourceFilter === 'content'
+      ? resources.filter((r) => Boolean(r.content_badge))
       : resources.filter((r) => r.resource_type === resourceFilter)
 
   return (
@@ -388,9 +679,11 @@ export default function StudyRoomWorkspaceModal({
           }`}
         >
           {/* ──────────────── 1. WORKSPACE HEADER ──────────────── */}
-          <header className={`shrink-0 px-5 py-4 border-b flex flex-wrap items-center justify-between gap-3 ${
-            isLight ? 'border-[#ded4be] bg-[#f7f2e8]' : 'border-[#262320] bg-[#171514]'
-          }`}>
+          <header
+            className={`shrink-0 px-5 py-3.5 border-b flex flex-wrap items-center justify-between gap-3 relative ${
+              isLight ? 'border-[#ded4be] bg-[#f7f2e8]' : 'border-[#262320] bg-[#171514]'
+            }`}
+          >
             <div className="flex items-center gap-3 min-w-0">
               <button
                 type="button"
@@ -410,11 +703,13 @@ export default function StudyRoomWorkspaceModal({
                   <h2 className="text-base sm:text-lg font-bold tracking-tight truncate">
                     {currentRoom.name}
                   </h2>
-                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border ${
-                    currentRoom.is_private
-                      ? 'border-amber-500/30 bg-amber-500/10 text-amber-400'
-                      : 'border-[#c25e2e]/30 bg-[#c25e2e]/10 text-[#e87a48]'
-                  }`}>
+                  <span
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border ${
+                      currentRoom.is_private
+                        ? 'border-amber-500/30 bg-amber-500/10 text-amber-400'
+                        : 'border-[#c25e2e]/30 bg-[#c25e2e]/10 text-[#e87a48]'
+                    }`}
+                  >
                     {currentRoom.is_private ? (
                       <>
                         <Lock className="h-3 w-3" />
@@ -443,8 +738,9 @@ export default function StudyRoomWorkspaceModal({
               </div>
             </div>
 
-            {/* Quick Actions */}
+            {/* Header Right Actions */}
             <div className="flex items-center gap-2">
+              {/* Copy Invite Code */}
               {currentRoom.invite_code && (
                 <button
                   type="button"
@@ -463,6 +759,91 @@ export default function StudyRoomWorkspaceModal({
                 </button>
               )}
 
+              {/* Feature 8: Room Notifications Bell */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+                  className={`p-2 rounded-xl border text-xs relative transition-colors cursor-pointer ${
+                    isNotificationsOpen
+                      ? 'border-[#c25e2e] text-[#e87a48] bg-[#c25e2e]/10'
+                      : isLight
+                      ? 'border-[#ded4be] hover:bg-black/5 text-[#7a7268]'
+                      : 'border-[#262320] hover:bg-white/5 text-[#a8a199]'
+                  }`}
+                  title="Room Notifications"
+                >
+                  <Bell className="h-4 w-4" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 h-4 min-w-[16px] px-1 rounded-full bg-[#c25e2e] text-white text-[9px] font-bold flex items-center justify-center animate-pulse">
+                      {unreadCount}
+                    </span>
+                  )}
+                </button>
+
+                {/* Notifications Floating Dropdown */}
+                {isNotificationsOpen && (
+                  <div
+                    className={`absolute right-0 mt-2 w-80 max-h-96 rounded-xl border shadow-xl z-50 flex flex-col overflow-hidden backdrop-blur-md ${
+                      isLight
+                        ? 'bg-[#faf6ee]/95 border-[#ded4be] text-[#181614]'
+                        : 'bg-[#181614]/95 border-[#262320] text-[#faf6ee]'
+                    }`}
+                  >
+                    <div className="p-3 border-b border-inherit flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <Bell className="h-3.5 w-3.5 text-[#e87a48]" />
+                        <span className="text-xs font-bold">Room Activity</span>
+                      </div>
+                      {unreadCount > 0 && (
+                        <button
+                          type="button"
+                          onClick={handleMarkNotificationsRead}
+                          className="text-[11px] font-semibold text-[#e87a48] hover:underline cursor-pointer"
+                        >
+                          Mark all as read
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="overflow-y-auto max-h-72 p-2 space-y-1.5 divide-y divide-inherit">
+                      {notifications.length === 0 ? (
+                        <div className="py-6 text-center opacity-60 text-xs">
+                          No notifications in this room yet.
+                        </div>
+                      ) : (
+                        notifications.map((notif) => (
+                          <div
+                            key={notif.id}
+                            className={`p-2.5 rounded-lg text-xs transition-colors ${
+                              !notif.is_read
+                                ? isLight
+                                  ? 'bg-[#c25e2e]/8 font-medium'
+                                  : 'bg-[#c25e2e]/12 font-medium'
+                                : 'opacity-80'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between gap-1 mb-0.5">
+                              <span className="font-semibold text-[11px] text-[#e87a48] truncate">
+                                {notif.title}
+                              </span>
+                              <span className="text-[10px] opacity-60 shrink-0">
+                                {new Date(notif.created_at).toLocaleTimeString([], {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })}
+                              </span>
+                            </div>
+                            <p className="text-[11px] opacity-90 leading-snug">{notif.message}</p>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Leave Room Button */}
               <button
                 type="button"
                 onClick={handleLeaveRoom}
@@ -476,6 +857,7 @@ export default function StudyRoomWorkspaceModal({
                 <LogOut className="h-4 w-4" />
               </button>
 
+              {/* Close Modal */}
               <button
                 type="button"
                 onClick={onClose}
@@ -488,69 +870,174 @@ export default function StudyRoomWorkspaceModal({
             </div>
           </header>
 
-          {/* ──────────────── 2. STUDY SESSION BANNER (MVP) ──────────────── */}
-          <div className={`px-5 py-2.5 border-b flex flex-wrap items-center justify-between gap-3 text-xs ${
-            currentRoom.study_session_active
-              ? 'bg-[#c25e2e]/12 border-[#c25e2e]/30 text-[#e87a48]'
-              : isLight
-              ? 'bg-[#eadecc]/40 border-[#ded4be] text-[#7a7268]'
-              : 'bg-[#1b1917] border-[#262320] text-[#a8a199]'
-          }`}>
-            <div className="flex items-center gap-3">
+          {/* ──────────────── 2. LIVE STUDY SESSION & FOCUS TIMER BAR (Features 1 & 3) ──────────────── */}
+          <div
+            className={`px-5 py-3 border-b flex flex-wrap items-center justify-between gap-3 text-xs ${
+              currentRoom.study_session_active
+                ? 'bg-[#c25e2e]/12 border-[#c25e2e]/30 text-[#e87a48]'
+                : isLight
+                ? 'bg-[#eadecc]/40 border-[#ded4be] text-[#7a7268]'
+                : 'bg-[#1b1917] border-[#262320] text-[#a8a199]'
+            }`}
+          >
+            {/* Left: Session Status & Host Info */}
+            <div className="flex flex-wrap items-center gap-3">
               {currentRoom.study_session_active ? (
                 <>
-                  <div className="flex items-center gap-1.5 font-semibold text-[#e87a48]">
+                  <div className="flex items-center gap-2 font-bold text-[#e87a48]">
                     <span className="relative flex h-2.5 w-2.5">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#e87a48] opacity-75"></span>
                       <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#e87a48]"></span>
                     </span>
-                    <span>STUDY SESSION ACTIVE</span>
+                    <span className="tracking-wide">LIVE SESSION</span>
                   </div>
+
                   <span className="opacity-40">•</span>
-                  <span className="font-medium text-inherit truncate">
-                    Focus Topic: {currentRoom.study_session_topic || 'Deep Work Sprint'}
+
+                  <span className="font-semibold text-inherit">
+                    {currentRoom.study_session_host_name || 'Host'} is hosting
                   </span>
+
                   <span className="opacity-40">•</span>
-                  <span className="font-mono font-bold tracking-wider px-2 py-0.5 rounded-md bg-black/20 text-[#faf6ee]">
-                    {sessionTimer}
+
+                  <span className="font-medium text-inherit truncate max-w-xs sm:max-w-md">
+                    Goal: {currentRoom.study_session_topic || 'Deep Work Sprint'}
+                  </span>
+
+                  <span className="opacity-40">•</span>
+
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                    {members.filter((m) => m.study_state === 'studying').length || members.length} studying
                   </span>
                 </>
               ) : (
                 <div className="flex items-center gap-2">
-                  <Clock className="h-3.5 w-3.5" />
-                  <span>No active study session right now.</span>
+                  <Clock className="h-4 w-4 text-[#e87a48]" />
+                  <span>No active study session right now. Start one to focus with room peers.</span>
                 </div>
               )}
             </div>
 
+            {/* Right: Focus Pomodoro Timer Controls & Session Trigger */}
             <div className="flex items-center gap-2">
               {currentRoom.study_session_active ? (
-                <button
-                  type="button"
-                  onClick={handleEndSession}
-                  className="px-3 py-1 rounded-lg text-xs font-semibold bg-[#c25e2e] hover:bg-[#d97b48] text-white transition-colors cursor-pointer"
-                >
-                  End Session
-                </button>
+                <div className="flex items-center gap-2">
+                  {/* Timer Mode Switcher (25m Study / 5m Break) */}
+                  <div
+                    className={`inline-flex items-center p-0.5 rounded-lg border text-[11px] ${
+                      isLight ? 'border-[#ded4be] bg-[#faf6ee]' : 'border-[#262320] bg-[#141312]'
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => togglePomodoroMode('study')}
+                      className={`px-2 py-0.5 rounded-md font-medium transition-colors cursor-pointer ${
+                        pomodoroMode === 'study'
+                          ? 'bg-[#c25e2e] text-white'
+                          : isLight
+                          ? 'text-[#7a7268] hover:text-[#181614]'
+                          : 'text-[#a8a199] hover:text-[#faf6ee]'
+                      }`}
+                    >
+                      25m Study
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => togglePomodoroMode('break')}
+                      className={`px-2 py-0.5 rounded-md font-medium transition-colors cursor-pointer ${
+                        pomodoroMode === 'break'
+                          ? 'bg-amber-500 text-white'
+                          : isLight
+                          ? 'text-[#7a7268] hover:text-[#181614]'
+                          : 'text-[#a8a199] hover:text-[#faf6ee]'
+                      }`}
+                    >
+                      5m Break
+                    </button>
+                  </div>
+
+                  {/* Timer Display */}
+                  <span className="font-mono font-bold tracking-wider px-2.5 py-1 rounded-md bg-black/25 text-[#faf6ee] text-xs">
+                    {currentRoom.study_session_timer_type === 'stopwatch'
+                      ? formatStopwatch(stopwatchSecs)
+                      : formatPomodoro(pomodoroSecsRemaining)}
+                  </span>
+
+                  {/* Play / Pause Toggle */}
+                  <button
+                    type="button"
+                    onClick={() => setPomodoroIsRunning(!pomodoroIsRunning)}
+                    className={`p-1.5 rounded-lg border text-xs font-semibold cursor-pointer transition-colors ${
+                      isLight
+                        ? 'border-[#ded4be] bg-[#faf6ee] text-[#181614] hover:border-[#c25e2e]'
+                        : 'border-[#262320] bg-[#141312] text-[#faf6ee] hover:border-[#c25e2e]'
+                    }`}
+                    title={pomodoroIsRunning ? 'Pause Focus Timer' : 'Resume Focus Timer'}
+                  >
+                    {pomodoroIsRunning ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+                  </button>
+
+                  {/* Reset Timer */}
+                  <button
+                    type="button"
+                    onClick={resetPomodoro}
+                    className={`p-1.5 rounded-lg border text-xs font-semibold cursor-pointer transition-colors ${
+                      isLight
+                        ? 'border-[#ded4be] bg-[#faf6ee] text-[#181614] hover:border-[#c25e2e]'
+                        : 'border-[#262320] bg-[#141312] text-[#faf6ee] hover:border-[#c25e2e]'
+                    }`}
+                    title="Reset Timer"
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" />
+                  </button>
+
+                  {/* End Session Button */}
+                  <button
+                    type="button"
+                    onClick={handleEndSession}
+                    className="px-3 py-1 rounded-lg text-xs font-semibold bg-[#c25e2e] hover:bg-[#d97b48] text-white transition-colors cursor-pointer"
+                  >
+                    End Session
+                  </button>
+                </div>
               ) : isStartingSession ? (
-                <form onSubmit={handleStartSession} className="flex items-center gap-2">
+                /* Start Session Form */
+                <form onSubmit={handleStartSession} className="flex flex-wrap items-center gap-2">
                   <input
                     type="text"
                     value={sessionTopic}
                     onChange={(e) => setSessionTopic(e.target.value)}
-                    placeholder="Focus topic (e.g. 45 min Chapter 2)"
+                    placeholder="Focus goal (e.g. Complete Functions Module)"
                     autoFocus
                     required
-                    className={`px-2.5 py-1 rounded-lg border text-xs outline-hidden ${
-                      isLight ? 'border-[#ded4be] bg-[#faf6ee] text-[#181614]' : 'border-[#262320] bg-[#141312] text-[#faf6ee]'
+                    className={`px-2.5 py-1 rounded-lg border text-xs outline-hidden min-w-[200px] ${
+                      isLight
+                        ? 'border-[#ded4be] bg-[#faf6ee] text-[#181614]'
+                        : 'border-[#262320] bg-[#141312] text-[#faf6ee]'
                     }`}
                   />
+
+                  <select
+                    value={sessionTimerType}
+                    onChange={(e) => setSessionTimerType(e.target.value)}
+                    className={`px-2 py-1 rounded-lg border text-xs outline-hidden ${
+                      isLight
+                        ? 'border-[#ded4be] bg-[#faf6ee] text-[#181614]'
+                        : 'border-[#262320] bg-[#141312] text-[#faf6ee]'
+                    }`}
+                  >
+                    <option value="pomodoro">Pomodoro (25m)</option>
+                    <option value="stopwatch">Open Stopwatch</option>
+                  </select>
+
                   <button
                     type="submit"
-                    className="px-3 py-1 rounded-lg font-semibold bg-[#c25e2e] hover:bg-[#d97b48] text-white cursor-pointer"
+                    disabled={isSubmittingSession}
+                    className="px-3 py-1 rounded-lg font-semibold bg-[#c25e2e] hover:bg-[#d97b48] text-white cursor-pointer disabled:opacity-50"
                   >
-                    Start
+                    {isSubmittingSession ? 'Starting...' : 'Start'}
                   </button>
+
                   <button
                     type="button"
                     onClick={() => setIsStartingSession(false)}
@@ -563,13 +1050,13 @@ export default function StudyRoomWorkspaceModal({
                 <button
                   type="button"
                   onClick={() => setIsStartingSession(true)}
-                  className={`px-3 py-1 rounded-lg font-medium border transition-colors cursor-pointer flex items-center gap-1.5 ${
+                  className={`px-3 py-1.5 rounded-lg font-medium border transition-colors cursor-pointer flex items-center gap-1.5 ${
                     isLight
                       ? 'border-[#ded4be] bg-[#faf6ee] text-[#181614] hover:border-[#c25e2e]'
                       : 'border-[#262320] bg-[#141312] text-[#faf6ee] hover:border-[#c25e2e]'
                   }`}
                 >
-                  <Radio className="h-3 w-3 text-[#e87a48]" />
+                  <Radio className="h-3.5 w-3.5 text-[#e87a48]" />
                   <span>Start Study Session</span>
                 </button>
               )}
@@ -577,14 +1064,18 @@ export default function StudyRoomWorkspaceModal({
           </div>
 
           {/* ──────────────── 3. SUB-NAVIGATION TABS ──────────────── */}
-          <div className={`px-5 border-b flex items-center gap-1 shrink-0 ${
-            isLight ? 'border-[#ded4be] bg-[#f7f2e8]' : 'border-[#262320] bg-[#171514]'
-          }`}>
+          <div
+            className={`px-5 border-b flex items-center gap-1 shrink-0 overflow-x-auto no-scrollbar ${
+              isLight ? 'border-[#ded4be] bg-[#f7f2e8]' : 'border-[#262320] bg-[#171514]'
+            }`}
+          >
             {[
               { id: 'chat', label: 'Discussion Chat', icon: MessageSquare, badge: messages.length },
               { id: 'questions', label: 'Questions (Q&A)', icon: HelpCircle, badge: questions.length },
-              { id: 'resources', label: 'Resources', icon: FileText, badge: resources.length },
-              { id: 'members', label: 'Members', icon: Users, badge: members.length },
+              { id: 'notes', label: 'Shared Notes', icon: FileText, badge: sharedNotes ? 'Live' : 0 },
+              { id: 'resources', label: 'Resources & Content', icon: LinkIcon, badge: resources.length },
+              { id: 'history', label: 'Previous Sessions', icon: History, badge: sessionHistory.length },
+              { id: 'members', label: 'Members & Status', icon: Users, badge: members.length },
             ].map((tab) => {
               const Icon = tab.icon
               const isActive = activeTab === tab.id
@@ -593,7 +1084,7 @@ export default function StudyRoomWorkspaceModal({
                   key={tab.id}
                   type="button"
                   onClick={() => setActiveTab(tab.id)}
-                  className={`px-4 py-3 text-xs font-medium border-b-2 transition-all cursor-pointer flex items-center gap-2 ${
+                  className={`px-3.5 py-3 text-xs font-medium border-b-2 transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap shrink-0 ${
                     isActive
                       ? 'border-[#c25e2e] text-[#e87a48]'
                       : isLight
@@ -603,14 +1094,16 @@ export default function StudyRoomWorkspaceModal({
                 >
                   <Icon className="h-4 w-4" />
                   <span>{tab.label}</span>
-                  {tab.badge > 0 && (
-                    <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
-                      isActive
-                        ? 'bg-[#c25e2e]/20 text-[#e87a48]'
-                        : isLight
-                        ? 'bg-black/5 text-[#7a7268]'
-                        : 'bg-white/10 text-[#a8a199]'
-                    }`}>
+                  {Boolean(tab.badge) && (
+                    <span
+                      className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
+                        isActive
+                          ? 'bg-[#c25e2e]/20 text-[#e87a48]'
+                          : isLight
+                          ? 'bg-black/5 text-[#7a7268]'
+                          : 'bg-white/10 text-[#a8a199]'
+                      }`}
+                    >
                       {tab.badge}
                     </span>
                   )}
@@ -624,11 +1117,7 @@ export default function StudyRoomWorkspaceModal({
             {/* TAB 1: DISCUSSION CHAT */}
             {activeTab === 'chat' && (
               <div className="h-full flex flex-col justify-between">
-                {/* Chat Scroll Thread */}
-                <div
-                  ref={chatScrollRef}
-                  className="flex-1 overflow-y-auto p-5 space-y-4 no-scrollbar"
-                >
+                <div ref={chatScrollRef} className="flex-1 overflow-y-auto p-5 space-y-4 no-scrollbar">
                   {messages.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center text-center p-6 opacity-60">
                       <MessageSquare className="h-10 w-10 text-[#c25e2e] mb-2" />
@@ -645,11 +1134,13 @@ export default function StudyRoomWorkspaceModal({
                       if (isSystem) {
                         return (
                           <div key={m.id} className="flex justify-center my-2">
-                            <span className={`px-3 py-1 rounded-full text-[11px] font-medium border ${
-                              isLight
-                                ? 'border-[#ded4be] bg-[#faf6ee] text-[#7a7268]'
-                                : 'border-[#262320] bg-[#1a1816] text-[#a8a199]'
-                            }`}>
+                            <span
+                              className={`px-3 py-1 rounded-full text-[11px] font-medium border ${
+                                isLight
+                                  ? 'border-[#ded4be] bg-[#faf6ee] text-[#7a7268]'
+                                  : 'border-[#262320] bg-[#1a1816] text-[#a8a199]'
+                              }`}
+                            >
                               {m.content}
                             </span>
                           </div>
@@ -663,33 +1154,46 @@ export default function StudyRoomWorkspaceModal({
                             isMe ? 'ml-auto flex-row-reverse' : ''
                           }`}
                         >
-                          <div className={`h-8 w-8 rounded-full border flex items-center justify-center shrink-0 text-xs font-semibold overflow-hidden ${
-                            isLight ? 'border-[#ded4be] bg-[#faf6ee]' : 'border-[#262320] bg-[#1a1816]'
-                          }`}>
+                          <div
+                            className={`h-8 w-8 rounded-full border flex items-center justify-center shrink-0 text-xs font-semibold overflow-hidden ${
+                              isLight ? 'border-[#ded4be] bg-[#faf6ee]' : 'border-[#262320] bg-[#1a1816]'
+                            }`}
+                          >
                             {m.user_avatar ? (
-                              <img src={getAvatarUrl(m.user_avatar)} alt={m.user_name} className="h-full w-full object-cover" />
+                              <img
+                                src={getAvatarUrl(m.user_avatar)}
+                                alt={m.user_name}
+                                className="h-full w-full object-cover"
+                              />
                             ) : (
                               <span>{m.user_name?.[0]?.toUpperCase() || 'U'}</span>
                             )}
                           </div>
 
                           <div>
-                            <div className={`flex items-center gap-2 mb-1 text-[11px] ${
-                              isMe ? 'justify-end' : ''
-                            }`}>
+                            <div
+                              className={`flex items-center gap-2 mb-1 text-[11px] ${
+                                isMe ? 'justify-end' : ''
+                              }`}
+                            >
                               <span className="font-semibold">{isMe ? 'You' : m.user_name}</span>
                               <span className="opacity-60 text-[10px]">
-                                {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                {new Date(m.created_at).toLocaleTimeString([], {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })}
                               </span>
                             </div>
 
-                            <div className={`px-4 py-2.5 rounded-2xl text-xs leading-relaxed ${
-                              isMe
-                                ? 'bg-[#c25e2e] text-white rounded-tr-xs'
-                                : isLight
-                                ? 'bg-[#faf6ee] border border-[#ded4be] text-[#181614] rounded-tl-xs'
-                                : 'bg-[#1a1816] border border-[#262320] text-[#faf6ee] rounded-tl-xs'
-                            }`}>
+                            <div
+                              className={`px-4 py-2.5 rounded-2xl text-xs leading-relaxed ${
+                                isMe
+                                  ? 'bg-[#c25e2e] text-white rounded-tr-xs'
+                                  : isLight
+                                  ? 'bg-[#faf6ee] border border-[#ded4be] text-[#181614] rounded-tl-xs'
+                                  : 'bg-[#1a1816] border border-[#262320] text-[#faf6ee] rounded-tl-xs'
+                              }`}
+                            >
                               {m.content}
                             </div>
                           </div>
@@ -732,7 +1236,6 @@ export default function StudyRoomWorkspaceModal({
             {/* TAB 2: QUESTIONS (Q&A) */}
             {activeTab === 'questions' && (
               <div className="h-full overflow-y-auto p-5 space-y-4 no-scrollbar">
-                {/* Header Actions */}
                 <div className="flex items-center justify-between pb-2">
                   <div>
                     <h3 className="text-sm font-semibold">Learning Questions</h3>
@@ -750,7 +1253,6 @@ export default function StudyRoomWorkspaceModal({
                   </button>
                 </div>
 
-                {/* Ask Question Form */}
                 {isAskingQuestion && (
                   <form
                     onSubmit={handleCreateQuestion}
@@ -803,7 +1305,6 @@ export default function StudyRoomWorkspaceModal({
                   </form>
                 )}
 
-                {/* Questions Feed */}
                 {questions.length === 0 ? (
                   <div className="py-12 text-center opacity-60">
                     <HelpCircle className="h-10 w-10 text-[#c25e2e] mx-auto mb-2" />
@@ -823,11 +1324,13 @@ export default function StudyRoomWorkspaceModal({
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
-                              q.is_resolved
-                                ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
-                                : 'border-[#c25e2e]/30 bg-[#c25e2e]/10 text-[#e87a48]'
-                            }`}>
+                            <span
+                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+                                q.is_resolved
+                                  ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
+                                  : 'border-[#c25e2e]/30 bg-[#c25e2e]/10 text-[#e87a48]'
+                              }`}
+                            >
                               {q.is_resolved ? 'Resolved' : 'Open Question'}
                             </span>
                             <span className="text-[11px] opacity-60">• asked by {q.user_name}</span>
@@ -852,15 +1355,19 @@ export default function StudyRoomWorkspaceModal({
 
                       <p className="text-xs leading-relaxed whitespace-pre-wrap opacity-90">{q.content}</p>
 
-                      {/* Replies List */}
                       {q.replies && q.replies.length > 0 && (
                         <div className="pt-2 pl-3 border-l-2 border-[#c25e2e]/30 space-y-2 mt-2">
                           {q.replies.map((rep) => (
                             <div key={rep.id} className="text-xs space-y-0.5">
                               <div className="flex items-center gap-2">
-                                <span className="font-semibold text-[11px] text-[#e87a48]">{rep.user_name}</span>
+                                <span className="font-semibold text-[11px] text-[#e87a48]">
+                                  {rep.user_name}
+                                </span>
                                 <span className="opacity-50 text-[10px]">
-                                  {new Date(rep.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                  {new Date(rep.created_at).toLocaleTimeString([], {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  })}
                                 </span>
                               </div>
                               <p className="opacity-90">{rep.content}</p>
@@ -869,7 +1376,6 @@ export default function StudyRoomWorkspaceModal({
                         </div>
                       )}
 
-                      {/* Reply Input */}
                       <div className="flex items-center gap-2 pt-2 border-t border-inherit">
                         <input
                           type="text"
@@ -894,41 +1400,294 @@ export default function StudyRoomWorkspaceModal({
               </div>
             )}
 
-            {/* TAB 3: RESOURCES */}
+            {/* TAB 3: SHARED NOTES (Feature 4) */}
+            {activeTab === 'notes' && (
+              <div className="h-full flex flex-col justify-between p-5 overflow-hidden">
+                {/* Notes Top Toolbar */}
+                <div className="pb-3 border-b border-inherit shrink-0 flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-semibold">Collaborative Shared Notes</h3>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#c25e2e]/10 text-[#e87a48] border border-[#c25e2e]/20">
+                        Live Sync
+                      </span>
+                    </div>
+                    <p className={`text-xs ${isLight ? 'text-[#7a7268]' : 'text-[#a8a199]'} mt-0.5`}>
+                      {notesMeta?.last_edited_by_name
+                        ? `Last saved by ${notesMeta.last_edited_by_name} • ${new Date(
+                            notesMeta.updated_at
+                          ).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                        : 'Write notes, key takeaways, and code snippets together with peers.'}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] opacity-60 font-mono">
+                      {sharedNotes.split(/\s+/).filter(Boolean).length} words • {sharedNotes.length} chars
+                    </span>
+
+                    <button
+                      type="button"
+                      onClick={handleSaveNotes}
+                      disabled={isSavingNotes}
+                      className={`px-4 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                        notesSaveSuccess
+                          ? 'bg-emerald-600 text-white'
+                          : 'bg-[#c25e2e] hover:bg-[#d97b48] text-white'
+                      }`}
+                    >
+                      {notesSaveSuccess ? (
+                        <>
+                          <Check className="h-3.5 w-3.5" />
+                          <span>Saved!</span>
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                          <span>{isSavingNotes ? 'Saving...' : 'Save Notes'}</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Markdown Formatting Helpers */}
+                <div
+                  className={`py-2 px-1 flex flex-wrap items-center gap-1.5 text-xs border-b border-inherit shrink-0 ${
+                    isLight ? 'text-[#7a7268]' : 'text-[#a8a199]'
+                  }`}
+                >
+                  <span className="text-[11px] opacity-60 mr-1">Insert:</span>
+                  {[
+                    { label: 'H1', prefix: '# ' },
+                    { label: 'H2', prefix: '## ' },
+                    { label: '• Bullet', prefix: '- ' },
+                    { label: '✓ Task', prefix: '- [ ] ' },
+                    { label: '**Bold**', prefix: '**', suffix: '**' },
+                    { label: '`Code`', prefix: '`', suffix: '`' },
+                    { label: 'CodeBlock', prefix: '```python\n', suffix: '\n```' },
+                  ].map((btn) => (
+                    <button
+                      key={btn.label}
+                      type="button"
+                      onClick={() => insertMarkdownSnippet(btn.prefix, btn.suffix)}
+                      className={`px-2 py-0.5 rounded-md border text-[11px] font-mono transition-colors cursor-pointer ${
+                        isLight
+                          ? 'border-[#ded4be] bg-[#faf6ee] hover:border-[#c25e2e]'
+                          : 'border-[#262320] bg-[#1a1816] hover:border-[#c25e2e]'
+                      }`}
+                    >
+                      {btn.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Shared Notes Textarea */}
+                <div className="flex-1 py-3 overflow-hidden">
+                  <textarea
+                    ref={notesTextareaRef}
+                    value={sharedNotes}
+                    onChange={(e) => setSharedNotes(e.target.value)}
+                    placeholder="# Meeting / Sprint Notes&#10;&#10;Key Takeaways:&#10;- Important concept from Lesson 3&#10;- Code pattern for asynchronous workers&#10;&#10;Todo:&#10;- [ ] Implement unit tests&#10;- [ ] Review milestone submission"
+                    className={`w-full h-full p-4 rounded-xl border text-xs font-mono leading-relaxed outline-hidden resize-none transition-colors ${
+                      isLight
+                        ? 'border-[#ded4be] bg-[#faf6ee] text-[#181614] focus:border-[#c25e2e]'
+                        : 'border-[#262320] bg-[#141312] text-[#faf6ee] focus:border-[#c25e2e]'
+                    }`}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* TAB 4: RESOURCES & TECHNEA CONTENT SHARING (Feature 5) */}
             {activeTab === 'resources' && (
               <div className="h-full overflow-y-auto p-5 space-y-4 no-scrollbar">
-                {/* Header Actions */}
-                <div className="flex flex-wrap items-center justify-between gap-3 pb-2">
-                  <div className="flex items-center gap-1.5">
-                    {['all', 'video', 'link', 'note', 'pdf'].map((type) => (
+                {/* Actions & Filters Header */}
+                <div className="flex flex-wrap items-center justify-between gap-3 pb-2 border-b border-inherit">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {[
+                      { id: 'all', label: 'All' },
+                      { id: 'content', label: 'Technea Content' },
+                      { id: 'video', label: 'Videos' },
+                      { id: 'link', label: 'Links' },
+                      { id: 'note', label: 'Notes' },
+                      { id: 'pdf', label: 'PDFs' },
+                    ].map((type) => (
                       <button
-                        key={type}
+                        key={type.id}
                         type="button"
-                        onClick={() => setResourceFilter(type)}
+                        onClick={() => setResourceFilter(type.id)}
                         className={`px-2.5 py-1 rounded-lg text-xs font-medium capitalize transition-all cursor-pointer ${
-                          resourceFilter === type
+                          resourceFilter === type.id
                             ? 'bg-[#c25e2e]/20 text-[#e87a48] border border-[#c25e2e]/40'
                             : isLight
                             ? 'border border-[#ded4be] text-[#7a7268]'
                             : 'border border-[#262320] text-[#a8a199]'
                         }`}
                       >
-                        {type}
+                        {type.label}
                       </button>
                     ))}
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => setIsSharingResource(!isSharingResource)}
-                    className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#c25e2e] hover:bg-[#d97b48] text-white transition-all cursor-pointer flex items-center gap-1.5"
-                  >
-                    <Plus className="h-3.5 w-3.5" />
-                    <span>Share Resource</span>
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {/* Feature 5: Share Technea Content Button */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsSharingContent(!isSharingContent)
+                        setIsSharingResource(false)
+                        if (!contentTitle) prefillCurrentLesson()
+                      }}
+                      className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#c25e2e] hover:bg-[#d97b48] text-white transition-all cursor-pointer flex items-center gap-1.5 shadow-xs"
+                    >
+                      <Sparkles className="h-3.5 w-3.5" />
+                      <span>+ Share Technea Content</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsSharingResource(!isSharingResource)
+                        setIsSharingContent(false)
+                      }}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-all cursor-pointer flex items-center gap-1.5 ${
+                        isLight
+                          ? 'border-[#ded4be] bg-[#faf6ee] text-[#181614] hover:border-[#c25e2e]'
+                          : 'border-[#262320] bg-[#1a1816] text-[#faf6ee] hover:border-[#c25e2e]'
+                      }`}
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      <span>External Resource</span>
+                    </button>
+                  </div>
                 </div>
 
-                {/* Share Resource Form */}
+                {/* Form: Share Technea Learning Content (Course, Lesson, Roadmap step) */}
+                {isSharingContent && (
+                  <form
+                    onSubmit={handleShareTechneaContent}
+                    className={`p-4 rounded-xl border space-y-3 relative ${
+                      isLight ? 'border-[#c25e2e]/40 bg-[#faf6ee]' : 'border-[#c25e2e]/40 bg-[#1a1816]'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between pb-1">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="h-4 w-4 text-[#e87a48]" />
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-[#e87a48]">
+                          Share Technea Learning Content
+                        </h4>
+                      </div>
+
+                      {/* 1-Click Quick Prefill Buttons */}
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={prefillCurrentLesson}
+                          className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-[#c25e2e]/10 text-[#e87a48] border border-[#c25e2e]/20 hover:bg-[#c25e2e]/20 cursor-pointer"
+                        >
+                          ⚡ Use Current Lesson
+                        </button>
+                        <button
+                          type="button"
+                          onClick={prefillActiveRoadmap}
+                          className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-[#c25e2e]/10 text-[#e87a48] border border-[#c25e2e]/20 hover:bg-[#c25e2e]/20 cursor-pointer"
+                        >
+                          🗺️ Use Active Roadmap
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-medium mb-1">Content Title</label>
+                        <input
+                          type="text"
+                          value={contentTitle}
+                          onChange={(e) => setContentTitle(e.target.value)}
+                          placeholder="e.g. Python Functions Deep Dive"
+                          required
+                          className={`w-full px-3 py-2 rounded-lg border text-xs outline-hidden ${
+                            isLight ? 'border-[#ded4be] bg-white' : 'border-[#262320] bg-[#141312]'
+                          }`}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-medium mb-1">Content Badge / Type</label>
+                        <select
+                          value={contentBadge}
+                          onChange={(e) => {
+                            setContentBadge(e.target.value)
+                            if (e.target.value.toLowerCase().includes('roadmap')) {
+                              setContentType('roadmap')
+                            } else if (e.target.value.toLowerCase().includes('course')) {
+                              setContentType('course')
+                            } else {
+                              setContentType('lesson')
+                            }
+                          }}
+                          className={`w-full px-3 py-2 rounded-lg border text-xs outline-hidden ${
+                            isLight ? 'border-[#ded4be] bg-white' : 'border-[#262320] bg-[#141312]'
+                          }`}
+                        >
+                          <option value="Lesson">Lesson</option>
+                          <option value="Course">Course</option>
+                          <option value="Roadmap step">Roadmap Step</option>
+                          <option value="Documentation">Documentation</option>
+                          <option value="Project">Project Guide</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-medium mb-1">Context / Why Study This?</label>
+                        <input
+                          type="text"
+                          value={contentDesc}
+                          onChange={(e) => setContentDesc(e.target.value)}
+                          placeholder="Crucial for understanding asynchronous handlers"
+                          className={`w-full px-3 py-2 rounded-lg border text-xs outline-hidden ${
+                            isLight ? 'border-[#ded4be] bg-white' : 'border-[#262320] bg-[#141312]'
+                          }`}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-medium mb-1">Action URL (Target Destination)</label>
+                        <input
+                          type="text"
+                          value={contentUrl}
+                          onChange={(e) => setContentUrl(e.target.value)}
+                          placeholder="/learning or /dashboard"
+                          className={`w-full px-3 py-2 rounded-lg border text-xs outline-hidden ${
+                            isLight ? 'border-[#ded4be] bg-white' : 'border-[#262320] bg-[#141312]'
+                          }`}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setIsSharingContent(false)}
+                        className="px-3 py-1.5 text-xs opacity-75 hover:opacity-100 cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={isSubmittingContent}
+                        className="px-4 py-1.5 rounded-lg text-xs font-semibold bg-[#c25e2e] hover:bg-[#d97b48] text-white cursor-pointer"
+                      >
+                        {isSubmittingContent ? 'Sharing...' : 'Share Content Card'}
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+                {/* Form: Share External Resource */}
                 {isSharingResource && (
                   <form
                     onSubmit={handleCreateResource}
@@ -1014,35 +1773,52 @@ export default function StudyRoomWorkspaceModal({
                   </form>
                 )}
 
-                {/* Resource Cards */}
+                {/* Resource Cards Feed */}
                 {filteredResources.length === 0 ? (
                   <div className="py-12 text-center opacity-60">
                     <FileText className="h-10 w-10 text-[#c25e2e] mx-auto mb-2" />
                     <p className="text-sm font-medium">No resources shared yet</p>
                     <p className="text-xs max-w-sm mx-auto mt-1">
-                      Share videos, documentation links, notes, or PDFs with everyone in this room!
+                      Share videos, documentation links, notes, or Technea learning modules with everyone in
+                      this room!
                     </p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                     {filteredResources.map((r) => {
-                      const isLink = r.url_or_content.startsWith('http')
+                      const isTechneaContent = Boolean(r.content_badge)
+                      const isLink =
+                        r.url_or_content?.startsWith('http') || r.action_url?.startsWith('http')
+
                       return (
                         <div
                           key={r.id}
                           className={`p-4 rounded-xl border flex flex-col justify-between transition-all ${
-                            isLight ? 'border-[#ded4be] bg-[#faf6ee]' : 'border-[#262320] bg-[#1a1816]'
+                            isTechneaContent
+                              ? isLight
+                                ? 'border-[#c25e2e]/30 bg-gradient-to-br from-[#faf6ee] to-[#f4ede0] shadow-xs'
+                                : 'border-[#c25e2e]/30 bg-gradient-to-br from-[#1a1816] to-[#201c19] shadow-xs'
+                              : isLight
+                              ? 'border-[#ded4be] bg-[#faf6ee]'
+                              : 'border-[#262320] bg-[#1a1816]'
                           }`}
                         >
                           <div>
                             <div className="flex items-center justify-between gap-2 mb-2">
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wider bg-[#c25e2e]/10 text-[#e87a48] border border-[#c25e2e]/20">
-                                {r.resource_type === 'video' && <Play className="h-3 w-3" />}
-                                {r.resource_type === 'link' && <LinkIcon className="h-3 w-3" />}
-                                {r.resource_type === 'note' && <FileText className="h-3 w-3" />}
-                                {r.resource_type === 'pdf' && <FileDown className="h-3 w-3" />}
-                                <span>{r.resource_type}</span>
-                              </span>
+                              {isTechneaContent ? (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-[#c25e2e] text-white">
+                                  <BookOpen className="h-3 w-3" />
+                                  <span>{r.content_badge}</span>
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wider bg-[#c25e2e]/10 text-[#e87a48] border border-[#c25e2e]/20">
+                                  {r.resource_type === 'video' && <Play className="h-3 w-3" />}
+                                  {r.resource_type === 'link' && <LinkIcon className="h-3 w-3" />}
+                                  {r.resource_type === 'note' && <FileText className="h-3 w-3" />}
+                                  {r.resource_type === 'pdf' && <FileDown className="h-3 w-3" />}
+                                  <span>{r.resource_type}</span>
+                                </span>
+                              )}
                               <span className="text-[10px] opacity-60">Shared by {r.user_name}</span>
                             </div>
 
@@ -1050,8 +1826,16 @@ export default function StudyRoomWorkspaceModal({
                             {r.description && <p className="text-xs opacity-75 mb-3">{r.description}</p>}
                           </div>
 
-                          <div className="pt-2 border-t border-inherit flex items-center justify-between">
-                            {isLink ? (
+                          <div className="pt-2.5 border-t border-inherit flex items-center justify-between mt-auto">
+                            {isTechneaContent ? (
+                              <a
+                                href={r.action_url || r.url_or_content || '/learning'}
+                                className="text-xs font-semibold text-[#e87a48] hover:text-[#d97b48] flex items-center gap-1.5 group cursor-pointer"
+                              >
+                                <span>Continue Learning</span>
+                                <span className="group-hover:translate-x-0.5 transition-transform">→</span>
+                              </a>
+                            ) : isLink ? (
                               <a
                                 href={r.url_or_content}
                                 target="_blank"
@@ -1073,74 +1857,214 @@ export default function StudyRoomWorkspaceModal({
               </div>
             )}
 
-            {/* TAB 4: MEMBERS */}
+            {/* TAB 5: STUDY SESSION HISTORY (Feature 6) */}
+            {activeTab === 'history' && (
+              <div className="h-full overflow-y-auto p-5 space-y-4 no-scrollbar">
+                <div className="pb-2 border-b border-inherit">
+                  <h3 className="text-sm font-semibold">Previous Study Sessions</h3>
+                  <p className={`text-xs ${isLight ? 'text-[#7a7268]' : 'text-[#a8a199]'}`}>
+                    Historical log of focus sessions and learning milestones completed in this room
+                  </p>
+                </div>
+
+                {sessionHistory.length === 0 ? (
+                  <div className="py-12 text-center opacity-60">
+                    <History className="h-10 w-10 text-[#c25e2e] mx-auto mb-2" />
+                    <p className="text-sm font-medium">No previous study sessions yet</p>
+                    <p className="text-xs max-w-sm mx-auto mt-1">
+                      Start a study session above to study together and record collaborative learning logs!
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {sessionHistory.map((s) => (
+                      <div
+                        key={s.id}
+                        className={`p-4 rounded-xl border flex flex-wrap items-center justify-between gap-3 ${
+                          isLight ? 'border-[#ded4be] bg-[#faf6ee]' : 'border-[#262320] bg-[#1a1816]'
+                        }`}
+                      >
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-bold text-sm tracking-tight">{s.topic}</span>
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                              Completed
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs opacity-75">
+                            <span>Hosted by {s.host_name || 'Room Peer'}</span>
+                            <span>•</span>
+                            <span>
+                              {new Date(s.ended_at || s.created_at).toLocaleDateString([], {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric',
+                              })}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-4 text-xs font-medium">
+                          <div className="flex items-center gap-1.5">
+                            <Clock className="h-3.5 w-3.5 text-[#e87a48]" />
+                            <span>
+                              {s.duration_minutes >= 60
+                                ? `${Math.floor(s.duration_minutes / 60)}h ${s.duration_minutes % 60}m`
+                                : `${s.duration_minutes} minutes`}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 opacity-80">
+                            <Users className="h-3.5 w-3.5" />
+                            <span>{s.participants_count || 1} participants</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* TAB 6: MEMBERS & STUDY STATUS (Feature 2) */}
             {activeTab === 'members' && (
               <div className="h-full overflow-y-auto p-5 space-y-4 no-scrollbar">
-                {/* My Study Status Updater */}
+                {/* Feature 2: My Study Status & Presence Updater */}
                 <form
-                  onSubmit={handleUpdateStatus}
-                  className={`p-4 rounded-xl border flex flex-wrap items-center justify-between gap-3 ${
+                  onSubmit={handleUpdateStatusAndPresence}
+                  className={`p-4 rounded-xl border space-y-3 ${
                     isLight ? 'border-[#ded4be] bg-[#faf6ee]' : 'border-[#262320] bg-[#1a1816]'
                   }`}
                 >
-                  <div className="flex-1 min-w-[200px]">
-                    <label className="block text-xs font-medium mb-1">My Current Study Status</label>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <label className="text-xs font-semibold">Your Study Status & Presence</label>
+
+                    {/* 3 Presence States: 🟢 Studying, 🟡 Taking Break, 🔴 Away */}
+                    <div className="flex items-center gap-1.5">
+                      {[
+                        { id: 'studying', label: 'Studying', dot: 'bg-emerald-500', color: 'emerald' },
+                        { id: 'break', label: 'Taking Break', dot: 'bg-amber-500', color: 'amber' },
+                        { id: 'away', label: 'Away', dot: 'bg-rose-500', color: 'rose' },
+                      ].map((st) => (
+                        <button
+                          key={st.id}
+                          type="button"
+                          onClick={() => setUserStudyState(st.id)}
+                          className={`px-2.5 py-1 rounded-lg text-xs font-medium border flex items-center gap-1.5 transition-all cursor-pointer ${
+                            userStudyState === st.id
+                              ? 'border-[#c25e2e] bg-[#c25e2e]/10 text-[#e87a48]'
+                              : isLight
+                              ? 'border-[#ded4be] bg-white text-[#7a7268]'
+                              : 'border-[#262320] bg-[#141312] text-[#a8a199]'
+                          }`}
+                        >
+                          <span className={`h-2 w-2 rounded-full ${st.dot}`}></span>
+                          <span>{st.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2">
                     <input
                       type="text"
                       value={userStudyStatus}
                       onChange={(e) => setUserStudyStatus(e.target.value)}
-                      placeholder="e.g. Currently tackling Step 2 - Async Tasks"
-                      className={`w-full px-3 py-1.5 rounded-lg border text-xs outline-hidden ${
+                      placeholder="e.g. Tackling Step 2 — Asynchronous Fast API routes"
+                      className={`flex-1 px-3 py-2 rounded-lg border text-xs outline-hidden ${
                         isLight ? 'border-[#ded4be] bg-white' : 'border-[#262320] bg-[#141312]'
                       }`}
                     />
+                    <button
+                      type="submit"
+                      disabled={isUpdatingStatus}
+                      className="px-4 py-2 rounded-lg text-xs font-semibold bg-[#c25e2e] hover:bg-[#d97b48] text-white cursor-pointer disabled:opacity-50"
+                    >
+                      {isUpdatingStatus ? 'Saving...' : 'Update Status'}
+                    </button>
                   </div>
-                  <button
-                    type="submit"
-                    disabled={isUpdatingStatus}
-                    className="self-end px-4 py-2 rounded-lg text-xs font-semibold bg-[#c25e2e] hover:bg-[#d97b48] text-white cursor-pointer disabled:opacity-50"
-                  >
-                    {isUpdatingStatus ? 'Saving...' : 'Update Status'}
-                  </button>
                 </form>
 
-                {/* Members List */}
-                <div className="space-y-2">
+                {/* Members List with Presence Status */}
+                <div className="space-y-2.5">
                   <h4 className="text-xs font-semibold uppercase tracking-wider opacity-60">
                     Active Room Members ({members.length})
                   </h4>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    {members.map((m) => (
-                      <div
-                        key={m.user_id}
-                        className={`p-3 rounded-xl border flex items-center gap-3 ${
-                          isLight ? 'border-[#ded4be] bg-[#faf6ee]' : 'border-[#262320] bg-[#1a1816]'
-                        }`}
-                      >
-                        <div className={`h-9 w-9 rounded-full border flex items-center justify-center shrink-0 font-semibold text-xs overflow-hidden ${
-                          isLight ? 'border-[#ded4be] bg-white' : 'border-[#262320] bg-[#141312]'
-                        }`}>
-                          {m.avatar_url ? (
-                            <img src={getAvatarUrl(m.avatar_url)} alt={m.full_name || m.email} className="h-full w-full object-cover" />
-                          ) : (
-                            <span>{(m.full_name || m.email)?.[0]?.toUpperCase()}</span>
-                          )}
-                        </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {members.map((m) => {
+                      const isMe = m.user_id === user?.id
+                      const state = m.study_state || 'studying'
 
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-xs font-semibold truncate">{m.full_name || m.email}</span>
-                            {m.user_id === user?.id && (
-                              <span className="text-[10px] px-1.5 rounded-sm bg-[#c25e2e]/20 text-[#e87a48] font-mono">You</span>
-                            )}
+                      return (
+                        <div
+                          key={m.user_id}
+                          className={`p-3.5 rounded-xl border flex items-center gap-3 transition-colors ${
+                            isLight ? 'border-[#ded4be] bg-[#faf6ee]' : 'border-[#262320] bg-[#1a1816]'
+                          }`}
+                        >
+                          <div className="relative shrink-0">
+                            <div
+                              className={`h-10 w-10 rounded-full border flex items-center justify-center font-semibold text-xs overflow-hidden ${
+                                isLight ? 'border-[#ded4be] bg-white' : 'border-[#262320] bg-[#141312]'
+                              }`}
+                            >
+                              {m.avatar_url ? (
+                                <img
+                                  src={getAvatarUrl(m.avatar_url)}
+                                  alt={m.full_name || m.email}
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : (
+                                <span>{(m.full_name || m.email)?.[0]?.toUpperCase()}</span>
+                              )}
+                            </div>
+
+                            {/* Presence Indicator Dot */}
+                            <span
+                              className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 ${
+                                isLight ? 'border-[#faf6ee]' : 'border-[#1a1816]'
+                              } ${
+                                state === 'studying'
+                                  ? 'bg-emerald-500'
+                                  : state === 'break'
+                                  ? 'bg-amber-500'
+                                  : 'bg-rose-500'
+                              }`}
+                              title={`Status: ${state}`}
+                            />
                           </div>
-                          <p className="text-[11px] opacity-75 truncate">
-                            {m.study_status || 'Studying with peers'}
-                          </p>
+
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5 mb-0.5">
+                              <span className="text-xs font-semibold truncate">
+                                {m.full_name || m.email}
+                              </span>
+                              {isMe && (
+                                <span className="text-[10px] px-1.5 py-0.2 rounded-sm bg-[#c25e2e]/20 text-[#e87a48] font-mono">
+                                  You
+                                </span>
+                              )}
+                              <span
+                                className={`text-[10px] px-1.5 rounded-sm capitalize font-medium ${
+                                  state === 'studying'
+                                    ? 'text-emerald-400 bg-emerald-500/10'
+                                    : state === 'break'
+                                    ? 'text-amber-400 bg-amber-500/10'
+                                    : 'text-rose-400 bg-rose-500/10'
+                                }`}
+                              >
+                                {state === 'studying' ? 'Studying' : state === 'break' ? 'On Break' : 'Away'}
+                              </span>
+                            </div>
+
+                            <p className="text-[11px] opacity-75 truncate">
+                              {m.study_status || 'Studying with peers'}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 </div>
               </div>

@@ -999,13 +999,15 @@ export async function getCommunityRoomsApi(params = {}) {
 }
 
 /**
- * Fetch recommended study rooms based on active roadmap or interests
- * @param {Object} [params] - { active_roadmap, interests }
+ * Fetch recommended study rooms based on active roadmap, current milestone, or interests
+ * @param {Object} [params] - { active_roadmap, current_milestone, skills, interests }
  * @returns {Promise<Array>}
  */
 export async function getRecommendedRoomsApi(params = {}) {
   const query = new URLSearchParams()
   if (params.active_roadmap) query.set('active_roadmap', params.active_roadmap)
+  if (params.current_milestone) query.set('current_milestone', params.current_milestone)
+  if (params.skills) query.set('skills', params.skills)
   if (params.interests) query.set('interests', params.interests)
   const queryString = query.toString()
   return request(queryString ? `/community/rooms/recommended?${queryString}` : '/community/rooms/recommended')
@@ -1073,28 +1075,42 @@ export async function getRoomMembersApi(roomId) {
 }
 
 /**
- * Update current user's study status message in a room
+ * Update current user's study status message and presence state in a room
  * @param {number|string} roomId
- * @param {string} studyStatus
+ * @param {string|Object} payload - status string or { study_status, study_state }
  * @returns {Promise<Object>}
  */
-export async function updateStudyStatusApi(roomId, studyStatus) {
+export async function updateStudyStatusApi(roomId, payload) {
+  const body = typeof payload === 'string'
+    ? { study_status: payload, study_state: 'studying' }
+    : {
+        study_status: payload?.study_status ?? null,
+        study_state: payload?.study_state || 'studying',
+      }
   return request(`/community/rooms/${roomId}/study-status`, {
     method: 'PUT',
-    body: JSON.stringify({ study_status: studyStatus }),
+    body: JSON.stringify(body),
   })
 }
 
 /**
  * Start a synchronized focus study session in a room
  * @param {number|string} roomId
- * @param {string} topic
+ * @param {string|Object} payload - topic string or { topic, timer_type, timer_mode, duration_minutes }
  * @returns {Promise<Object>}
  */
-export async function startStudySessionApi(roomId, topic) {
+export async function startStudySessionApi(roomId, payload) {
+  const body = typeof payload === 'string'
+    ? { topic: payload, timer_type: 'pomodoro', timer_mode: 'study', duration_minutes: 25 }
+    : {
+        topic: payload?.topic || 'Focus Sprint',
+        timer_type: payload?.timer_type || 'pomodoro',
+        timer_mode: payload?.timer_mode || 'study',
+        duration_minutes: payload?.duration_minutes || 25,
+      }
   return request(`/community/rooms/${roomId}/session/start`, {
     method: 'POST',
-    body: JSON.stringify({ topic }),
+    body: JSON.stringify(body),
   })
 }
 
@@ -1199,6 +1215,70 @@ export async function createRoomResourceApi(roomId, data) {
   return request(`/community/rooms/${roomId}/resources`, {
     method: 'POST',
     body: JSON.stringify(data),
+  })
+}
+
+/**
+ * Fetch past study sessions history for a room
+ * @param {number|string} roomId
+ * @returns {Promise<Array>}
+ */
+export async function getRoomSessionHistoryApi(roomId) {
+  return request(`/community/rooms/${roomId}/history`)
+}
+
+/**
+ * Fetch collaborative shared notes for a study room
+ * @param {number|string} roomId
+ * @returns {Promise<Object>}
+ */
+export async function getRoomSharedNotesApi(roomId) {
+  return request(`/community/rooms/${roomId}/notes`)
+}
+
+/**
+ * Save updates to room collaborative shared notes
+ * @param {number|string} roomId
+ * @param {Object} data - { title?, content }
+ * @returns {Promise<Object>}
+ */
+export async function updateRoomSharedNotesApi(roomId, data) {
+  return request(`/community/rooms/${roomId}/notes`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  })
+}
+
+/**
+ * Share Technea learning content (Course, Lesson, Roadmap step) in room
+ * @param {number|string} roomId
+ * @param {Object} data - { title, content_type, content_badge, action_url, description? }
+ * @returns {Promise<Object>}
+ */
+export async function shareRoomContentApi(roomId, data) {
+  return request(`/community/rooms/${roomId}/share-content`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+/**
+ * Fetch recent in-app room notifications
+ * @param {number|string} roomId
+ * @returns {Promise<Array>}
+ */
+export async function getRoomNotificationsApi(roomId) {
+  return request(`/community/rooms/${roomId}/notifications`)
+}
+
+/**
+ * Mark all unread room notifications as read
+ * @param {number|string} roomId
+ * @returns {Promise<Object>}
+ */
+export async function markRoomNotificationsReadApi(roomId) {
+  return request(`/community/rooms/${roomId}/notifications/read`, {
+    method: 'POST',
   })
 }
 
@@ -1420,6 +1500,12 @@ export default {
   resolveRoomQuestionApi,
   getRoomResourcesApi,
   createRoomResourceApi,
+  getRoomSessionHistoryApi,
+  getRoomSharedNotesApi,
+  updateRoomSharedNotesApi,
+  shareRoomContentApi,
+  getRoomNotificationsApi,
+  markRoomNotificationsReadApi,
   sendAiChatApi,
   sendAiMentorChatApi,
   getSkills,

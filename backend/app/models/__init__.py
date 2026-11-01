@@ -33,6 +33,9 @@ from app.models.community import (
     RoomQuestion,
     RoomQuestionReply,
     RoomResource,
+    RoomSessionHistory,
+    RoomSharedNote,
+    RoomNotification,
 )
 from app.models.achievement import (
     Achievement,
@@ -69,6 +72,9 @@ __all__ = [
     "RoomQuestion",
     "RoomQuestionReply",
     "RoomResource",
+    "RoomSessionHistory",
+    "RoomSharedNote",
+    "RoomNotification",
     "Achievement",
     "UserAchievement",
     "Follow",

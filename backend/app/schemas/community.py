@@ -27,6 +27,11 @@ class LearningRoomResponse(BaseModel):
     study_session_active: bool = False
     study_session_topic: str | None = None
     study_session_started_at: datetime | None = None
+    study_session_host_id: uuid.UUID | None = None
+    study_session_host_name: str | None = None
+    study_session_timer_type: str = "pomodoro"
+    study_session_timer_mode: str = "study"
+    study_session_duration_minutes: int = 25
     # Smart recommendation match reason
     recommendation_reason: str | None = None
 
@@ -71,20 +76,25 @@ class RoomMemberResponse(BaseModel):
     avatar_url: str | None = None
     joined_at: datetime
     study_status: str | None = None
+    study_state: str = "studying"  # 'studying', 'break', 'away'
 
     model_config = ConfigDict(from_attributes=True)
 
 
 class UpdateStudyStatusRequest(BaseModel):
-    """Request payload to update current study status."""
+    """Request payload to update current study status and state."""
 
-    study_status: str = Field(..., min_length=1, max_length=255)
+    study_status: str | None = Field(None, max_length=255)
+    study_state: str = Field("studying", pattern="^(studying|break|away)$")
 
 
 class StartStudySessionRequest(BaseModel):
     """Request payload to initiate a synchronized study focus session."""
 
     topic: str = Field(..., min_length=1, max_length=255)
+    timer_type: str = Field("pomodoro", pattern="^(pomodoro|stopwatch)$")
+    timer_mode: str = Field("study", pattern="^(study|break)$")
+    duration_minutes: int = Field(25, ge=1, le=180)
 
 
 class RoomMessageResponse(BaseModel):
@@ -154,7 +164,7 @@ class CreateQuestionReplyRequest(BaseModel):
 
 
 class RoomResourceResponse(BaseModel):
-    """Schema for a shared study resource (video, link, note, PDF)."""
+    """Schema for a shared study resource (video, link, note, PDF, or Technea content)."""
 
     id: int
     room_id: int
@@ -162,9 +172,11 @@ class RoomResourceResponse(BaseModel):
     user_name: str
     user_avatar: str | None = None
     title: str
-    resource_type: str  # 'video', 'link', 'note', 'pdf'
+    resource_type: str  # 'video', 'link', 'note', 'pdf', 'course', 'lesson', 'roadmap_step'
     url_or_content: str
     description: str | None = None
+    content_badge: str | None = None
+    action_url: str | None = None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -174,6 +186,71 @@ class CreateResourceRequest(BaseModel):
     """Request payload to share a learning resource."""
 
     title: str = Field(..., min_length=2, max_length=255)
-    resource_type: str = Field(..., pattern="^(video|link|note|pdf)$")
+    resource_type: str = Field(..., pattern="^(video|link|note|pdf|course|lesson|roadmap_step)$")
     url_or_content: str = Field(..., min_length=1, max_length=10000)
     description: str | None = Field(None, max_length=1000)
+    content_badge: str | None = Field(None, max_length=100)
+    action_url: str | None = Field(None, max_length=500)
+
+
+class ShareContentRequest(BaseModel):
+    """Request payload to share Technea learning content (Course, Lesson, Roadmap step)."""
+
+    title: str = Field(..., min_length=2, max_length=255)
+    content_type: str = Field(..., pattern="^(course|lesson|roadmap_step)$")
+    content_badge: str = Field(..., min_length=1, max_length=100)
+    action_url: str = Field(..., min_length=1, max_length=500)
+    description: str | None = Field(None, max_length=1000)
+
+
+class SharedNoteResponse(BaseModel):
+    """Schema for collaborative room notes."""
+
+    id: int
+    room_id: int
+    title: str = "Shared Notes"
+    content: str = ""
+    last_edited_by_id: uuid.UUID | None = None
+    last_edited_by_name: str | None = None
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class UpdateSharedNoteRequest(BaseModel):
+    """Request payload to update collaborative room notes."""
+
+    title: str | None = Field(None, max_length=255)
+    content: str = Field(..., max_length=50000)
+
+
+class SessionHistoryResponse(BaseModel):
+    """Schema for a historical study session record."""
+
+    id: int
+    room_id: int
+    host_user_id: uuid.UUID | None = None
+    host_name: str
+    topic: str
+    duration_minutes: int
+    participants_count: int
+    ended_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class RoomNotificationResponse(BaseModel):
+    """Schema for an in-app room notification."""
+
+    id: int
+    room_id: int
+    user_id: uuid.UUID | None = None
+    actor_name: str
+    title: str
+    message: str
+    notification_type: str = "info"  # 'session_started', 'member_joined', 'question_reply', 'content_shared', 'note_updated'
+    link_url: str | None = None
+    is_read: bool = False
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
