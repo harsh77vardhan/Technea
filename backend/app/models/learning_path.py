@@ -136,6 +136,16 @@ class LearningPath(Base):
         nullable=True,
         default=list,
     )
+    tech_stack: Mapped[list[str] | None] = mapped_column(
+        JSON,
+        nullable=True,
+        default=list,
+    )
+    curated_resources: Mapped[list[dict] | None] = mapped_column(
+        JSON,
+        nullable=True,
+        default=list,
+    )
     is_featured: Mapped[bool] = mapped_column(
         Boolean,
         default=False,

@@ -46,6 +46,11 @@ class RoadmapStep(Base):
         nullable=True,
         default=list,
     )
+    topics_covered: Mapped[list[str] | None] = mapped_column(
+        JSON,
+        nullable=True,
+        default=list,
+    )
     duration: Mapped[str | None] = mapped_column(
         String(100),
         nullable=True,

@@ -1249,13 +1249,20 @@ export async function getRoomSharedNotesApi(roomId) {
 /**
  * Save updates to room collaborative shared notes
  * @param {number|string} roomId
- * @param {Object} data - { title?, content }
+ * @param {string|Object} data - string or { title?, content }
  * @returns {Promise<Object>}
  */
 export async function updateRoomSharedNotesApi(roomId, data) {
+  const payload =
+    typeof data === 'string'
+      ? { content: data, title: 'Shared Notes' }
+      : {
+          content: data?.content ?? '',
+          title: data?.title ?? null,
+        }
   return request(`/community/rooms/${roomId}/notes`, {
     method: 'PUT',
-    body: JSON.stringify(data),
+    body: JSON.stringify(payload),
   })
 }
 
@@ -1266,9 +1273,19 @@ export async function updateRoomSharedNotesApi(roomId, data) {
  * @returns {Promise<Object>}
  */
 export async function shareRoomContentApi(roomId, data) {
+  let contentType = data?.content_type || 'lesson'
+  if (contentType === 'roadmap') contentType = 'roadmap_step'
+
+  const payload = {
+    title: (data?.title || '').trim(),
+    content_type: contentType,
+    content_badge: data?.content_badge || (contentType === 'roadmap_step' ? 'Roadmap step' : 'Lesson'),
+    action_url: data?.action_url || '/dashboard',
+    description: data?.description || null,
+  }
   return request(`/community/rooms/${roomId}/share-content`, {
     method: 'POST',
-    body: JSON.stringify(data),
+    body: JSON.stringify(payload),
   })
 }
 

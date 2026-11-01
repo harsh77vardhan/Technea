@@ -213,9 +213,19 @@ export default function StudyRoomWorkspaceModal({
   // Phase 3: Role Management
   const [isChangingRole, setIsChangingRole] = useState(false)
 
+  // Helper to safely format timestamps
+  const formatTime = (ts) => {
+    if (!ts) return ''
+    const d = new Date(ts)
+    return isNaN(d.getTime()) ? '' : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  }
+
   // Derived user roles
-  const currentMember = members.find((m) => m.user_id === user?.id)
-  const isRoomOwner = currentRoom?.created_by_id === user?.id || currentMember?.role === 'owner'
+  const currentMember = members.find((m) => String(m.user_id) === String(user?.id))
+  const isRoomOwner =
+    String(currentRoom?.created_by_id) === String(user?.id) ||
+    currentMember?.role === 'owner' ||
+    Boolean(currentRoom?.is_owner)
   const isHost = isRoomOwner || currentMember?.role === 'host'
 
   // Helper to re-fetch room data after actions
@@ -267,7 +277,7 @@ export default function StudyRoomWorkspaceModal({
       }
 
       if (user?.id && Array.isArray(mlist)) {
-        const myMembership = mlist.find((m) => m.user_id === user.id)
+        const myMembership = mlist.find((m) => String(m.user_id) === String(user.id))
         if (myMembership) {
           if (myMembership.study_status) setUserStudyStatus(myMembership.study_status)
           if (myMembership.study_state) setUserStudyState(myMembership.study_state)
@@ -338,7 +348,7 @@ export default function StudyRoomWorkspaceModal({
           }
 
           if (user?.id && Array.isArray(mlist)) {
-            const myMembership = mlist.find((m) => m.user_id === user.id)
+            const myMembership = mlist.find((m) => String(m.user_id) === String(user.id))
             if (myMembership) {
               if (myMembership.study_status) setUserStudyStatus(myMembership.study_status)
               if (myMembership.study_state) setUserStudyState(myMembership.study_state)
@@ -364,6 +374,29 @@ export default function StudyRoomWorkspaceModal({
       }
     }, 12000)
 
+    // Poll discussion chat messages in real time so new messages arrive automatically
+    const chatPoll = setInterval(() => {
+      if (isMounted && targetId) {
+        getRoomMessagesApi(targetId)
+          .then((data) => {
+            if (isMounted && Array.isArray(data)) {
+              setMessages((prev) => {
+                if (
+                  data.length !== prev.length ||
+                  (data.length > 0 &&
+                    prev.length > 0 &&
+                    data[data.length - 1]?.id !== prev[prev.length - 1]?.id)
+                ) {
+                  return data
+                }
+                return prev
+              })
+            }
+          })
+          .catch(() => {})
+      }
+    }, 3500)
+
     // Poll sync content & voice peers for real-time coordination
     const syncPoll = setInterval(() => {
       if (isMounted && targetId) {
@@ -379,6 +412,7 @@ export default function StudyRoomWorkspaceModal({
     return () => {
       isMounted = false
       clearInterval(pollInterval)
+      clearInterval(chatPoll)
       clearInterval(syncPoll)
       if (localStreamRef.current) {
         localStreamRef.current.getTracks().forEach((t) => t.stop())
@@ -394,7 +428,12 @@ export default function StudyRoomWorkspaceModal({
   // Scroll chat to bottom when messages update
   useEffect(() => {
     if (activeTab === 'chat' && chatScrollRef.current) {
-      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight
+      const el = chatScrollRef.current
+      requestAnimationFrame(() => {
+        if (el) {
+          el.scrollTop = el.scrollHeight
+        }
+      })
     }
   }, [messages, activeTab])
 
@@ -426,14 +465,23 @@ export default function StudyRoomWorkspaceModal({
 
     const timerType = currentRoom?.study_session_timer_type || 'pomodoro'
     const timerMode = currentRoom?.study_session_timer_mode || 'study'
-    const startMs = new Date(currentRoom.study_session_started_at).getTime()
+    const startedAtRaw = currentRoom.study_session_started_at
+    const normalizedStartedAt =
+      typeof startedAtRaw === 'string' &&
+      startedAtRaw.includes('T') &&
+      !startedAtRaw.endsWith('Z') &&
+      !/[+-]\d{2}:\d{2}$/.test(startedAtRaw)
+        ? `${startedAtRaw}Z`
+        : startedAtRaw
+    const parsedDate = new Date(normalizedStartedAt)
+    const startMs = parsedDate.getTime()
     const targetDurationSecs =
       (currentRoom.study_session_duration_minutes || (timerMode === 'break' ? 5 : 25)) * 60
 
     const syncTick = () => {
       setPomodoroMode(timerMode)
       const nowMs = Date.now()
-      const elapsedSecs = Math.max(0, Math.floor((nowMs - startMs) / 1000))
+      const elapsedSecs = Math.max(0, Math.floor((nowMs - (isNaN(startMs) ? nowMs : startMs)) / 1000))
 
       if (timerType === 'stopwatch') {
         setStopwatchSecs(elapsedSecs)
@@ -646,7 +694,7 @@ export default function StudyRoomWorkspaceModal({
   const prefillActiveRoadmap = () => {
     const roadmapTitle = activeRoadmap?.title || 'Full Stack Roadmap'
     setContentTitle(roadmapTitle)
-    setContentType('roadmap')
+    setContentType('roadmap_step')
     setContentBadge('Roadmap step')
     setContentDesc(activeRoadmap?.description || 'Active roadmap path on Technea')
     setContentUrl('/dashboard')
@@ -657,7 +705,7 @@ export default function StudyRoomWorkspaceModal({
     if (isSavingNotes) return
     setIsSavingNotes(true)
     try {
-      const updated = await updateRoomSharedNotesApi(currentRoom.id, sharedNotes)
+      const updated = await updateRoomSharedNotesApi(currentRoom.id, { content: sharedNotes })
       setNotesMeta(updated)
       setNotesSaveSuccess(true)
       setTimeout(() => setNotesSaveSuccess(false), 2500)
@@ -1870,7 +1918,7 @@ async def create_goal(payload: GoalRequest):
                     </div>
                   ) : (
                     messages.map((m) => {
-                      const isMe = m.user_id === user?.id
+                      const isMe = String(m.user_id) === String(user?.id)
                       const isSystem = m.message_type === 'system'
 
                       if (isSystem) {
@@ -1920,10 +1968,7 @@ async def create_goal(payload: GoalRequest):
                             >
                               <span className="font-semibold">{isMe ? 'You' : m.user_name}</span>
                               <span className="opacity-60 text-[10px]">
-                                {new Date(m.created_at).toLocaleTimeString([], {
-                                  hour: '2-digit',
-                                  minute: '2-digit',
-                                })}
+                                {formatTime(m.created_at)}
                               </span>
                             </div>
 
@@ -2629,10 +2674,7 @@ async def create_goal(payload: GoalRequest):
                                   {rep.user_name}
                                 </span>
                                 <span className="opacity-50 text-[10px]">
-                                  {new Date(rep.created_at).toLocaleTimeString([], {
-                                    hour: '2-digit',
-                                    minute: '2-digit',
-                                  })}
+                                  {formatTime(rep.created_at)}
                                 </span>
                               </div>
                               <p className="opacity-90">{rep.content}</p>
@@ -2641,7 +2683,13 @@ async def create_goal(payload: GoalRequest):
                         </div>
                       )}
 
-                      <div className="flex items-center gap-2 pt-2 border-t border-inherit">
+                      <form
+                        onSubmit={(e) => {
+                          e.preventDefault()
+                          handleReplyQuestion(q.id)
+                        }}
+                        className="flex items-center gap-2 pt-2 border-t border-inherit"
+                      >
                         <input
                           type="text"
                           value={replyInputs[q.id] || ''}
@@ -2652,13 +2700,12 @@ async def create_goal(payload: GoalRequest):
                           }`}
                         />
                         <button
-                          type="button"
-                          onClick={() => handleReplyQuestion(q.id)}
+                          type="submit"
                           className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#c25e2e] hover:bg-[#d97b48] text-white cursor-pointer"
                         >
                           Reply
                         </button>
-                      </div>
+                      </form>
                     </div>
                   ))
                 )}
@@ -2885,7 +2932,7 @@ async def create_goal(payload: GoalRequest):
                           onChange={(e) => {
                             setContentBadge(e.target.value)
                             if (e.target.value.toLowerCase().includes('roadmap')) {
-                              setContentType('roadmap')
+                              setContentType('roadmap_step')
                             } else if (e.target.value.toLowerCase().includes('course')) {
                               setContentType('course')
                             } else {
@@ -3052,8 +3099,13 @@ async def create_goal(payload: GoalRequest):
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                     {filteredResources.map((r) => {
                       const isTechneaContent = Boolean(r.content_badge)
-                      const isLink =
-                        r.url_or_content?.startsWith('http') || r.action_url?.startsWith('http')
+                      const rawUrl = (r.url_or_content || r.action_url || '').trim()
+                      const isHttpUrl = rawUrl.startsWith('http://') || rawUrl.startsWith('https://')
+                      const isLikelyUrl =
+                        isHttpUrl ||
+                        /^www\./i.test(rawUrl) ||
+                        (/\.[a-z]{2,}(\/.*)?$/i.test(rawUrl) && !rawUrl.includes('\n') && !rawUrl.includes(' '))
+                      const externalUrl = isHttpUrl ? rawUrl : `https://${rawUrl}`
 
                       return (
                         <div
@@ -3089,9 +3141,19 @@ async def create_goal(payload: GoalRequest):
 
                             <h4 className="text-sm font-bold tracking-tight mb-1">{r.title}</h4>
                             {r.description && <p className="text-xs opacity-75 mb-3">{r.description}</p>}
+
+                            {r.resource_type === 'note' && !isLikelyUrl && r.url_or_content && (
+                              <p className={`text-xs font-mono leading-relaxed opacity-90 whitespace-pre-wrap p-2.5 rounded-lg border mb-3 ${
+                                isLight ? 'bg-black/3 border-[#ded4be]' : 'bg-white/3 border-[#262320]'
+                              }`}>
+                                {r.url_or_content}
+                              </p>
+                            )}
                           </div>
 
-                          <div className="pt-2.5 border-t border-inherit flex items-center justify-between mt-auto">
+                          <div className={`pt-2.5 border-t flex items-center justify-between mt-auto ${
+                            isLight ? 'border-[#ded4be]' : 'border-[#262320]'
+                          }`}>
                             {isTechneaContent ? (
                               <a
                                 href={r.action_url || r.url_or_content || '/learning'}
@@ -3100,14 +3162,20 @@ async def create_goal(payload: GoalRequest):
                                 <span>Continue Learning</span>
                                 <span className="group-hover:translate-x-0.5 transition-transform">→</span>
                               </a>
-                            ) : isLink ? (
+                            ) : isLikelyUrl ? (
                               <a
-                                href={r.url_or_content}
+                                href={externalUrl}
                                 target="_blank"
-                                rel="noreferrer"
+                                rel="noopener noreferrer"
                                 className="text-xs font-semibold text-[#e87a48] hover:underline flex items-center gap-1"
                               >
-                                <span>Open Resource</span>
+                                <span>
+                                  {r.resource_type === 'video'
+                                    ? 'Watch Video'
+                                    : r.resource_type === 'pdf'
+                                    ? 'Open PDF'
+                                    : 'Open Resource'}
+                                </span>
                                 <ExternalLink className="h-3 w-3" />
                               </a>
                             ) : (
@@ -3315,13 +3383,16 @@ async def create_goal(payload: GoalRequest):
                   </h4>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {members.map((m) => {
-                      const isMe = m.user_id === user?.id
+                    {members.map((m, idx) => {
+                      const isMe = String(m.user_id) === String(user?.id)
+                      const isOwner =
+                        m.role === 'owner' ||
+                        String(m.user_id) === String(currentRoom?.created_by_id)
                       const state = m.study_state || 'studying'
 
                       return (
                         <div
-                          key={m.user_id}
+                          key={`${m.user_id}-${idx}`}
                           className={`p-3.5 rounded-xl border flex items-center gap-3 transition-colors ${
                             isLight ? 'border-[#ded4be] bg-[#faf6ee]' : 'border-[#262320] bg-[#1a1816]'
                           }`}
@@ -3370,7 +3441,7 @@ async def create_goal(payload: GoalRequest):
                               )}
 
                               {/* Phase 3 Feature 9: Member Role Badges */}
-                              {m.role === 'owner' ? (
+                              {isOwner ? (
                                 <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.2 rounded-sm font-semibold bg-purple-500/15 text-purple-400 border border-purple-500/30">
                                   <Crown className="h-2.5 w-2.5" />
                                   <span>Owner</span>

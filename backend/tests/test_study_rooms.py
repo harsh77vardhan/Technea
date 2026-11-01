@@ -518,3 +518,430 @@ async def test_study_rooms_lifecycle():
         assert res_leave.status_code == 200
         assert res_leave.json()["success"] is True
 
+
+async def _create_test_user(email_prefix: str = "study_user") -> tuple[uuid.UUID, dict[str, str]]:
+    """Helper to create a test user and return (user_id, auth_headers)."""
+    test_email = f"{email_prefix}_{uuid.uuid4().hex[:8]}@technea.dev"
+    async with async_session_maker() as session:
+        user = User(
+            email=test_email,
+            hashed_password="hashed_pw_test",
+            full_name=f"User {uuid.uuid4().hex[:4]}",
+            username=f"u_{uuid.uuid4().hex[:6]}",
+            profile_completed=True,
+            is_active=True,
+            learning_goal="Master Tech Stack",
+        )
+        session.add(user)
+        await session.commit()
+        await session.refresh(user)
+        user_id = user.id
+
+    token = create_access_token(subject=str(user_id))
+    return user_id, {"Authorization": f"Bearer {token}"}
+
+
+@pytest.mark.asyncio
+async def test_study_rooms_creation_validation_edge_cases():
+    """Verify room creation validation: empty/whitespace names, topics, and max_members bounds."""
+    user_id, auth_headers = await _create_test_user("create_edge")
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        # 1. Empty name should be rejected (422)
+        res_empty = await client.post(
+            "/api/v1/community/rooms",
+            json={"name": "", "topic": "Python"},
+            headers=auth_headers,
+        )
+        assert res_empty.status_code == 422
+
+        # 2. Whitespace-only name should be rejected (422)
+        res_ws = await client.post(
+            "/api/v1/community/rooms",
+            json={"name": "     ", "topic": "Python"},
+            headers=auth_headers,
+        )
+        assert res_ws.status_code == 422
+
+        # 3. 1-character name should be rejected (422)
+        res_short = await client.post(
+            "/api/v1/community/rooms",
+            json={"name": "A", "topic": "Python"},
+            headers=auth_headers,
+        )
+        assert res_short.status_code == 422
+
+        # 4. Whitespace-only topic should be rejected (422)
+        res_ws_topic = await client.post(
+            "/api/v1/community/rooms",
+            json={"name": "Valid Room Name", "topic": "   "},
+            headers=auth_headers,
+        )
+        assert res_ws_topic.status_code == 422
+
+        # 5. max_members < 2 boundary (e.g. 1) should be rejected (422)
+        res_min_bound = await client.post(
+            "/api/v1/community/rooms",
+            json={"name": "Bound Room Min", "topic": "Python", "max_members": 1},
+            headers=auth_headers,
+        )
+        assert res_min_bound.status_code == 422
+
+        # 6. max_members > 500 boundary (e.g. 501) should be rejected (422)
+        res_max_bound = await client.post(
+            "/api/v1/community/rooms",
+            json={"name": "Bound Room Max", "topic": "Python", "max_members": 501},
+            headers=auth_headers,
+        )
+        assert res_max_bound.status_code == 422
+
+        # 7. Valid lower boundary: max_members = 2 should succeed (201)
+        res_min_valid = await client.post(
+            "/api/v1/community/rooms",
+            json={"name": f"Valid Min 2 {uuid.uuid4().hex[:4]}", "topic": "Python", "max_members": 2},
+            headers=auth_headers,
+        )
+        assert res_min_valid.status_code == 201
+        assert res_min_valid.json()["max_members"] == 2
+
+        # 8. Valid upper boundary: max_members = 500 should succeed (201)
+        res_max_valid = await client.post(
+            "/api/v1/community/rooms",
+            json={"name": f"Valid Max 500 {uuid.uuid4().hex[:4]}", "topic": "Python", "max_members": 500},
+            headers=auth_headers,
+        )
+        assert res_max_valid.status_code == 201
+        assert res_max_valid.json()["max_members"] == 500
+
+        # 9. Alias normalization: max_capacity alias and privacy alias
+        res_alias = await client.post(
+            "/api/v1/community/rooms",
+            json={
+                "room_name": f"Alias Room {uuid.uuid4().hex[:4]}",
+                "topic": "Python",
+                "max_capacity": 42,
+                "privacy": "private",
+            },
+            headers=auth_headers,
+        )
+        assert res_alias.status_code == 201
+        alias_data = res_alias.json()
+        assert alias_data["max_members"] == 42
+        assert alias_data["is_private"] is True
+
+
+@pytest.mark.asyncio
+async def test_study_rooms_capacity_limits():
+    """Verify capacity limits: joining room at max_members returns 400 Bad Request."""
+    user_owner, auth_owner = await _create_test_user("owner_cap")
+    user2, auth_user2 = await _create_test_user("user2_cap")
+    user3, auth_user3 = await _create_test_user("user3_cap")
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        # Create room with capacity of 2 (owner is member #1)
+        res_create = await client.post(
+            "/api/v1/community/rooms",
+            json={
+                "name": f"Tiny Room {uuid.uuid4().hex[:4]}",
+                "topic": "Algorithms",
+                "max_members": 2,
+                "is_private": False,
+            },
+            headers=auth_owner,
+        )
+        assert res_create.status_code == 201
+        room_data = res_create.json()
+        room_id = room_data["id"]
+        invite_code = room_data["invite_code"]
+        assert room_data["active_learners_count"] == 1
+
+        # User 2 joins via toggle (now at capacity: 2/2)
+        res_u2_join = await client.post(
+            f"/api/v1/community/rooms/{room_id}/join",
+            headers=auth_user2,
+        )
+        assert res_u2_join.status_code == 200
+        assert res_u2_join.json()["is_joined"] is True
+        assert res_u2_join.json()["active_learners_count"] == 2
+
+        # User 3 attempts to join via toggle -> should return 400 Bad Request
+        res_u3_toggle = await client.post(
+            f"/api/v1/community/rooms/{room_id}/join",
+            headers=auth_user3,
+        )
+        assert res_u3_toggle.status_code == 400
+        assert "maximum capacity" in res_u3_toggle.json()["detail"].lower()
+
+        # User 3 attempts to join via code -> should return 400 Bad Request
+        res_u3_code = await client.post(
+            "/api/v1/community/rooms/join-by-code",
+            json={"code": invite_code},
+            headers=auth_user3,
+        )
+        assert res_u3_code.status_code == 400
+        assert "maximum capacity" in res_u3_code.json()["detail"].lower()
+
+        # User 2 leaves room (now 1/2)
+        res_u2_leave = await client.post(
+            f"/api/v1/community/rooms/{room_id}/join",
+            headers=auth_user2,
+        )
+        assert res_u2_leave.status_code == 200
+        assert res_u2_leave.json()["is_joined"] is False
+        assert res_u2_leave.json()["active_learners_count"] == 1
+
+        # Now User 3 can join successfully
+        res_u3_now = await client.post(
+            f"/api/v1/community/rooms/{room_id}/join",
+            headers=auth_user3,
+        )
+        assert res_u3_now.status_code == 200
+        assert res_u3_now.json()["is_joined"] is True
+        assert res_u3_now.json()["active_learners_count"] == 2
+
+
+@pytest.mark.asyncio
+async def test_study_rooms_invite_code_variations():
+    """Verify private room invite code lookup with lowercase, uppercase, and link formats."""
+    owner_id, auth_owner = await _create_test_user("owner_code")
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        # Create a private room
+        res_create = await client.post(
+            "/api/v1/community/rooms",
+            json={
+                "name": f"Private Code Room {uuid.uuid4().hex[:4]}",
+                "topic": "Security",
+                "is_private": True,
+                "max_members": 20,
+            },
+            headers=auth_owner,
+        )
+        assert res_create.status_code == 201
+        room_data = res_create.json()
+        room_id = room_data["id"]
+        code = room_data["invite_code"]
+        assert code.startswith("TECH-")
+
+        # Non-member direct toggle join on private room must be rejected (400)
+        _, auth_other = await _create_test_user("other_code")
+        res_direct = await client.post(
+            f"/api/v1/community/rooms/{room_id}/join",
+            headers=auth_other,
+        )
+        assert res_direct.status_code == 400
+        assert "private" in res_direct.json()["detail"].lower()
+
+        # 1. Lowercase code lookup
+        _, auth_lower = await _create_test_user("lower_code")
+        res_lower = await client.post(
+            "/api/v1/community/rooms/join-by-code",
+            json={"code": code.lower()},
+            headers=auth_lower,
+        )
+        assert res_lower.status_code == 200
+        assert res_lower.json()["is_joined"] is True
+
+        # 2. Uppercase code lookup
+        _, auth_upper = await _create_test_user("upper_code")
+        res_upper = await client.post(
+            "/api/v1/community/rooms/join-by-code",
+            json={"code": code.upper()},
+            headers=auth_upper,
+        )
+        assert res_upper.status_code == 200
+        assert res_upper.json()["is_joined"] is True
+
+        # 3. Full link format
+        _, auth_link = await _create_test_user("link_code")
+        res_link = await client.post(
+            "/api/v1/community/rooms/join-by-code",
+            json={"code": f"https://technea.dev/community/rooms/join/{code.lower()}"},
+            headers=auth_link,
+        )
+        assert res_link.status_code == 200
+        assert res_link.json()["is_joined"] is True
+
+        # 4. Link with trailing slash
+        _, auth_slash = await _create_test_user("slash_code")
+        res_slash = await client.post(
+            "/api/v1/community/rooms/join-by-code",
+            json={"code": f"https://technea.dev/community/rooms/join/{code}/"},
+            headers=auth_slash,
+        )
+        assert res_slash.status_code == 200
+        assert res_slash.json()["is_joined"] is True
+
+        # 5. Link with query parameter
+        _, auth_query = await _create_test_user("query_code")
+        res_query = await client.post(
+            "/api/v1/community/rooms/join-by-code",
+            json={"code": f"https://technea.dev/community/rooms/join?code={code.lower()}&ref=invite"},
+            headers=auth_query,
+        )
+        assert res_query.status_code == 200
+        assert res_query.json()["is_joined"] is True
+
+        # 6. Relative URL link
+        _, auth_rel = await _create_test_user("rel_code")
+        res_rel = await client.post(
+            "/api/v1/community/rooms/join-by-code",
+            json={"code": f"/rooms/join/{code}"},
+            headers=auth_rel,
+        )
+        assert res_rel.status_code == 200
+        assert res_rel.json()["is_joined"] is True
+
+        # 7. Non-existent code returns 400 Bad Request
+        res_bad = await client.post(
+            "/api/v1/community/rooms/join-by-code",
+            json={"code": "TECH-NONEXISTENT"},
+            headers=auth_rel,
+        )
+        assert res_bad.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_study_rooms_owner_role_gating():
+    """Verify role permissions: only owner/moderator can update roles, members are forbidden."""
+    owner_id, auth_owner = await _create_test_user("owner_role")
+    user_mod, auth_mod = await _create_test_user("user_mod")
+    user_member, auth_member = await _create_test_user("user_mem")
+    user_outsider, auth_outsider = await _create_test_user("user_out")
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        # Create public room
+        res_create = await client.post(
+            "/api/v1/community/rooms",
+            json={
+                "name": f"Role Gated Room {uuid.uuid4().hex[:4]}",
+                "topic": "Distributed Systems",
+                "is_private": False,
+            },
+            headers=auth_owner,
+        )
+        assert res_create.status_code == 201
+        room_id = res_create.json()["id"]
+
+        # User mod joins room as standard member
+        await client.post(f"/api/v1/community/rooms/{room_id}/join", headers=auth_mod)
+        # User member joins room as standard member
+        await client.post(f"/api/v1/community/rooms/{room_id}/join", headers=auth_member)
+
+        # 1. Standard member attempts to promote another member -> 403 Forbidden
+        res_unauthorized = await client.put(
+            f"/api/v1/community/rooms/{room_id}/members/{user_member}/role",
+            json={"role": "moderator"},
+            headers=auth_mod,
+        )
+        assert res_unauthorized.status_code == 403
+        assert "permission denied" in res_unauthorized.json()["detail"].lower()
+
+        # 2. Outsider (non-member) attempts to update role -> 403 Forbidden
+        res_outsider = await client.put(
+            f"/api/v1/community/rooms/{room_id}/members/{user_member}/role",
+            json={"role": "moderator"},
+            headers=auth_outsider,
+        )
+        assert res_outsider.status_code == 403
+
+        # 3. Owner promotes user_mod to moderator -> 200 OK
+        res_promote_mod = await client.put(
+            f"/api/v1/community/rooms/{room_id}/members/{user_mod}/role",
+            json={"role": "moderator"},
+            headers=auth_owner,
+        )
+        assert res_promote_mod.status_code == 200
+        assert res_promote_mod.json()["role"] == "moderator"
+
+        # 4. Moderator updates user_member role to member -> 200 OK
+        res_mod_action = await client.put(
+            f"/api/v1/community/rooms/{room_id}/members/{user_member}/role",
+            json={"role": "member"},
+            headers=auth_mod,
+        )
+        assert res_mod_action.status_code == 200
+
+        # 5. Moderator attempts to assign "owner" or "host" -> 403 Forbidden
+        res_mod_host = await client.put(
+            f"/api/v1/community/rooms/{room_id}/members/{user_member}/role",
+            json={"role": "host"},
+            headers=auth_mod,
+        )
+        assert res_mod_host.status_code == 403
+        assert "owner" in res_mod_host.json()["detail"].lower()
+
+        # 6. Invalid role pattern -> 422 Unprocessable Entity
+        res_invalid_role = await client.put(
+            f"/api/v1/community/rooms/{room_id}/members/{user_member}/role",
+            json={"role": "superadmin"},
+            headers=auth_owner,
+        )
+        assert res_invalid_role.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_study_rooms_my_rooms_and_filter_search():
+    """Verify /rooms/my endpoint, category/topic/roadmap filters, and room search."""
+    user_id, auth_headers = await _create_test_user("filter_user")
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        unique_topic = f"Rust_{uuid.uuid4().hex[:6]}"
+        # Create room 1
+        res1 = await client.post(
+            "/api/v1/community/rooms",
+            json={
+                "name": f"Rust Systems Group {uuid.uuid4().hex[:4]}",
+                "topic": unique_topic,
+                "category": "Systems",
+                "roadmap_name": "Systems Programming",
+                "is_private": False,
+            },
+            headers=auth_headers,
+        )
+        assert res1.status_code == 201
+        r1_id = res1.json()["id"]
+
+        # Create room 2
+        res2 = await client.post(
+            "/api/v1/community/rooms",
+            json={
+                "name": f"Go Concurrency Lab {uuid.uuid4().hex[:4]}",
+                "topic": "Golang",
+                "category": "Backend",
+                "is_private": False,
+            },
+            headers=auth_headers,
+        )
+        assert res2.status_code == 201
+        r2_id = res2.json()["id"]
+
+        # Verify /rooms/my returns joined rooms
+        res_my = await client.get("/api/v1/community/rooms/my", headers=auth_headers)
+        assert res_my.status_code == 200
+        my_rooms = res_my.json()
+        my_ids = [r["id"] for r in my_rooms]
+        assert r1_id in my_ids
+        assert r2_id in my_ids
+        assert all(r["is_joined"] is True for r in my_rooms)
+
+        # Filter by category
+        res_cat = await client.get("/api/v1/community/rooms?category=Systems")
+        assert res_cat.status_code == 200
+        cat_rooms = res_cat.json()
+        assert any(r["id"] == r1_id for r in cat_rooms)
+
+        # Filter by topic
+        res_top = await client.get(f"/api/v1/community/rooms?topic={unique_topic}")
+        assert res_top.status_code == 200
+        top_rooms = res_top.json()
+        assert any(r["id"] == r1_id for r in top_rooms)
+
+        # Filter by is_private
+        res_pub = await client.get("/api/v1/community/rooms?is_private=false")
+        assert res_pub.status_code == 200
+        pub_rooms = res_pub.json()
+        assert all(r["is_private"] is False for r in pub_rooms)
+

@@ -54,6 +54,9 @@ export default function CreateRoomModal({
         category: topic.split('&')[0].trim(),
         icon: isPrivate ? 'lock' : 'users',
       })
+      setName('')
+      setDescription('')
+      setError('')
       onClose()
     } catch (err) {
       setError(err?.message || 'Failed to create room. Please try again.')
@@ -87,7 +90,9 @@ export default function CreateRoomModal({
           }`}
         >
           {/* Header */}
-          <div className="flex items-center justify-between border-b pb-4 mb-5 border-inherit">
+          <div className={`flex items-center justify-between border-b pb-4 mb-5 ${
+            isLight ? 'border-[#ded4be]' : 'border-[#262320]'
+          }`}>
             <div className="flex items-center gap-2.5">
               <div className="h-9 w-9 rounded-xl bg-[#c25e2e]/15 border border-[#c25e2e]/30 flex items-center justify-center text-[#e87a48]">
                 <Users className="h-4.5 w-4.5" />
@@ -271,7 +276,9 @@ export default function CreateRoomModal({
             </div>
 
             {/* Actions */}
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-inherit">
+            <div className={`flex items-center justify-end gap-3 pt-4 border-t ${
+              isLight ? 'border-[#ded4be]' : 'border-[#262320]'
+            }`}>
               <button
                 type="button"
                 onClick={onClose}

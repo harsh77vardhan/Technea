@@ -24,6 +24,8 @@ export default function JoinByCodeModal({ isOpen, onClose, onJoin }) {
 
     try {
       await onJoin(code.trim())
+      setCode('')
+      setError('')
       onClose()
     } catch (err) {
       setError(err?.message || 'Invalid code or room not found.')
@@ -57,7 +59,9 @@ export default function JoinByCodeModal({ isOpen, onClose, onJoin }) {
           }`}
         >
           {/* Header */}
-          <div className="flex items-center justify-between border-b pb-4 mb-5 border-inherit">
+          <div className={`flex items-center justify-between border-b pb-4 mb-5 ${
+            isLight ? 'border-[#ded4be]' : 'border-[#262320]'
+          }`}>
             <div className="flex items-center gap-2.5">
               <div className="h-9 w-9 rounded-xl bg-[#c25e2e]/15 border border-[#c25e2e]/30 flex items-center justify-center text-[#e87a48]">
                 <KeyRound className="h-4.5 w-4.5" />
@@ -109,7 +113,9 @@ export default function JoinByCodeModal({ isOpen, onClose, onJoin }) {
               </p>
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-3">
+            <div className={`flex items-center justify-end gap-3 pt-3 border-t ${
+              isLight ? 'border-[#ded4be]' : 'border-[#262320]'
+            }`}>
               <button
                 type="button"
                 onClick={onClose}

@@ -143,16 +143,19 @@ export default function StudyRoomsSection() {
     try {
       const res = await toggleRoomJoinApi(room.id)
       showToast?.(res?.message || `Joined ${room.name}!`)
-      // Update local room state
-      setRooms((prev) =>
-        prev.map((r) =>
-          r.id === room.id
-            ? { ...r, is_joined: true, active_learners_count: (r.active_learners_count || 0) + 1 }
-            : r
-        )
-      )
-      // Open workspace
-      setActiveWorkspaceRoom({ ...room, is_joined: true })
+      const updatedRoom = {
+        ...room,
+        is_joined: res?.is_joined !== undefined ? res.is_joined : true,
+        active_learners_count:
+          res?.active_learners_count !== undefined
+            ? res.active_learners_count
+            : (room.active_learners_count || 0) + 1,
+      }
+      // Update local room state across all lists
+      setRooms((prev) => prev.map((r) => (r.id === room.id ? updatedRoom : r)))
+      setRecommendedRooms((prev) => prev.map((r) => (r.id === room.id ? updatedRoom : r)))
+      // Open workspace immediately
+      setActiveWorkspaceRoom(updatedRoom)
     } catch (err) {
       showToast?.(err?.message || 'Failed to join room.')
     }
@@ -161,19 +164,42 @@ export default function StudyRoomsSection() {
   // Handle Create Room
   const handleCreateRoom = async (roomData) => {
     const created = await createRoomApi(roomData)
-    showToast?.(`Room "${created.name}" created successfully!`)
-    setRooms((prev) => [created, ...prev])
-    setActiveWorkspaceRoom(created)
+    const newRoom = {
+      ...created,
+      is_joined: true,
+      active_learners_count: created.active_learners_count || 1,
+    }
+    showToast?.(`Room "${newRoom.name}" created successfully!`)
+    setRooms((prev) => [newRoom, ...prev.filter((r) => r.id !== newRoom.id)])
+    setActiveWorkspaceRoom(newRoom)
   }
 
   // Handle Join by Code
   const handleJoinByCode = async (code) => {
     const res = await joinRoomByCodeApi(code)
     showToast?.(res?.message || 'Successfully joined room!')
-    loadRoomsData()
     if (res?.room) {
-      setActiveWorkspaceRoom(res.room)
+      const joinedRoom = {
+        ...res.room,
+        is_joined: true,
+        active_learners_count:
+          res.active_learners_count ??
+          res.room.active_learners_count ??
+          1,
+      }
+      setRooms((prev) => {
+        const exists = prev.some((r) => r.id === joinedRoom.id)
+        if (exists) {
+          return prev.map((r) => (r.id === joinedRoom.id ? joinedRoom : r))
+        }
+        return [joinedRoom, ...prev]
+      })
+      setRecommendedRooms((prev) =>
+        prev.map((r) => (r.id === joinedRoom.id ? joinedRoom : r))
+      )
+      setActiveWorkspaceRoom(joinedRoom)
     }
+    loadRoomsData()
   }
 
   // Filtered rooms
@@ -191,11 +217,16 @@ export default function StudyRoomsSection() {
     }
 
     if (selectedTopic !== 'All') {
+      const sel = selectedTopic.toLowerCase()
+      const selWords = sel.split(/[\s&,/]+/).filter((w) => w.length > 2)
       pool = pool.filter((r) => {
         const top = (r.topic || '').toLowerCase()
         const cat = (r.category || '').toLowerCase()
-        const sel = selectedTopic.toLowerCase()
-        return top.includes(sel) || cat.includes(sel)
+        if (top.includes(sel) || cat.includes(sel)) return true
+        if (selWords.length > 0 && selWords.every((w) => top.includes(w) || cat.includes(w))) {
+          return true
+        }
+        return false
       })
     }
 
@@ -205,8 +236,15 @@ export default function StudyRoomsSection() {
         const n = (r.name || '').toLowerCase()
         const d = (r.description || '').toLowerCase()
         const t = (r.topic || '').toLowerCase()
+        const c = (r.category || '').toLowerCase()
         const rm = (r.roadmap_name || '').toLowerCase()
-        return n.includes(q) || d.includes(q) || t.includes(q) || rm.includes(q)
+        return (
+          n.includes(q) ||
+          d.includes(q) ||
+          t.includes(q) ||
+          c.includes(q) ||
+          rm.includes(q)
+        )
       })
     }
 
@@ -216,7 +254,9 @@ export default function StudyRoomsSection() {
   return (
     <div className="space-y-8 pb-16">
       {/* ──────────────── TOP HEADER SECTION ──────────────── */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-6 border-inherit">
+      <div className={`flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-6 ${
+        isLight ? 'border-[#ded4be]' : 'border-[#262320]'
+      }`}>
         <div>
           <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wider bg-[#c25e2e]/12 text-[#e87a48] border border-[#c25e2e]/25 mb-2">
             <Users className="h-3.5 w-3.5" />
@@ -374,7 +414,9 @@ export default function StudyRoomsSection() {
                   </p>
                 </div>
 
-                <div className="pt-4 mt-3 border-t border-inherit flex items-center justify-between">
+                <div className={`pt-4 mt-3 border-t flex items-center justify-between ${
+                  isLight ? 'border-[#ded4be]' : 'border-[#262320]'
+                }`}>
                   <span className="text-xs font-semibold text-[#e87a48]">{room.topic}</span>
                   <button
                     type="button"
@@ -497,7 +539,9 @@ export default function StudyRoomsSection() {
                   </div>
 
                   {/* Footer Stats & CTA */}
-                  <div className="pt-4 mt-4 border-t border-inherit flex items-center justify-between">
+                  <div className={`pt-4 mt-4 border-t flex items-center justify-between ${
+                    isLight ? 'border-[#ded4be]' : 'border-[#262320]'
+                  }`}>
                     <div className="flex items-center gap-1.5 text-xs opacity-75">
                       <Users className="h-3.5 w-3.5" />
                       <span>{room.active_learners_count}</span>
@@ -568,7 +612,11 @@ export default function StudyRoomsSection() {
           continueLearningData={continueLearningData}
           onClose={() => setActiveWorkspaceRoom(null)}
           onRoomUpdated={(upd) => {
-            setActiveWorkspaceRoom(upd)
+            if (upd) {
+              setActiveWorkspaceRoom(upd)
+              setRooms((prev) => prev.map((r) => (r.id === upd.id ? { ...r, ...upd } : r)))
+              setRecommendedRooms((prev) => prev.map((r) => (r.id === upd.id ? { ...r, ...upd } : r)))
+            }
             loadRoomsData()
           }}
         />

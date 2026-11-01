@@ -202,7 +202,7 @@ async def run_study_rooms_schema_migrations(engine) -> None:
         ("is_private", "ALTER TABLE learning_rooms ADD COLUMN IF NOT EXISTS is_private BOOLEAN DEFAULT FALSE NOT NULL"),
         ("invite_code", "ALTER TABLE learning_rooms ADD COLUMN IF NOT EXISTS invite_code VARCHAR(20)"),
         ("max_members", "ALTER TABLE learning_rooms ADD COLUMN IF NOT EXISTS max_members INTEGER DEFAULT 50 NOT NULL"),
-        ("created_by_id", "ALTER TABLE learning_rooms ADD COLUMN IF NOT EXISTS created_by_id UUID"),
+        ("created_by_id", "ALTER TABLE learning_rooms ADD COLUMN IF NOT EXISTS created_by_id UUID REFERENCES users(id) ON DELETE SET NULL"),
         ("study_session_active", "ALTER TABLE learning_rooms ADD COLUMN IF NOT EXISTS study_session_active BOOLEAN DEFAULT FALSE NOT NULL"),
         ("study_session_topic", "ALTER TABLE learning_rooms ADD COLUMN IF NOT EXISTS study_session_topic VARCHAR(255)"),
         ("study_session_started_at", "ALTER TABLE learning_rooms ADD COLUMN IF NOT EXISTS study_session_started_at TIMESTAMP WITH TIME ZONE"),
@@ -240,7 +240,7 @@ async def run_study_rooms_schema_migrations(engine) -> None:
                             logger.info("Adding missing column '%s' to user_learning_rooms...", col_name)
                             await conn.execute(text(alter_query))
 
-                await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_learning_rooms_invite_code ON learning_rooms(invite_code);"))
+                await conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ix_learning_rooms_invite_code ON learning_rooms(invite_code);"))
                 await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_learning_rooms_topic ON learning_rooms(topic);"))
 
                 # Create child tables if not existing
@@ -284,6 +284,7 @@ async def run_study_rooms_schema_migrations(engine) -> None:
                     )
                 """))
                 await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_room_question_replies_question_id ON room_question_replies(question_id)"))
+                await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_room_question_replies_user_id ON room_question_replies(user_id)"))
 
                 await conn.execute(text("""
                     CREATE TABLE IF NOT EXISTS room_resources (
@@ -299,6 +300,7 @@ async def run_study_rooms_schema_migrations(engine) -> None:
                     )
                 """))
                 await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_room_resources_room_id ON room_resources(room_id)"))
+                await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_room_resources_user_id ON room_resources(user_id)"))
             else:
                 for col_name, _ in room_cols:
                     try:
@@ -342,7 +344,7 @@ async def run_study_rooms_schema_migrations(engine) -> None:
 async def run_study_rooms_phase2_schema_migrations(engine) -> None:
     """Ensure Phase 2 study session fields, notes, history, and notifications exist."""
     lr_phase2_cols = [
-        ("study_session_host_id", "ALTER TABLE learning_rooms ADD COLUMN IF NOT EXISTS study_session_host_id UUID"),
+        ("study_session_host_id", "ALTER TABLE learning_rooms ADD COLUMN IF NOT EXISTS study_session_host_id UUID REFERENCES users(id) ON DELETE SET NULL"),
         ("study_session_host_name", "ALTER TABLE learning_rooms ADD COLUMN IF NOT EXISTS study_session_host_name VARCHAR(255)"),
         ("study_session_timer_type", "ALTER TABLE learning_rooms ADD COLUMN IF NOT EXISTS study_session_timer_type VARCHAR(50) DEFAULT 'pomodoro' NOT NULL"),
         ("study_session_timer_mode", "ALTER TABLE learning_rooms ADD COLUMN IF NOT EXISTS study_session_timer_mode VARCHAR(50) DEFAULT 'study' NOT NULL"),
@@ -575,7 +577,9 @@ async def run_study_rooms_phase3_schema_migrations(engine) -> None:
                     )
                 """))
                 await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_room_webrtc_signals_room_id ON room_webrtc_signals(room_id)"))
-                await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_room_webrtc_signals_target ON room_webrtc_signals(target_user_id)"))
+                await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_room_webrtc_signals_from_user_id ON room_webrtc_signals(from_user_id)"))
+                await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_room_webrtc_signals_target_user_id ON room_webrtc_signals(target_user_id)"))
+                await conn.execute(text("DROP INDEX IF EXISTS ix_room_webrtc_signals_target"))
             else:
                 # SQLite fallback
                 for col_name, _ in lr_phase3_cols:

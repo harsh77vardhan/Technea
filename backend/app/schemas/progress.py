@@ -188,6 +188,7 @@ class DashboardSummaryResponse(BaseModel):
     total_active_paths: int
     overall_progress_percent: int
     streak_count: int = 1
+    streak_days: int = 1
     xp_points: int = 0
     developer_level: str = "Junior Developer"
     next_level_xp: int = 500

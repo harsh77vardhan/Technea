@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Any
 import uuid
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class LearningRoomResponse(BaseModel):
@@ -51,6 +51,22 @@ class CreateRoomRequest(BaseModel):
     max_members: int = Field(50, ge=2, le=500)
     category: str = Field("General", max_length=100)
     icon: str = Field("users", max_length=50)
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, v: str) -> str:
+        cleaned = v.strip()
+        if len(cleaned) < 2:
+            raise ValueError("Room name must contain at least 2 non-whitespace characters")
+        return cleaned
+
+    @field_validator("topic")
+    @classmethod
+    def validate_topic(cls, v: str) -> str:
+        cleaned = v.strip()
+        if len(cleaned) < 1:
+            raise ValueError("Room topic cannot be empty or whitespace only")
+        return cleaned
 
     @model_validator(mode="before")
     @classmethod

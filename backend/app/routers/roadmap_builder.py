@@ -74,6 +74,12 @@ async def save_user_roadmap(
     status_code=status.HTTP_200_OK,
     summary="Get authenticated user's saved roadmaps",
 )
+@router.get(
+    "/my-roadmaps",
+    response_model=list[RoadmapDetailResponse],
+    status_code=status.HTTP_200_OK,
+    include_in_schema=False,
+)
 async def get_my_roadmaps(
     current_user: CurrentUserDep,
     db: DatabaseDep,

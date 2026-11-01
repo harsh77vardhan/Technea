@@ -44,6 +44,7 @@ class LearningRoom(Base, IntIdMixin, TimestampMixin):
         String(100),
         default="General",
         nullable=False,
+        index=True,
     )
     roadmap_name: Mapped[str | None] = mapped_column(
         String(255),
@@ -488,6 +489,7 @@ class RoomSessionHistory(Base, IntIdMixin, TimestampMixin):
         DateTime(timezone=True),
         server_default=func.now(),
         nullable=False,
+        index=True,
     )
     # Phase 3: AI Study Session Summary
     ai_summary: Mapped[str | None] = mapped_column(
@@ -598,6 +600,12 @@ class RoomNotification(Base, IntIdMixin, TimestampMixin):
         Boolean,
         default=False,
         nullable=False,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+        index=True,
     )
 
     room: Mapped["LearningRoom"] = relationship("LearningRoom", back_populates="notifications")

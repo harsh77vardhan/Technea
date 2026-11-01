@@ -688,6 +688,7 @@ class ProgressService:
             total_active_paths=total_active_paths,
             overall_progress_percent=avg_progress,
             streak_count=daily_act.streak_count,
+            streak_days=daily_act.streak_count,
             xp_points=gamification["xp_points"],
             developer_level=gamification["developer_level"],
             next_level_xp=gamification["next_level_xp"],

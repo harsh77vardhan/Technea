@@ -386,9 +386,22 @@ class CommunityService:
     ) -> JoinRoomResponse:
         """Join a room using its unique invite code, slug, or ID."""
         cleaned = code_input.strip()
-        # Handle full URL if user pasted an invite link (e.g. /rooms/join/TECH-1234)
-        if "/" in cleaned:
-            cleaned = cleaned.split("/")[-1].strip()
+        # Handle full URL, query params, or trailing slash (e.g. /rooms/join/TECH-1234/, ?code=TECH-1234)
+        if "?" in cleaned:
+            from urllib.parse import parse_qs, urlparse
+            try:
+                parsed = urlparse(cleaned)
+                qs = parse_qs(parsed.query)
+                if "code" in qs and qs["code"]:
+                    cleaned = qs["code"][0].strip()
+                else:
+                    path_parts = [p for p in parsed.path.split("/") if p]
+                    cleaned = path_parts[-1].strip() if path_parts else cleaned
+            except Exception:
+                cleaned = cleaned.split("?")[0].rstrip("/").split("/")[-1].strip()
+        elif "/" in cleaned:
+            path_parts = [p for p in cleaned.split("/") if p]
+            cleaned = path_parts[-1].strip() if path_parts else cleaned
 
         stmt = select(LearningRoom).where(
             or_(
@@ -499,6 +512,9 @@ class CommunityService:
             )
         else:
             # Join room
+            if getattr(room, "is_private", False):
+                raise ValueError("This is a private study room. You must provide an invite code to join.")
+
             if room.active_learners_count >= getattr(room, "max_members", 50):
                 raise ValueError(f"Room has reached maximum capacity ({room.max_members} members).")
 
@@ -1519,8 +1535,8 @@ class CommunityService:
             raise ValueError("You are not a member of this room.")
 
         requester_role = "owner" if room.created_by_id == requester_id else getattr(requester_mem, "role", "member")
-        if requester_role not in ["owner", "host"]:
-            raise ValueError("Permission denied: Only room owners or hosts can assign roles.")
+        if requester_role not in ["owner", "host", "moderator"]:
+            raise ValueError("Permission denied: Only room owners, hosts, or moderators can assign roles.")
 
         if role in ["owner", "host"] and requester_role != "owner":
             raise ValueError("Permission denied: Only the room owner can assign host or owner roles.")
