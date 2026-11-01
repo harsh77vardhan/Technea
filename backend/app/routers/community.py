@@ -978,7 +978,30 @@ async def websocket_signaling_endpoint(
             }
 
     # 4. Fetch existing peers in room and send 'welcome' to connecting user
-    existing_peers = await signaling_manager.get_room_peers(room_id, exclude_user_id=user_id)
+    db_peers: list[dict[str, Any]] = []
+    try:
+        async with async_session_maker() as db:
+            db_peers_list = await community_service.get_active_peers(db, room_id=room_id)
+            for p in db_peers_list:
+                if p.user_id != user_id:
+                    db_peers.append({
+                        "user_id": str(p.user_id),
+                        "user_name": p.user_name,
+                        "avatar_url": p.avatar_url,
+                        "is_audio_active": p.is_audio_active,
+                        "is_muted": p.is_muted,
+                        "is_video_active": p.is_video_active,
+                        "is_screen_sharing": p.is_screen_sharing,
+                    })
+    except Exception as exc:
+        logger.warning(f"Could not load active peers from DB: {exc}")
+
+    mem_peers = await signaling_manager.get_room_peers(room_id, exclude_user_id=user_id)
+    peer_dict = {p["user_id"]: p for p in db_peers}
+    for mp in mem_peers:
+        peer_dict[mp["user_id"]] = mp
+    existing_peers = list(peer_dict.values())
+
     welcome_msg = {
         "type": "welcome",
         "user_id": str(user_id),
@@ -1000,7 +1023,53 @@ async def websocket_signaling_endpoint(
     }
     await signaling_manager.broadcast(room_id, peer_joined_msg, exclude_user_id=user_id)
 
-    # 6. Event loop to process WebRTC signals
+    # 6. Background listener for DB-persisted WebRTC signals (multi-worker & REST relay)
+    last_db_signal_id = 0
+    try:
+        async with async_session_maker() as db:
+            initial_signals = await community_service.get_webrtc_signals(
+                db, room_id=room_id, user_id=user_id, since_id=0
+            )
+            if initial_signals:
+                last_db_signal_id = max(s.id for s in initial_signals)
+    except Exception:
+        pass
+
+    db_poller_task: asyncio.Task | None = None
+
+    async def poll_db_signals():
+        nonlocal last_db_signal_id
+        while True:
+            try:
+                await asyncio.sleep(0.4)
+                async with async_session_maker() as db:
+                    signals = await community_service.get_webrtc_signals(
+                        db, room_id=room_id, user_id=user_id, since_id=last_db_signal_id
+                    )
+                    for s in signals:
+                        if s.id > last_db_signal_id:
+                            last_db_signal_id = s.id
+                        payload_data = s.payload or {}
+                        dispatch_msg: dict[str, Any] = {
+                            "type": s.signal_type,
+                            "from_user_id": str(s.from_user_id),
+                            "from_user_name": s.from_user_name,
+                            "target_user_id": str(user_id),
+                        }
+                        if s.signal_type in ("offer", "answer"):
+                            dispatch_msg["sdp"] = payload_data.get("sdp")
+                        elif s.signal_type == "ice-candidate":
+                            dispatch_msg["candidate"] = payload_data.get("candidate")
+                        await websocket.send_text(json.dumps(dispatch_msg))
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                logger.debug(f"DB signal relay poller exception: {e}")
+                await asyncio.sleep(1.0)
+
+    db_poller_task = asyncio.create_task(poll_db_signals())
+
+    # 7. Event loop to process WebRTC signals
     try:
         while True:
             text = await websocket.receive_text()
@@ -1020,7 +1089,7 @@ async def websocket_signaling_endpoint(
                 if target_id_str:
                     try:
                         target_uid = uuid.UUID(target_id_str)
-                        await signaling_manager.send_to_peer(
+                        delivered = await signaling_manager.send_to_peer(
                             room_id,
                             target_uid,
                             {
@@ -1031,6 +1100,16 @@ async def websocket_signaling_endpoint(
                                 "sdp": data.get("sdp"),
                             },
                         )
+                        if not delivered:
+                            async with async_session_maker() as db:
+                                sig_req = WebRTCSignalRequest(
+                                    target_user_id=target_uid,
+                                    signal_type="offer",
+                                    payload={"sdp": data.get("sdp")},
+                                )
+                                await community_service.send_webrtc_signal(
+                                    db, room_id=room_id, sender_id=user_id, data=sig_req
+                                )
                     except (ValueError, TypeError) as exc:
                         logger.warning(f"Invalid target UUID in offer: {exc}")
 
@@ -1039,7 +1118,7 @@ async def websocket_signaling_endpoint(
                 if target_id_str:
                     try:
                         target_uid = uuid.UUID(target_id_str)
-                        await signaling_manager.send_to_peer(
+                        delivered = await signaling_manager.send_to_peer(
                             room_id,
                             target_uid,
                             {
@@ -1050,6 +1129,16 @@ async def websocket_signaling_endpoint(
                                 "sdp": data.get("sdp"),
                             },
                         )
+                        if not delivered:
+                            async with async_session_maker() as db:
+                                sig_req = WebRTCSignalRequest(
+                                    target_user_id=target_uid,
+                                    signal_type="answer",
+                                    payload={"sdp": data.get("sdp")},
+                                )
+                                await community_service.send_webrtc_signal(
+                                    db, room_id=room_id, sender_id=user_id, data=sig_req
+                                )
                     except (ValueError, TypeError) as exc:
                         logger.warning(f"Invalid target UUID in answer: {exc}")
 
@@ -1058,7 +1147,7 @@ async def websocket_signaling_endpoint(
                 if target_id_str:
                     try:
                         target_uid = uuid.UUID(target_id_str)
-                        await signaling_manager.send_to_peer(
+                        delivered = await signaling_manager.send_to_peer(
                             room_id,
                             target_uid,
                             {
@@ -1068,6 +1157,16 @@ async def websocket_signaling_endpoint(
                                 "candidate": data.get("candidate"),
                             },
                         )
+                        if not delivered:
+                            async with async_session_maker() as db:
+                                sig_req = WebRTCSignalRequest(
+                                    target_user_id=target_uid,
+                                    signal_type="ice-candidate",
+                                    payload={"candidate": data.get("candidate")},
+                                )
+                                await community_service.send_webrtc_signal(
+                                    db, room_id=room_id, sender_id=user_id, data=sig_req
+                                )
                     except (ValueError, TypeError) as exc:
                         logger.warning(f"Invalid target UUID in candidate: {exc}")
 
@@ -1085,6 +1184,20 @@ async def websocket_signaling_endpoint(
                     is_video_active=is_video,
                     is_screen_sharing=is_screen,
                 )
+
+                try:
+                    async with async_session_maker() as db:
+                        status_req = UpdateWebRTCStatusRequest(
+                            is_audio_active=is_audio,
+                            is_muted=is_muted,
+                            is_video_active=is_video,
+                            is_screen_sharing=is_screen,
+                        )
+                        await community_service.update_webrtc_status(
+                            db, room_id=room_id, user_id=user_id, data=status_req
+                        )
+                except Exception as exc:
+                    logger.warning(f"Could not update peer media status in DB: {exc}")
 
                 status_msg = {
                     "type": "media-status",
@@ -1104,6 +1217,8 @@ async def websocket_signaling_endpoint(
     except Exception as exc:
         logger.warning(f"Signaling loop error for user {user_id}: {exc}")
     finally:
+        if db_poller_task:
+            db_poller_task.cancel()
         await signaling_manager.disconnect(room_id, user_id)
         leave_msg = {
             "type": "peer-left",
