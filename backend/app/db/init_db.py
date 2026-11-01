@@ -194,6 +194,152 @@ async def run_roadmap_schema_migrations(engine) -> None:
         logger.warning("Roadmap schema migration warning (continuing): %s", exc)
 
 
+async def run_study_rooms_schema_migrations(engine) -> None:
+    """Ensure study rooms tables and columns are migrated and seeded."""
+    room_cols = [
+        ("topic", "ALTER TABLE learning_rooms ADD COLUMN IF NOT EXISTS topic VARCHAR(100) DEFAULT 'General' NOT NULL"),
+        ("roadmap_name", "ALTER TABLE learning_rooms ADD COLUMN IF NOT EXISTS roadmap_name VARCHAR(255)"),
+        ("is_private", "ALTER TABLE learning_rooms ADD COLUMN IF NOT EXISTS is_private BOOLEAN DEFAULT FALSE NOT NULL"),
+        ("invite_code", "ALTER TABLE learning_rooms ADD COLUMN IF NOT EXISTS invite_code VARCHAR(20)"),
+        ("max_members", "ALTER TABLE learning_rooms ADD COLUMN IF NOT EXISTS max_members INTEGER DEFAULT 50 NOT NULL"),
+        ("created_by_id", "ALTER TABLE learning_rooms ADD COLUMN IF NOT EXISTS created_by_id UUID"),
+        ("study_session_active", "ALTER TABLE learning_rooms ADD COLUMN IF NOT EXISTS study_session_active BOOLEAN DEFAULT FALSE NOT NULL"),
+        ("study_session_topic", "ALTER TABLE learning_rooms ADD COLUMN IF NOT EXISTS study_session_topic VARCHAR(255)"),
+        ("study_session_started_at", "ALTER TABLE learning_rooms ADD COLUMN IF NOT EXISTS study_session_started_at TIMESTAMP WITH TIME ZONE"),
+    ]
+
+    ulr_cols = [
+        ("study_status", "ALTER TABLE user_learning_rooms ADD COLUMN IF NOT EXISTS study_status VARCHAR(255)"),
+    ]
+
+    try:
+        async with engine.begin() as conn:
+            dialect_name = conn.dialect.name
+            if dialect_name == "postgresql":
+                # Check columns on learning_rooms
+                lr_table_chk = await conn.execute(text("SELECT 1 FROM information_schema.tables WHERE table_name = 'learning_rooms'"))
+                if lr_table_chk.fetchone():
+                    for col_name, alter_query in room_cols:
+                        chk = await conn.execute(
+                            text("SELECT column_name FROM information_schema.columns WHERE table_name='learning_rooms' AND column_name=:col"),
+                            {"col": col_name},
+                        )
+                        if not chk.fetchone():
+                            logger.info("Adding missing column '%s' to learning_rooms...", col_name)
+                            await conn.execute(text(alter_query))
+
+                # Check columns on user_learning_rooms
+                ulr_table_chk = await conn.execute(text("SELECT 1 FROM information_schema.tables WHERE table_name = 'user_learning_rooms'"))
+                if ulr_table_chk.fetchone():
+                    for col_name, alter_query in ulr_cols:
+                        chk = await conn.execute(
+                            text("SELECT column_name FROM information_schema.columns WHERE table_name='user_learning_rooms' AND column_name=:col"),
+                            {"col": col_name},
+                        )
+                        if not chk.fetchone():
+                            logger.info("Adding missing column '%s' to user_learning_rooms...", col_name)
+                            await conn.execute(text(alter_query))
+
+                await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_learning_rooms_invite_code ON learning_rooms(invite_code);"))
+                await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_learning_rooms_topic ON learning_rooms(topic);"))
+
+                # Create child tables if not existing
+                await conn.execute(text("""
+                    CREATE TABLE IF NOT EXISTS room_messages (
+                        id SERIAL PRIMARY KEY,
+                        room_id INTEGER NOT NULL REFERENCES learning_rooms(id) ON DELETE CASCADE,
+                        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                        content TEXT NOT NULL,
+                        message_type VARCHAR(20) DEFAULT 'chat' NOT NULL,
+                        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+                        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+                    )
+                """))
+                await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_room_messages_room_id ON room_messages(room_id)"))
+                await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_room_messages_user_id ON room_messages(user_id)"))
+
+                await conn.execute(text("""
+                    CREATE TABLE IF NOT EXISTS room_questions (
+                        id SERIAL PRIMARY KEY,
+                        room_id INTEGER NOT NULL REFERENCES learning_rooms(id) ON DELETE CASCADE,
+                        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                        title VARCHAR(255) NOT NULL,
+                        content TEXT NOT NULL,
+                        is_resolved BOOLEAN DEFAULT FALSE NOT NULL,
+                        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+                        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+                    )
+                """))
+                await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_room_questions_room_id ON room_questions(room_id)"))
+                await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_room_questions_user_id ON room_questions(user_id)"))
+
+                await conn.execute(text("""
+                    CREATE TABLE IF NOT EXISTS room_question_replies (
+                        id SERIAL PRIMARY KEY,
+                        question_id INTEGER NOT NULL REFERENCES room_questions(id) ON DELETE CASCADE,
+                        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                        content TEXT NOT NULL,
+                        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+                        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+                    )
+                """))
+                await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_room_question_replies_question_id ON room_question_replies(question_id)"))
+
+                await conn.execute(text("""
+                    CREATE TABLE IF NOT EXISTS room_resources (
+                        id SERIAL PRIMARY KEY,
+                        room_id INTEGER NOT NULL REFERENCES learning_rooms(id) ON DELETE CASCADE,
+                        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                        title VARCHAR(255) NOT NULL,
+                        resource_type VARCHAR(50) NOT NULL,
+                        url_or_content TEXT NOT NULL,
+                        description TEXT,
+                        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+                        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+                    )
+                """))
+                await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_room_resources_room_id ON room_resources(room_id)"))
+            else:
+                for col_name, _ in room_cols:
+                    try:
+                        col_type = "BOOLEAN DEFAULT 0" if "BOOLEAN" in _ else ("INTEGER DEFAULT 50" if "INTEGER" in _ else "TEXT")
+                        await conn.execute(text(f"ALTER TABLE learning_rooms ADD COLUMN {col_name} {col_type}"))
+                    except Exception:
+                        pass
+                for col_name, _ in ulr_cols:
+                    try:
+                        await conn.execute(text(f"ALTER TABLE user_learning_rooms ADD COLUMN {col_name} TEXT"))
+                    except Exception:
+                        pass
+
+            # Update initial rooms with invite codes and topic metadata
+            defaults = [
+                ("python-beginners", "Python", "Python Developer Roadmap", "TECH-PYTH"),
+                ("react-frontend-architects", "React & Frontend", "Frontend Developer Roadmap", "TECH-RECT"),
+                ("ai-ml-guild", "AI & Machine Learning", "AI Engineering Roadmap", "TECH-AIML"),
+                ("devops-cloud", "Cloud & DevOps", "Cloud & DevOps Roadmap", "TECH-DVOP"),
+                ("dsa-club", "Data Structures & Algorithms", "Computer Science Roadmap", "TECH-DSAC"),
+                ("full-stack-builders", "Full Stack Web Development", "Full Stack Developer Roadmap", "TECH-FSTK"),
+            ]
+            for slug, topic, rm_name, code in defaults:
+                try:
+                    await conn.execute(
+                        text("""
+                            UPDATE learning_rooms 
+                            SET topic = :topic, roadmap_name = :rm_name, invite_code = COALESCE(invite_code, :code)
+                            WHERE slug = :slug
+                        """),
+                        {"slug": slug, "topic": topic, "rm_name": rm_name, "code": code},
+                    )
+                except Exception:
+                    pass
+
+        logger.info("Study rooms schema verified and seeded successfully.")
+    except Exception as exc:
+        logger.warning("Study rooms schema migration notice (continuing): %s", exc)
+
+
+
 async def seed_initial_catalog_if_needed() -> None:
     """Check if skills table has records; if empty, seed the initial catalog idempotently."""
     try:
@@ -355,6 +501,7 @@ async def init_db() -> None:
     await migrate_database()
     await run_auth_migrations(engine)
     await run_roadmap_schema_migrations(engine)
+    await run_study_rooms_schema_migrations(engine)
     await seed_initial_catalog_if_needed()
     try:
         from app.db.seed_roadmaps_100 import seed_100_roadmaps

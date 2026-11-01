@@ -22,6 +22,7 @@ import DashboardReferenceOverview from '../components/dashboard/DashboardReferen
 import DockedAIMentorCompanion from '../components/dashboard/DockedAIMentorCompanion'
 import RoadmapDetailModal from '../components/roadmap/RoadmapDetailModal'
 import TechneaLogo from '../components/layout/TechneaLogo'
+import StudyRoomsSection from '../components/rooms/StudyRoomsSection'
 
 
 const FloatingAIMentorCompanion = lazy(() =>
@@ -328,12 +329,12 @@ export default function DashboardPage({
           data-lenis-prevent="true"
           className="flex items-center gap-1 overflow-x-auto no-scrollbar [touch-action:pan-x] overscroll-x-contain"
         >
-          {['overview', 'roadmaps', 'courses', 'projects', 'portfolio', 'settings'].map((tab) => (
+          {['overview', 'roadmaps', 'courses', 'projects', 'rooms', 'portfolio', 'settings'].map((tab) => (
             <button
               key={tab}
               type="button"
               onClick={() => setActiveTab(tab)}
-              className={`px-2.5 py-1 rounded-lg text-xs capitalize transition-colors cursor-pointer ${
+              className={`px-2.5 py-1 rounded-lg text-xs capitalize transition-colors cursor-pointer whitespace-nowrap ${
                 activeTab === tab
                   ? 'bg-[#c25e2e]/15 text-[#e87a48] font-medium border border-[#c25e2e]/30'
                   : isLight
@@ -341,7 +342,7 @@ export default function DashboardPage({
                   : 'text-[#a8a199] hover:text-[#faf6ee]'
               }`}
             >
-              {tab}
+              {tab === 'rooms' ? 'Study Rooms' : tab}
             </button>
           ))}
         </div>
@@ -1062,6 +1063,19 @@ export default function DashboardPage({
                   </div>
                 ))}
               </div>
+            </motion.div>
+          )}
+
+          {/* ══════════════ TAB: STUDY ROOMS ══════════════ */}
+          {activeTab === 'rooms' && (
+            <motion.div
+              key="rooms"
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.15 }}
+            >
+              <StudyRoomsSection />
             </motion.div>
           )}
 

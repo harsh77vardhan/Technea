@@ -29,6 +29,10 @@ from app.models.project import (
 from app.models.community import (
     LearningRoom,
     UserLearningRoom,
+    RoomMessage,
+    RoomQuestion,
+    RoomQuestionReply,
+    RoomResource,
 )
 from app.models.achievement import (
     Achievement,
@@ -61,6 +65,10 @@ __all__ = [
     "UserProject",
     "LearningRoom",
     "UserLearningRoom",
+    "RoomMessage",
+    "RoomQuestion",
+    "RoomQuestionReply",
+    "RoomResource",
     "Achievement",
     "UserAchievement",
     "Follow",

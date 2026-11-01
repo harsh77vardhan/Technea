@@ -978,15 +978,70 @@ export async function updateProjectStatusApi(projectId, data) {
 }
 
 /* ==========================================================================
-   Learning Community & Peer Rooms Endpoints
+   Learning Community & Study Rooms Endpoints
    ========================================================================== */
 
 /**
- * Fetch all available peer learning rooms
+ * Fetch community study rooms with optional filters
+ * @param {Object} [params] - { search, category, topic, roadmap, is_private }
  * @returns {Promise<Array>}
  */
-export async function getCommunityRoomsApi() {
-  return request('/community/rooms')
+export async function getCommunityRoomsApi(params = {}) {
+  const query = new URLSearchParams()
+  if (params.search) query.set('search', params.search)
+  if (params.category && params.category !== 'all') query.set('category', params.category)
+  if (params.topic && params.topic !== 'all') query.set('topic', params.topic)
+  if (params.roadmap && params.roadmap !== 'all') query.set('roadmap', params.roadmap)
+  if (typeof params.is_private === 'boolean') query.set('is_private', params.is_private)
+  
+  const queryString = query.toString()
+  return request(queryString ? `/community/rooms?${queryString}` : '/community/rooms')
+}
+
+/**
+ * Fetch recommended study rooms based on active roadmap or interests
+ * @param {Object} [params] - { active_roadmap, interests }
+ * @returns {Promise<Array>}
+ */
+export async function getRecommendedRoomsApi(params = {}) {
+  const query = new URLSearchParams()
+  if (params.active_roadmap) query.set('active_roadmap', params.active_roadmap)
+  if (params.interests) query.set('interests', params.interests)
+  const queryString = query.toString()
+  return request(queryString ? `/community/rooms/recommended?${queryString}` : '/community/rooms/recommended')
+}
+
+/**
+ * Create a new public or private study room
+ * @param {Object} data - { name, description, topic, roadmap_name, is_private, max_members, category, icon }
+ * @returns {Promise<Object>}
+ */
+export async function createRoomApi(data) {
+  return request('/community/rooms', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+/**
+ * Join a study room via 6-8 character code or link
+ * @param {string} code
+ * @returns {Promise<Object>}
+ */
+export async function joinRoomByCodeApi(code) {
+  return request('/community/rooms/join-by-code', {
+    method: 'POST',
+    body: JSON.stringify({ code }),
+  })
+}
+
+/**
+ * Get details for a single study room
+ * @param {number|string} roomIdOrSlug
+ * @returns {Promise<Object>}
+ */
+export async function getRoomDetailApi(roomIdOrSlug) {
+  return request(`/community/rooms/${roomIdOrSlug}`)
 }
 
 /**
@@ -1006,6 +1061,145 @@ export async function toggleRoomJoinApi(roomId) {
  */
 export async function getMyRoomsApi() {
   return request('/community/rooms/my')
+}
+
+/**
+ * Fetch members in a study room with their current study statuses
+ * @param {number|string} roomId
+ * @returns {Promise<Array>}
+ */
+export async function getRoomMembersApi(roomId) {
+  return request(`/community/rooms/${roomId}/members`)
+}
+
+/**
+ * Update current user's study status message in a room
+ * @param {number|string} roomId
+ * @param {string} studyStatus
+ * @returns {Promise<Object>}
+ */
+export async function updateStudyStatusApi(roomId, studyStatus) {
+  return request(`/community/rooms/${roomId}/study-status`, {
+    method: 'PUT',
+    body: JSON.stringify({ study_status: studyStatus }),
+  })
+}
+
+/**
+ * Start a synchronized focus study session in a room
+ * @param {number|string} roomId
+ * @param {string} topic
+ * @returns {Promise<Object>}
+ */
+export async function startStudySessionApi(roomId, topic) {
+  return request(`/community/rooms/${roomId}/session/start`, {
+    method: 'POST',
+    body: JSON.stringify({ topic }),
+  })
+}
+
+/**
+ * End an ongoing study session in a room
+ * @param {number|string} roomId
+ * @returns {Promise<Object>}
+ */
+export async function endStudySessionApi(roomId) {
+  return request(`/community/rooms/${roomId}/session/end`, {
+    method: 'POST',
+  })
+}
+
+/**
+ * Fetch discussion messages for a study room
+ * @param {number|string} roomId
+ * @param {number} [limit=60]
+ * @returns {Promise<Array>}
+ */
+export async function getRoomMessagesApi(roomId, limit = 60) {
+  return request(`/community/rooms/${roomId}/messages?limit=${limit}`)
+}
+
+/**
+ * Post a message to a room discussion chat
+ * @param {number|string} roomId
+ * @param {string} content
+ * @returns {Promise<Object>}
+ */
+export async function sendRoomMessageApi(roomId, content) {
+  return request(`/community/rooms/${roomId}/messages`, {
+    method: 'POST',
+    body: JSON.stringify({ content }),
+  })
+}
+
+/**
+ * Fetch questions and replies for a study room
+ * @param {number|string} roomId
+ * @returns {Promise<Array>}
+ */
+export async function getRoomQuestionsApi(roomId) {
+  return request(`/community/rooms/${roomId}/questions`)
+}
+
+/**
+ * Ask a new learning question in a study room
+ * @param {number|string} roomId
+ * @param {Object} data - { title: string, content: string }
+ * @returns {Promise<Object>}
+ */
+export async function createRoomQuestionApi(roomId, data) {
+  return request(`/community/rooms/${roomId}/questions`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+/**
+ * Reply to a learning question in a study room
+ * @param {number|string} roomId
+ * @param {number|string} questionId
+ * @param {string} content
+ * @returns {Promise<Object>}
+ */
+export async function replyRoomQuestionApi(roomId, questionId, content) {
+  return request(`/community/rooms/${roomId}/questions/${questionId}/replies`, {
+    method: 'POST',
+    body: JSON.stringify({ content }),
+  })
+}
+
+/**
+ * Mark a question as resolved or open
+ * @param {number|string} roomId
+ * @param {number|string} questionId
+ * @returns {Promise<Object>}
+ */
+export async function resolveRoomQuestionApi(roomId, questionId) {
+  return request(`/community/rooms/${roomId}/questions/${questionId}/resolve`, {
+    method: 'PUT',
+  })
+}
+
+/**
+ * Fetch shared resources (videos, links, notes, PDFs) for a room
+ * @param {number|string} roomId
+ * @returns {Promise<Array>}
+ */
+export async function getRoomResourcesApi(roomId) {
+  return request(`/community/rooms/${roomId}/resources`)
+}
+
+/**
+ * Share a new resource in a study room
+ * @param {number|string} roomId
+ * @param {Object} data - { title, resource_type, url_or_content, description }
+ * @returns {Promise<Object>}
+ */
+export async function createRoomResourceApi(roomId, data) {
+  return request(`/community/rooms/${roomId}/resources`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
 }
 
 /* ==========================================================================
@@ -1208,8 +1402,24 @@ export default {
   getProjectByIdApi,
   updateProjectStatusApi,
   getCommunityRoomsApi,
+  getRecommendedRoomsApi,
+  createRoomApi,
+  joinRoomByCodeApi,
+  getRoomDetailApi,
   toggleRoomJoinApi,
   getMyRoomsApi,
+  getRoomMembersApi,
+  updateStudyStatusApi,
+  startStudySessionApi,
+  endStudySessionApi,
+  getRoomMessagesApi,
+  sendRoomMessageApi,
+  getRoomQuestionsApi,
+  createRoomQuestionApi,
+  replyRoomQuestionApi,
+  resolveRoomQuestionApi,
+  getRoomResourcesApi,
+  createRoomResourceApi,
   sendAiChatApi,
   sendAiMentorChatApi,
   getSkills,
