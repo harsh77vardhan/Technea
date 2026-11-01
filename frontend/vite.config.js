@@ -68,6 +68,12 @@ export default defineConfig(({ mode }) => {
       '/community': {
         target: backendTarget,
         changeOrigin: true,
+        ws: true,
+      },
+      '/ws': {
+        target: backendTarget,
+        changeOrigin: true,
+        ws: true,
       },
     },
   },

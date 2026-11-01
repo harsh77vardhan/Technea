@@ -57,6 +57,29 @@ class Settings(BaseSettings):
     # API Routing Configuration
     API_V1_STR: str = "/api/v1"
 
+    # WebRTC / STUN / TURN Configuration
+    STUN_SERVERS: list[str] = [
+        "stun:stun.l.google.com:19302",
+        "stun:stun1.l.google.com:19302",
+        "stun:stun2.l.google.com:19302",
+        "stun:stun.cloudflare.com:3478",
+    ]
+    TURN_SERVER_URL: str | None = None
+    TURN_SERVER_USERNAME: str | None = None
+    TURN_SERVER_CREDENTIAL: str | None = None
+
+    def get_ice_servers(self) -> list[dict[str, Any]]:
+        """Return configured STUN and TURN ICE servers for WebRTC peer connections."""
+        servers: list[dict[str, Any]] = [{"urls": self.STUN_SERVERS}]
+        if self.TURN_SERVER_URL:
+            turn_cfg: dict[str, Any] = {"urls": self.TURN_SERVER_URL}
+            if self.TURN_SERVER_USERNAME:
+                turn_cfg["username"] = self.TURN_SERVER_USERNAME
+            if self.TURN_SERVER_CREDENTIAL:
+                turn_cfg["credential"] = self.TURN_SERVER_CREDENTIAL
+            servers.append(turn_cfg)
+        return servers
+
     # Frontend URL and CORS Configuration
     FRONTEND_URL: str = "https://technea.vercel.app"
     CORS_ORIGINS: list[str] = [

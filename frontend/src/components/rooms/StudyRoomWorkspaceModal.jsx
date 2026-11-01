@@ -71,11 +71,10 @@ import {
   updateCodeSnippetApi,
   getWhiteboardApi,
   updateWhiteboardApi,
-  joinWebRTCCallApi,
-  leaveWebRTCCallApi,
-  updateWebRTCStatusApi,
   getWebRTCActivePeersApi,
+  getAuthToken,
 } from '../../services/api'
+import { WebRTCManager } from '../../services/webrtc'
 
 export default function StudyRoomWorkspaceModal({
   room,
@@ -171,6 +170,9 @@ export default function StudyRoomWorkspaceModal({
   const [isVideoActive, setIsVideoActive] = useState(false)
   const [isScreenSharing, setIsScreenSharing] = useState(false)
   const [activePeers, setActivePeers] = useState([])
+  const [remoteStreams, setRemoteStreams] = useState({})
+  const [localMediaStream, setLocalMediaStream] = useState(null)
+  const webrtcManagerRef = useRef(null)
   const localStreamRef = useRef(null)
   const screenStreamRef = useRef(null)
   const localVideoRef = useRef(null)
@@ -957,43 +959,61 @@ async def create_goal(payload: GoalRequest):
   // WebRTC / Voice & Video Handlers
   const handleJoinVoice = async () => {
     try {
-      if (navigator.mediaDevices?.getUserMedia) {
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false })
-          localStreamRef.current = stream
-        } catch (err) {
-          console.warn('Microphone permission not granted:', err)
-          showToast?.('Microphone not detected or permission denied. Joined in listening mode.')
-        }
+      if (webrtcManagerRef.current) {
+        webrtcManagerRef.current.leave()
       }
-      const peer = await joinWebRTCCallApi(currentRoom.id)
+      const token = getAuthToken()
+      const manager = new WebRTCManager({
+        roomId: currentRoom.id,
+        user,
+        token,
+        onActivePeersChange: (peers) => {
+          setActivePeers(peers)
+        },
+        onRemoteStreamChange: (peerId, stream) => {
+          setRemoteStreams((prev) => {
+            if (!stream) {
+              const next = { ...prev }
+              delete next[peerId]
+              return next
+            }
+            return { ...prev, [peerId]: stream }
+          })
+        },
+        onLocalStreamChange: (stream) => {
+          setLocalMediaStream(stream)
+          if (localVideoRef.current) {
+            localVideoRef.current.srcObject = stream
+          }
+        },
+        onError: (errMsg) => {
+          showToast?.(errMsg)
+        },
+      })
+      webrtcManagerRef.current = manager
+
+      await manager.joinVoice({ enableVideo: false })
       setIsVoiceJoined(true)
       setIsMuted(false)
-      setActivePeers((prev) => {
-        const without = prev.filter((p) => p.user_id !== user?.id)
-        return [...without, peer]
-      })
       showToast?.('Connected to Live Audio Room.')
     } catch (err) {
+      console.error('Failed to connect to voice room:', err)
       showToast?.(err?.message || 'Failed to connect to voice room.')
     }
   }
 
   const handleLeaveVoice = async () => {
     try {
-      if (localStreamRef.current) {
-        localStreamRef.current.getTracks().forEach((t) => t.stop())
-        localStreamRef.current = null
+      if (webrtcManagerRef.current) {
+        webrtcManagerRef.current.leave()
+        webrtcManagerRef.current = null
       }
-      if (screenStreamRef.current) {
-        screenStreamRef.current.getTracks().forEach((t) => t.stop())
-        screenStreamRef.current = null
-      }
-      await leaveWebRTCCallApi(currentRoom.id)
       setIsVoiceJoined(false)
       setIsMuted(true)
       setIsVideoActive(false)
       setIsScreenSharing(false)
+      setRemoteStreams({})
+      setLocalMediaStream(null)
       setActivePeers((prev) => prev.filter((p) => p.user_id !== user?.id))
       showToast?.('Disconnected from Voice Room.')
     } catch (err) {
@@ -1002,96 +1022,44 @@ async def create_goal(payload: GoalRequest):
   }
 
   const handleToggleMute = async () => {
-    const nextMuted = !isMuted
-    setIsMuted(nextMuted)
-    if (localStreamRef.current) {
-      localStreamRef.current.getAudioTracks().forEach((t) => {
-        t.enabled = !nextMuted
-      })
+    if (webrtcManagerRef.current) {
+      const muted = await webrtcManagerRef.current.toggleMute()
+      setIsMuted(muted)
+    } else {
+      setIsMuted((prev) => !prev)
     }
-    await updateWebRTCStatusApi(currentRoom.id, {
-      is_audio_active: true,
-      is_muted: nextMuted,
-      is_video_active: isVideoActive,
-      is_screen_sharing: isScreenSharing,
-    }).catch(() => {})
-    setActivePeers((prev) =>
-      prev.map((p) => (p.user_id === user?.id ? { ...p, is_muted: nextMuted } : p))
-    )
   }
 
   const handleToggleCamera = async () => {
-    const nextVideo = !isVideoActive
-    try {
-      if (nextVideo) {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: !isMuted })
-        localStreamRef.current = stream
-        if (localVideoRef.current) {
-          localVideoRef.current.srcObject = stream
-        }
-        setIsVideoActive(true)
-      } else {
-        if (localStreamRef.current) {
-          localStreamRef.current.getVideoTracks().forEach((t) => t.stop())
-        }
-        setIsVideoActive(false)
-      }
-      await updateWebRTCStatusApi(currentRoom.id, {
-        is_audio_active: true,
-        is_muted: isMuted,
-        is_video_active: nextVideo,
-        is_screen_sharing: isScreenSharing,
-      }).catch(() => {})
-      setActivePeers((prev) =>
-        prev.map((p) => (p.user_id === user?.id ? { ...p, is_video_active: nextVideo } : p))
-      )
-    } catch {
-      showToast?.('Camera device unavailable or permission denied.')
+    if (webrtcManagerRef.current) {
+      const active = await webrtcManagerRef.current.toggleCamera()
+      setIsVideoActive(active)
+    } else {
+      setIsVideoActive((prev) => !prev)
     }
   }
 
   const handleToggleScreenShare = async () => {
-    const nextScreen = !isScreenSharing
-    try {
-      if (nextScreen) {
-        const stream = await navigator.mediaDevices.getDisplayMedia({ video: true })
-        screenStreamRef.current = stream
-        if (screenVideoRef.current) {
-          screenVideoRef.current.srcObject = stream
-        }
-        stream.getVideoTracks()[0].onended = () => {
-          setIsScreenSharing(false)
-          updateWebRTCStatusApi(currentRoom.id, {
-            is_audio_active: isVoiceJoined,
-            is_muted: isMuted,
-            is_video_active: isVideoActive,
-            is_screen_sharing: false,
-          }).catch(() => {})
-          setActivePeers((prev) =>
-            prev.map((p) => (p.user_id === user?.id ? { ...p, is_screen_sharing: false } : p))
-          )
-        }
-        setIsScreenSharing(true)
-      } else {
-        if (screenStreamRef.current) {
-          screenStreamRef.current.getTracks().forEach((t) => t.stop())
-          screenStreamRef.current = null
-        }
-        setIsScreenSharing(false)
+    if (webrtcManagerRef.current) {
+      const res = await webrtcManagerRef.current.toggleScreenShare()
+      setIsScreenSharing(res.isScreenSharing)
+      if (screenVideoRef.current) {
+        screenVideoRef.current.srcObject = res.screenStream
       }
-      await updateWebRTCStatusApi(currentRoom.id, {
-        is_audio_active: isVoiceJoined,
-        is_muted: isMuted,
-        is_video_active: isVideoActive,
-        is_screen_sharing: nextScreen,
-      }).catch(() => {})
-      setActivePeers((prev) =>
-        prev.map((p) => (p.user_id === user?.id ? { ...p, is_screen_sharing: nextScreen } : p))
-      )
-    } catch (err) {
-      console.warn('Screen share cancelled:', err)
+    } else {
+      setIsScreenSharing((prev) => !prev)
     }
   }
+
+  // Clean WebRTC resources on unmount
+  useEffect(() => {
+    return () => {
+      if (webrtcManagerRef.current) {
+        webrtcManagerRef.current.leave()
+        webrtcManagerRef.current = null
+      }
+    }
+  }, [])
 
   // Synchronized Content Playback Handlers
   const handleUpdateSyncState = async (updates) => {
@@ -1849,6 +1817,87 @@ async def create_goal(payload: GoalRequest):
               </div>
             </div>
           </div>
+
+          {/* WebRTC Remote Audio Elements for all connected peers */}
+          <div className="hidden" aria-hidden="true">
+            {Object.entries(remoteStreams).map(([peerId, stream]) => (
+              <audio
+                key={peerId}
+                autoPlay
+                playsInline
+                ref={(el) => {
+                  if (el && el.srcObject !== stream) {
+                    el.srcObject = stream
+                  }
+                }}
+              />
+            ))}
+          </div>
+
+          {/* ──────────────── 2.6 LIVE VIDEO CAMERA STRIP ──────────────── */}
+          {isVoiceJoined && (isVideoActive || activePeers.some((p) => p.is_video_active && p.user_id !== user?.id)) && (
+            <div
+              className={`px-5 py-3 border-b flex items-center gap-3 overflow-x-auto no-scrollbar shrink-0 transition-all ${
+                isLight ? 'border-[#ded4be] bg-[#f2ede4]' : 'border-[#262320] bg-[#121110]'
+              }`}
+            >
+              {/* Local Video Tile */}
+              {isVideoActive && (
+                <div className="relative rounded-xl overflow-hidden w-44 h-28 bg-black/90 shrink-0 border border-[#c25e2e]/40 shadow-xs">
+                  <video
+                    autoPlay
+                    playsInline
+                    muted
+                    ref={(el) => {
+                      if (el && localMediaStream && el.srcObject !== localMediaStream) {
+                        el.srcObject = localMediaStream
+                      }
+                    }}
+                    className="w-full h-full object-cover scale-x-[-1]"
+                  />
+                  <div className="absolute bottom-1.5 left-2 right-2 flex items-center justify-between text-[10px] text-white bg-black/60 px-2 py-0.5 rounded-md backdrop-blur-xs">
+                    <span className="font-semibold truncate">You</span>
+                    <span className="flex items-center gap-1">{isMuted ? '🔇' : '🎤'}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Remote Video Tiles */}
+              {activePeers
+                .filter((p) => p.user_id !== user?.id && p.is_video_active)
+                .map((p) => {
+                  const peerStream = remoteStreams[p.user_id]
+                  return (
+                    <div
+                      key={p.user_id}
+                      className="relative rounded-xl overflow-hidden w-44 h-28 bg-black/90 shrink-0 border border-emerald-500/30 shadow-xs"
+                    >
+                      {peerStream ? (
+                        <video
+                          autoPlay
+                          playsInline
+                          ref={(el) => {
+                            if (el && el.srcObject !== peerStream) {
+                              el.srcObject = peerStream
+                            }
+                          }}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center text-white/50 text-xs">
+                          <Video className="h-6 w-6 animate-pulse mb-1 text-emerald-400" />
+                          <span>Connecting video...</span>
+                        </div>
+                      )}
+                      <div className="absolute bottom-1.5 left-2 right-2 flex items-center justify-between text-[10px] text-white bg-black/60 px-2 py-0.5 rounded-md backdrop-blur-xs">
+                        <span className="font-semibold truncate">{p.user_name}</span>
+                        <span className="flex items-center gap-1">{p.is_muted ? '🔇' : '🎤'}</span>
+                      </div>
+                    </div>
+                  )
+                })}
+            </div>
+          )}
 
           {/* ──────────────── 3. SUB-NAVIGATION TABS ──────────────── */}
           <div

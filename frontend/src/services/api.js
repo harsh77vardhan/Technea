@@ -1460,6 +1460,15 @@ export async function getWebRTCSignalsApi(roomId, sinceId = 0) {
   return request(`/community/rooms/${roomId}/webrtc/signals?since_id=${sinceId}`)
 }
 
+/**
+ * Fetch WebRTC ICE servers (STUN/TURN) for a room
+ * @param {number|string} roomId
+ * @returns {Promise<{ iceServers: Array<Object> }>}
+ */
+export async function getRoomIceServersApi(roomId) {
+  return request(`/community/rooms/${roomId}/ice-servers`)
+}
+
 /* ==========================================================================
    Context-Aware AI Technical Mentor Endpoints
    ========================================================================== */
@@ -1710,6 +1719,13 @@ export default {
   getUserFollowingApi,
   getUserStatsApi,
   warmBackendApi,
+  joinWebRTCCallApi,
+  leaveWebRTCCallApi,
+  updateWebRTCStatusApi,
+  getWebRTCActivePeersApi,
+  sendWebRTCSignalApi,
+  getWebRTCSignalsApi,
+  getRoomIceServersApi,
 }
 
 

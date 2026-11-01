@@ -1,7 +1,19 @@
+import asyncio
+import json
+import logging
+from typing import Any
 import uuid
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, Query, status, WebSocket, WebSocketDisconnect
+from sqlalchemy import select
 from app.api.deps import CurrentUserDep, DatabaseDep, OptionalUserDep
+from app.core.config import settings
+from app.core.security import decode_access_token
+from app.db.session import async_session_maker
+from app.models.user import User
+from app.services.signaling import signaling_manager
+
+logger = logging.getLogger("technea.community")
 from app.schemas.community import (
     CodeSnippetResponse,
     CreateQuestionReplyRequest,
@@ -873,4 +885,235 @@ async def get_webrtc_signals(
         user_id=current_user.id,
         since_id=since_id,
     )
+
+
+@router.get(
+    "/rooms/{room_id}/ice-servers",
+    summary="Get STUN/TURN ICE servers for WebRTC",
+)
+async def get_room_ice_servers(
+    room_id: int,
+) -> dict[str, Any]:
+    """Returns standard public STUN servers and optional TURN servers configured via environment."""
+    return {"iceServers": settings.get_ice_servers()}
+
+
+@router.websocket("/rooms/{room_id}/signal")
+@router.websocket("/rooms/{room_id}/ws")
+async def websocket_signaling_endpoint(
+    websocket: WebSocket,
+    room_id: int,
+    token: str | None = Query(None),
+):
+    """Full-duplex WebSocket signaling server for WebRTC mesh calls in Study Rooms."""
+    # 1. Authenticate token
+    raw_token = token
+    if not raw_token:
+        auth_hdr = websocket.headers.get("authorization")
+        if auth_hdr and auth_hdr.startswith("Bearer "):
+            raw_token = auth_hdr.split(" ")[1]
+
+    if not raw_token:
+        await websocket.accept()
+        try:
+            first_msg_raw = await asyncio.wait_for(websocket.receive_text(), timeout=5.0)
+            first_msg = json.loads(first_msg_raw)
+            if first_msg.get("type") == "auth" and first_msg.get("token"):
+                raw_token = first_msg["token"]
+            else:
+                await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+                return
+        except Exception:
+            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+            return
+
+    token_payload = decode_access_token(raw_token)
+    if not token_payload or "sub" not in token_payload:
+        try:
+            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        except Exception:
+            pass
+        return
+
+    try:
+        user_id = uuid.UUID(str(token_payload["sub"]))
+    except (ValueError, TypeError):
+        try:
+            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        except Exception:
+            pass
+        return
+
+    # 2. Fetch user information and record room join in DB
+    user_info = {"full_name": "Learner", "avatar_url": None}
+    try:
+        async with async_session_maker() as db:
+            user_stmt = select(User).where(User.id == user_id)
+            res = await db.execute(user_stmt)
+            user = res.scalar_one_or_none()
+            if user:
+                user_info["full_name"] = user.full_name or "Learner"
+                user_info["avatar_url"] = user.avatar_url
+            await community_service.join_webrtc_call(db, room_id=room_id, user_id=user_id)
+    except Exception as exc:
+        logger.warning(f"Could not update DB for webrtc join: {exc}")
+
+    # 3. Register in signaling manager
+    if websocket.client_state.name != "CONNECTED":
+        await signaling_manager.connect(room_id, user_id, websocket, user_info)
+    else:
+        async with signaling_manager._lock:
+            if room_id not in signaling_manager._rooms:
+                signaling_manager._rooms[room_id] = {}
+                signaling_manager._peer_meta[room_id] = {}
+            signaling_manager._rooms[room_id][user_id] = websocket
+            signaling_manager._peer_meta[room_id][user_id] = {
+                "user_id": str(user_id),
+                "user_name": user_info["full_name"],
+                "avatar_url": user_info.get("avatar_url"),
+                "is_audio_active": True,
+                "is_muted": False,
+                "is_video_active": False,
+                "is_screen_sharing": False,
+            }
+
+    # 4. Fetch existing peers in room and send 'welcome' to connecting user
+    existing_peers = await signaling_manager.get_room_peers(room_id, exclude_user_id=user_id)
+    welcome_msg = {
+        "type": "welcome",
+        "user_id": str(user_id),
+        "user_name": user_info["full_name"],
+        "peers": existing_peers,
+    }
+    await websocket.send_text(json.dumps(welcome_msg))
+
+    # 5. Broadcast 'peer-joined' to all other peers in the room
+    peer_joined_msg = {
+        "type": "peer-joined",
+        "user_id": str(user_id),
+        "user_name": user_info["full_name"],
+        "avatar_url": user_info.get("avatar_url"),
+        "is_audio_active": True,
+        "is_muted": False,
+        "is_video_active": False,
+        "is_screen_sharing": False,
+    }
+    await signaling_manager.broadcast(room_id, peer_joined_msg, exclude_user_id=user_id)
+
+    # 6. Event loop to process WebRTC signals
+    try:
+        while True:
+            text = await websocket.receive_text()
+            try:
+                data = json.loads(text)
+            except json.JSONDecodeError:
+                continue
+
+            msg_type = data.get("type")
+
+            if msg_type == "ping":
+                await websocket.send_text(json.dumps({"type": "pong"}))
+                continue
+
+            elif msg_type == "offer":
+                target_id_str = data.get("target_user_id")
+                if target_id_str:
+                    try:
+                        target_uid = uuid.UUID(target_id_str)
+                        await signaling_manager.send_to_peer(
+                            room_id,
+                            target_uid,
+                            {
+                                "type": "offer",
+                                "from_user_id": str(user_id),
+                                "from_user_name": user_info["full_name"],
+                                "target_user_id": str(target_uid),
+                                "sdp": data.get("sdp"),
+                            },
+                        )
+                    except (ValueError, TypeError) as exc:
+                        logger.warning(f"Invalid target UUID in offer: {exc}")
+
+            elif msg_type == "answer":
+                target_id_str = data.get("target_user_id")
+                if target_id_str:
+                    try:
+                        target_uid = uuid.UUID(target_id_str)
+                        await signaling_manager.send_to_peer(
+                            room_id,
+                            target_uid,
+                            {
+                                "type": "answer",
+                                "from_user_id": str(user_id),
+                                "from_user_name": user_info["full_name"],
+                                "target_user_id": str(target_uid),
+                                "sdp": data.get("sdp"),
+                            },
+                        )
+                    except (ValueError, TypeError) as exc:
+                        logger.warning(f"Invalid target UUID in answer: {exc}")
+
+            elif msg_type == "ice-candidate":
+                target_id_str = data.get("target_user_id")
+                if target_id_str:
+                    try:
+                        target_uid = uuid.UUID(target_id_str)
+                        await signaling_manager.send_to_peer(
+                            room_id,
+                            target_uid,
+                            {
+                                "type": "ice-candidate",
+                                "from_user_id": str(user_id),
+                                "target_user_id": str(target_uid),
+                                "candidate": data.get("candidate"),
+                            },
+                        )
+                    except (ValueError, TypeError) as exc:
+                        logger.warning(f"Invalid target UUID in candidate: {exc}")
+
+            elif msg_type == "media-status":
+                is_audio = bool(data.get("is_audio_active", True))
+                is_muted = bool(data.get("is_muted", False))
+                is_video = bool(data.get("is_video_active", False))
+                is_screen = bool(data.get("is_screen_sharing", False))
+
+                await signaling_manager.update_peer_media_status(
+                    room_id=room_id,
+                    user_id=user_id,
+                    is_audio_active=is_audio,
+                    is_muted=is_muted,
+                    is_video_active=is_video,
+                    is_screen_sharing=is_screen,
+                )
+
+                status_msg = {
+                    "type": "media-status",
+                    "user_id": str(user_id),
+                    "is_audio_active": is_audio,
+                    "is_muted": is_muted,
+                    "is_video_active": is_video,
+                    "is_screen_sharing": is_screen,
+                }
+                await signaling_manager.broadcast(room_id, status_msg, exclude_user_id=user_id)
+
+            elif msg_type == "leave":
+                break
+
+    except WebSocketDisconnect:
+        logger.info(f"WebSocket client disconnected: user {user_id} in room {room_id}")
+    except Exception as exc:
+        logger.warning(f"Signaling loop error for user {user_id}: {exc}")
+    finally:
+        await signaling_manager.disconnect(room_id, user_id)
+        leave_msg = {
+            "type": "peer-left",
+            "user_id": str(user_id),
+        }
+        await signaling_manager.broadcast(room_id, leave_msg)
+
+        try:
+            async with async_session_maker() as db:
+                await community_service.leave_webrtc_call(db, room_id=room_id, user_id=user_id)
+        except Exception as exc:
+            logger.warning(f"Could not remove peer from DB on disconnect: {exc}")
 
