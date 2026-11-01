@@ -1019,9 +1019,19 @@ export async function getRecommendedRoomsApi(params = {}) {
  * @returns {Promise<Object>}
  */
 export async function createRoomApi(data) {
+  const payload = {
+    name: (data.name || data.room_name || data.roomName || '').trim(),
+    description: (data.description || '').trim(),
+    topic: (data.topic || 'General').trim(),
+    roadmap_name: data.roadmap_name || data.roadmap || data.roadmapName || null,
+    is_private: Boolean(data.is_private ?? data.privacy ?? data.isPrivate ?? false),
+    max_members: Number(data.max_members || data.max_capacity || data.maxCapacity || data.capacity || 50),
+    category: data.category || (data.topic ? data.topic.split('&')[0].trim() : 'General'),
+    icon: data.icon || (data.is_private ? 'lock' : 'users'),
+  }
   return request('/community/rooms', {
     method: 'POST',
-    body: JSON.stringify(data),
+    body: JSON.stringify(payload),
   })
 }
 

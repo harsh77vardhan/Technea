@@ -46,6 +46,12 @@ router = APIRouter(tags=["Community Learning & Study Rooms"])
     status_code=status.HTTP_200_OK,
     summary="List all community study rooms with search & filter",
 )
+@router.get(
+    "/rooms/",
+    response_model=list[LearningRoomResponse],
+    status_code=status.HTTP_200_OK,
+    include_in_schema=False,
+)
 async def get_rooms(
     db: DatabaseDep,
     current_user: OptionalUserDep,
@@ -113,6 +119,12 @@ async def get_my_rooms(
     response_model=LearningRoomResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Create a new study room",
+)
+@router.post(
+    "/rooms/",
+    response_model=LearningRoomResponse,
+    status_code=status.HTTP_201_CREATED,
+    include_in_schema=False,
 )
 async def create_room(
     room_data: CreateRoomRequest,

@@ -63,10 +63,10 @@ def upgrade() -> None:
                 is_screen_sharing BOOLEAN DEFAULT FALSE NOT NULL,
                 last_heartbeat TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
                 CONSTRAINT uq_room_active_peer UNIQUE (room_id, user_id)
-            );
-            CREATE INDEX IF NOT EXISTS ix_room_active_peers_room_id ON room_active_peers(room_id);
-            CREATE INDEX IF NOT EXISTS ix_room_active_peers_user_id ON room_active_peers(user_id);
+            )
         """)
+        op.execute("CREATE INDEX IF NOT EXISTS ix_room_active_peers_room_id ON room_active_peers(room_id)")
+        op.execute("CREATE INDEX IF NOT EXISTS ix_room_active_peers_user_id ON room_active_peers(user_id)")
 
         # WebRTC Signals
         op.execute("""
@@ -79,10 +79,10 @@ def upgrade() -> None:
                 signal_type VARCHAR(50) NOT NULL,
                 payload TEXT NOT NULL,
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
-            );
-            CREATE INDEX IF NOT EXISTS ix_room_webrtc_signals_room_id ON room_webrtc_signals(room_id);
-            CREATE INDEX IF NOT EXISTS ix_room_webrtc_signals_target ON room_webrtc_signals(target_user_id);
+            )
         """)
+        op.execute("CREATE INDEX IF NOT EXISTS ix_room_webrtc_signals_room_id ON room_webrtc_signals(room_id)")
+        op.execute("CREATE INDEX IF NOT EXISTS ix_room_webrtc_signals_target ON room_webrtc_signals(target_user_id)")
     else:
         # SQLite fallback
         pass

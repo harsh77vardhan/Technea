@@ -174,6 +174,10 @@ def create_application() -> FastAPI:
     from app.routers.ai import router as ai_router
     app.include_router(ai_router, prefix="/ai", tags=["AI Mentor Direct"], include_in_schema=False)
 
+    # Mount community router at root /community for direct endpoints compatibility
+    from app.routers.community import router as community_router
+    app.include_router(community_router, prefix="/community", tags=["Community Direct"], include_in_schema=False)
+
     # User uploads directory for avatars
     uploads_dir = os.path.join(os.path.dirname(__file__), "..", "uploads")
     os.makedirs(os.path.join(uploads_dir, "avatars"), exist_ok=True)

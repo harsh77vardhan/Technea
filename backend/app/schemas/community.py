@@ -1,8 +1,9 @@
 """Pydantic schemas for Community Learning Rooms and Study Rooms."""
 
 from datetime import datetime
+from typing import Any
 import uuid
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class LearningRoomResponse(BaseModel):
@@ -22,6 +23,7 @@ class LearningRoomResponse(BaseModel):
     active_learners_count: int = 0
     icon: str = "users"
     is_joined: bool = False
+    is_owner: bool = False
     joined_at: datetime | None = None
     # Study session status
     study_session_active: bool = False
@@ -49,6 +51,41 @@ class CreateRoomRequest(BaseModel):
     max_members: int = Field(50, ge=2, le=500)
     category: str = Field("General", max_length=100)
     icon: str = Field("users", max_length=50)
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_aliases(cls, data: Any) -> Any:
+        """Normalize common payload field alias variations."""
+        if isinstance(data, dict):
+            # room name / room_name -> name
+            if "name" not in data:
+                if "room_name" in data:
+                    data["name"] = data["room_name"]
+                elif "roomName" in data:
+                    data["name"] = data["roomName"]
+            # roadmap / roadmapName -> roadmap_name
+            if "roadmap_name" not in data:
+                if "roadmap" in data:
+                    data["roadmap_name"] = data["roadmap"]
+                elif "roadmapName" in data:
+                    data["roadmap_name"] = data["roadmapName"]
+            # privacy / isPrivate -> is_private
+            if "is_private" not in data:
+                if "privacy" in data:
+                    val = data["privacy"]
+                    data["is_private"] = val is True or str(val).lower() in ("private", "true", "1")
+                elif "isPrivate" in data:
+                    val = data["isPrivate"]
+                    data["is_private"] = val is True or str(val).lower() in ("private", "true", "1")
+            # max capacity / max_capacity / maxCapacity -> max_members
+            if "max_members" not in data:
+                if "max_capacity" in data:
+                    data["max_members"] = data["max_capacity"]
+                elif "maxCapacity" in data:
+                    data["max_members"] = data["maxCapacity"]
+                elif "capacity" in data:
+                    data["max_members"] = data["capacity"]
+        return data
 
 
 class JoinByCodeRequest(BaseModel):

@@ -79,8 +79,13 @@ class CommunityService:
         is_joined: bool = False,
         joined_at: datetime | None = None,
         recommendation_reason: str | None = None,
+        is_owner: bool = False,
+        user_id: uuid.UUID | None = None,
     ) -> LearningRoomResponse:
         """Helper to format a LearningRoom ORM instance into Pydantic schema."""
+        owner_flag = is_owner or bool(
+            user_id and getattr(room, "created_by_id", None) and room.created_by_id == user_id
+        )
         return LearningRoomResponse(
             id=room.id,
             name=room.name,
@@ -96,6 +101,7 @@ class CommunityService:
             active_learners_count=room.active_learners_count,
             icon=room.icon,
             is_joined=is_joined,
+            is_owner=owner_flag,
             joined_at=joined_at,
             study_session_active=getattr(room, "study_session_active", False) or False,
             study_session_topic=getattr(room, "study_session_topic", None),
@@ -172,6 +178,7 @@ class CommunityService:
                 r,
                 is_joined=r.id in joined_room_ids,
                 joined_at=joined_room_ids.get(r.id),
+                user_id=user_id,
             )
             for r in rooms
         ]
@@ -275,6 +282,7 @@ class CommunityService:
                             is_joined=r.id in joined_room_ids,
                             joined_at=joined_room_ids.get(r.id),
                             recommendation_reason=reason,
+                            user_id=user_id,
                         )
                     )
 
@@ -290,6 +298,7 @@ class CommunityService:
                         is_joined=r.id in joined_room_ids,
                         joined_at=joined_room_ids.get(r.id),
                         recommendation_reason="Popular with active Technea learners",
+                        user_id=user_id,
                     )
                 )
 
@@ -365,6 +374,8 @@ class CommunityService:
             new_room,
             is_joined=True,
             joined_at=now,
+            is_owner=True,
+            user_id=user_id,
         )
 
     async def join_room_by_code(
@@ -539,7 +550,7 @@ class CommunityService:
         rows = res.all()
 
         return [
-            self._format_room_response(r, is_joined=True, joined_at=joined_at)
+            self._format_room_response(r, is_joined=True, joined_at=joined_at, user_id=user_id)
             for r, joined_at in rows
         ]
 
@@ -573,7 +584,7 @@ class CommunityService:
                 is_joined = True
                 joined_at = mem.joined_at
 
-        return self._format_room_response(room, is_joined=is_joined, joined_at=joined_at)
+        return self._format_room_response(room, is_joined=is_joined, joined_at=joined_at, user_id=user_id)
 
     async def get_room_members(
         self,

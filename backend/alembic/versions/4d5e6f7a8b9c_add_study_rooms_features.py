@@ -50,10 +50,10 @@ def upgrade() -> None:
                 message_type VARCHAR(20) DEFAULT 'chat' NOT NULL,
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
-            );
-            CREATE INDEX IF NOT EXISTS ix_room_messages_room_id ON room_messages(room_id);
-            CREATE INDEX IF NOT EXISTS ix_room_messages_user_id ON room_messages(user_id);
+            )
         """)
+        op.execute("CREATE INDEX IF NOT EXISTS ix_room_messages_room_id ON room_messages(room_id)")
+        op.execute("CREATE INDEX IF NOT EXISTS ix_room_messages_user_id ON room_messages(user_id)")
 
         op.execute("""
             CREATE TABLE IF NOT EXISTS room_questions (
@@ -65,10 +65,10 @@ def upgrade() -> None:
                 is_resolved BOOLEAN DEFAULT FALSE NOT NULL,
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
-            );
-            CREATE INDEX IF NOT EXISTS ix_room_questions_room_id ON room_questions(room_id);
-            CREATE INDEX IF NOT EXISTS ix_room_questions_user_id ON room_questions(user_id);
+            )
         """)
+        op.execute("CREATE INDEX IF NOT EXISTS ix_room_questions_room_id ON room_questions(room_id)")
+        op.execute("CREATE INDEX IF NOT EXISTS ix_room_questions_user_id ON room_questions(user_id)")
 
         op.execute("""
             CREATE TABLE IF NOT EXISTS room_question_replies (
@@ -78,9 +78,9 @@ def upgrade() -> None:
                 content TEXT NOT NULL,
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
-            );
-            CREATE INDEX IF NOT EXISTS ix_room_question_replies_question_id ON room_question_replies(question_id);
+            )
         """)
+        op.execute("CREATE INDEX IF NOT EXISTS ix_room_question_replies_question_id ON room_question_replies(question_id)")
 
         op.execute("""
             CREATE TABLE IF NOT EXISTS room_resources (
@@ -93,9 +93,9 @@ def upgrade() -> None:
                 description TEXT,
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
-            );
-            CREATE INDEX IF NOT EXISTS ix_room_resources_room_id ON room_resources(room_id);
+            )
         """)
+        op.execute("CREATE INDEX IF NOT EXISTS ix_room_resources_room_id ON room_resources(room_id)")
     else:
         # SQLite fallback
         try:

@@ -46,10 +46,10 @@ def upgrade() -> None:
                 ended_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
-            );
-            CREATE INDEX IF NOT EXISTS ix_room_session_history_room_id ON room_session_history(room_id);
-            CREATE INDEX IF NOT EXISTS ix_room_session_history_ended_at ON room_session_history(ended_at);
+            )
         """)
+        op.execute("CREATE INDEX IF NOT EXISTS ix_room_session_history_room_id ON room_session_history(room_id)")
+        op.execute("CREATE INDEX IF NOT EXISTS ix_room_session_history_ended_at ON room_session_history(ended_at)")
 
         op.execute("""
             CREATE TABLE IF NOT EXISTS room_shared_notes (
@@ -61,9 +61,9 @@ def upgrade() -> None:
                 last_edited_by_name VARCHAR(255),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
-            );
-            CREATE INDEX IF NOT EXISTS ix_room_shared_notes_room_id ON room_shared_notes(room_id);
+            )
         """)
+        op.execute("CREATE INDEX IF NOT EXISTS ix_room_shared_notes_room_id ON room_shared_notes(room_id)")
 
         op.execute("""
             CREATE TABLE IF NOT EXISTS room_notifications (
@@ -78,11 +78,11 @@ def upgrade() -> None:
                 is_read BOOLEAN DEFAULT FALSE NOT NULL,
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
-            );
-            CREATE INDEX IF NOT EXISTS ix_room_notifications_room_id ON room_notifications(room_id);
-            CREATE INDEX IF NOT EXISTS ix_room_notifications_user_id ON room_notifications(user_id);
-            CREATE INDEX IF NOT EXISTS ix_room_notifications_created_at ON room_notifications(created_at);
+            )
         """)
+        op.execute("CREATE INDEX IF NOT EXISTS ix_room_notifications_room_id ON room_notifications(room_id)")
+        op.execute("CREATE INDEX IF NOT EXISTS ix_room_notifications_user_id ON room_notifications(user_id)")
+        op.execute("CREATE INDEX IF NOT EXISTS ix_room_notifications_created_at ON room_notifications(created_at)")
     else:
         # SQLite fallback for in-memory unit tests
         pass
