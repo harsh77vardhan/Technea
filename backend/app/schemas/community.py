@@ -1,6 +1,7 @@
 """Pydantic schemas for Community Learning Rooms and Study Rooms."""
 
 from datetime import datetime
+import json
 from typing import Any
 import uuid
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -406,8 +407,15 @@ class WebRTCSignalRequest(BaseModel):
     """Request payload to send a WebRTC signaling message."""
 
     target_user_id: uuid.UUID | None = None  # None means broadcast to all
-    signal_type: str = Field(..., pattern="^(offer|answer|ice-candidate|join|leave|status)$")
-    payload: str = Field(..., max_length=50000)
+    signal_type: str = Field(..., max_length=50)
+    payload: str | dict[str, Any] = Field(...)
+
+    @field_validator("payload", mode="after")
+    @classmethod
+    def serialize_payload(cls, v: str | dict[str, Any]) -> str:
+        if isinstance(v, dict):
+            return json.dumps(v)
+        return str(v)
 
 
 class WebRTCSignalResponse(BaseModel):

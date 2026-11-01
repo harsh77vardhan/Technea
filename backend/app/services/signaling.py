@@ -164,8 +164,9 @@ class SignalingManager:
                 )
                 dead_peers.append(uid)
 
-        for uid in dead_peers:
-            await self.disconnect(room_id, uid)
+    def is_peer_connected(self, room_id: int, user_id: uuid.UUID) -> bool:
+        """Check if peer is connected in memory on this worker instance."""
+        return room_id in self._rooms and user_id in self._rooms[room_id]
 
 
 # Singleton instance

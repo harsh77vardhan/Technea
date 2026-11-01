@@ -1022,6 +1022,18 @@ async def websocket_signaling_endpoint(
         "is_screen_sharing": False,
     }
     await signaling_manager.broadcast(room_id, peer_joined_msg, exclude_user_id=user_id)
+    try:
+        async with async_session_maker() as db:
+            sig_req = WebRTCSignalRequest(
+                target_user_id=None,
+                signal_type="peer-joined",
+                payload=peer_joined_msg,
+            )
+            await community_service.send_webrtc_signal(
+                db, room_id=room_id, sender_id=user_id, data=sig_req
+            )
+    except Exception as exc:
+        logger.warning(f"Could not persist peer-joined to DB: {exc}")
 
     # 6. Background listener for DB-persisted WebRTC signals (multi-worker & REST relay)
     last_db_signal_id = 0
@@ -1041,7 +1053,7 @@ async def websocket_signaling_endpoint(
         nonlocal last_db_signal_id
         while True:
             try:
-                await asyncio.sleep(0.4)
+                await asyncio.sleep(0.35)
                 async with async_session_maker() as db:
                     signals = await community_service.get_webrtc_signals(
                         db, room_id=room_id, user_id=user_id, since_id=last_db_signal_id
@@ -1049,17 +1061,67 @@ async def websocket_signaling_endpoint(
                     for s in signals:
                         if s.id > last_db_signal_id:
                             last_db_signal_id = s.id
-                        payload_data = s.payload or {}
-                        dispatch_msg: dict[str, Any] = {
-                            "type": s.signal_type,
-                            "from_user_id": str(s.from_user_id),
-                            "from_user_name": s.from_user_name,
-                            "target_user_id": str(user_id),
-                        }
-                        if s.signal_type in ("offer", "answer"):
-                            dispatch_msg["sdp"] = payload_data.get("sdp")
+
+                        # If sender is connected on THIS worker, in-memory dispatch already delivered it
+                        if signaling_manager.is_peer_connected(room_id, s.from_user_id):
+                            continue
+
+                        payload_data: dict[str, Any] = {}
+                        if isinstance(s.payload, str):
+                            try:
+                                payload_data = json.loads(s.payload)
+                            except Exception:
+                                payload_data = {}
+                        elif isinstance(s.payload, dict):
+                            payload_data = s.payload
+
+                        if s.signal_type == "peer-joined":
+                            dispatch_msg = {
+                                "type": "peer-joined",
+                                "user_id": str(s.from_user_id),
+                                "user_name": s.from_user_name,
+                                "avatar_url": payload_data.get("avatar_url"),
+                                "is_audio_active": payload_data.get("is_audio_active", True),
+                                "is_muted": payload_data.get("is_muted", False),
+                                "is_video_active": payload_data.get("is_video_active", False),
+                                "is_screen_sharing": payload_data.get("is_screen_sharing", False),
+                            }
+                        elif s.signal_type == "peer-left":
+                            dispatch_msg = {
+                                "type": "peer-left",
+                                "user_id": str(s.from_user_id),
+                            }
+                        elif s.signal_type == "media-status":
+                            dispatch_msg = {
+                                "type": "media-status",
+                                "user_id": str(s.from_user_id),
+                                "is_audio_active": payload_data.get("is_audio_active", True),
+                                "is_muted": payload_data.get("is_muted", False),
+                                "is_video_active": payload_data.get("is_video_active", False),
+                                "is_screen_sharing": payload_data.get("is_screen_sharing", False),
+                            }
+                        elif s.signal_type in ("offer", "answer"):
+                            dispatch_msg = {
+                                "type": s.signal_type,
+                                "from_user_id": str(s.from_user_id),
+                                "from_user_name": s.from_user_name,
+                                "target_user_id": str(user_id),
+                                "sdp": payload_data.get("sdp"),
+                            }
                         elif s.signal_type == "ice-candidate":
-                            dispatch_msg["candidate"] = payload_data.get("candidate")
+                            dispatch_msg = {
+                                "type": "ice-candidate",
+                                "from_user_id": str(s.from_user_id),
+                                "target_user_id": str(user_id),
+                                "candidate": payload_data.get("candidate"),
+                            }
+                        else:
+                            dispatch_msg = {
+                                "type": s.signal_type,
+                                "from_user_id": str(s.from_user_id),
+                                "target_user_id": str(user_id),
+                                **payload_data,
+                            }
                         await websocket.send_text(json.dumps(dispatch_msg))
             except asyncio.CancelledError:
                 break
@@ -1185,6 +1247,16 @@ async def websocket_signaling_endpoint(
                     is_screen_sharing=is_screen,
                 )
 
+                status_msg = {
+                    "type": "media-status",
+                    "user_id": str(user_id),
+                    "is_audio_active": is_audio,
+                    "is_muted": is_muted,
+                    "is_video_active": is_video,
+                    "is_screen_sharing": is_screen,
+                }
+                await signaling_manager.broadcast(room_id, status_msg, exclude_user_id=user_id)
+
                 try:
                     async with async_session_maker() as db:
                         status_req = UpdateWebRTCStatusRequest(
@@ -1196,18 +1268,16 @@ async def websocket_signaling_endpoint(
                         await community_service.update_webrtc_status(
                             db, room_id=room_id, user_id=user_id, data=status_req
                         )
+                        sig_req = WebRTCSignalRequest(
+                            target_user_id=None,
+                            signal_type="media-status",
+                            payload=status_msg,
+                        )
+                        await community_service.send_webrtc_signal(
+                            db, room_id=room_id, sender_id=user_id, data=sig_req
+                        )
                 except Exception as exc:
-                    logger.warning(f"Could not update peer media status in DB: {exc}")
-
-                status_msg = {
-                    "type": "media-status",
-                    "user_id": str(user_id),
-                    "is_audio_active": is_audio,
-                    "is_muted": is_muted,
-                    "is_video_active": is_video,
-                    "is_screen_sharing": is_screen,
-                }
-                await signaling_manager.broadcast(room_id, status_msg, exclude_user_id=user_id)
+                    logger.warning(f"Could not persist media-status signal to DB: {exc}")
 
             elif msg_type == "leave":
                 break
@@ -1228,6 +1298,14 @@ async def websocket_signaling_endpoint(
 
         try:
             async with async_session_maker() as db:
+                sig_req = WebRTCSignalRequest(
+                    target_user_id=None,
+                    signal_type="peer-left",
+                    payload=leave_msg,
+                )
+                await community_service.send_webrtc_signal(
+                    db, room_id=room_id, sender_id=user_id, data=sig_req
+                )
                 await community_service.leave_webrtc_call(db, room_id=room_id, user_id=user_id)
         except Exception as exc:
             logger.warning(f"Could not remove peer from DB on disconnect: {exc}")
