@@ -149,7 +149,7 @@ async def test_send_otp_success():
             assert otp_record is not None
             assert otp_record.is_used is False
             assert otp_record.attempts == 0
-            assert _verify_otp_hash(sent_otp, otp_record.hashed_otp) is True
+            assert _verify_otp_hash(test_email, sent_otp, otp_record.hashed_otp) is True
 
 
 @pytest.mark.asyncio

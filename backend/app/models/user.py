@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     from app.models.follow import Follow
     from app.models.progress import UserLearningPath, UserRoadmapProgress, UserLessonProgress
     from app.models.project import UserProject
+    from app.models.refresh_token import UserRefreshToken
     from app.models.user_roadmap import UserGeneratedRoadmap, DailyLearningActivity
 
 
@@ -133,6 +134,7 @@ class User(Base, UUIDIdMixin, TimestampMixin):
     )
     password_reset_token: Mapped[str | None] = mapped_column(
         String(255),
+        index=True,
         nullable=True,
     )
     password_reset_expires: Mapped[datetime | None] = mapped_column(
@@ -191,6 +193,11 @@ class User(Base, UUIDIdMixin, TimestampMixin):
         "Follow",
         foreign_keys="[Follow.follower_id]",
         back_populates="follower",
+        cascade="all, delete-orphan",
+    )
+    refresh_tokens: Mapped[list["UserRefreshToken"]] = relationship(
+        "UserRefreshToken",
+        back_populates="user",
         cascade="all, delete-orphan",
     )
 

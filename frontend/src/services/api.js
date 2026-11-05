@@ -66,8 +66,21 @@ if (typeof window !== 'undefined') {
 }
 
 const AUTH_TOKEN_KEY = 'technea_auth_token'
+const REFRESH_TOKEN_KEY = 'technea_refresh_token'
+
+let inMemoryAccessToken = null
+try {
+  if (typeof window !== 'undefined') {
+    inMemoryAccessToken = localStorage.getItem(AUTH_TOKEN_KEY)
+  }
+} catch {
+  inMemoryAccessToken = null
+}
 
 export function getAuthToken() {
+  if (inMemoryAccessToken) {
+    return inMemoryAccessToken
+  }
   try {
     return localStorage.getItem(AUTH_TOKEN_KEY)
   } catch {
@@ -75,20 +88,92 @@ export function getAuthToken() {
   }
 }
 
-export function setAuthToken(token) {
+export function getRefreshToken() {
+  try {
+    return localStorage.getItem(REFRESH_TOKEN_KEY)
+  } catch {
+    return null
+  }
+}
+
+export function setAuthToken(token, refreshToken = null) {
+  inMemoryAccessToken = token || null
   try {
     if (token) {
       localStorage.setItem(AUTH_TOKEN_KEY, token)
     } else {
       localStorage.removeItem(AUTH_TOKEN_KEY)
     }
+    if (refreshToken !== null) {
+      if (refreshToken) {
+        localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken)
+      } else {
+        localStorage.removeItem(REFRESH_TOKEN_KEY)
+      }
+    }
   } catch (e) {
     console.warn('Failed to persist auth token:', e)
   }
 }
 
+// Single-flight refresh token mutex promise
+let refreshPromise = null
+
+export async function refreshAccessToken() {
+  if (refreshPromise) {
+    return refreshPromise
+  }
+
+  refreshPromise = (async () => {
+    try {
+      const storedRefresh = getRefreshToken()
+      const headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-Technea-CSRF': '1',
+      }
+      if (storedRefresh) {
+        headers['X-Refresh-Token'] = storedRefresh
+      }
+
+      // Legacy token upgrade fallback
+      const currentToken = getAuthToken()
+      if (currentToken) {
+        headers['Authorization'] = `Bearer ${currentToken}`
+      }
+
+      const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
+        method: 'POST',
+        headers,
+        credentials: 'include',
+        body: JSON.stringify({ refresh_token: storedRefresh || undefined }),
+      })
+
+      if (!res.ok) {
+        setAuthToken(null, null)
+        throw new Error('Refresh failed')
+      }
+
+      const data = await res.json()
+      if (data?.access_token) {
+        setAuthToken(data.access_token, data.refresh_token || null)
+        return data.access_token
+      }
+      setAuthToken(null, null)
+      throw new Error('No access token in refresh response')
+    } catch (err) {
+      setAuthToken(null, null)
+      throw err
+    } finally {
+      refreshPromise = null
+    }
+  })()
+
+  return refreshPromise
+}
+
 /**
- * Reusable fetch wrapper with error handling and JSON parsing
+ * Reusable fetch wrapper with error handling, CSRF headers, and token refresh
  * @param {string} endpoint - Path relative to API_BASE_URL (e.g. '/skills')
  * @param {RequestInit} [options] - Fetch configuration options
  * @returns {Promise<any>}
@@ -103,6 +188,12 @@ async function request(endpoint, options = {}) {
     defaultHeaders['Content-Type'] = 'application/json'
   }
 
+  // Include CSRF header for state-changing requests
+  const method = (options.method || 'GET').toUpperCase()
+  if (method !== 'GET' && method !== 'HEAD') {
+    defaultHeaders['X-Technea-CSRF'] = '1'
+  }
+
   const token = getAuthToken()
   if (token) {
     defaultHeaders['Authorization'] = `Bearer ${token}`
@@ -114,6 +205,7 @@ async function request(endpoint, options = {}) {
   const timerId = setTimeout(() => controller.abort(), timeoutMs)
 
   const config = {
+    credentials: 'include',
     ...options,
     signal: options.signal || controller.signal,
     headers: {
@@ -127,9 +219,36 @@ async function request(endpoint, options = {}) {
     clearTimeout(timerId)
 
     if (!response.ok) {
-      // Automatic session cleanup & event dispatch on 401 Unauthorized
-      if (response.status === 401) {
-        setAuthToken(null)
+      const isAuthEndpoint =
+        cleanEndpoint.startsWith('/auth/login') ||
+        cleanEndpoint.startsWith('/auth/signup') ||
+        cleanEndpoint.startsWith('/auth/refresh') ||
+        cleanEndpoint.startsWith('/auth/verify-otp') ||
+        cleanEndpoint.startsWith('/auth/forgot-password') ||
+        cleanEndpoint.startsWith('/auth/reset-password')
+
+      // Intercept 401s on protected resources and attempt single-flight refresh retry
+      if (response.status === 401 && !options._isRetry && !isAuthEndpoint) {
+        try {
+          const newToken = await refreshAccessToken()
+          if (newToken) {
+            return await request(endpoint, {
+              ...options,
+              _isRetry: true,
+              headers: {
+                ...options.headers,
+                Authorization: `Bearer ${newToken}`,
+              },
+            })
+          }
+        } catch {
+          setAuthToken(null, null)
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('technea:auth:unauthorized'))
+          }
+        }
+      } else if (response.status === 401 && !isAuthEndpoint) {
+        setAuthToken(null, null)
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('technea:auth:unauthorized'))
         }
@@ -606,14 +725,41 @@ export async function updateProfileApi(data) {
 }
 
 /**
- * Informs the backend of user logout
+ * Informs the backend of user logout and revokes refresh token
  * @returns {Promise<Object>}
  */
 export async function logoutApi() {
   try {
-    return await request('/auth/logout', { method: 'POST' })
+    const refreshToken = getRefreshToken()
+    const headers = { 'X-Technea-CSRF': '1' }
+    if (refreshToken) {
+      headers['X-Refresh-Token'] = refreshToken
+    }
+    const res = await request('/auth/logout', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ refresh_token: refreshToken || undefined }),
+    })
+    setAuthToken(null, null)
+    return res
   } catch {
+    setAuthToken(null, null)
     return { message: 'Logged out' }
+  }
+}
+
+/**
+ * Informs the backend to revoke all active sessions for current user
+ * @returns {Promise<Object>}
+ */
+export async function logoutAllApi() {
+  try {
+    const res = await request('/auth/logout-all', { method: 'POST' })
+    setAuthToken(null, null)
+    return res
+  } catch {
+    setAuthToken(null, null)
+    return { message: 'All sessions terminated' }
   }
 }
 
@@ -1628,12 +1774,15 @@ export async function getUserFollowingApi(username) {
 
 export default {
   getAuthToken,
+  getRefreshToken,
   setAuthToken,
+  refreshAccessToken,
   signupApi,
   loginApi,
   getCurrentUserApi,
   updateProfileApi,
   logoutApi,
+  logoutAllApi,
   getGoogleAuthUrlApi,
   verifyEmailApi,
   resendVerificationApi,

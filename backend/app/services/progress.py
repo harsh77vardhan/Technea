@@ -382,38 +382,55 @@ class ProgressService:
         path_progress: dict[str, list[int]],
         course_progress: dict[str, list[int]],
     ) -> None:
-        """Sync guest localStorage progress records into the user's database account."""
+        """Sync guest localStorage progress records into the user's database account with batch validation."""
         now = datetime.now(timezone.utc)
 
-        # 1. Sync roadmap step progress
-        for path_id_str, step_ids in path_progress.items():
+        # 1. Sync roadmap step progress with batch validation and size caps
+        capped_paths = list(path_progress.items())[:50]
+        for path_id_str, raw_step_ids in capped_paths:
             try:
                 path_id = int(path_id_str)
             except ValueError:
                 continue
 
-            for step_id in step_ids:
-                if not isinstance(step_id, int):
-                    continue
-                stmt = select(UserRoadmapProgress).where(
+            cleaned_step_ids = [sid for sid in raw_step_ids if isinstance(sid, int) and sid > 0][:200]
+            if not cleaned_step_ids:
+                continue
+
+            # Batch validate that steps actually exist and belong to this learning path
+            valid_steps_stmt = select(RoadmapStep.id).where(
+                RoadmapStep.learning_path_id == path_id,
+                RoadmapStep.id.in_(cleaned_step_ids),
+            )
+            valid_steps_res = await db.execute(valid_steps_stmt)
+            valid_step_ids = set(valid_steps_res.scalars().all())
+
+            if valid_step_ids:
+                # Find which steps are already marked complete
+                existing_stmt = select(UserRoadmapProgress.step_id).where(
                     UserRoadmapProgress.user_id == user_id,
-                    UserRoadmapProgress.step_id == step_id,
+                    UserRoadmapProgress.step_id.in_(valid_step_ids),
                 )
-                res = await db.execute(stmt)
-                if not res.scalar_one_or_none():
+                existing_res = await db.execute(existing_stmt)
+                existing_ids = set(existing_res.scalars().all())
+
+                # Batch insert missing completed steps
+                new_step_ids = valid_step_ids - existing_ids
+                for sid in new_step_ids:
                     db.add(
                         UserRoadmapProgress(
                             user_id=user_id,
                             learning_path_id=path_id,
-                            step_id=step_id,
+                            step_id=sid,
                             is_completed=True,
                             completed_at=now,
                         )
                     )
 
-            await db.flush()
+                if new_step_ids:
+                    await db.flush()
 
-            # Recalculate and update path progress enrollment
+            # Recalculate path progress
             total_stmt = select(func.count(RoadmapStep.id)).where(
                 RoadmapStep.learning_path_id == path_id
             )
@@ -455,27 +472,43 @@ class ProgressService:
                 ulp.progress_percent = max(ulp.progress_percent, percent)
                 ulp.last_accessed_at = now
 
-        # 2. Sync lesson progress
-        for course_id_str, lesson_ids in course_progress.items():
+        # 2. Sync lesson progress with batch validation and size caps
+        capped_courses = list(course_progress.items())[:50]
+        for course_id_str, raw_lesson_ids in capped_courses:
             try:
                 course_id = int(course_id_str)
             except ValueError:
                 continue
 
-            for lesson_id in lesson_ids:
-                if not isinstance(lesson_id, int):
-                    continue
-                l_stmt = select(UserLessonProgress).where(
+            cleaned_lesson_ids = [lid for lid in raw_lesson_ids if isinstance(lid, int) and lid > 0][:200]
+            if not cleaned_lesson_ids:
+                continue
+
+            # Batch validate that lessons actually exist and belong to this course
+            valid_lessons_stmt = select(Lesson.id).where(
+                Lesson.course_id == course_id,
+                Lesson.id.in_(cleaned_lesson_ids),
+            )
+            valid_lessons_res = await db.execute(valid_lessons_stmt)
+            valid_lesson_ids = set(valid_lessons_res.scalars().all())
+
+            if valid_lesson_ids:
+                # Find which lessons are already marked complete
+                existing_l_stmt = select(UserLessonProgress.lesson_id).where(
                     UserLessonProgress.user_id == user_id,
-                    UserLessonProgress.lesson_id == lesson_id,
+                    UserLessonProgress.lesson_id.in_(valid_lesson_ids),
                 )
-                l_res = await db.execute(l_stmt)
-                if not l_res.scalar_one_or_none():
+                existing_l_res = await db.execute(existing_l_stmt)
+                existing_l_ids = set(existing_l_res.scalars().all())
+
+                # Batch insert missing completed lessons
+                new_lesson_ids = valid_lesson_ids - existing_l_ids
+                for lid in new_lesson_ids:
                     db.add(
                         UserLessonProgress(
                             user_id=user_id,
                             course_id=course_id,
-                            lesson_id=lesson_id,
+                            lesson_id=lid,
                             is_completed=True,
                             completed_at=now,
                         )

@@ -104,8 +104,16 @@ class TokenResponse(BaseModel):
 
     access_token: str
     token_type: str = "bearer"
+    expires_in: int = 900  # 15 minutes in seconds
+    refresh_token: str | None = None
     user: UserResponse
     profile_completed: bool = False
+
+
+class RefreshTokenRequest(BaseModel):
+    """Schema for token refresh request fallback when HttpOnly cookies are blocked."""
+
+    refresh_token: str | None = None
 
 
 class ForgotPasswordRequest(BaseModel):
@@ -126,6 +134,8 @@ class GoogleCallbackResponse(BaseModel):
 
     access_token: str
     token_type: str = "bearer"
+    expires_in: int = 900
+    refresh_token: str | None = None
     user: UserResponse
     is_new_user: bool
     profile_completed: bool = False

@@ -6,15 +6,32 @@ import re
 import secrets
 import time
 import urllib.parse
+import uuid
+from datetime import datetime, timedelta, timezone
+from collections.abc import AsyncGenerator
 from datetime import datetime, timedelta, timezone
 from typing import Annotated
-from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile, status
+from fastapi import APIRouter, File, HTTPException, Query, Request, Response, UploadFile, status
 from fastapi.responses import RedirectResponse
+import jwt
 from sqlalchemy import func, select, update
+from sqlalchemy.exc import IntegrityError
 from app.api.deps import CurrentUserDep, DatabaseDep, OptionalUserDep
 from app.core.config import settings
 from app.core.logger import logger
-from app.core.security import create_access_token, get_password_hash, verify_password
+from app.core.security import (
+    DUMMY_BCRYPT_HASH,
+    JWT_SIGNING_KEY,
+    OAUTH_STATE_KEY,
+    OTP_HMAC_KEY,
+    async_get_password_hash,
+    async_verify_password,
+    create_access_token,
+    get_password_hash,
+    make_unusable_password_hash,
+    validate_password_strength,
+    verify_password,
+)
 from app.models.email_otp import EmailOTP
 from app.models.user import User
 from app.schemas.common import MessageResponse
@@ -27,6 +44,7 @@ from app.schemas.user import (
     OTPSentResponse,
     ProfileSetupRequest,
     ProfileSetupResponse,
+    RefreshTokenRequest,
     ResetPasswordRequest,
     SendOTPRequest,
     TokenResponse,
@@ -37,9 +55,16 @@ from app.schemas.user import (
     VerifyEmailResponse,
     VerifyOTPRequest,
 )
+from app.services.auth_session import (
+    REFRESH_COOKIE_NAME,
+    auth_session_service,
+    clear_refresh_cookie,
+    set_refresh_cookie,
+)
 from app.services.email import email_service
 from app.services.google_auth import exchange_code_for_user_info, get_google_auth_url
 from app.services.profile import profile_service
+from app.services.rate_limiter import get_client_ip, limit_auth_action
 from app.services.storage import get_storage_service
 from app.services.user import user_service
 
@@ -49,19 +74,100 @@ def _generate_otp() -> str:
     return str(secrets.randbelow(900000) + 100000)
 
 
-def _hash_otp(otp: str) -> str:
-    """Compute HMAC-SHA256 hex digest of the OTP code using settings.SECRET_KEY."""
+def _hash_otp(email: str = "", otp: str | None = None, purpose: str = "auth") -> str:
+    """Compute HMAC-SHA256 hex digest cryptographically bound to email, purpose, and OTP.
+
+    Supports:
+      _hash_otp("123456") -> legacy
+      _hash_otp(email, otp)
+      _hash_otp(email="a@b.com", otp="123456")
+    """
+    if otp is None:
+        actual_otp = email.strip()
+        actual_email = ""
+    else:
+        actual_email = email.strip().lower()
+        actual_otp = otp.strip()
+
+    if actual_email:
+        bound_payload = f"{actual_email}:{purpose}:{actual_otp}".encode("utf-8")
+        key = OTP_HMAC_KEY
+    else:
+        bound_payload = actual_otp.encode("utf-8")
+        key = settings.SECRET_KEY.encode("utf-8")
+
     return hmac.new(
-        key=settings.SECRET_KEY.encode("utf-8"),
-        msg=otp.encode("utf-8"),
+        key=key,
+        msg=bound_payload,
         digestmod=hashlib.sha256,
     ).hexdigest()
 
 
-def _verify_otp_hash(otp: str, hashed: str) -> bool:
-    """Verify OTP against hashed digest using constant-time comparison."""
-    expected_hash = _hash_otp(otp)
-    return hmac.compare_digest(expected_hash, hashed)
+def _verify_otp_hash(
+    email: str = "",
+    otp: str = "",
+    hashed: str | None = None,
+    purpose: str = "auth",
+) -> bool:
+    """Verify OTP against hashed digest using constant-time comparison.
+
+    Supports:
+      _verify_otp_hash(otp, hashed) -> legacy
+      _verify_otp_hash(email, otp, hashed)
+      _verify_otp_hash(email="a@b.com", otp="123456", hashed="...")
+    """
+    if hashed is None:
+        actual_otp = email.strip()
+        actual_hashed = otp.strip()
+        actual_email = ""
+    else:
+        actual_email = email.strip().lower()
+        actual_otp = otp.strip()
+        actual_hashed = hashed.strip()
+
+    if actual_email:
+        expected = _hash_otp(email=actual_email, otp=actual_otp, purpose=purpose)
+        if hmac.compare_digest(expected, actual_hashed):
+            return True
+
+    # Legacy verify check for in-flight tokens
+    legacy_hash = hmac.new(
+        key=settings.SECRET_KEY.encode("utf-8"),
+        msg=actual_otp.encode("utf-8"),
+        digestmod=hashlib.sha256,
+    ).hexdigest()
+    return hmac.compare_digest(legacy_hash, actual_hashed)
+
+
+def _generate_signed_oauth_state() -> str:
+    """Generate signed tamper-proof OAuth state parameter valid for 15 minutes."""
+    nonce = secrets.token_urlsafe(16)
+    timestamp = int(time.time())
+    payload = f"{nonce}:{timestamp}"
+    sig = hmac.new(OAUTH_STATE_KEY, payload.encode("utf-8"), hashlib.sha256).hexdigest()
+    return f"{payload}:{sig}"
+
+
+def _verify_signed_oauth_state(state: str | None, max_age_seconds: int = 900) -> bool:
+    """Verify signed OAuth state signature and expiration."""
+    if not state:
+        return False
+    parts = state.split(":")
+    if len(parts) != 3:
+        return False
+    nonce, timestamp_str, sig = parts
+    payload = f"{nonce}:{timestamp_str}"
+    expected_sig = hmac.new(OAUTH_STATE_KEY, payload.encode("utf-8"), hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(expected_sig, sig):
+        return False
+    try:
+        timestamp = int(timestamp_str)
+        now = int(time.time())
+        if now - timestamp > max_age_seconds or timestamp > now + 60:
+            return False
+    except ValueError:
+        return False
+    return True
 
 
 router = APIRouter(tags=["Authentication"])
@@ -77,8 +183,12 @@ router = APIRouter(tags=["Authentication"])
 async def signup(
     user_in: UserCreate,
     db: DatabaseDep,
+    request: Request,
+    response: Response,
 ) -> TokenResponse:
-    """Create a new user account and return an access token."""
+    """Create a new user account and return an access token and rotating refresh token."""
+    await limit_auth_action(request, db, action="login")
+
     existing_user = await user_service.get_by_email(db, email=user_in.email)
     if existing_user:
         raise HTTPException(
@@ -86,11 +196,30 @@ async def signup(
             detail="An account with this email address already exists.",
         )
 
+    try:
+        validate_password_strength(user_in.password)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        )
+
     user = await user_service.create(db, obj_in=user_in)
     access_token = create_access_token(subject=user.id)
+    raw_refresh, _ = await auth_session_service.create_session(
+        db,
+        user_id=user.id,
+        client_ip=get_client_ip(request),
+        user_agent=request.headers.get("user-agent"),
+    )
+    await db.commit()
+    set_refresh_cookie(response, raw_refresh)
+
     return TokenResponse(
         access_token=access_token,
         token_type="bearer",
+        expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        refresh_token=raw_refresh,
         user=UserResponse.model_validate(user),
         profile_completed=user.profile_completed,
     )
@@ -105,34 +234,42 @@ async def signup(
 async def login(
     login_data: UserLogin,
     db: DatabaseDep,
+    request: Request,
+    response: Response,
 ) -> TokenResponse:
-    """Authenticate user with email and password and return an access token."""
-    t_start = time.perf_counter()
+    """Authenticate user with email and password and return access and refresh tokens."""
     clean_email = login_data.email.strip().lower()
-    logger.info("[AUTH LOGIN] Stage 1/5: Request received for email '%s'", clean_email)
+
+    # Rate limiting (IP & Account)
+    await limit_auth_action(request, db, action="login", email=clean_email)
 
     # 1. Email lookup
-    t_lookup = time.perf_counter()
     user = await user_service.get_by_email(db, email=clean_email)
-    lookup_duration = time.perf_counter() - t_lookup
-    logger.info(
-        "[AUTH LOGIN] Stage 2/5: Email lookup completed in %.3fs (user found: %s)",
-        lookup_duration,
-        bool(user),
-    )
 
+    # 2. Timing attack mitigation:
+    # If user does not exist, run dummy verification inside threadpool so response times are indistinguishable
     if not user:
-        logger.warning(
-            "[AUTH LOGIN] User not found for email '%s' (total: %.3fs)",
-            clean_email,
-            time.perf_counter() - t_start,
-        )
+        await async_verify_password(login_data.password, DUMMY_BCRYPT_HASH)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password.",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    # 3. Password verification (non-blocking bounded threadpool)
+    is_password_valid = await async_verify_password(
+        login_data.password,
+        user.hashed_password,
+    )
+
+    if not is_password_valid:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # 4. Check is_active ONLY after valid password verification to prevent status leakage
     if not user.is_active:
         logger.warning(
             "[AUTH LOGIN] Account deactivated for user '%s' (id=%s)",
@@ -144,54 +281,167 @@ async def login(
             detail="This user account has been deactivated.",
         )
 
-    # 2. Password verification (non-blocking thread)
-    t_verify = time.perf_counter()
-    is_password_valid = await asyncio.to_thread(
-        verify_password,
-        login_data.password,
-        user.hashed_password,
-    )
-    verify_duration = time.perf_counter() - t_verify
-    logger.info(
-        "[AUTH LOGIN] Stage 3/5: Password verification completed in %.3fs (valid: %s)",
-        verify_duration,
-        is_password_valid,
-    )
-
-    if not is_password_valid:
-        logger.warning(
-            "[AUTH LOGIN] Invalid password for user '%s' (total: %.3fs)",
-            clean_email,
-            time.perf_counter() - t_start,
-        )
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password.",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    # 3. JWT generation
-    t_jwt = time.perf_counter()
+    # 5. Token generation & session creation
     access_token = create_access_token(subject=user.id)
-    jwt_duration = time.perf_counter() - t_jwt
-    logger.info("[AUTH LOGIN] Stage 4/5: JWT generation completed in %.3fs", jwt_duration)
+    raw_refresh, _ = await auth_session_service.create_session(
+        db,
+        user_id=user.id,
+        client_ip=get_client_ip(request),
+        user_agent=request.headers.get("user-agent"),
+    )
+    await db.commit()
+    set_refresh_cookie(response, raw_refresh)
 
-    # 4. Response serialization & send
-    t_resp = time.perf_counter()
     user_resp = UserResponse.model_validate(user)
-    token_response = TokenResponse(
+    return TokenResponse(
         access_token=access_token,
         token_type="bearer",
+        expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        refresh_token=raw_refresh,
         user=user_resp,
         profile_completed=user.profile_completed,
     )
-    total_duration = time.perf_counter() - t_start
-    logger.info(
-        "[AUTH LOGIN] Stage 5/5: Response sent successfully in %.3fs (total elapsed: %.3fs)",
-        time.perf_counter() - t_resp,
-        total_duration,
+
+
+@router.post(
+    "/refresh",
+    response_model=TokenResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Renew short-lived access token using rotating refresh token",
+)
+async def refresh_token(
+    request: Request,
+    response: Response,
+    db: DatabaseDep,
+    body: RefreshTokenRequest | None = None,
+) -> TokenResponse:
+    """Renew access token via rotating refresh token with family tracking and grace period."""
+    client_ip = get_client_ip(request)
+    await limit_auth_action(request, db, action="refresh")
+
+    # Extract refresh token: prioritize explicit request body/header over ambient cookie
+    raw_refresh = None
+    if body and body.refresh_token:
+        raw_refresh = body.refresh_token.strip()
+    elif request.headers.get("x-refresh-token"):
+        raw_refresh = request.headers.get("x-refresh-token").strip()
+    elif request.cookies.get(REFRESH_COOKIE_NAME):
+        raw_refresh = request.cookies.get(REFRESH_COOKIE_NAME).strip()
+
+    # Migration fallback: If client has a valid legacy access token during migration window
+    if not raw_refresh:
+        auth_header = request.headers.get("authorization", "")
+        if auth_header.startswith("Bearer "):
+            legacy_token = auth_header[7:].strip()
+            try:
+                payload = jwt.decode(
+                    legacy_token,
+                    JWT_SIGNING_KEY,
+                    algorithms=[settings.JWT_ALGORITHM],
+                    options={"verify_signature": True, "verify_exp": True, "verify_aud": False, "verify_iss": False},
+                )
+                user_id_str = payload.get("sub")
+                if user_id_str:
+                    user = await user_service.get(db, id=uuid.UUID(user_id_str))
+                    if user and user.is_active:
+                        new_access = create_access_token(subject=user.id)
+                        new_raw_refresh, _ = await auth_session_service.create_session(
+                            db,
+                            user_id=user.id,
+                            client_ip=client_ip,
+                            user_agent=request.headers.get("user-agent"),
+                        )
+                        await db.commit()
+                        set_refresh_cookie(response, new_raw_refresh)
+                        return TokenResponse(
+                            access_token=new_access,
+                            token_type="bearer",
+                            expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+                            refresh_token=new_raw_refresh,
+                            user=UserResponse.model_validate(user),
+                            profile_completed=user.profile_completed,
+                        )
+            except Exception:
+                pass
+
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token required.",
+        )
+
+    # Rotate refresh token (handles grace period & reuse detection)
+    new_raw_refresh, new_token_rec, user_id = await auth_session_service.rotate_session(
+        db=db,
+        raw_token=raw_refresh,
+        client_ip=client_ip,
+        user_agent=request.headers.get("user-agent"),
     )
-    return token_response
+
+    user = await user_service.get(db, id=user_id)
+    if not user or not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User account is deactivated.",
+        )
+
+    new_access_token = create_access_token(subject=user.id)
+    await db.commit()
+    set_refresh_cookie(response, new_raw_refresh)
+
+    return TokenResponse(
+        access_token=new_access_token,
+        token_type="bearer",
+        expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        refresh_token=new_raw_refresh,
+        user=UserResponse.model_validate(user),
+        profile_completed=user.profile_completed,
+    )
+
+
+@router.post(
+    "/logout",
+    response_model=MessageResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Log out and revoke current refresh token session",
+)
+async def logout(
+    request: Request,
+    response: Response,
+    db: DatabaseDep,
+    body: RefreshTokenRequest | None = None,
+) -> MessageResponse:
+    raw_refresh = None
+    if body and body.refresh_token:
+        raw_refresh = body.refresh_token.strip()
+    elif request.headers.get("x-refresh-token"):
+        raw_refresh = request.headers.get("x-refresh-token").strip()
+    elif request.cookies.get(REFRESH_COOKIE_NAME):
+        raw_refresh = request.cookies.get(REFRESH_COOKIE_NAME).strip()
+
+    if raw_refresh:
+        await auth_session_service.revoke_session(db, raw_token=raw_refresh)
+        await db.commit()
+
+    clear_refresh_cookie(response)
+    return MessageResponse(message="Logged out successfully.")
+
+
+@router.post(
+    "/logout-all",
+    response_model=MessageResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Revoke all active sessions for current user",
+)
+async def logout_all(
+    current_user: CurrentUserDep,
+    response: Response,
+    db: DatabaseDep,
+) -> MessageResponse:
+    """Revoke all active refresh tokens and sessions for current authenticated user."""
+    await auth_session_service.revoke_user_sessions(db, user_id=current_user.id)
+    await db.commit()
+    clear_refresh_cookie(response)
+    return MessageResponse(message="All active sessions terminated successfully.")
 
 
 @router.get(
@@ -275,22 +525,30 @@ async def upload_avatar_auth(
 async def forgot_password(
     data: ForgotPasswordRequest,
     db: DatabaseDep,
+    request: Request,
 ) -> MessageResponse:
-    """Generate password reset token and send reset link if user exists.
+    """Generate password reset token and send reset link in background if user exists.
 
-    Always returns 200 with a generic message to prevent email enumeration attacks.
+    Always returns 200 with an identical message and constant execution time.
     """
-    user = await user_service.get_by_email(db, email=data.email)
+    clean_email = data.email.strip().lower()
+    await limit_auth_action(request, db, action="forgot_password", email=clean_email)
+
+    user = await user_service.get_by_email(db, email=clean_email)
     if user and user.is_active:
         token = secrets.token_urlsafe(32)
-        user.password_reset_token = token
+        token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
+        user.password_reset_token = token_hash
         user.password_reset_expires = datetime.now(timezone.utc) + timedelta(hours=1)
         await db.commit()
 
-        await email_service.send_password_reset_email(
-            to_email=user.email,
-            full_name=user.full_name or "",
-            token=token,
+        # Send email in background task to equalize endpoint timing
+        asyncio.create_task(
+            email_service.send_password_reset_email(
+                to_email=user.email,
+                full_name=user.full_name or "",
+                token=token,
+            )
         )
 
     return MessageResponse(message="If that email exists, you'll receive a reset link.")
@@ -305,8 +563,11 @@ async def forgot_password(
 async def reset_password(
     data: ResetPasswordRequest,
     db: DatabaseDep,
+    request: Request,
 ) -> MessageResponse:
-    """Validate reset token and update user's password."""
+    """Validate reset token, update user password, invalidate sessions, and send confirmation."""
+    await limit_auth_action(request, db, action="reset_password")
+
     user = await user_service.get_by_reset_token(db, token=data.token)
     if not user:
         raise HTTPException(
@@ -325,16 +586,29 @@ async def reset_password(
             detail="Password reset token has expired. Please request a new one.",
         )
 
-    if len(data.new_password) < 8:
+    try:
+        validate_password_strength(data.new_password)
+    except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Password must be at least 8 characters long.",
+            detail=str(exc),
         )
 
-    user.hashed_password = get_password_hash(data.new_password)
+    user.hashed_password = await async_get_password_hash(data.new_password)
     user.password_reset_token = None
     user.password_reset_expires = None
+
+    # Revoke all active sessions on password change
+    await auth_session_service.revoke_user_sessions(db, user_id=user.id)
     await db.commit()
+
+    # Send security notification email in background
+    asyncio.create_task(
+        email_service.send_password_reset_confirmation(
+            to_email=user.email,
+            full_name=user.full_name or "",
+        )
+    )
 
     return MessageResponse(message="Password updated successfully.")
 
@@ -415,8 +689,8 @@ async def verify_email(
     summary="Get Google OAuth authorization URL",
 )
 async def google_auth_login() -> GoogleAuthUrlResponse:
-    """Generate secure state and return Google OAuth authorization URL."""
-    state = secrets.token_urlsafe(16)
+    """Generate tamper-proof signed state and return Google OAuth authorization URL."""
+    state = _generate_signed_oauth_state()
     auth_url = await get_google_auth_url(state=state)
     return GoogleAuthUrlResponse(auth_url=auth_url)
 
@@ -435,15 +709,15 @@ ALLOWED_FRONTEND_HOSTS = {
 def _get_safe_frontend_url(target_url: str | None = None) -> str:
     """Resolve and validate frontend base URL with strict Open Redirect protection.
 
-    Ensures destination host is in ALLOWED_FRONTEND_HOSTS. Defaults strictly to
-    https://technea.vercel.app without fallback to localhost:3000.
+    Ensures destination host is in ALLOWED_FRONTEND_HOSTS and scheme is https/http.
+    Defaults strictly to https://technea.vercel.app without fallback to localhost:3000.
     """
     raw = target_url or settings.get_frontend_url()
     try:
         parsed = urllib.parse.urlsplit(str(raw).strip())
         host = (parsed.netloc or parsed.hostname or "").lower()
-        if host in ALLOWED_FRONTEND_HOSTS:
-            scheme = parsed.scheme if parsed.scheme in {"http", "https"} else "https"
+        scheme = (parsed.scheme or "").lower()
+        if host in ALLOWED_FRONTEND_HOSTS and scheme in {"http", "https"}:
             return f"{scheme}://{host}"
     except Exception:
         pass
@@ -451,16 +725,17 @@ def _get_safe_frontend_url(target_url: str | None = None) -> str:
 
 
 def _safe_frontend_redirect(target_url: str, status_code: int = status.HTTP_302_FOUND) -> RedirectResponse:
-    """Return RedirectResponse verifying that destination host is strictly in ALLOWED_FRONTEND_HOSTS."""
+    """Return RedirectResponse verifying that destination host is strictly in ALLOWED_FRONTEND_HOSTS and scheme is https/http."""
     try:
         parsed = urllib.parse.urlsplit(target_url)
         host = (parsed.netloc or "").lower()
-        if host in ALLOWED_FRONTEND_HOSTS:
+        scheme = (parsed.scheme or "").lower()
+        if host in ALLOWED_FRONTEND_HOSTS and scheme in {"http", "https"}:
             return RedirectResponse(url=target_url, status_code=status_code)
     except Exception:
         pass
     parsed = urllib.parse.urlsplit(target_url)
-    fallback = f"https://technea.vercel.app{parsed.path}"
+    fallback = f"https://technea.vercel.app{parsed.path or ''}"
     if parsed.query:
         fallback = f"{fallback}?{parsed.query}"
     return RedirectResponse(url=fallback, status_code=status_code)
@@ -484,7 +759,19 @@ async def google_auth_callback(
     accept_header = request.headers.get("accept", "")
     is_json_request = format == "json" or ("application/json" in accept_header and "text/html" not in accept_header)
 
-    # 1. Handle error returned by Google consent screen (e.g. error=access_denied)
+    # 1. Verify signed OAuth state to prevent OAuth CSRF / session fixation attacks
+    is_prod = settings.ENVIRONMENT == "production"
+    if (is_prod or state is not None) and not _verify_signed_oauth_state(state):
+        logger.warning("[AUTH] Google OAuth callback received invalid or expired state: %s", state)
+        if is_json_request:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid or expired OAuth state parameter.",
+            )
+        redirect_target = f"{frontend_url}/auth/callback?error=invalid_state"
+        return _safe_frontend_redirect(redirect_target)
+
+    # 2. Handle error returned by Google consent screen (e.g. error=access_denied)
     if error:
         logger.warning("Google OAuth callback received error: %s", error)
         if is_json_request:
@@ -495,7 +782,7 @@ async def google_auth_callback(
         redirect_target = f"{frontend_url}/auth/callback?error={urllib.parse.quote(error)}"
         return _safe_frontend_redirect(redirect_target)
 
-    # 2. Check if authorization code is missing
+    # 3. Check if authorization code is missing
     if not code:
         logger.warning("Google OAuth callback received without code")
         if is_json_request:
@@ -506,7 +793,7 @@ async def google_auth_callback(
         redirect_target = f"{frontend_url}/auth/callback?error=missing_code"
         return _safe_frontend_redirect(redirect_target)
 
-    # 3. Exchange code for user info and link/create user
+    # 4. Exchange code for user info and link/create user
     try:
         user_info = await exchange_code_for_user_info(code=code)
 
@@ -521,7 +808,13 @@ async def google_auth_callback(
                 if not existing_user.google_id:
                     existing_user.google_id = user_info["google_id"]
                 if not existing_user.is_email_verified:
+                    # Pre-hijacking mitigation: unverified password wiped to prevent attacker retention
+                    existing_user.hashed_password = make_unusable_password_hash()
                     existing_user.is_email_verified = True
+                    logger.warning(
+                        "[AUTH SECURITY] Pre-hijacking defense: unverified password reset for user '%s'",
+                        existing_user.email,
+                    )
                 if not existing_user.avatar_url and user_info.get("avatar_url"):
                     existing_user.avatar_url = user_info["avatar_url"]
                 await db.commit()
@@ -556,12 +849,21 @@ async def google_auth_callback(
         raise exc
 
     access_token = create_access_token(subject=user.id)
+    raw_refresh, _ = await auth_session_service.create_session(
+        db,
+        user_id=user.id,
+        client_ip=get_client_ip(request),
+        user_agent=request.headers.get("user-agent"),
+    )
+    await db.commit()
 
     # If client explicitly requests JSON (via query param or accept header without html)
     if is_json_request:
         return GoogleCallbackResponse(
             access_token=access_token,
             token_type="bearer",
+            expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+            refresh_token=raw_refresh,
             user=UserResponse.model_validate(user),
             is_new_user=is_new_user,
             profile_completed=user.profile_completed,
@@ -569,8 +871,10 @@ async def google_auth_callback(
 
     # Standard browser flow redirects to frontend callback page
     completed_val = 1 if user.profile_completed else 0
-    redirect_target = f"{frontend_url}/auth/callback?token={access_token}&profile_completed={completed_val}"
-    return _safe_frontend_redirect(redirect_target)
+    redirect_target = f"{frontend_url}/auth/callback?token={access_token}&refresh_token={raw_refresh}&profile_completed={completed_val}"
+    redirect_resp = _safe_frontend_redirect(redirect_target)
+    set_refresh_cookie(redirect_resp, raw_refresh)
+    return redirect_resp
 
 
 @router.post(
@@ -582,9 +886,11 @@ async def google_auth_callback(
 async def send_otp(
     data: SendOTPRequest,
     db: DatabaseDep,
+    request: Request,
 ) -> OTPSentResponse:
     """Send a secure 6-digit one-time password to the user's email."""
     email = data.email.strip().lower()
+    await limit_auth_action(request, db, action="send_otp", email=email)
     now = datetime.now(timezone.utc)
 
     # Cooldown check: Check if an unexpired, unused OTP was created for this email within cooldown window
@@ -623,7 +929,7 @@ async def send_otp(
     )
 
     otp = _generate_otp()
-    hashed_otp = _hash_otp(otp)
+    hashed_otp = _hash_otp(email=email, otp=otp, purpose="auth")
     expires_at = now + timedelta(minutes=settings.OTP_EXPIRE_MINUTES)
 
     otp_record = EmailOTP(
@@ -686,10 +992,13 @@ async def send_otp(
 async def verify_otp(
     data: VerifyOTPRequest,
     db: DatabaseDep,
+    request: Request,
+    response: Response,
 ) -> TokenResponse:
-    """Verify one-time password code, auto-register or authenticate user, and return JWT."""
+    """Verify one-time password code, auto-register or authenticate user, and return JWT and refresh token."""
     email = data.email.strip().lower()
     otp = data.otp.strip()
+    await limit_auth_action(request, db, action="verify_otp", email=email)
     now = datetime.now(timezone.utc)
 
     # Fetch latest unexpired, unused EmailOTP record for this email
@@ -720,7 +1029,7 @@ async def verify_otp(
             detail="Too many incorrect attempts. Please request a new code.",
         )
 
-    if not _verify_otp_hash(otp, otp_record.hashed_otp):
+    if not _verify_otp_hash(email=email, otp=otp, hashed=otp_record.hashed_otp, purpose="auth"):
         otp_record.attempts += 1
         remaining = max(0, settings.OTP_MAX_ATTEMPTS - otp_record.attempts)
         await db.commit()
@@ -741,34 +1050,77 @@ async def verify_otp(
                 detail="This account has been deactivated.",
             )
         if not user.is_email_verified:
+            # Pre-hijacking defense: unverified password wiped
+            user.hashed_password = make_unusable_password_hash()
             user.is_email_verified = True
+            logger.warning(
+                "[AUTH SECURITY] Pre-hijacking defense: unverified password reset on OTP verification for '%s'",
+                email,
+            )
         await db.commit()
         await db.refresh(user)
     else:
-        random_password = secrets.token_urlsafe(32)
-        user = User(
-            email=email,
-            hashed_password=get_password_hash(random_password),
-            auth_provider="otp",
-            is_email_verified=True,
-            is_active=True,
-            is_superuser=False,
-            profile_completed=False,
-        )
-        db.add(user)
-        await db.commit()
-        await db.refresh(user)
+        # Race-safe auto-provisioning with IntegrityError catch
+        try:
+            user = User(
+                email=email,
+                hashed_password=make_unusable_password_hash(),
+                auth_provider="otp",
+                is_email_verified=True,
+                is_active=True,
+                is_superuser=False,
+                profile_completed=False,
+            )
+            db.add(user)
+            await db.commit()
+            await db.refresh(user)
+        except IntegrityError:
+            await db.rollback()
+            user = await user_service.get_by_email(db, email=email)
+            if not user or not user.is_active:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Error during user account resolution.",
+                )
 
     access_token = create_access_token(subject=user.id)
+    raw_refresh, _ = await auth_session_service.create_session(
+        db,
+        user_id=user.id,
+        client_ip=get_client_ip(request),
+        user_agent=request.headers.get("user-agent"),
+    )
+    await db.commit()
+    set_refresh_cookie(response, raw_refresh)
+
     return TokenResponse(
         access_token=access_token,
         token_type="bearer",
+        expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        refresh_token=raw_refresh,
         user=UserResponse.model_validate(user),
         profile_completed=user.profile_completed,
     )
 
 
 USERNAME_REGEX = re.compile(r"^[a-zA-Z0-9_]+$")
+RESERVED_USERNAMES: frozenset[str] = frozenset({
+    "admin", "administrator", "root", "api", "auth", "technea", "support",
+    "dashboard", "help", "system", "moderator", "superuser", "guest", "null",
+})
+
+
+def _is_safe_avatar_url(url: str | None) -> bool:
+    """Validate avatar URL protocol to prevent javascript: or malicious URI injection."""
+    if not url:
+        return True
+    trimmed = url.strip()
+    return (
+        trimmed.startswith("https://")
+        or trimmed.startswith("data:image/svg+xml")
+        or trimmed.startswith("/uploads/")
+        or trimmed.startswith("/static/")
+    )
 
 
 @router.get(
@@ -791,6 +1143,13 @@ async def check_username(
         )
 
     clean_username = username.strip().lower()
+    if clean_username in RESERVED_USERNAMES:
+        return CheckUsernameResponse(
+            username=username,
+            available=False,
+            message="This username is reserved by the platform. Please pick another handle.",
+        )
+
     stmt = select(User.id).where(func.lower(User.username) == clean_username)
     if current_user is not None:
         stmt = stmt.where(User.id != current_user.id)
@@ -823,8 +1182,21 @@ async def setup_profile(
     current_user: CurrentUserDep,
     db: DatabaseDep,
 ) -> ProfileSetupResponse:
-    """Complete initial profile setup during onboarding."""
+    """Complete initial profile setup during onboarding with validation and race protection."""
     clean_username = data.username.strip().lower()
+
+    if clean_username in RESERVED_USERNAMES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"The handle '{clean_username}' is reserved. Please pick another handle.",
+        )
+
+    # Validate avatar URL security
+    if data.avatar_url and not _is_safe_avatar_url(data.avatar_url):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid avatar URL protocol. Only secure HTTPS or platform SVG avatars are permitted.",
+        )
 
     # Validate username uniqueness against other users
     conflict_stmt = select(User.id).where(
@@ -861,9 +1233,16 @@ async def setup_profile(
     # Mark profile completed
     current_user.profile_completed = True
 
-    db.add(current_user)
-    await db.commit()
-    await db.refresh(current_user)
+    try:
+        db.add(current_user)
+        await db.commit()
+        await db.refresh(current_user)
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"The username '{clean_username}' was just claimed by another user. Please choose another.",
+        )
 
     return ProfileSetupResponse(
         user=UserResponse.model_validate(current_user),

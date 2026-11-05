@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Lock, Check, AlertCircle, ArrowRight, ArrowLeft, Loader2 } from 'lucide-react'
 import { resetPasswordApi } from '../../services/api'
 
@@ -8,9 +8,36 @@ export default function ResetPasswordPage() {
   const [status, setStatus] = useState('idle') // 'idle' | 'loading' | 'success' | 'error'
   const [error, setError] = useState(null)
 
-  const token = typeof window !== 'undefined'
-    ? new URLSearchParams(window.location.search).get('token')
-    : null
+  const [token] = useState(() => {
+    if (typeof window === 'undefined') return null
+    const paramToken = new URLSearchParams(window.location.search).get('token')
+    if (paramToken) {
+      // Strip token immediately from browser history and address bar to prevent shoulder-surfing/leakage
+      window.history.replaceState({}, '', window.location.pathname)
+    }
+    return paramToken
+  })
+
+  useEffect(() => {
+    // Set no-referrer meta policy to prevent token leakage in Referer headers
+    let meta = document.querySelector('meta[name="referrer"]')
+    const created = !meta
+    if (!meta) {
+      meta = document.createElement('meta')
+      meta.name = 'referrer'
+      document.head.appendChild(meta)
+    }
+    const previousContent = meta.content
+    meta.content = 'no-referrer'
+
+    return () => {
+      if (created && meta.parentNode) {
+        meta.parentNode.removeChild(meta)
+      } else if (meta) {
+        meta.content = previousContent || 'strict-origin-when-cross-origin'
+      }
+    }
+  }, [])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -20,6 +47,10 @@ export default function ResetPasswordPage() {
     }
     if (password.length < 8) {
       setError('Password must be at least 8 characters.')
+      return
+    }
+    if (password.length > 128) {
+      setError('Password cannot exceed 128 characters.')
       return
     }
     setStatus('loading')

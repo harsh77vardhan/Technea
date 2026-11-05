@@ -45,6 +45,8 @@ from app.models.achievement import (
 )
 from app.models.follow import Follow
 from app.models.email_otp import EmailOTP
+from app.models.refresh_token import UserRefreshToken
+from app.models.rate_limit import AuthRateLimit
 
 __all__ = [
     "Base",
@@ -83,6 +85,8 @@ __all__ = [
     "UserAchievement",
     "Follow",
     "EmailOTP",
+    "UserRefreshToken",
+    "AuthRateLimit",
 ]
 
 

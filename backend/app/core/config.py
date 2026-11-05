@@ -25,7 +25,9 @@ class Settings(BaseSettings):
     DEBUG: bool = True
     SECRET_KEY: str = "change-this-in-production-with-a-secure-random-secret-key"
     JWT_ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 15  # 15 minutes short-lived access token
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 30  # 30 days rotating refresh token
+    RATE_LIMIT_ENABLED: bool = True
 
     # AI & Gemini Model Configuration
     GEMINI_API_KEY: str | None = None
@@ -96,7 +98,6 @@ class Settings(BaseSettings):
         "https://www.technea.in",
         "https://technea.dev",
         "https://www.technea.dev",
-        "https://*.vercel.app",
     ]
 
     @field_validator("EMAIL_FROM", mode="before")
@@ -147,7 +148,6 @@ class Settings(BaseSettings):
             "https://www.technea.in",
             "https://technea.dev",
             "https://www.technea.dev",
-            "https://*.vercel.app",
         ]
         if not v:
             return default_origins
@@ -240,12 +240,10 @@ class Settings(BaseSettings):
         }
         if self.ENVIRONMENT == "production":
             if self.SECRET_KEY in insecure_secret_keys or len(self.SECRET_KEY) < 32:
-                warnings.warn(
-                    "CRITICAL SECURITY WARNING: Insecure default or weak SECRET_KEY is used in production! "
+                raise ValueError(
+                    "CRITICAL SECURITY CONFIGURATION ERROR: Insecure default or weak SECRET_KEY is active in production! "
                     "You must configure a strong cryptographically random SECRET_KEY (at least 32 characters) "
-                    "via the SECRET_KEY environment variable.",
-                    UserWarning,
-                    stacklevel=2,
+                    "via the SECRET_KEY environment variable."
                 )
             if self.POSTGRES_PASSWORD in {"postgres_password", "postgres", "admin", "password", "root"}:
                 warnings.warn(

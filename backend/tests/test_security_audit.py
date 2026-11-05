@@ -129,17 +129,23 @@ def test_user_response_excludes_hashed_password():
 
 
 def test_production_secret_key_warnings():
-    """Verify Settings issues warnings if default keys are used in production environment."""
-    with warnings.catch_warnings(record=True) as recorded_warnings:
-        warnings.simplefilter("always")
+    """Verify Settings rejects weak keys and issues warnings if default db passwords are used in production."""
+    with pytest.raises(ValueError, match="Insecure default or weak SECRET_KEY"):
         Settings(
             ENVIRONMENT="production",
             SECRET_KEY="generate-a-secure-random-secret-key-for-production",
             POSTGRES_PASSWORD="postgres_password",
         )
 
+    with warnings.catch_warnings(record=True) as recorded_warnings:
+        warnings.simplefilter("always")
+        Settings(
+            ENVIRONMENT="production",
+            SECRET_KEY="a-very-strong-and-sufficiently-long-production-secret-key-for-testing",
+            POSTGRES_PASSWORD="postgres_password",
+        )
+
         warning_messages = [str(w.message) for w in recorded_warnings]
-        assert any("Insecure default or weak SECRET_KEY" in msg for msg in warning_messages)
         assert any("Default or common database password" in msg for msg in warning_messages)
 
 

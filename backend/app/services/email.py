@@ -19,6 +19,15 @@ RESEND_API_URL = "https://api.resend.com/emails"
 class EmailService:
     """Service handling transactional emails via Resend API with SMTP fallback."""
 
+    def __init__(self) -> None:
+        self._client: httpx.AsyncClient | None = None
+
+    def _get_http_client(self) -> httpx.AsyncClient:
+        """Reuse singleton AsyncClient with connection pooling and timeouts."""
+        if self._client is None or self._client.is_closed:
+            self._client = httpx.AsyncClient(timeout=10.0)
+        return self._client
+
     def _get_frontend_url(self) -> str:
         """Resolve frontend base URL with fallback to production."""
         if settings.FRONTEND_URL and settings.FRONTEND_URL.strip():
@@ -165,53 +174,53 @@ class EmailService:
         }
 
         try:
-            async with httpx.AsyncClient(timeout=10.0) as client:
-                response = await client.post(
-                    RESEND_API_URL,
-                    headers={
-                        "Authorization": f"Bearer {settings.RESEND_API_KEY}",
-                        "Content-Type": "application/json",
-                    },
-                    json=payload,
+            client = self._get_http_client()
+            response = await client.post(
+                RESEND_API_URL,
+                headers={
+                    "Authorization": f"Bearer {settings.RESEND_API_KEY}",
+                    "Content-Type": "application/json",
+                },
+                json=payload,
+            )
+            if response.is_success:
+                logger.info("[EMAIL] Email successfully delivered to %s via Resend.", to_email)
+                return (True, None)
+
+            # Resend 403 Detection & Resiliency:
+            # When Resend returns HTTP 403 with testing domain restriction
+            if response.status_code == 403:
+                logger.warning(
+                    "[EMAIL] Resend returned 403 (Test mode restriction: sending only allowed to registered account owner). "
+                    "Attempting SMTP fallback or providing actionable resolution."
                 )
-                if response.is_success:
-                    logger.info("[EMAIL] Email successfully delivered to %s via Resend.", to_email)
-                    return (True, None)
-
-                # Resend 403 Detection & Resiliency:
-                # When Resend returns HTTP 403 with testing domain restriction
-                if response.status_code == 403:
-                    logger.warning(
-                        "[EMAIL] Resend returned 403 (Test mode restriction: sending only allowed to registered account owner). "
-                        "Attempting SMTP fallback or providing actionable resolution."
-                    )
-                    if self._is_smtp_configured():
-                        logger.info("[EMAIL] Falling back to SMTP delivery for %s", to_email)
-                        return await self._send_smtp_email(
-                            to_email=to_email, subject=subject, html_body=html_body
-                        )
-
-                    helpful_error = (
-                        "Email provider is in sandbox/testing mode: sending is restricted to verified accounts. "
-                        "To send to all users in production, add and verify a custom domain in your Resend Dashboard "
-                        "and configure EMAIL_FROM, or provide SMTP credentials."
-                    )
-                    return (False, helpful_error)
-
-                error_msg = f"Resend API error {response.status_code}: {response.text}"
-                logger.error("[EMAIL] %s", error_msg)
                 if self._is_smtp_configured():
                     logger.info("[EMAIL] Falling back to SMTP delivery for %s", to_email)
-                    return await self._send_smtp_email(to_email=to_email, subject=subject, html_body=html_body)
+                    return await self._send_smtp_email(
+                        to_email=to_email, subject=subject, html_body=html_body
+                    )
 
-                detail_msg = response.text
-                try:
-                    content_type = response.headers.get("content-type", "")
-                    if "application/json" in content_type:
-                        detail_msg = response.json().get("message", response.text)
-                except Exception:
-                    pass
-                return (False, f"Email provider error ({response.status_code}): {detail_msg}")
+                helpful_error = (
+                    "Email provider is in sandbox/testing mode: sending is restricted to verified accounts. "
+                    "To send to all users in production, add and verify a custom domain in your Resend Dashboard "
+                    "and configure EMAIL_FROM, or provide SMTP credentials."
+                )
+                return (False, helpful_error)
+
+            error_msg = f"Resend API error {response.status_code}: {response.text}"
+            logger.error("[EMAIL] %s", error_msg)
+            if self._is_smtp_configured():
+                logger.info("[EMAIL] Falling back to SMTP delivery for %s", to_email)
+                return await self._send_smtp_email(to_email=to_email, subject=subject, html_body=html_body)
+
+            detail_msg = response.text
+            try:
+                content_type = response.headers.get("content-type", "")
+                if "application/json" in content_type:
+                    detail_msg = response.json().get("message", response.text)
+            except Exception:
+                pass
+            return (False, f"Email provider error ({response.status_code}): {detail_msg}")
         except Exception as exc:
             logger.error("[EMAIL] Exception occurred while contacting Resend API for %s: %s", to_email, exc)
             if self._is_smtp_configured():
@@ -356,6 +365,31 @@ class EmailService:
             </td>
           </tr>
         </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>"""
+        return await self._send_resend_email(to_email=to_email, subject=subject, html_body=html_body)
+
+    async def send_password_reset_confirmation(
+        self,
+        to_email: str,
+        full_name: str = "",
+    ) -> tuple[bool, str | None]:
+        """Send security notification informing user that their password was successfully changed."""
+        subject = "Security Alert: Technea password changed"
+        name_display = f"Hello {full_name}," if full_name else "Hello,"
+        html_body = f"""<!DOCTYPE html>
+<html>
+<body style="margin: 0; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0A0A0A; color: #FFFFFF;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 540px; margin: 0 auto; background-color: #141414; border: 1px solid #262626; border-radius: 12px; padding: 32px;">
+    <tr>
+      <td>
+        <h2 style="margin: 0 0 16px; font-size: 20px; font-weight: 600; color: #FFFFFF;">Password Changed Successfully</h2>
+        <p style="margin: 0 0 12px; font-size: 14px; color: #A3A3A3; line-height: 1.6;">{name_display}</p>
+        <p style="margin: 0 0 20px; font-size: 14px; color: #A3A3A3; line-height: 1.6;">The password for your Technea account has been successfully changed. All previous sessions have been invalidated.</p>
+        <p style="margin: 0; font-size: 12px; color: #737373; line-height: 1.5;">If you did not perform this change, please contact Technea support immediately to secure your account.</p>
       </td>
     </tr>
   </table>

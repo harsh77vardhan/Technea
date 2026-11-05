@@ -2,7 +2,7 @@
 
 from datetime import datetime
 import uuid
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class RoadmapStepToggleRequest(BaseModel):
@@ -42,15 +42,38 @@ class CourseProgressResponse(BaseModel):
 class GuestProgressSyncRequest(BaseModel):
     """Request schema for migrating guest localStorage progress to the user's account."""
 
-    # Key is string path_id / course_id (e.g. "1"), value is list of completed step/lesson integer IDs
     path_progress: dict[str, list[int]] = Field(
         default_factory=dict,
-        description="Map of path_id to completed step ID arrays",
+        description="Map of path_id to completed step ID arrays (max 50 paths)",
     )
     course_progress: dict[str, list[int]] = Field(
         default_factory=dict,
-        description="Map of course_id to completed lesson ID arrays",
+        description="Map of course_id to completed lesson ID arrays (max 50 courses)",
     )
+
+    @field_validator("path_progress")
+    @classmethod
+    def validate_path_progress(cls, v: dict[str, list[int]]) -> dict[str, list[int]]:
+        if len(v) > 50:
+            raise ValueError("Too many learning paths in guest sync payload (max 50 allowed)")
+        cleaned = {}
+        for path_id_str, step_ids in v.items():
+            if len(step_ids) > 200:
+                raise ValueError(f"Too many step IDs for path {path_id_str} (max 200 allowed)")
+            cleaned[path_id_str] = [sid for sid in step_ids if isinstance(sid, int) and sid > 0]
+        return cleaned
+
+    @field_validator("course_progress")
+    @classmethod
+    def validate_course_progress(cls, v: dict[str, list[int]]) -> dict[str, list[int]]:
+        if len(v) > 50:
+            raise ValueError("Too many courses in guest sync payload (max 50 allowed)")
+        cleaned = {}
+        for course_id_str, lesson_ids in v.items():
+            if len(lesson_ids) > 200:
+                raise ValueError(f"Too many lesson IDs for course {course_id_str} (max 200 allowed)")
+            cleaned[course_id_str] = [lid for lid in lesson_ids if isinstance(lid, int) and lid > 0]
+        return cleaned
 
 
 class DashboardEnrolledPath(BaseModel):

@@ -151,7 +151,7 @@ def create_application() -> FastAPI:
         app.add_middleware(
             CORSMiddleware,
             allow_origins=cors_origins,
-            allow_origin_regex=r"^https:\/\/.*\.vercel\.app$",
+            allow_origin_regex=r"^https:\/\/(technea[a-zA-Z0-9-]*|.*-harsh77vardhans-projects)\.vercel\.app$",
             allow_credentials=allow_credentials,
             allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
             allow_headers=["*"],

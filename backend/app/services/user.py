@@ -2,6 +2,7 @@
 
 import asyncio
 from datetime import datetime, timedelta, timezone
+import hashlib
 import json
 import secrets
 import uuid
@@ -10,7 +11,13 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import logger
-from app.core.security import get_password_hash, verify_password
+from app.core.security import (
+    async_get_password_hash,
+    async_verify_password,
+    get_password_hash,
+    make_unusable_password_hash,
+    verify_password,
+)
 from app.models.user import User
 from app.schemas.user import UserCreate, UserUpdate
 
@@ -32,15 +39,16 @@ class UserService:
     async def get_by_email(self, db: AsyncSession, email: str) -> User | None:
         """Retrieve user by normalized email address."""
         normalized_email = email.strip().lower()
-        stmt = select(User).where(User.email == normalized_email)
+        stmt = select(User).where(func.lower(User.email) == normalized_email)
         result = await db.execute(stmt)
         return result.scalar_one_or_none()
 
     async def create(self, db: AsyncSession, obj_in: UserCreate) -> User:
         """Register a new user with hashed password and verification token."""
         normalized_email = obj_in.email.strip().lower()
-        hashed_password = get_password_hash(obj_in.password)
+        hashed_password = await async_get_password_hash(obj_in.password)
         verification_token = secrets.token_urlsafe(32)
+        verification_token_hash = hashlib.sha256(verification_token.encode("utf-8")).hexdigest()
         verification_expires = datetime.now(timezone.utc) + timedelta(hours=24)
 
         db_user = User(
@@ -53,7 +61,7 @@ class UserService:
             auth_provider="email",
             is_email_verified=False,
             profile_completed=False,
-            email_verification_token=verification_token,
+            email_verification_token=verification_token_hash,
             email_verification_expires=verification_expires,
         )
         db.add(db_user)
@@ -74,11 +82,11 @@ class UserService:
         return db_user
 
     async def authenticate(self, db: AsyncSession, email: str, password: str) -> User | None:
-        """Authenticate user by email and plaintext password."""
+        """Authenticate user by email and plaintext password with bounded async verification."""
         user = await self.get_by_email(db, email=email)
         if not user:
             return None
-        is_valid = await asyncio.to_thread(verify_password, password, user.hashed_password)
+        is_valid = await async_verify_password(password, user.hashed_password)
         if not is_valid:
             return None
         return user
@@ -128,7 +136,7 @@ class UserService:
             else:
                 db_obj.interests = None
         if obj_in.password is not None and len(obj_in.password) >= 8:
-            db_obj.hashed_password = get_password_hash(obj_in.password)
+            db_obj.hashed_password = await async_get_password_hash(obj_in.password)
 
         db.add(db_obj)
         await db.commit()
@@ -143,10 +151,9 @@ class UserService:
         google_id: str,
         avatar_url: str | None = None,
     ) -> User:
-        """Create a new user authenticated via Google OAuth."""
+        """Create a new user authenticated via Google OAuth with zero-cost sentinel password."""
         normalized_email = email.strip().lower()
-        random_password = secrets.token_urlsafe(32)
-        hashed_password = get_password_hash(random_password)
+        hashed_password = make_unusable_password_hash()
 
         db_user = User(
             email=normalized_email,
@@ -172,14 +179,16 @@ class UserService:
         return result.scalar_one_or_none()
 
     async def get_by_reset_token(self, db: AsyncSession, token: str) -> User | None:
-        """Retrieve user by password reset token."""
-        stmt = select(User).where(User.password_reset_token == token)
+        """Retrieve user by password reset token, supporting both SHA-256 hash and legacy raw token."""
+        token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
+        stmt = select(User).where(User.password_reset_token.in_([token_hash, token]))
         result = await db.execute(stmt)
         return result.scalar_one_or_none()
 
     async def get_by_verification_token(self, db: AsyncSession, token: str) -> User | None:
-        """Retrieve user by email verification token."""
-        stmt = select(User).where(User.email_verification_token == token)
+        """Retrieve user by email verification token, supporting both SHA-256 hash and legacy raw token."""
+        token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
+        stmt = select(User).where(User.email_verification_token.in_([token_hash, token]))
         result = await db.execute(stmt)
         return result.scalar_one_or_none()
 

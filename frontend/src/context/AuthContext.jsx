@@ -8,6 +8,8 @@ import {
   loginApi,
   signupApi,
   logoutApi,
+  logoutAllApi,
+  refreshAccessToken,
   updateProfileApi,
   syncGuestProgressApi,
   getGoogleAuthUrlApi,
@@ -19,6 +21,11 @@ import {
   setupProfileApi,
   checkUsernameApi,
 } from '../services/api'
+
+const authBroadcastChannel =
+  typeof window !== 'undefined' && 'BroadcastChannel' in window
+    ? new BroadcastChannel('technea_auth_sync')
+    : null
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => (isDevAuthBypass ? DEV_MOCK_USER : null))
@@ -109,6 +116,21 @@ export function AuthProvider({ children }) {
 
       if (Object.keys(path_progress).length > 0 || Object.keys(course_progress).length > 0) {
         await syncGuestProgressApi({ path_progress, course_progress })
+        // Clear local storage keys after confirmed server synchronization
+        Object.keys(path_progress).forEach((pid) => {
+          try {
+            localStorage.removeItem(`technea_completed_steps_${pid}`)
+          } catch {
+            // ignore storage removal error
+          }
+        })
+        Object.keys(course_progress).forEach((cid) => {
+          try {
+            localStorage.removeItem(`technea_completed_lessons_${cid}`)
+          } catch {
+            // ignore storage removal error
+          }
+        })
       }
     } catch (e) {
       console.warn('Could not sync guest progress with server:', e)
@@ -124,24 +146,27 @@ export function AuthProvider({ children }) {
     let isMounted = true
 
     const rehydrateSession = async () => {
-      const storedToken = getAuthToken()
-      if (!storedToken) {
-        if (isMounted) {
-          setUser(null)
-          setIsLoading(false)
-        }
-        return
-      }
-
       try {
         const userData = await getCurrentUserApi()
         if (isMounted && userData) {
           setUser(userData)
-          setTokenState(storedToken)
+          setTokenState(getAuthToken())
         }
-      } catch (err) {
-        console.warn('Session expired or invalid, clearing token:', err.message)
-        setAuthToken(null)
+      } catch {
+        // Attempt token refresh via rotating refresh token or cookie fallback
+        try {
+          const newToken = await refreshAccessToken()
+          if (newToken && isMounted) {
+            const freshUser = await getCurrentUserApi()
+            if (isMounted && freshUser) {
+              setUser(freshUser)
+              setTokenState(newToken)
+              return
+            }
+          }
+        } catch {
+          // Token expired or invalid
+        }
         if (isMounted) {
           setUser(null)
           setTokenState(null)
@@ -155,8 +180,35 @@ export function AuthProvider({ children }) {
 
     rehydrateSession()
 
+    // Multi-tab sync message handler
+    if (authBroadcastChannel) {
+      authBroadcastChannel.onmessage = (event) => {
+        if (event.data?.type === 'LOGOUT') {
+          if (isMounted) {
+            setUser(null)
+            setTokenState(null)
+            closeDashboard()
+          }
+        } else if (event.data?.type === 'LOGIN') {
+          if (isMounted) {
+            setTokenState(event.data.token)
+            setUser(event.data.user)
+          }
+        }
+      }
+    }
+
+    const handleStorage = (e) => {
+      if (e.key === 'technea_auth_token' && !e.newValue && isMounted) {
+        setUser(null)
+        setTokenState(null)
+        closeDashboard()
+      }
+    }
+    window.addEventListener('storage', handleStorage)
+
     const handleUnauthorized = () => {
-      setAuthToken(null)
+      setAuthToken(null, null)
       if (isMounted) {
         setUser(null)
         setTokenState(null)
@@ -167,14 +219,15 @@ export function AuthProvider({ children }) {
     return () => {
       isMounted = false
       window.removeEventListener('technea:auth:unauthorized', handleUnauthorized)
+      window.removeEventListener('storage', handleStorage)
     }
-  }, [])
+  }, [closeDashboard])
 
   // Login handler
   const login = useCallback(async (email, password) => {
     const res = await loginApi({ email, password })
     if (res?.access_token) {
-      setAuthToken(res.access_token)
+      setAuthToken(res.access_token, res.refresh_token || null)
       setTokenState(res.access_token)
       const userObj = res.user
         ? {
@@ -186,6 +239,7 @@ export function AuthProvider({ children }) {
           }
         : res.user
       setUser(userObj)
+      authBroadcastChannel?.postMessage({ type: 'LOGIN', token: res.access_token, user: userObj })
       closeAuthModal()
 
       // Automatically migrate guest progress in background
@@ -203,7 +257,7 @@ export function AuthProvider({ children }) {
       full_name: fullName || undefined,
     })
     if (res?.access_token) {
-      setAuthToken(res.access_token)
+      setAuthToken(res.access_token, res.refresh_token || null)
       setTokenState(res.access_token)
       const userObj = res.user
         ? {
@@ -215,6 +269,7 @@ export function AuthProvider({ children }) {
           }
         : res.user
       setUser(userObj)
+      authBroadcastChannel?.postMessage({ type: 'LOGIN', token: res.access_token, user: userObj })
       closeAuthModal()
 
       // Automatically migrate guest progress in background
@@ -227,7 +282,7 @@ export function AuthProvider({ children }) {
   // Logout handler
   const logout = useCallback(async () => {
     if (isDevAuthBypass) {
-      setAuthToken(null)
+      setAuthToken(null, null)
       setTokenState(null)
       setUser(null)
       closeDashboard()
@@ -243,7 +298,27 @@ export function AuthProvider({ children }) {
     } catch {
       // ignore
     } finally {
-      setAuthToken(null)
+      authBroadcastChannel?.postMessage({ type: 'LOGOUT' })
+      setAuthToken(null, null)
+      setTokenState(null)
+      setUser(null)
+      closeDashboard()
+      if (typeof window !== 'undefined' && window.location.pathname !== '/') {
+        window.history.pushState({}, '', '/')
+        window.dispatchEvent(new PopStateEvent('popstate'))
+      }
+    }
+  }, [closeDashboard])
+
+  // Logout all sessions handler
+  const logoutAll = useCallback(async () => {
+    try {
+      await logoutAllApi()
+    } catch {
+      // ignore
+    } finally {
+      authBroadcastChannel?.postMessage({ type: 'LOGOUT' })
+      setAuthToken(null, null)
       setTokenState(null)
       setUser(null)
       closeDashboard()
@@ -327,7 +402,7 @@ export function AuthProvider({ children }) {
   const verifyOtp = useCallback(async (email, otp) => {
     const res = await verifyOtpApi(email, otp)
     if (res?.access_token) {
-      setAuthToken(res.access_token)
+      setAuthToken(res.access_token, res.refresh_token || null)
       setTokenState(res.access_token)
       const userObj = res.user
         ? {
@@ -339,6 +414,7 @@ export function AuthProvider({ children }) {
           }
         : res.user
       setUser(userObj)
+      authBroadcastChannel?.postMessage({ type: 'LOGIN', token: res.access_token, user: userObj })
       closeAuthModal()
 
       // Automatically migrate guest progress in background
@@ -367,6 +443,7 @@ export function AuthProvider({ children }) {
     login,
     signup,
     logout,
+    logoutAll,
     sendOtp,
     verifyOtp,
     setupProfile,

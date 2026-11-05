@@ -11,6 +11,17 @@ GOOGLE_AUTH_BASE = "https://accounts.google.com/o/oauth2/v2/auth"
 GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
 GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo"
 
+# Module-level reusable AsyncClient singleton with explicit timeouts
+_google_http_client: httpx.AsyncClient | None = None
+
+
+def _get_google_client() -> httpx.AsyncClient:
+    """Return reusable singleton httpx.AsyncClient with connection pooling."""
+    global _google_http_client
+    if _google_http_client is None or _google_http_client.is_closed:
+        _google_http_client = httpx.AsyncClient(timeout=15.0)
+    return _google_http_client
+
 
 async def get_google_auth_url(state: str) -> str:
     """Build and return Google OAuth 2.0 authorization URL.
@@ -51,87 +62,87 @@ async def exchange_code_for_user_info(code: str) -> dict:
             detail="Google OAuth credentials are not configured on this server.",
         )
 
-    async with httpx.AsyncClient(timeout=15.0) as client:
-        # Step 1: Exchange authorization code for Google access token
-        token_payload = {
-            "code": code,
-            "client_id": settings.GOOGLE_CLIENT_ID,
-            "client_secret": settings.GOOGLE_CLIENT_SECRET,
-            "redirect_uri": settings.GOOGLE_REDIRECT_URI,
-            "grant_type": "authorization_code",
-        }
-        try:
-            token_response = await client.post(
-                GOOGLE_TOKEN_URL,
-                data=token_payload,
-                headers={"Accept": "application/json"},
-            )
-        except Exception as exc:
-            logger.error("Failed to reach Google OAuth token endpoint: %s", exc)
-            raise HTTPException(
-                status_code=status.HTTP_502_BAD_GATEWAY,
-                detail="Unable to reach Google OAuth token server.",
-            )
+    client = _get_google_client()
+    # Step 1: Exchange authorization code for Google access token
+    token_payload = {
+        "code": code,
+        "client_id": settings.GOOGLE_CLIENT_ID,
+        "client_secret": settings.GOOGLE_CLIENT_SECRET,
+        "redirect_uri": settings.GOOGLE_REDIRECT_URI,
+        "grant_type": "authorization_code",
+    }
+    try:
+        token_response = await client.post(
+            GOOGLE_TOKEN_URL,
+            data=token_payload,
+            headers={"Accept": "application/json"},
+        )
+    except Exception as exc:
+        logger.error("Failed to reach Google OAuth token endpoint: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Unable to reach Google OAuth token server.",
+        )
 
-        if not token_response.is_success:
-            logger.error(
-                "Google token exchange failed with status %d: %s",
-                token_response.status_code,
-                token_response.text,
-            )
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Failed to exchange authorization code with Google.",
-            )
+    if not token_response.is_success:
+        logger.error(
+            "Google token exchange failed with status %d: %s",
+            token_response.status_code,
+            token_response.text,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Failed to exchange authorization code with Google.",
+        )
 
-        token_data = token_response.json()
-        access_token = token_data.get("access_token")
-        if not access_token:
-            logger.error("Google token response did not contain access_token: %s", token_data)
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid token response received from Google.",
-            )
+    token_data = token_response.json()
+    access_token = token_data.get("access_token")
+    if not access_token:
+        logger.error("Google token response did not contain access_token: %s", token_data)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid token response received from Google.",
+        )
 
-        # Step 2: Fetch user profile using access token
-        try:
-            userinfo_response = await client.get(
-                GOOGLE_USERINFO_URL,
-                headers={"Authorization": f"Bearer {access_token}"},
-            )
-        except Exception as exc:
-            logger.error("Failed to reach Google OAuth userinfo endpoint: %s", exc)
-            raise HTTPException(
-                status_code=status.HTTP_502_BAD_GATEWAY,
-                detail="Unable to reach Google userinfo server.",
-            )
+    # Step 2: Fetch user profile using access token
+    try:
+        userinfo_response = await client.get(
+            GOOGLE_USERINFO_URL,
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+    except Exception as exc:
+        logger.error("Failed to reach Google OAuth userinfo endpoint: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Unable to reach Google userinfo server.",
+        )
 
-        if not userinfo_response.is_success:
-            logger.error(
-                "Google userinfo fetch failed with status %d: %s",
-                userinfo_response.status_code,
-                userinfo_response.text,
-            )
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Failed to retrieve user profile from Google.",
-            )
+    if not userinfo_response.is_success:
+        logger.error(
+            "Google userinfo fetch failed with status %d: %s",
+            userinfo_response.status_code,
+            userinfo_response.text,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Failed to retrieve user profile from Google.",
+        )
 
-        user_data = userinfo_response.json()
-        email = user_data.get("email")
-        google_id = user_data.get("sub")
+    user_data = userinfo_response.json()
+    email = user_data.get("email")
+    google_id = user_data.get("sub")
 
-        if not email or not google_id:
-            logger.error("Google profile missing email or sub identifier: %s", user_data)
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Google account did not provide required email or identifier.",
-            )
+    if not email or not google_id:
+        logger.error("Google profile missing email or sub identifier: %s", user_data)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Google account did not provide required email or identifier.",
+        )
 
-        return {
-            "email": email.strip().lower(),
-            "name": user_data.get("name") or user_data.get("given_name") or email.split("@")[0],
-            "google_id": str(google_id),
-            "avatar_url": user_data.get("picture"),
-            "verified_email": bool(user_data.get("email_verified", True)),
-        }
+    return {
+        "email": email.strip().lower(),
+        "name": user_data.get("name") or user_data.get("given_name") or email.split("@")[0],
+        "google_id": str(google_id),
+        "avatar_url": user_data.get("picture"),
+        "verified_email": bool(user_data.get("email_verified", True)),
+    }
