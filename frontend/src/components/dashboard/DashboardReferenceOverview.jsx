@@ -321,10 +321,10 @@ function DashboardReferenceOverview({
       <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 pt-1">
         {/* Left: Calm Typography Greeting in Warm Ivory / Soft Black */}
         <div>
-          <h1 className={`text-3xl sm:text-4xl font-light tracking-tight ${isLight ? 'text-[#181614]' : 'text-[#faf6ee]'}`}>
+          <h1 className={`text-3xl sm:text-4xl font-light tracking-tight [text-wrap:balance] ${isLight ? 'text-[#181614]' : 'text-[#faf6ee]'}`}>
             Good {greetingTime}, {firstName}
           </h1>
-          <p className={`text-sm mt-1.5 font-normal ${isLight ? 'text-[#6e665d]' : 'text-[#a8a199]'}`}>
+          <p className={`text-sm mt-1.5 font-normal [text-wrap:pretty] ${isLight ? 'text-[#6e665d]' : 'text-[#a8a199]'}`}>
             Continue building your future.
           </p>
         </div>
@@ -335,7 +335,7 @@ function DashboardReferenceOverview({
           <div className="flex flex-col text-left">
             <span className={`text-xs font-normal ${isLight ? 'text-[#7a7268]' : 'text-[#a8a199]'}`}>Roadmap</span>
             <div className={`text-sm font-medium tracking-tight mt-0.5 flex items-center gap-1.5 ${isLight ? 'text-[#181614]' : 'text-[#faf6ee]'}`}>
-              <span>{activeRoadmap?.title || 'None Selected'}</span>
+              <span className="[text-wrap:pretty]">{activeRoadmap?.title || 'None Selected'}</span>
               {activeRoadmap ? (
                 <span className={`text-xs font-normal ${isLight ? 'text-[#7a7268]' : 'text-[#a8a199]'}`}>
                   Stage {currentStage} of {totalStages}
@@ -379,11 +379,11 @@ function DashboardReferenceOverview({
                 GET STARTED
               </span>
 
-              <h2 className="text-2xl sm:text-3xl font-normal tracking-tight text-[#181614] leading-snug">
+              <h2 className="text-2xl sm:text-3xl font-normal tracking-tight text-[#181614] leading-snug [text-wrap:balance]">
                 No active roadmap selected yet
               </h2>
 
-              <p className="text-sm text-[#665e56] font-normal leading-relaxed">
+              <p className="text-sm text-[#665e56] font-normal leading-relaxed [text-wrap:pretty]">
                 Choose a structured learning path from 330+ curated engineering roadmaps. Your active roadmap will become your single source of truth for daily missions, milestone projects, and AI mentoring.
               </p>
 
@@ -391,9 +391,9 @@ function DashboardReferenceOverview({
                 <button
                   type="button"
                   onClick={() => onNavigateTab('roadmaps')}
-                  className="inline-flex items-center gap-2 rounded-full bg-[#c25e2e] text-[#faf6ee] font-medium px-6 py-2.5 text-sm hover:bg-[#ad4f22] transition-colors shadow-md cursor-pointer"
+                  className="inline-flex items-center gap-2 rounded-full bg-[#c25e2e] text-[#faf6ee] font-medium px-6 py-2.5 text-sm hover:bg-[#ad4f22] active:scale-[0.98] active:translate-y-[0.5px] focus-visible:ring-2 focus-visible:ring-[#c25e2e]/60 focus-visible:ring-offset-2 focus-visible:outline-none transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] shadow-md hover:shadow-lg cursor-pointer"
                 >
-                  Explore Roadmaps
+                  <span>Explore Roadmaps</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
@@ -416,14 +416,14 @@ function DashboardReferenceOverview({
                 TODAY&apos;S MISSION
               </span>
 
-              <h2 className="text-2xl sm:text-3xl font-normal tracking-tight text-[#181614] leading-snug">
+              <h2 className="text-2xl sm:text-3xl font-normal tracking-tight text-[#181614] leading-snug [text-wrap:balance]">
                 {todayMission?.lesson_title || 'Introduction to Technea Learning Workspace'}
               </h2>
 
             {/* Milestone & Time Left Metadata */}
             <div className="flex items-center gap-2 text-sm text-[#665e56] font-normal pt-1">
               <span>Milestone</span>
-              <span className="text-[#181614] font-medium">
+              <span className="text-[#181614] font-medium [text-wrap:pretty]">
                 {todayMission?.milestone_title || activeRoadmap?.current_milestone?.title || activeRoadmap?.next_step_title || 'Core Foundations'}
               </span>
               <span className="text-[#a8a199]">·</span>
@@ -438,7 +438,7 @@ function DashboardReferenceOverview({
               <button
                 type="button"
                 onClick={() => handleContinue(todayMission)}
-                className="rounded-full bg-[#c25e2e] text-[#faf6ee] font-medium px-6 py-2.5 text-sm hover:bg-[#ad4f22] transition-colors shadow-md cursor-pointer"
+                className="rounded-full bg-[#c25e2e] text-[#faf6ee] font-medium px-6 py-2.5 text-sm hover:bg-[#ad4f22] active:scale-[0.98] active:translate-y-[0.5px] focus-visible:ring-2 focus-visible:ring-[#c25e2e]/60 focus-visible:ring-offset-2 focus-visible:outline-none transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] shadow-md hover:shadow-lg cursor-pointer"
               >
                 Resume learning →
               </button>
@@ -452,7 +452,7 @@ function DashboardReferenceOverview({
                     onNavigateTab('roadmaps')
                   }
                 }}
-                className="text-sm text-[#665e56] hover:text-[#181614] transition-colors cursor-pointer"
+                className="text-sm text-[#665e56] hover:text-[#181614] active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-[#c25e2e]/50 focus-visible:outline-none rounded-md px-1 py-0.5 transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer"
               >
                 View mission steps
               </button>
@@ -518,11 +518,11 @@ function DashboardReferenceOverview({
       {/* ──────────────── 3. CONTINUE LEARNING ──────────────── */}
       <section aria-label="Continue Learning" className="space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className={`text-sm font-medium ${isLight ? 'text-[#181614]' : 'text-[#faf6ee]'}`}>Continue learning</h3>
+          <h3 className={`text-sm font-medium [text-wrap:balance] ${isLight ? 'text-[#181614]' : 'text-[#faf6ee]'}`}>Continue learning</h3>
           <button
             type="button"
             onClick={() => onNavigateTab('courses')}
-            className={`text-xs transition-colors cursor-pointer ${
+            className={`text-xs transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer active:scale-95 focus-visible:ring-2 focus-visible:ring-[#c25e2e]/50 focus-visible:outline-none rounded-md px-1 py-0.5 ${
               isLight ? 'text-[#7a7268] hover:text-[#c25e2e]' : 'text-[#a8a199] hover:text-[#e87a48]'
             }`}
           >
@@ -536,22 +536,30 @@ function DashboardReferenceOverview({
           {continueCourses.map((c) => (
             <div
               key={c.id}
+              tabIndex={0}
+              role="button"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  handleContinue(c)
+                }
+              }}
               onClick={() => handleContinue(c)}
-              className="space-y-2.5 cursor-pointer group"
+              className="space-y-2.5 cursor-pointer group p-2.5 -m-2.5 rounded-2xl transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-0.5 active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-[#c25e2e]/50 focus-visible:outline-none"
             >
               <div className="flex items-center justify-between text-sm">
-                <span className={`font-normal transition-colors ${
+                <span className={`font-normal transition-colors duration-200 [text-wrap:pretty] ${
                   isLight ? 'text-[#181614] group-hover:text-[#c25e2e]' : 'text-[#faf6ee] group-hover:text-[#e87a48]'
                 }`}>{c.title}</span>
-                <span className="text-xs text-[#e87a48] font-medium">{c.progress}%</span>
+                <span className="text-xs text-[#e87a48] font-medium shrink-0 ml-2">{c.progress}%</span>
               </div>
-              <p className={`text-xs font-normal ${isLight ? 'text-[#6e665d]' : 'text-[#a8a199]'}`}>
+              <p className={`text-xs font-normal [text-wrap:pretty] ${isLight ? 'text-[#6e665d]' : 'text-[#a8a199]'}`}>
                 {c.subtitle}
               </p>
               {/* Thin hairline progress bar in Burnt Orange */}
               <div className={`h-[2.5px] w-full rounded-full overflow-hidden ${isLight ? 'bg-[#ded4be]' : 'bg-[#262320]'}`}>
                 <div
-                  className="h-full bg-[#c25e2e] rounded-full transition-all duration-500"
+                  className="h-full bg-[#c25e2e] rounded-full transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]"
                   style={{ width: `${c.progress}%` }}
                 />
               </div>
@@ -567,7 +575,7 @@ function DashboardReferenceOverview({
           <div className={`flex items-center justify-between text-xs font-normal ${
             isLight ? 'text-[#7a7268]' : 'text-[#a8a199]'
           }`}>
-            <span>Roadmap progress</span>
+            <span className="[text-wrap:balance]">Roadmap progress</span>
             <span className="text-[#e87a48] font-medium">
               {activeRoadmap?.progress_percent ?? summaryData?.overall_progress_percent ?? 0}% overall
             </span>
@@ -577,12 +585,12 @@ function DashboardReferenceOverview({
             {roadmapStages.map((stage, idx) => (
               <div key={idx} className="space-y-2">
                 <div className="flex items-center justify-between text-xs">
-                  <span className={`font-normal ${isLight ? 'text-[#181614]' : 'text-[#faf6ee]'}`}>{stage.label}</span>
-                  <span className={isLight ? 'text-[#7a7268]' : 'text-[#a8a199]'}>{stage.percent}%</span>
+                  <span className={`font-normal [text-wrap:pretty] ${isLight ? 'text-[#181614]' : 'text-[#faf6ee]'}`}>{stage.label}</span>
+                  <span className={`shrink-0 ml-2 ${isLight ? 'text-[#7a7268]' : 'text-[#a8a199]'}`}>{stage.percent}%</span>
                 </div>
                 <div className={`h-[2px] w-full rounded-full overflow-hidden ${isLight ? 'bg-[#ded4be]' : 'bg-[#262320]'}`}>
                   <div
-                    className="h-full bg-[#c25e2e] rounded-full transition-all duration-500"
+                    className="h-full bg-[#c25e2e] rounded-full transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]"
                     style={{ width: `${stage.percent}%` }}
                   />
                 </div>
@@ -596,11 +604,11 @@ function DashboardReferenceOverview({
           <div className={`flex items-center justify-between text-xs font-normal ${
             isLight ? 'text-[#7a7268]' : 'text-[#a8a199]'
           }`}>
-            <span>Projects</span>
+            <span className="[text-wrap:balance]">Projects</span>
             <button
               type="button"
               onClick={() => onNavigateTab('projects')}
-              className={`transition-colors cursor-pointer ${
+              className={`transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer active:scale-95 focus-visible:ring-2 focus-visible:ring-[#c25e2e]/50 focus-visible:outline-none rounded-md px-1 py-0.5 ${
                 isLight ? 'text-[#7a7268] hover:text-[#c25e2e]' : 'text-[#a8a199] hover:text-[#e87a48]'
               }`}
             >
@@ -610,17 +618,17 @@ function DashboardReferenceOverview({
 
           <div className="space-y-4">
             {projectsList.map((p, idx) => (
-              <div key={idx} className="space-y-2">
+              <div key={idx} className="space-y-2 group">
                 <div className="flex items-center justify-between text-xs">
-                  <span className={`font-normal ${isLight ? 'text-[#181614]' : 'text-[#faf6ee]'}`}>{p.title}</span>
-                  <span className={isLight ? 'text-[#7a7268]' : 'text-[#a8a199]'}>{p.steps}</span>
+                  <span className={`font-normal [text-wrap:pretty] transition-colors duration-200 ${isLight ? 'text-[#181614]' : 'text-[#faf6ee]'}`}>{p.title}</span>
+                  <span className={`shrink-0 ml-2 ${isLight ? 'text-[#7a7268]' : 'text-[#a8a199]'}`}>{p.steps}</span>
                 </div>
-                <p className={`text-[11px] font-normal ${isLight ? 'text-[#6e665d]' : 'text-[#a8a199]'}`}>
+                <p className={`text-[11px] font-normal [text-wrap:pretty] ${isLight ? 'text-[#6e665d]' : 'text-[#a8a199]'}`}>
                   {p.subtitle}
                 </p>
                 <div className={`h-[2px] w-full rounded-full overflow-hidden ${isLight ? 'bg-[#ded4be]' : 'bg-[#262320]'}`}>
                   <div
-                    className="h-full bg-[#c25e2e] rounded-full transition-all duration-500"
+                    className="h-full bg-[#c25e2e] rounded-full transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]"
                     style={{ width: `${p.progress}%` }}
                   />
                 </div>
@@ -634,11 +642,11 @@ function DashboardReferenceOverview({
           <div className={`flex items-center justify-between text-xs font-normal ${
             isLight ? 'text-[#7a7268]' : 'text-[#a8a199]'
           }`}>
-            <span>Achievements</span>
+            <span className="[text-wrap:balance]">Achievements</span>
             <button
               type="button"
               onClick={() => onNavigateTab('portfolio')}
-              className={`transition-colors cursor-pointer ${
+              className={`transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer active:scale-95 focus-visible:ring-2 focus-visible:ring-[#c25e2e]/50 focus-visible:outline-none rounded-md px-1 py-0.5 ${
                 isLight ? 'text-[#7a7268] hover:text-[#c25e2e]' : 'text-[#a8a199] hover:text-[#e87a48]'
               }`}
             >
@@ -648,17 +656,17 @@ function DashboardReferenceOverview({
 
           <div className="space-y-4">
             {achievementsList.map((ach, idx) => (
-              <div key={idx} className="flex items-center gap-3.5">
+              <div key={idx} className="flex items-center gap-3.5 group transition-transform duration-200 hover:translate-x-0.5">
                 {/* Circular badge in Burnt Orange / Warm Ivory */}
-                <div className="h-8 w-8 rounded-full border border-[#c25e2e]/40 bg-[#c25e2e]/10 flex items-center justify-center shrink-0 text-[#e87a48] text-xs font-normal">
+                <div className="h-8 w-8 rounded-full border border-[#c25e2e]/40 bg-[#c25e2e]/10 flex items-center justify-center shrink-0 text-[#e87a48] text-xs font-normal shadow-xs group-hover:scale-105 transition-transform duration-200">
                   {ach.type === 'number' && <span>{ach.badgeText}</span>}
                   {ach.type === 'check' && <Check className="h-3.5 w-3.5 stroke-[2.5]" />}
                   {ach.type === 'star' && <Star className="h-3.5 w-3.5 fill-current" />}
                 </div>
 
                 <div className="flex flex-col">
-                  <span className={`text-xs font-normal ${isLight ? 'text-[#181614]' : 'text-[#faf6ee]'}`}>{ach.title}</span>
-                  <span className={`text-[11px] font-normal mt-0.5 ${isLight ? 'text-[#6e665d]' : 'text-[#a8a199]'}`}>
+                  <span className={`text-xs font-normal [text-wrap:pretty] ${isLight ? 'text-[#181614]' : 'text-[#faf6ee]'}`}>{ach.title}</span>
+                  <span className={`text-[11px] font-normal mt-0.5 [text-wrap:pretty] ${isLight ? 'text-[#6e665d]' : 'text-[#a8a199]'}`}>
                     {ach.subtitle}
                   </span>
                 </div>

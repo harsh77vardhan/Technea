@@ -129,7 +129,7 @@ function DockedAIMentorCompanion({
             <button
               type="button"
               onClick={onMinimize}
-              className={`p-1 rounded-md transition-colors cursor-pointer ${
+              className={`p-1 rounded-md transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer active:scale-95 focus-visible:ring-2 focus-visible:ring-[#c25e2e]/50 focus-visible:outline-none ${
                 isLight ? 'hover:text-[#181614] hover:bg-[#181614]/5' : 'hover:text-[#faf6ee] hover:bg-[#faf6ee]/5'
               }`}
               title="Minimize panel"
@@ -139,7 +139,7 @@ function DockedAIMentorCompanion({
             <button
               type="button"
               onClick={onExpand}
-              className={`p-1 rounded-md transition-colors cursor-pointer ${
+              className={`p-1 rounded-md transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer active:scale-95 focus-visible:ring-2 focus-visible:ring-[#c25e2e]/50 focus-visible:outline-none ${
                 isLight ? 'hover:text-[#181614] hover:bg-[#181614]/5' : 'hover:text-[#faf6ee] hover:bg-[#faf6ee]/5'
               }`}
               title="Expand to Fullscreen Studio"
@@ -155,7 +155,7 @@ function DockedAIMentorCompanion({
             <button
               type="button"
               onClick={() => setActiveView('context')}
-              className={`flex-1 py-1 rounded-lg text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+              className={`flex-1 py-1 rounded-lg text-center transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer flex items-center justify-center gap-1.5 active:scale-95 focus-visible:ring-2 focus-visible:ring-[#c25e2e]/50 focus-visible:outline-none ${
                 activeView === 'context'
                   ? 'bg-[#c25e2e]/15 text-[#e87a48] font-medium border border-[#c25e2e]/30'
                   : 'text-[#a8a199] hover:text-[#faf6ee]'
@@ -167,7 +167,7 @@ function DockedAIMentorCompanion({
             <button
               type="button"
               onClick={() => setActiveView('chat')}
-              className={`flex-1 py-1 rounded-lg text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+              className={`flex-1 py-1 rounded-lg text-center transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer flex items-center justify-center gap-1.5 active:scale-95 focus-visible:ring-2 focus-visible:ring-[#c25e2e]/50 focus-visible:outline-none ${
                 activeView === 'chat'
                   ? 'bg-[#c25e2e]/15 text-[#e87a48] font-medium border border-[#c25e2e]/30'
                   : 'text-[#a8a199] hover:text-[#faf6ee]'
@@ -191,19 +191,19 @@ function DockedAIMentorCompanion({
               <div className="space-y-2.5 text-xs">
                 <div className="flex items-center justify-between">
                   <span className="text-[#a8a199]">Lesson</span>
-                  <span className="text-[#faf6ee] font-normal truncate max-w-[170px]">
+                  <span className="text-[#faf6ee] font-normal truncate max-w-[170px] [text-wrap:pretty]">
                     {todayMission?.lesson_title || 'JWT authentication'}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-[#a8a199]">Project</span>
-                  <span className="text-[#faf6ee] font-normal truncate max-w-[170px]">
+                  <span className="text-[#faf6ee] font-normal truncate max-w-[170px] [text-wrap:pretty]">
                     {activeRoadmap?.current_milestone?.title || 'Task API'}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-[#a8a199]">· Focus area</span>
-                  <span className="text-[#faf6ee] font-normal truncate max-w-[170px]">
+                  <span className="text-[#faf6ee] font-normal truncate max-w-[170px] [text-wrap:pretty]">
                     Token expiry &amp; security
                   </span>
                 </div>
@@ -213,7 +213,7 @@ function DockedAIMentorCompanion({
               <div className="border-b border-[#262320] my-5" />
 
               {/* Context Note matching reference */}
-              <p className="text-sm leading-relaxed text-[#faf6ee]">
+              <p className="text-sm leading-relaxed text-[#faf6ee] [text-wrap:pretty]">
                 <span className="text-[#faf6ee] font-normal">
                   You&apos;re two steps from finishing today&apos;s mission.{' '}
                 </span>
@@ -235,10 +235,10 @@ function DockedAIMentorCompanion({
                     key={action.id}
                     type="button"
                     onClick={() => handleQuickAction(action.label, action.prompt)}
-                    className="w-full flex items-center justify-between py-2 text-xs text-[#faf6ee] hover:text-[#e87a48] transition-colors cursor-pointer group"
+                    className="w-full flex items-center justify-between py-2 text-xs text-[#faf6ee] hover:text-[#e87a48] transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer group active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-[#c25e2e]/50 focus-visible:outline-none rounded-md px-1"
                   >
-                    <span>{action.label}</span>
-                    <ChevronRight className="h-3.5 w-3.5 text-[#a8a199] group-hover:text-[#e87a48] transition-colors" />
+                    <span className="[text-wrap:pretty]">{action.label}</span>
+                    <ChevronRight className="h-3.5 w-3.5 text-[#a8a199] group-hover:text-[#e87a48] group-hover:translate-x-0.5 transition-all duration-200" />
                   </button>
                 ))}
               </div>
@@ -254,7 +254,7 @@ function DockedAIMentorCompanion({
               <button
                 type="button"
                 onClick={resetMentorSession}
-                className="hover:text-[#faf6ee] transition-colors cursor-pointer flex items-center gap-1"
+                className="hover:text-[#faf6ee] transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer flex items-center gap-1 active:scale-95 focus-visible:ring-2 focus-visible:ring-[#c25e2e]/50 focus-visible:outline-none rounded-md px-1"
                 title="Reset conversation"
               >
                 <RotateCcw className="h-3 w-3" />
@@ -325,7 +325,7 @@ function DockedAIMentorCompanion({
             type="button"
             onClick={handleSend}
             disabled={!inputText.trim() || isMentorTyping}
-            className="h-7 w-7 rounded-full bg-[#c25e2e] text-[#faf6ee] flex items-center justify-center shrink-0 hover:bg-[#ad4f22] disabled:opacity-40 transition-all cursor-pointer shadow-md"
+            className="h-7 w-7 rounded-full bg-[#c25e2e] text-[#faf6ee] flex items-center justify-center shrink-0 hover:bg-[#ad4f22] disabled:opacity-40 transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer shadow-md active:scale-90 focus-visible:ring-2 focus-visible:ring-[#c25e2e]/60 focus-visible:outline-none"
             title="Send"
           >
             <ArrowUp className="h-3.5 w-3.5 stroke-[2.5]" />

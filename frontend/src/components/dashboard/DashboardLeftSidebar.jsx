@@ -67,7 +67,7 @@ function DashboardLeftSidebar({
             onClick={toggleTheme}
             aria-label={`Switch to ${isLight ? 'Dark' : 'Light'} theme`}
             title={`Switch to ${isLight ? 'Dark' : 'Light'} theme`}
-            className={`p-1.5 rounded-full border transition-all duration-300 cursor-pointer flex items-center justify-center ${
+            className={`p-1.5 rounded-full border transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer flex items-center justify-center active:scale-95 focus-visible:ring-2 focus-visible:ring-[#c25e2e]/50 focus-visible:outline-none ${
               isLight
                 ? 'border-[#ded4be] bg-[#faf6ee] text-[#c25e2e] hover:bg-[#ffffff] shadow-xs'
                 : 'border-[#262320] bg-[#1a1816] text-[#e87a48] hover:bg-[#262320] hover:border-[#c25e2e]/40'
@@ -93,7 +93,7 @@ function DashboardLeftSidebar({
                 key={item.id}
                 type="button"
                 onClick={() => onSelectTab(item.id)}
-                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-normal transition-all duration-150 cursor-pointer ${
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-normal transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-[#c25e2e]/50 focus-visible:outline-none ${
                   isActive
                     ? 'bg-[#c25e2e]/15 text-[#e87a48] font-medium border border-[#c25e2e]/30'
                     : isLight
@@ -102,7 +102,7 @@ function DashboardLeftSidebar({
                 }`}
               >
                 <Icon
-                  className={`h-4 w-4 shrink-0 transition-colors ${
+                  className={`h-4 w-4 shrink-0 transition-colors duration-200 ${
                     isActive
                       ? 'text-[#e87a48]'
                       : isLight
@@ -110,7 +110,7 @@ function DashboardLeftSidebar({
                       : 'text-[#a8a199]'
                   }`}
                 />
-                <span>{item.label}</span>
+                <span className="[text-wrap:pretty]">{item.label}</span>
               </button>
             )
           })}
@@ -144,7 +144,7 @@ function DashboardLeftSidebar({
           <button
             type="button"
             onClick={onLogout}
-            className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+            className={`p-1.5 rounded-lg transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer active:scale-95 focus-visible:ring-2 focus-visible:ring-[#c25e2e]/50 focus-visible:outline-none ${
               isLight
                 ? 'text-[#7a7268] hover:text-[#c25e2e] hover:bg-[#c25e2e]/10'
                 : 'text-[#a8a199] hover:text-[#e87a48] hover:bg-[#c25e2e]/10'

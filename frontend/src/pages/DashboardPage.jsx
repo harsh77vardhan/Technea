@@ -310,7 +310,7 @@ export default function DashboardPage({
             onClick={toggleTheme}
             aria-label={`Switch to ${isLight ? 'Dark' : 'Light'} theme`}
             title={`Switch to ${isLight ? 'Dark' : 'Light'} theme`}
-            className={`p-1.5 rounded-full border transition-all duration-300 cursor-pointer flex items-center justify-center ${
+            className={`p-1.5 rounded-full border transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer flex items-center justify-center active:scale-95 focus-visible:ring-2 focus-visible:ring-[#c25e2e]/50 focus-visible:outline-none ${
               isLight
                 ? 'border-[#ded4be] bg-[#faf6ee] text-[#c25e2e] hover:bg-[#ffffff]'
                 : 'border-[#262320] bg-[#1a1816] text-[#e87a48] hover:bg-[#262320]'
@@ -334,7 +334,7 @@ export default function DashboardPage({
               key={tab}
               type="button"
               onClick={() => setActiveTab(tab)}
-              className={`px-2.5 py-1 rounded-lg text-xs capitalize transition-colors cursor-pointer whitespace-nowrap ${
+              className={`px-2.5 py-1 rounded-lg text-xs capitalize transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer whitespace-nowrap active:scale-95 focus-visible:ring-2 focus-visible:ring-[#c25e2e]/50 focus-visible:outline-none ${
                 activeTab === tab
                   ? 'bg-[#c25e2e]/15 text-[#e87a48] font-medium border border-[#c25e2e]/30'
                   : isLight
@@ -392,14 +392,14 @@ export default function DashboardPage({
               }`}>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h1 className={`text-2xl font-normal tracking-tight ${isLight ? 'text-[#181614]' : 'text-[#faf6ee]'}`}>
+                    <h1 className={`text-2xl font-normal tracking-tight [text-wrap:balance] ${isLight ? 'text-[#181614]' : 'text-[#faf6ee]'}`}>
                       Roadmap Discovery
                     </h1>
                     <span className="rounded-full border border-[#c25e2e]/30 bg-[#c25e2e]/10 px-2.5 py-0.5 text-xs text-[#e87a48]">
                       {allRoadmaps?.length || 1} Saved
                     </span>
                   </div>
-                  <p className={`text-xs mt-1 font-normal ${isLight ? 'text-[#6e665d]' : 'text-[#a8a199]'}`}>
+                  <p className={`text-xs mt-1 font-normal [text-wrap:pretty] ${isLight ? 'text-[#6e665d]' : 'text-[#a8a199]'}`}>
                     Search 330+ structured engineering roadmaps. The active roadmap guides your daily missions, milestone projects, and AI mentoring.
                   </p>
                 </div>
@@ -408,7 +408,7 @@ export default function DashboardPage({
                   <button
                     type="button"
                     onClick={() => onOpenRoadmapBuilder()}
-                    className="inline-flex items-center gap-2 rounded-full bg-[#c25e2e] text-[#faf6ee] font-medium px-5 py-2 text-xs transition-all cursor-pointer shadow-md hover:bg-[#ad4f22]"
+                    className="inline-flex items-center gap-2 rounded-full bg-[#c25e2e] text-[#faf6ee] font-medium px-5 py-2 text-xs transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer shadow-md hover:bg-[#ad4f22] hover:shadow-lg active:scale-[0.98] active:translate-y-[0.5px] focus-visible:ring-2 focus-visible:ring-[#c25e2e]/60 focus-visible:ring-offset-2 focus-visible:outline-none"
                   >
                     <Sparkles className="h-3.5 w-3.5" />
                     <span>Build Custom Roadmap</span>
@@ -417,8 +417,8 @@ export default function DashboardPage({
                   <button
                     type="button"
                     onClick={onOpenExplorer}
-                    className={`inline-flex items-center gap-2 rounded-full border hover:border-[#c25e2e]/40 px-4 py-2 text-xs transition-all cursor-pointer ${
-                      isLight ? 'border-[#ded4be] bg-[#ffffff] text-[#181614]' : 'border-[#262320] bg-[#141312] text-[#faf6ee]'
+                    className={`inline-flex items-center gap-2 rounded-full border hover:border-[#c25e2e]/40 px-4 py-2 text-xs transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer active:scale-[0.98] active:translate-y-[0.5px] focus-visible:ring-2 focus-visible:ring-[#c25e2e]/60 focus-visible:ring-offset-2 focus-visible:outline-none ${
+                      isLight ? 'border-[#ded4be] bg-[#ffffff] text-[#181614] hover:shadow-xs' : 'border-[#262320] bg-[#141312] text-[#faf6ee] hover:shadow-xs'
                     }`}
                   >
                     <Compass className="h-3.5 w-3.5 text-[#e87a48]" />
@@ -460,7 +460,7 @@ export default function DashboardPage({
                         setIsSearchDropdownOpen(false)
                       }
                     }}
-                    className={`w-full pl-11 pr-24 py-3 rounded-2xl border text-sm outline-none focus:border-[#c25e2e] transition-colors ${
+                    className={`w-full pl-11 pr-24 py-3 rounded-2xl border text-sm outline-none focus:border-[#c25e2e] focus-visible:ring-2 focus-visible:ring-[#c25e2e]/40 focus-visible:outline-none transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] ${
                       isLight
                         ? 'bg-[#fbf8f2] border-[#ded4be] text-[#181614] placeholder-[#8c8278]'
                         : 'bg-[#0e0d0c] border-[#262320] text-[#faf6ee] placeholder-[#8c8278]'
@@ -473,7 +473,7 @@ export default function DashboardPage({
                         setRoadmapSearch('')
                         setIsSearchDropdownOpen(false)
                       }}
-                      className={`absolute right-3 top-3 px-2 py-1 rounded-full text-xs transition-colors cursor-pointer ${
+                      className={`absolute right-3 top-3 px-2 py-1 rounded-full text-xs transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer active:scale-95 focus-visible:ring-2 focus-visible:ring-[#c25e2e]/50 focus-visible:outline-none ${
                         isLight
                           ? 'text-[#7a7268] hover:text-[#181614] bg-[#f0e9dc]'
                           : 'text-[#a8a199] hover:text-[#faf6ee] bg-[#1c1a18]'
@@ -519,13 +519,13 @@ export default function DashboardPage({
                                 setSelectedRoadmapForDetail(rm)
                                 setIsSearchDropdownOpen(false)
                               }}
-                              className={`w-full text-left p-4 transition-all duration-150 cursor-pointer group flex flex-col gap-1.5 ${
+                              className={`w-full text-left p-4 transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer group flex flex-col gap-1.5 active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-[#c25e2e]/50 focus-visible:outline-none ${
                                 isLight ? 'hover:bg-[#faf6ee]' : 'hover:bg-[#1c1a18]'
                               }`}
                             >
                               {/* Top row: Title + Difficulty & Duration badges */}
                               <div className="flex items-center justify-between gap-3">
-                                <span className={`text-sm font-medium tracking-tight group-hover:text-[#e87a48] transition-colors ${
+                                <span className={`text-sm font-medium tracking-tight group-hover:text-[#e87a48] transition-colors duration-200 [text-wrap:pretty] ${
                                   isLight ? 'text-[#181614]' : 'text-[#faf6ee]'
                                 }`}>
                                   {rm.title}
@@ -543,7 +543,7 @@ export default function DashboardPage({
                               </div>
 
                               {/* Description */}
-                              <p className={`text-xs line-clamp-2 leading-relaxed ${
+                              <p className={`text-xs line-clamp-2 leading-relaxed [text-wrap:pretty] ${
                                 isLight ? 'text-[#665e56]' : 'text-[#a8a199]'
                               }`}>
                                 {rm.description || 'Comprehensive curriculum covering real-world workflows, architecture, and engineering practice.'}
@@ -552,7 +552,7 @@ export default function DashboardPage({
                           ))
                         ) : (
                           <div className="p-6 text-center space-y-3">
-                            <p className={`text-xs ${isLight ? 'text-[#665e56]' : 'text-[#a8a199]'}`}>
+                            <p className={`text-xs [text-wrap:pretty] ${isLight ? 'text-[#665e56]' : 'text-[#a8a199]'}`}>
                               No curated roadmaps found matching &ldquo;<span className="text-[#e87a48]">{roadmapSearch}</span>&rdquo;.
                             </p>
                             <button
@@ -561,7 +561,7 @@ export default function DashboardPage({
                                 setIsSearchDropdownOpen(false)
                                 onOpenRoadmapBuilder(roadmapSearch)
                               }}
-                              className="inline-flex items-center gap-2 rounded-full bg-[#c25e2e] hover:bg-[#ad4f22] text-[#faf6ee] font-medium px-4 py-1.5 text-xs transition-all shadow-sm cursor-pointer"
+                              className="inline-flex items-center gap-2 rounded-full bg-[#c25e2e] hover:bg-[#ad4f22] text-[#faf6ee] font-medium px-4 py-1.5 text-xs transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] shadow-sm hover:shadow-md active:scale-[0.98] active:translate-y-[0.5px] focus-visible:ring-2 focus-visible:ring-[#c25e2e]/60 focus-visible:ring-offset-2 focus-visible:outline-none cursor-pointer"
                             >
                               <Sparkles className="h-3.5 w-3.5" />
                               <span>Generate &ldquo;{roadmapSearch}&rdquo; with AI Architect</span>
@@ -587,7 +587,7 @@ export default function DashboardPage({
                         setRoadmapSearch(term)
                         setIsSearchDropdownOpen(true)
                       }}
-                      className={`px-2.5 py-1 rounded-full border text-[11px] transition-all cursor-pointer ${
+                      className={`px-2.5 py-1 rounded-full border text-[11px] transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer active:scale-95 focus-visible:ring-2 focus-visible:ring-[#c25e2e]/50 focus-visible:outline-none ${
                         roadmapSearch.toLowerCase() === term.toLowerCase()
                           ? 'border-[#c25e2e] bg-[#c25e2e]/15 text-[#faf6ee]'
                           : isLight
@@ -614,7 +614,7 @@ export default function DashboardPage({
                     <select
                       value={filterDifficulty}
                       onChange={(e) => setFilterDifficulty(e.target.value)}
-                      className={`w-full px-3 py-1.5 rounded-xl border text-xs outline-none focus:border-[#c25e2e] ${
+                      className={`w-full px-3 py-1.5 rounded-xl border text-xs outline-none focus:border-[#c25e2e] focus-visible:ring-2 focus-visible:ring-[#c25e2e]/40 focus-visible:outline-none transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer ${
                         isLight ? 'bg-[#fbf8f2] border-[#ded4be] text-[#181614]' : 'bg-[#0e0d0c] border-[#262320] text-[#faf6ee]'
                       }`}
                     >
@@ -635,7 +635,7 @@ export default function DashboardPage({
                     <select
                       value={filterDuration}
                       onChange={(e) => setFilterDuration(e.target.value)}
-                      className={`w-full px-3 py-1.5 rounded-xl border text-xs outline-none focus:border-[#c25e2e] ${
+                      className={`w-full px-3 py-1.5 rounded-xl border text-xs outline-none focus:border-[#c25e2e] focus-visible:ring-2 focus-visible:ring-[#c25e2e]/40 focus-visible:outline-none transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer ${
                         isLight ? 'bg-[#fbf8f2] border-[#ded4be] text-[#181614]' : 'bg-[#0e0d0c] border-[#262320] text-[#faf6ee]'
                       }`}
                     >
@@ -656,7 +656,7 @@ export default function DashboardPage({
                     <select
                       value={filterCategory}
                       onChange={(e) => setFilterCategory(e.target.value)}
-                      className={`w-full px-3 py-1.5 rounded-xl border text-xs outline-none focus:border-[#c25e2e] ${
+                      className={`w-full px-3 py-1.5 rounded-xl border text-xs outline-none focus:border-[#c25e2e] focus-visible:ring-2 focus-visible:ring-[#c25e2e]/40 focus-visible:outline-none transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer ${
                         isLight ? 'bg-[#fbf8f2] border-[#ded4be] text-[#181614]' : 'bg-[#0e0d0c] border-[#262320] text-[#faf6ee]'
                       }`}
                     >
@@ -680,7 +680,7 @@ export default function DashboardPage({
                     <select
                       value={filterTechnology}
                       onChange={(e) => setFilterTechnology(e.target.value)}
-                      className={`w-full px-3 py-1.5 rounded-xl border text-xs outline-none focus:border-[#c25e2e] ${
+                      className={`w-full px-3 py-1.5 rounded-xl border text-xs outline-none focus:border-[#c25e2e] focus-visible:ring-2 focus-visible:ring-[#c25e2e]/40 focus-visible:outline-none transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer ${
                         isLight ? 'bg-[#fbf8f2] border-[#ded4be] text-[#181614]' : 'bg-[#0e0d0c] border-[#262320] text-[#faf6ee]'
                       }`}
                     >
@@ -702,8 +702,8 @@ export default function DashboardPage({
                 <div className={`flex items-center justify-between text-xs ${
                   isLight ? 'text-[#6e665d]' : 'text-[#a8a199]'
                 }`}>
-                  <span className={`font-medium ${isLight ? 'text-[#181614]' : 'text-[#faf6ee]'}`}>Your Saved Roadmaps</span>
-                  <span>Exactly one roadmap is your active focus</span>
+                  <span className={`font-medium [text-wrap:balance] ${isLight ? 'text-[#181614]' : 'text-[#faf6ee]'}`}>Your Saved Roadmaps</span>
+                  <span className="[text-wrap:pretty]">Exactly one roadmap is your active focus</span>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -716,7 +716,7 @@ export default function DashboardPage({
                     return (
                       <div
                         key={rm.id}
-                        className={`relative rounded-3xl border p-6 backdrop-blur-xl transition-all duration-200 flex flex-col justify-between ${
+                        className={`relative rounded-3xl border p-6 backdrop-blur-xl transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] flex flex-col justify-between hover:-translate-y-0.5 ${
                           isFocus
                             ? 'border-[#c25e2e] bg-[#faf6ee] text-[#181614] shadow-xl ring-1 ring-[#c25e2e]/30'
                             : 'border-[#e5decb] bg-[#faf6ee] text-[#181614] hover:shadow-lg'
@@ -739,10 +739,10 @@ export default function DashboardPage({
                             )}
                           </div>
 
-                          <h3 className="text-base font-medium text-[#181614] tracking-tight">
+                          <h3 className="text-base font-medium text-[#181614] tracking-tight [text-wrap:balance]">
                             {rm.title}
                           </h3>
-                          <p className="text-xs text-[#665e56] line-clamp-2 leading-relaxed font-normal">
+                          <p className="text-xs text-[#665e56] line-clamp-2 leading-relaxed font-normal [text-wrap:pretty]">
                             {rm.goal || rm.description || 'Targeted engineering curriculum.'}
                           </p>
                         </div>
@@ -756,7 +756,7 @@ export default function DashboardPage({
                             <button
                               type="button"
                               onClick={() => setSelectedRoadmapForDetail(rm)}
-                              className="px-3 py-1.5 rounded-full border border-[#ded3bf] hover:border-[#c25e2e] text-xs text-[#181614] transition-all cursor-pointer flex items-center gap-1"
+                              className="px-3 py-1.5 rounded-full border border-[#ded3bf] hover:border-[#c25e2e] text-xs text-[#181614] transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer flex items-center gap-1 active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-[#c25e2e]/50 focus-visible:outline-none"
                             >
                               <GitBranch className="h-3 w-3 text-[#c25e2e]" />
                               <span>Inspect Skill Tree</span>
@@ -766,7 +766,7 @@ export default function DashboardPage({
                               <button
                                 type="button"
                                 onClick={() => switchActiveRoadmap(rm)}
-                                className="px-3 py-1.5 rounded-full bg-[#ded3bf] hover:bg-[#c25e2e] hover:text-[#faf6ee] text-xs text-[#181614] transition-all cursor-pointer"
+                                className="px-3 py-1.5 rounded-full bg-[#ded3bf] hover:bg-[#c25e2e] hover:text-[#faf6ee] text-xs text-[#181614] transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-[#c25e2e]/50 focus-visible:outline-none"
                               >
                                 Set as Active
                               </button>
@@ -776,7 +776,7 @@ export default function DashboardPage({
                               <button
                                 type="button"
                                 onClick={() => setActiveTab('overview')}
-                                className="px-3 py-1.5 rounded-full bg-[#c25e2e] text-[#faf6ee] font-medium text-xs hover:bg-[#ad4f22] transition-all cursor-pointer flex items-center gap-1 shadow-sm"
+                                className="px-3 py-1.5 rounded-full bg-[#c25e2e] text-[#faf6ee] font-medium text-xs hover:bg-[#ad4f22] transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer flex items-center gap-1 shadow-sm active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-[#c25e2e]/60 focus-visible:ring-offset-2 focus-visible:outline-none"
                               >
                                 <span>Workspace</span>
                                 <ArrowRight className="h-3 w-3" />
@@ -841,7 +841,7 @@ export default function DashboardPage({
                         <div
                           key={catRm.id}
                           onClick={() => setSelectedRoadmapForDetail(catRm)}
-                          className="group p-5 rounded-3xl border border-[#e5decb] bg-[#faf6ee] text-[#181614] hover:shadow-xl transition-all flex flex-col justify-between cursor-pointer relative"
+                          className="group p-5 rounded-3xl border border-[#e5decb] bg-[#faf6ee] text-[#181614] hover:shadow-xl hover:-translate-y-0.5 active:scale-[0.99] transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] flex flex-col justify-between cursor-pointer relative"
                         >
                           <div>
                             <div className="flex items-center justify-between text-xs text-[#8c8278] mb-2">
@@ -851,11 +851,11 @@ export default function DashboardPage({
                               <span className="font-medium text-[#c25e2e]">{catRm.difficulty || 'Intermediate'}</span>
                             </div>
 
-                            <h3 className="text-base font-medium text-[#181614] mb-1.5 group-hover:text-[#c25e2e] transition-colors tracking-tight">
+                            <h3 className="text-base font-medium text-[#181614] mb-1.5 group-hover:text-[#c25e2e] transition-colors duration-200 tracking-tight [text-wrap:balance]">
                               {catRm.title}
                             </h3>
 
-                            <p className="text-xs text-[#665e56] line-clamp-3 leading-relaxed mb-3">
+                            <p className="text-xs text-[#665e56] line-clamp-3 leading-relaxed mb-3 [text-wrap:pretty]">
                               {catRm.description}
                             </p>
 
@@ -884,9 +884,9 @@ export default function DashboardPage({
                                   Active
                                 </span>
                               ) : (
-                                <span className="text-xs text-[#c25e2e] group-hover:text-[#ad4f22] font-medium flex items-center gap-1">
+                                <span className="text-xs text-[#c25e2e] group-hover:text-[#ad4f22] font-medium flex items-center gap-1 transition-colors duration-200">
                                   <span>Inspect Tree</span>
-                                  <ArrowRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform" />
+                                  <ArrowRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform duration-200" />
                                 </span>
                               )}
                             </div>
@@ -911,10 +911,10 @@ export default function DashboardPage({
               className="space-y-6"
             >
               <div className={`border-b pb-4 ${isLight ? 'border-[#ded4be]' : 'border-[#262320]'}`}>
-                <h1 className={`text-2xl font-normal ${isLight ? 'text-[#181614]' : 'text-[#faf6ee]'}`}>
+                <h1 className={`text-2xl font-normal tracking-tight [text-wrap:balance] ${isLight ? 'text-[#181614]' : 'text-[#faf6ee]'}`}>
                   Video &amp; Interactive Courses
                 </h1>
-                <p className={`text-xs mt-1 font-normal ${isLight ? 'text-[#6e665d]' : 'text-[#a8a199]'}`}>
+                <p className={`text-xs mt-1 font-normal [text-wrap:pretty] ${isLight ? 'text-[#6e665d]' : 'text-[#a8a199]'}`}>
                   Step-by-step curriculum units mapped to your active roadmap milestones.
                 </p>
               </div>
@@ -930,21 +930,21 @@ export default function DashboardPage({
                 ].map((course) => (
                   <div
                     key={course.id}
-                    className="p-5 rounded-2xl border border-[#e5decb] bg-[#faf6ee] text-[#181614] hover:shadow-md transition-all flex flex-col justify-between"
+                    className="p-5 rounded-2xl border border-[#e5decb] bg-[#faf6ee] text-[#181614] hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] flex flex-col justify-between"
                   >
                     <div>
                       <div className="flex items-center justify-between text-xs text-[#8c8278] mb-2">
                         <span>{course.level}</span>
                         <span>{course.duration}</span>
                       </div>
-                      <h3 className="text-sm font-medium text-[#181614] mb-1.5">{course.title}</h3>
-                      <p className="text-xs text-[#665e56] font-normal">{course.lessons} video lessons</p>
+                      <h3 className="text-sm font-medium text-[#181614] mb-1.5 [text-wrap:balance]">{course.title}</h3>
+                      <p className="text-xs text-[#665e56] font-normal [text-wrap:pretty]">{course.lessons} video lessons</p>
                     </div>
 
                     <button
                       type="button"
                       onClick={() => handleContinueLesson({ course_id: course.id, lesson_id: 1 })}
-                      className="mt-5 w-full inline-flex items-center justify-center gap-2 py-2 rounded-full bg-[#c25e2e] hover:bg-[#ad4f22] text-[#faf6ee] font-medium text-xs transition-all cursor-pointer shadow-sm"
+                      className="mt-5 w-full inline-flex items-center justify-center gap-2 py-2 rounded-full bg-[#c25e2e] hover:bg-[#ad4f22] text-[#faf6ee] font-medium text-xs transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer shadow-sm hover:shadow-md active:scale-[0.98] active:translate-y-[0.5px] focus-visible:ring-2 focus-visible:ring-[#c25e2e]/60 focus-visible:ring-offset-2 focus-visible:outline-none"
                     >
                       <Play className="h-3 w-3 fill-current" />
                       <span>Start Course</span>
@@ -966,10 +966,10 @@ export default function DashboardPage({
               className="space-y-6"
             >
               <div className={`border-b pb-4 ${isLight ? 'border-[#ded4be]' : 'border-[#262320]'}`}>
-                <h1 className={`text-2xl font-normal ${isLight ? 'text-[#181614]' : 'text-[#faf6ee]'}`}>
+                <h1 className={`text-2xl font-normal tracking-tight [text-wrap:balance] ${isLight ? 'text-[#181614]' : 'text-[#faf6ee]'}`}>
                   Milestone Capstone Projects
                 </h1>
-                <p className={`text-xs mt-1 font-normal ${isLight ? 'text-[#6e665d]' : 'text-[#a8a199]'}`}>
+                <p className={`text-xs mt-1 font-normal [text-wrap:pretty] ${isLight ? 'text-[#6e665d]' : 'text-[#a8a199]'}`}>
                   Production deliverables that unlock as you complete roadmap milestones.
                 </p>
               </div>
@@ -1011,7 +1011,7 @@ export default function DashboardPage({
                 ].map((proj) => (
                   <div
                     key={proj.id}
-                    className="p-6 rounded-3xl border border-[#e5decb] bg-[#faf6ee] text-[#181614] backdrop-blur-xl flex flex-col justify-between shadow-sm"
+                    className="p-6 rounded-3xl border border-[#e5decb] bg-[#faf6ee] text-[#181614] backdrop-blur-xl flex flex-col justify-between shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]"
                   >
                     <div>
                       <div className="flex items-center justify-between mb-3">
@@ -1033,8 +1033,8 @@ export default function DashboardPage({
                         <span className="text-xs text-[#8c8278]">{proj.difficulty}</span>
                       </div>
 
-                      <h3 className="text-base font-medium text-[#181614] mb-2">{proj.title}</h3>
-                      <p className="text-xs text-[#665e56] leading-relaxed mb-4 font-normal">{proj.desc}</p>
+                      <h3 className="text-base font-medium text-[#181614] mb-2 [text-wrap:balance]">{proj.title}</h3>
+                      <p className="text-xs text-[#665e56] leading-relaxed mb-4 font-normal [text-wrap:pretty]">{proj.desc}</p>
 
                       <div className="flex flex-wrap gap-1.5 mb-4">
                         {proj.tech.map((t) => (
@@ -1052,10 +1052,10 @@ export default function DashboardPage({
                       type="button"
                       disabled={proj.status === 'locked'}
                       onClick={() => showToast(`Project '${proj.title}' started!`, 'success')}
-                      className={`w-full py-2.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
+                      className={`w-full py-2.5 rounded-full text-xs font-medium transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer active:scale-[0.98] active:translate-y-[0.5px] focus-visible:ring-2 focus-visible:ring-[#c25e2e]/60 focus-visible:ring-offset-2 focus-visible:outline-none ${
                         proj.status === 'locked'
                           ? 'bg-[#ede5d5]/40 text-[#a8a199] cursor-not-allowed'
-                          : 'bg-[#c25e2e] hover:bg-[#ad4f22] text-[#faf6ee] shadow-sm'
+                          : 'bg-[#c25e2e] hover:bg-[#ad4f22] text-[#faf6ee] shadow-sm hover:shadow-md'
                       }`}
                     >
                       {proj.status === 'locked' ? 'Locked Milestone' : 'Start Deliverable →'}
@@ -1090,10 +1090,10 @@ export default function DashboardPage({
               className="space-y-6"
             >
               <div className={`border-b pb-4 ${isLight ? 'border-[#ded4be]' : 'border-[#262320]'}`}>
-                <h1 className={`text-2xl font-normal ${isLight ? 'text-[#181614]' : 'text-[#faf6ee]'}`}>
+                <h1 className={`text-2xl font-normal tracking-tight [text-wrap:balance] ${isLight ? 'text-[#181614]' : 'text-[#faf6ee]'}`}>
                   Developer Portfolio &amp; Proof of Work
                 </h1>
-                <p className={`text-xs mt-1 font-normal ${isLight ? 'text-[#6e665d]' : 'text-[#a8a199]'}`}>
+                <p className={`text-xs mt-1 font-normal [text-wrap:pretty] ${isLight ? 'text-[#6e665d]' : 'text-[#a8a199]'}`}>
                   Verified platform achievements, milestone credentials, and earned developer badges.
                 </p>
               </div>
@@ -1108,9 +1108,9 @@ export default function DashboardPage({
                 ]).map((ach) => (
                   <div
                     key={ach.id || ach.achievement_id}
-                    className={`p-5 rounded-2xl border backdrop-blur-xl transition-all ${
+                    className={`p-5 rounded-2xl border backdrop-blur-xl transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-0.5 ${
                       ach.unlocked
-                        ? 'border-[#e5decb] bg-[#faf6ee] text-[#181614] shadow-sm'
+                        ? 'border-[#e5decb] bg-[#faf6ee] text-[#181614] shadow-sm hover:shadow-md'
                         : 'border-[#262320] bg-[#141312] text-[#a8a199] opacity-60'
                     }`}
                   >
@@ -1120,8 +1120,8 @@ export default function DashboardPage({
                         {ach.unlocked ? '✓ Unlocked' : '○ In Progress'}
                       </span>
                     </div>
-                    <h3 className="text-sm font-medium text-[#181614] mb-1">{ach.title}</h3>
-                    <p className="text-xs text-[#665e56] leading-relaxed font-normal">{ach.description}</p>
+                    <h3 className="text-sm font-medium text-[#181614] mb-1 [text-wrap:balance]">{ach.title}</h3>
+                    <p className="text-xs text-[#665e56] leading-relaxed font-normal [text-wrap:pretty]">{ach.description}</p>
                   </div>
                 ))}
               </div>
@@ -1139,17 +1139,17 @@ export default function DashboardPage({
               className="space-y-6 max-w-3xl"
             >
               <div className={`border-b pb-4 ${isLight ? 'border-[#ded4be]' : 'border-[#262320]'}`}>
-                <h1 className={`text-2xl font-normal ${isLight ? 'text-[#181614]' : 'text-[#faf6ee]'}`}>
+                <h1 className={`text-2xl font-normal tracking-tight [text-wrap:balance] ${isLight ? 'text-[#181614]' : 'text-[#faf6ee]'}`}>
                   Account &amp; Workspace Settings
                 </h1>
-                <p className={`text-xs mt-1 font-normal ${isLight ? 'text-[#6e665d]' : 'text-[#a8a199]'}`}>
+                <p className={`text-xs mt-1 font-normal [text-wrap:pretty] ${isLight ? 'text-[#6e665d]' : 'text-[#a8a199]'}`}>
                   Manage your platform credentials, learning preferences, and active session.
                 </p>
               </div>
 
               <div className="space-y-4">
                 {/* Visual Theme Appearance Card */}
-                <div className="p-6 rounded-3xl border border-[#e5decb] bg-[#faf6ee] text-[#181614] space-y-4 shadow-sm">
+                <div className="p-6 rounded-3xl border border-[#e5decb] bg-[#faf6ee] text-[#181614] space-y-4 shadow-sm hover:shadow-md transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 text-sm font-medium text-[#181614]">
                       {isLight ? <Sun className="h-4 w-4 text-[#c25e2e]" /> : <Moon className="h-4 w-4 text-[#c25e2e]" />}
@@ -1159,14 +1159,14 @@ export default function DashboardPage({
                       {theme} Theme Active
                     </span>
                   </div>
-                  <p className="text-xs text-[#665e56]">
+                  <p className="text-xs text-[#665e56] [text-wrap:pretty]">
                     Switch between Soft Black (Dark Theme) and Warm Ivory (Light Theme) with Burnt Orange accents.
                   </p>
                   <div className="flex items-center gap-3 pt-1">
                     <button
                       type="button"
                       onClick={() => setTheme('dark')}
-                      className={`px-4 py-2 rounded-xl text-xs font-medium border transition-all cursor-pointer flex items-center gap-2 ${
+                      className={`px-4 py-2 rounded-xl text-xs font-medium border transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer flex items-center gap-2 active:scale-95 focus-visible:ring-2 focus-visible:ring-[#c25e2e]/50 focus-visible:outline-none ${
                         !isLight
                           ? 'border-[#c25e2e] bg-[#0e0d0c] text-[#faf6ee] shadow-sm'
                           : 'border-[#ded3bf] bg-[#ede5d5] text-[#544d45] hover:border-[#c25e2e]/40'
@@ -1178,7 +1178,7 @@ export default function DashboardPage({
                     <button
                       type="button"
                       onClick={() => setTheme('light')}
-                      className={`px-4 py-2 rounded-xl text-xs font-medium border transition-all cursor-pointer flex items-center gap-2 ${
+                      className={`px-4 py-2 rounded-xl text-xs font-medium border transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer flex items-center gap-2 active:scale-95 focus-visible:ring-2 focus-visible:ring-[#c25e2e]/50 focus-visible:outline-none ${
                         isLight
                           ? 'border-[#c25e2e] bg-[#fbf8f2] text-[#181614] shadow-sm'
                           : 'border-[#ded3bf] bg-[#ede5d5] text-[#544d45] hover:border-[#c25e2e]/40'
@@ -1191,7 +1191,7 @@ export default function DashboardPage({
                 </div>
 
                 {/* Profile Information */}
-                <div className="p-6 rounded-3xl border border-[#e5decb] bg-[#faf6ee] text-[#181614] space-y-4 shadow-sm">
+                <div className="p-6 rounded-3xl border border-[#e5decb] bg-[#faf6ee] text-[#181614] space-y-4 shadow-sm hover:shadow-md transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]">
                   <div className="flex items-center gap-2 text-sm font-medium text-[#181614]">
                     <User className="h-4 w-4 text-[#c25e2e]" />
                     <span>User Identity</span>
@@ -1213,7 +1213,7 @@ export default function DashboardPage({
                 </div>
 
                 {/* Preferences */}
-                <div className="p-6 rounded-3xl border border-[#e5decb] bg-[#faf6ee] text-[#181614] space-y-4 shadow-sm">
+                <div className="p-6 rounded-3xl border border-[#e5decb] bg-[#faf6ee] text-[#181614] space-y-4 shadow-sm hover:shadow-md transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]">
                   <div className="flex items-center gap-2 text-sm font-medium text-[#181614]">
                     <Shield className="h-4 w-4 text-[#c25e2e]" />
                     <span>Learning Configuration</span>
@@ -1221,15 +1221,15 @@ export default function DashboardPage({
                   <div className="space-y-3 text-xs">
                     <div className="flex items-center justify-between p-3 rounded-xl bg-[#ede5d5] border border-[#ded3bf]">
                       <div>
-                        <div className="text-[#181614] font-medium">Active Engineering Focus</div>
-                        <div className="text-[#665e56] text-[11px]">
+                        <div className="text-[#181614] font-medium [text-wrap:pretty]">Active Engineering Focus</div>
+                        <div className="text-[#665e56] text-[11px] [text-wrap:pretty]">
                           {activeRoadmap?.title || 'Full-Stack AI Engineer'}
                         </div>
                       </div>
                       <button
                         type="button"
                         onClick={() => setActiveTab('roadmaps')}
-                        className="text-xs text-[#c25e2e] hover:text-[#ad4f22] font-medium cursor-pointer"
+                        className="text-xs text-[#c25e2e] hover:text-[#ad4f22] font-medium cursor-pointer active:scale-95 focus-visible:ring-2 focus-visible:ring-[#c25e2e]/50 focus-visible:outline-none rounded-md px-1 py-0.5 transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]"
                       >
                         Change Focus →
                       </button>
@@ -1237,8 +1237,8 @@ export default function DashboardPage({
 
                     <div className="flex items-center justify-between p-3 rounded-xl bg-[#ede5d5] border border-[#ded3bf]">
                       <div>
-                        <div className="text-[#181614] font-medium">AI Mentor Telemetry</div>
-                        <div className="text-[#665e56] text-[11px]">
+                        <div className="text-[#181614] font-medium [text-wrap:pretty]">AI Mentor Telemetry</div>
+                        <div className="text-[#665e56] text-[11px] [text-wrap:pretty]">
                           Real-time lesson context synchronization enabled
                         </div>
                       </div>
@@ -1252,7 +1252,7 @@ export default function DashboardPage({
                   <button
                     type="button"
                     onClick={logout}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-[#c25e2e]/40 text-[#c25e2e] hover:bg-[#c25e2e]/10 text-xs font-medium transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-[#c25e2e]/40 text-[#c25e2e] hover:bg-[#c25e2e]/10 text-xs font-medium transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer active:scale-95 focus-visible:ring-2 focus-visible:ring-[#c25e2e]/50 focus-visible:outline-none"
                   >
                     <LogOut className="h-3.5 w-3.5" />
                     <span>Sign Out of Technea</span>
