@@ -1014,7 +1014,9 @@ async def websocket_signaling_endpoint(
     peer_joined_msg = {
         "type": "peer-joined",
         "user_id": str(user_id),
+        "from_user_id": str(user_id),
         "user_name": user_info["full_name"],
+        "from_user_name": user_info["full_name"],
         "avatar_url": user_info.get("avatar_url"),
         "is_audio_active": True,
         "is_muted": False,
@@ -1079,7 +1081,9 @@ async def websocket_signaling_endpoint(
                             dispatch_msg = {
                                 "type": "peer-joined",
                                 "user_id": str(s.from_user_id),
+                                "from_user_id": str(s.from_user_id),
                                 "user_name": s.from_user_name,
+                                "from_user_name": s.from_user_name,
                                 "avatar_url": payload_data.get("avatar_url"),
                                 "is_audio_active": payload_data.get("is_audio_active", True),
                                 "is_muted": payload_data.get("is_muted", False),

@@ -76,6 +76,61 @@ import {
 } from '../../services/api'
 import { WebRTCManager } from '../../services/webrtc'
 
+/**
+ * Reliable Remote Audio Element with autoplay unblock fallback
+ */
+function RemoteAudioElement({ peerId, stream }) {
+  const audioRef = useRef(null)
+
+  useEffect(() => {
+    const el = audioRef.current
+    if (!el || !stream) return
+
+    if (el.srcObject !== stream) {
+      el.srcObject = stream
+    }
+
+    const tryPlay = () => {
+      el.play().catch((err) => {
+        console.warn(`[WebRTC Audio Autoplay Policy]: Autoplay deferred for peer ${peerId}:`, err)
+        const unblock = () => {
+          el.play().catch(() => {})
+          window.removeEventListener('click', unblock)
+          window.removeEventListener('keydown', unblock)
+        }
+        window.addEventListener('click', unblock, { once: true })
+        window.addEventListener('keydown', unblock, { once: true })
+      })
+    }
+
+    tryPlay()
+  }, [stream, peerId])
+
+  return <audio ref={audioRef} autoPlay playsInline />
+}
+
+/**
+ * Reliable Remote Video Tile with autoplay fallback
+ */
+function RemoteVideoElement({ peerId, stream, className }) {
+  const videoRef = useRef(null)
+
+  useEffect(() => {
+    const el = videoRef.current
+    if (!el || !stream) return
+
+    if (el.srcObject !== stream) {
+      el.srcObject = stream
+    }
+
+    el.play().catch((err) => {
+      console.warn(`[WebRTC Video Autoplay] for peer ${peerId}:`, err)
+    })
+  }, [stream, peerId])
+
+  return <video ref={videoRef} autoPlay playsInline className={className} />
+}
+
 export default function StudyRoomWorkspaceModal({
   room,
   user,
@@ -1832,21 +1887,7 @@ async def create_goal(payload: GoalRequest):
             aria-hidden="true"
           >
             {Object.entries(remoteStreams).map(([peerId, stream]) => (
-              <audio
-                key={peerId}
-                autoPlay
-                playsInline
-                ref={(el) => {
-                  if (el) {
-                    if (el.srcObject !== stream) {
-                      el.srcObject = stream
-                    }
-                    el.play().catch((err) => {
-                      console.warn(`[WebRTC Audio Autoplay Policy]: Autoplay deferred for peer ${peerId}:`, err)
-                    })
-                  }
-                }}
-              />
+              <RemoteAudioElement key={peerId} peerId={peerId} stream={stream} />
             ))}
           </div>
 
@@ -1892,19 +1933,9 @@ async def create_goal(payload: GoalRequest):
                       className="relative rounded-xl overflow-hidden w-44 h-28 bg-black/90 shrink-0 border border-emerald-500/30 shadow-xs"
                     >
                       {peerStream ? (
-                        <video
-                          autoPlay
-                          playsInline
-                          ref={(el) => {
-                            if (el) {
-                              if (el.srcObject !== peerStream) {
-                                el.srcObject = peerStream
-                              }
-                              el.play().catch((err) => {
-                                console.warn(`[WebRTC Video Autoplay] for peer ${p.user_id}:`, err)
-                              })
-                            }
-                          }}
+                        <RemoteVideoElement
+                          peerId={p.user_id}
+                          stream={peerStream}
                           className="w-full h-full object-cover"
                         />
                       ) : (

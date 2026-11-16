@@ -64,10 +64,9 @@ class Settings(BaseSettings):
         "stun:stun.l.google.com:19302",
         "stun:stun1.l.google.com:19302",
         "stun:stun2.l.google.com:19302",
-        "stun:stun3.l.google.com:3478",
-        "stun:stun4.l.google.com:4347",
-        "stun:relay.metered.ca:80",
         "stun:stun.cloudflare.com:3478",
+        "stun:stun.services.mozilla.com:3478",
+        "stun:global.stun.twilio.com:3478",
     ]
     TURN_SERVER_URL: str | None = None
     TURN_SERVER_USERNAME: str | None = None

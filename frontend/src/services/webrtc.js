@@ -23,10 +23,9 @@ const DEFAULT_ICE_SERVERS = [
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
   { urls: 'stun:stun2.l.google.com:19302' },
-  { urls: 'stun:stun3.l.google.com:3478' },
-  { urls: 'stun:stun4.l.google.com:4347' },
-  { urls: 'stun:relay.metered.ca:80' },
   { urls: 'stun:stun.cloudflare.com:3478' },
+  { urls: 'stun:stun.services.mozilla.com:3478' },
+  { urls: 'stun:global.stun.twilio.com:3478' },
 ]
 
 export class WebRTCManager {
@@ -329,10 +328,11 @@ export class WebRTCManager {
       }
 
       case 'peer-joined': {
-        if (from_user_id && from_user_id !== this.user?.id) {
-          this.activePeers.set(from_user_id, {
-            user_id: from_user_id,
-            user_name: data.user_name || 'Learner',
+        const peerId = data.user_id || data.from_user_id || from_user_id
+        if (peerId && peerId !== this.user?.id) {
+          this.activePeers.set(peerId, {
+            user_id: peerId,
+            user_name: data.user_name || data.from_user_name || 'Learner',
             avatar_url: data.avatar_url,
             is_audio_active: data.is_audio_active ?? true,
             is_muted: data.is_muted ?? false,
@@ -345,36 +345,55 @@ export class WebRTCManager {
       }
 
       case 'offer': {
-        if (from_user_id && from_user_id !== this.user?.id) {
-          await this.handleOffer(from_user_id, data.sdp)
+        const peerId = data.from_user_id || data.user_id || from_user_id
+        if (peerId && peerId !== this.user?.id) {
+          if (!this.activePeers.has(peerId)) {
+            this.activePeers.set(peerId, {
+              user_id: peerId,
+              user_name: data.from_user_name || data.user_name || 'Learner',
+              avatar_url: data.avatar_url,
+              is_audio_active: true,
+              is_muted: false,
+              is_video_active: Boolean(data.sdp?.sdp?.includes('m=video') && !data.sdp?.sdp?.includes('a=recvonly')),
+              is_screen_sharing: false,
+            })
+            this.emitActivePeers()
+          }
+          await this.handleOffer(peerId, data.sdp)
         }
         break
       }
 
       case 'answer': {
-        if (from_user_id && from_user_id !== this.user?.id) {
-          await this.handleAnswer(from_user_id, data.sdp)
+        const peerId = data.from_user_id || data.user_id || from_user_id
+        if (peerId && peerId !== this.user?.id) {
+          await this.handleAnswer(peerId, data.sdp)
         }
         break
       }
 
       case 'ice-candidate': {
-        if (from_user_id && from_user_id !== this.user?.id && data.candidate) {
-          await this.handleIceCandidate(from_user_id, data.candidate)
+        const peerId = data.from_user_id || data.user_id || from_user_id
+        if (peerId && peerId !== this.user?.id && data.candidate) {
+          await this.handleIceCandidate(peerId, data.candidate)
         }
         break
       }
 
       case 'media-status': {
-        const peerId = data.user_id || from_user_id
-        if (peerId && this.activePeers.has(peerId)) {
-          const current = this.activePeers.get(peerId)
+        const peerId = data.user_id || data.from_user_id || from_user_id
+        if (peerId) {
+          const current = this.activePeers.get(peerId) || {
+            user_id: peerId,
+            user_name: data.user_name || 'Learner',
+            avatar_url: data.avatar_url,
+          }
           this.activePeers.set(peerId, {
             ...current,
-            is_audio_active: data.is_audio_active ?? current.is_audio_active,
-            is_muted: data.is_muted ?? current.is_muted,
-            is_video_active: data.is_video_active ?? current.is_video_active,
-            is_screen_sharing: data.is_screen_sharing ?? current.is_screen_sharing,
+            is_audio_active: data.is_audio_active ?? current.is_audio_active ?? true,
+            is_muted: data.is_muted ?? current.is_muted ?? false,
+            is_video_active: data.is_video_active ?? current.is_video_active ?? false,
+            is_screen_sharing: data.is_screen_sharing ?? current.is_screen_sharing ?? false,
           })
           this.emitActivePeers()
         }
@@ -382,7 +401,7 @@ export class WebRTCManager {
       }
 
       case 'peer-left': {
-        const peerId = data.user_id || from_user_id
+        const peerId = data.user_id || data.from_user_id || from_user_id
         if (peerId) {
           this.closePeerConnection(peerId)
           this.activePeers.delete(peerId)
@@ -503,19 +522,21 @@ export class WebRTCManager {
       // Track unmuted event (media packets actively arriving)
       event.track.onunmute = () => {
         console.log(`[WebRTC Track Unmuted] Media packets actively flowing for ${event.track.kind} track from ${remoteUserId}!`)
-        const refreshed = new MediaStream(stream.getTracks())
-        this.remoteStreams.set(remoteUserId, refreshed)
-        this.onRemoteStreamChange?.(remoteUserId, refreshed)
+        this.onRemoteStreamChange?.(remoteUserId, stream)
       }
 
-      // Always pass a new MediaStream reference so React components re-bind srcObject
-      const freshStream = new MediaStream(stream.getTracks())
-      this.remoteStreams.set(remoteUserId, freshStream)
-      this.onRemoteStreamChange?.(remoteUserId, freshStream)
+      this.onRemoteStreamChange?.(remoteUserId, stream)
     }
 
     this.peerConnections.set(remoteUserId, pc)
     return pc
+  }
+
+  /**
+   * Deterministic tie-breaker for polite peer negotiation
+   */
+  isPolite(remoteUserId) {
+    return String(this.user?.id || '') < String(remoteUserId || '')
   }
 
   /**
@@ -558,6 +579,18 @@ export class WebRTCManager {
       )
 
       const pc = this.getOrCreatePeerConnection(fromUserId)
+
+      // Handle glare (simultaneous offers)
+      if (pc.signalingState !== 'stable') {
+        if (this.isPolite(fromUserId)) {
+          console.warn(`[WebRTC Glare] Collision with ${fromUserId}. Polite peer rolling back local offer.`)
+          await pc.setLocalDescription({ type: 'rollback' })
+        } else {
+          console.warn(`[WebRTC Glare] Collision with ${fromUserId}. Impolite peer ignoring incoming offer.`)
+          return
+        }
+      }
+
       await pc.setRemoteDescription(new RTCSessionDescription(sdp))
 
       // Flush any queued ICE candidates for this peer
@@ -709,9 +742,9 @@ export class WebRTCManager {
             console.log(`[WebRTC] Replaced video track on existing transceiver for peer ${peerId}`)
           } else {
             pc.addTrack(newTrack, this.localStream)
-            console.log(`[WebRTC] Added video track to peer ${peerId}, initiating renegotiation offer...`)
-            await this.initiatePeerConnection(peerId)
+            console.log(`[WebRTC] Added video track to peer ${peerId}`)
           }
+          await this.initiatePeerConnection(peerId)
         }
         this.isVideoActive = true
       } else {
@@ -735,6 +768,7 @@ export class WebRTCManager {
             videoTransceiver.direction = 'recvonly'
             console.log(`[WebRTC] Removed video track from transceiver for peer ${peerId}`)
           }
+          await this.initiatePeerConnection(peerId)
         }
         this.isVideoActive = false
       }
@@ -787,8 +821,8 @@ export class WebRTCManager {
             await sender.replaceTrack(screenTrack)
           } else {
             pc.addTrack(screenTrack, stream)
-            this.initiatePeerConnection(peerId)
           }
+          await this.initiatePeerConnection(peerId)
         }
 
         this.isScreenSharing = true
@@ -800,11 +834,12 @@ export class WebRTCManager {
 
         // Revert back to local camera track (or null if camera is off)
         const fallbackTrack = this.localVideoTrack || null
-        for (const [, pc] of this.peerConnections.entries()) {
+        for (const [peerId, pc] of this.peerConnections.entries()) {
           const sender = pc.getSenders().find((s) => s.track && s.track.kind === 'video')
           if (sender) {
             await sender.replaceTrack(fallbackTrack)
           }
+          await this.initiatePeerConnection(peerId)
         }
 
         this.isScreenSharing = false
