@@ -260,16 +260,16 @@ export default function DashboardPage({
       data-lenis-prevent="true"
       className={`relative w-full h-screen min-h-screen flex flex-col lg:flex-row transition-colors duration-300 overflow-hidden ${
         isLight
-          ? 'bg-[#f6f1e7] text-[#181614]'
-          : 'bg-[#0e0d0c] text-[#faf6ee]'
+          ? 'bg-[#f4efe5] text-[#181614]'
+          : 'bg-black text-[#e8e3db]'
       }`}
     >
-      {/* Subtle background warm burnt orange nebulae */}
-      <div className={`pointer-events-none absolute -top-40 -left-40 h-96 w-96 rounded-full blur-[140px] transition-opacity duration-300 ${
-        isLight ? 'bg-[#c25e2e]/5' : 'bg-[#c25e2e]/8'
+      {/* Background glows */}
+      <div className={`pointer-events-none absolute -top-40 -left-40 h-96 w-96 rounded-full blur-[160px] transition-opacity duration-300 ${
+        isLight ? 'bg-[#c25e2e]/6' : 'bg-[#c25e2e]/10'
       }`} />
-      <div className={`pointer-events-none absolute -bottom-40 -right-40 h-96 w-96 rounded-full blur-[140px] transition-opacity duration-300 ${
-        isLight ? 'bg-[#d97b48]/4' : 'bg-[#d97b48]/6'
+      <div className={`pointer-events-none absolute -bottom-40 -right-40 h-96 w-96 rounded-full blur-[160px] transition-opacity duration-300 ${
+        isLight ? 'bg-[#d97b48]/4' : 'bg-[#c25e2e]/6'
       }`} />
 
       {/* ──────────────── 1. DESKTOP NAVIGATION SIDEBAR ──────────────── */}
@@ -292,8 +292,8 @@ export default function DashboardPage({
         data-lenis-prevent="true"
         className={`lg:hidden shrink-0 flex items-center justify-between px-4 py-3 border-b z-30 transition-colors duration-300 ${
           isLight
-            ? 'bg-[#f0e9dc] border-[#ded4be]'
-            : 'bg-[#141312] border-[#262320]'
+            ? 'bg-[#f4efe5] border-[#e0d8cc]'
+            : 'bg-black border-[#1c1c1c]'
         }`}
       >
         <div className="flex items-center gap-2.5">
@@ -301,7 +301,7 @@ export default function DashboardPage({
             as="div"
             size={26}
             textSizeClassName="text-[17px]"
-            textClassName={isLight ? 'text-[#181614]' : 'text-[#faf6ee]'}
+            textClassName={isLight ? 'text-[#181614]' : 'text-white'}
           />
 
           {/* Minimal premium theme toggle button in mobile top-left header */}
@@ -312,8 +312,8 @@ export default function DashboardPage({
             title={`Switch to ${isLight ? 'Dark' : 'Light'} theme`}
             className={`p-1.5 rounded-full border transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer flex items-center justify-center active:scale-95 focus-visible:ring-2 focus-visible:ring-[#c25e2e]/50 focus-visible:outline-none ${
               isLight
-                ? 'border-[#ded4be] bg-[#faf6ee] text-[#c25e2e] hover:bg-[#ffffff]'
-                : 'border-[#262320] bg-[#1a1816] text-[#e87a48] hover:bg-[#262320]'
+                ? 'border-[#e0d8cc] bg-white text-[#c25e2e] hover:bg-[#f4efe5]'
+                : 'border-[#2a2a2a] bg-[#111] text-[#f0875a] hover:bg-[#1a1a1a]'
             }`}
           >
             {isLight ? (
@@ -336,10 +336,12 @@ export default function DashboardPage({
               onClick={() => setActiveTab(tab)}
               className={`px-2.5 py-1 rounded-lg text-xs capitalize transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer whitespace-nowrap active:scale-95 focus-visible:ring-2 focus-visible:ring-[#c25e2e]/50 focus-visible:outline-none ${
                 activeTab === tab
-                  ? 'bg-[#c25e2e]/15 text-[#e87a48] font-medium border border-[#c25e2e]/30'
+                  ? isLight
+                    ? 'bg-[#c25e2e]/10 text-[#c25e2e] font-semibold'
+                    : 'bg-[#c25e2e]/15 text-[#f0875a] font-semibold'
                   : isLight
                   ? 'text-[#6e665d] hover:text-[#181614]'
-                  : 'text-[#a8a199] hover:text-[#faf6ee]'
+                  : 'text-[#555] hover:text-[#e8e3db]'
               }`}
             >
               {tab === 'rooms' ? 'Study Rooms' : tab}
@@ -355,7 +357,7 @@ export default function DashboardPage({
         data-lenis-prevent="true"
         tabIndex={0}
         aria-label="Dashboard Content Area"
-        className="flex-1 h-full overflow-y-auto overflow-x-hidden overscroll-y-contain [touch-action:pan-y] [-webkit-overflow-scrolling:touch] outline-none focus:outline-none p-4 sm:p-6 lg:p-10 space-y-6 z-10 relative"
+        className="flex-1 h-full overflow-y-auto overflow-x-hidden overscroll-y-contain [touch-action:pan-y] [-webkit-overflow-scrolling:touch] outline-none focus:outline-none p-5 sm:p-7 lg:p-10 space-y-8 z-10 relative"
       >
         <AnimatePresence mode="wait">
           {/* ══════════════ TAB 1: OVERVIEW (SOURCE OF TRUTH DECK) ══════════════ */}
@@ -388,18 +390,18 @@ export default function DashboardPage({
             >
               {/* Header */}
               <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-5 ${
-                isLight ? 'border-[#ded4be]' : 'border-[#262320]'
+                isLight ? 'border-[#e0d8cc]' : 'border-[#1c1c1c]'
               }`}>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h1 className={`text-2xl font-normal tracking-tight [text-wrap:balance] ${isLight ? 'text-[#181614]' : 'text-[#faf6ee]'}`}>
+                    <h1 className={`text-2xl font-light tracking-tight [text-wrap:balance] ${isLight ? 'text-[#181614]' : 'text-white'}`}>
                       Roadmap Discovery
                     </h1>
-                    <span className="rounded-full border border-[#c25e2e]/30 bg-[#c25e2e]/10 px-2.5 py-0.5 text-xs text-[#e87a48]">
+                    <span className="rounded-full border border-[#c25e2e]/30 bg-[#c25e2e]/10 px-2.5 py-0.5 text-xs text-[#f0875a]">
                       {allRoadmaps?.length || 1} Saved
                     </span>
                   </div>
-                  <p className={`text-xs mt-1 font-normal [text-wrap:pretty] ${isLight ? 'text-[#6e665d]' : 'text-[#a8a199]'}`}>
+                  <p className={`text-xs mt-1 font-normal [text-wrap:pretty] ${isLight ? 'text-[#6e665d]' : 'text-[#555]'}`}>
                     Search 330+ structured engineering roadmaps. The active roadmap guides your daily missions, milestone projects, and AI mentoring.
                   </p>
                 </div>
@@ -408,7 +410,7 @@ export default function DashboardPage({
                   <button
                     type="button"
                     onClick={() => onOpenRoadmapBuilder()}
-                    className="inline-flex items-center gap-2 rounded-full bg-[#c25e2e] text-[#faf6ee] font-medium px-5 py-2 text-xs transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer shadow-md hover:bg-[#ad4f22] hover:shadow-lg active:scale-[0.98] active:translate-y-[0.5px] focus-visible:ring-2 focus-visible:ring-[#c25e2e]/60 focus-visible:ring-offset-2 focus-visible:outline-none"
+                    className="inline-flex items-center gap-2 rounded-full bg-[#c25e2e] text-white font-semibold px-5 py-2 text-xs transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer shadow-lg hover:bg-[#d96a35] hover:shadow-xl active:scale-[0.98] active:translate-y-[0.5px] focus-visible:ring-2 focus-visible:ring-[#c25e2e]/60 focus-visible:ring-offset-2 focus-visible:outline-none"
                   >
                     <Sparkles className="h-3.5 w-3.5" />
                     <span>Build Custom Roadmap</span>
@@ -417,11 +419,11 @@ export default function DashboardPage({
                   <button
                     type="button"
                     onClick={onOpenExplorer}
-                    className={`inline-flex items-center gap-2 rounded-full border hover:border-[#c25e2e]/40 px-4 py-2 text-xs transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer active:scale-[0.98] active:translate-y-[0.5px] focus-visible:ring-2 focus-visible:ring-[#c25e2e]/60 focus-visible:ring-offset-2 focus-visible:outline-none ${
-                      isLight ? 'border-[#ded4be] bg-[#ffffff] text-[#181614] hover:shadow-xs' : 'border-[#262320] bg-[#141312] text-[#faf6ee] hover:shadow-xs'
+                    className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer active:scale-[0.98] active:translate-y-[0.5px] focus-visible:ring-2 focus-visible:ring-[#c25e2e]/60 focus-visible:ring-offset-2 focus-visible:outline-none ${
+                      isLight ? 'border-[#e0d8cc] bg-white text-[#181614] hover:border-[#c25e2e]/40' : 'border-[#1c1c1c] bg-[#0a0a0a] text-[#e8e3db] hover:border-[#c25e2e]/30'
                     }`}
                   >
-                    <Compass className="h-3.5 w-3.5 text-[#e87a48]" />
+                    <Compass className="h-3.5 w-3.5 text-[#f0875a]" />
                     <span>Catalog Explorer</span>
                   </button>
                 </div>
@@ -430,8 +432,8 @@ export default function DashboardPage({
               {/* ──────────────── PROMINENT SEARCH & FILTER BAR ──────────────── */}
               <div className={`rounded-3xl border p-5 space-y-4 backdrop-blur-xl transition-colors duration-300 ${
                 isLight
-                  ? 'border-[#ded4be] bg-[#ffffff]/90 shadow-sm'
-                  : 'border-[#262320] bg-[#141312]/80'
+                  ? 'border-[#e0d8cc] bg-white/95 shadow-sm'
+                  : 'border-[#1c1c1c] bg-[#060606]/95'
               }`}>
                 <div ref={searchContainerRef} className="relative">
                   <Search className="absolute left-4 top-3.5 h-4 w-4 text-[#e87a48]" />
@@ -462,8 +464,8 @@ export default function DashboardPage({
                     }}
                     className={`w-full pl-11 pr-24 py-3 rounded-2xl border text-sm outline-none focus:border-[#c25e2e] focus-visible:ring-2 focus-visible:ring-[#c25e2e]/40 focus-visible:outline-none transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] ${
                       isLight
-                        ? 'bg-[#fbf8f2] border-[#ded4be] text-[#181614] placeholder-[#8c8278]'
-                        : 'bg-[#0e0d0c] border-[#262320] text-[#faf6ee] placeholder-[#8c8278]'
+                        ? 'bg-[#f8f4ee] border-[#e0d8cc] text-[#181614] placeholder-[#9a9189]'
+                        : 'bg-black border-[#1c1c1c] text-[#e8e3db] placeholder-[#444]'
                     }`}
                   />
                   {roadmapSearch && (
@@ -700,10 +702,10 @@ export default function DashboardPage({
               {/* ──────────────── YOUR SAVED ROADMAPS ──────────────── */}
               <div className="space-y-4">
                 <div className={`flex items-center justify-between text-xs ${
-                  isLight ? 'text-[#6e665d]' : 'text-[#a8a199]'
+                  isLight ? 'text-[#6e665d]' : 'text-[#555]'
                 }`}>
-                  <span className={`font-medium [text-wrap:balance] ${isLight ? 'text-[#181614]' : 'text-[#faf6ee]'}`}>Your Saved Roadmaps</span>
-                  <span className="[text-wrap:pretty]">Exactly one roadmap is your active focus</span>
+                  <span className={`font-semibold uppercase tracking-widest [text-wrap:balance] ${isLight ? 'text-[#181614]' : 'text-[#555]'}`}>Your Saved Roadmaps</span>
+                  <span className="[text-wrap:pretty]">One roadmap is your active focus</span>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -718,37 +720,43 @@ export default function DashboardPage({
                         key={rm.id}
                         className={`relative rounded-3xl border p-6 backdrop-blur-xl transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] flex flex-col justify-between hover:-translate-y-0.5 ${
                           isFocus
-                            ? 'border-[#c25e2e] bg-[#faf6ee] text-[#181614] shadow-xl ring-1 ring-[#c25e2e]/30'
-                            : 'border-[#e5decb] bg-[#faf6ee] text-[#181614] hover:shadow-lg'
+                            ? isLight
+                              ? 'border-[#c25e2e] bg-white text-[#181614] shadow-xl ring-1 ring-[#c25e2e]/30'
+                              : 'border-[#c25e2e] bg-[#0a0a0a] text-[#e8e3db] shadow-[0_0_30px_rgba(194,94,46,0.12)] ring-1 ring-[#c25e2e]/20'
+                            : isLight
+                            ? 'border-[#e0d8cc] bg-white text-[#181614] hover:shadow-lg'
+                            : 'border-[#1c1c1c] bg-[#060606] text-[#e8e3db] hover:border-[#2a2a2a] hover:shadow-[0_4px_24px_rgba(0,0,0,0.6)]'
                         }`}
                       >
                         <div className="space-y-3">
                           <div className="flex items-center justify-between">
-                            <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-[#ede5d5] border border-[#ded3bf] text-[#665e56]">
+                            <span className={`text-[11px] px-2.5 py-0.5 rounded-full border ${
+                              isLight ? 'bg-[#f4efe5] border-[#e0d8cc] text-[#665e56]' : 'bg-[#111] border-[#1c1c1c] text-[#666]'
+                            }`}>
                               {rm.target_role || 'Engineering Track'}
                             </span>
                             {isFocus ? (
-                              <span className="inline-flex items-center gap-1.5 text-xs text-[#c25e2e] bg-[#c25e2e]/15 px-2.5 py-0.5 rounded-full font-medium">
-                                <span className="h-1.5 w-1.5 rounded-full bg-[#c25e2e] animate-ping" />
-                                Main Active Focus
+                              <span className="inline-flex items-center gap-1.5 text-xs text-[#f0875a] bg-[#c25e2e]/12 px-2.5 py-0.5 rounded-full font-semibold">
+                                <span className="h-1.5 w-1.5 rounded-full bg-[#f0875a] animate-ping" />
+                                Active Focus
                               </span>
                             ) : (
-                              <span className="text-xs text-[#8c8278]">
+                              <span className={`text-xs ${isLight ? 'text-[#9a9189]' : 'text-[#444]'}`}>
                                 {rm.estimated_duration || 'Self-paced'}
                               </span>
                             )}
                           </div>
 
-                          <h3 className="text-base font-medium text-[#181614] tracking-tight [text-wrap:balance]">
+                          <h3 className={`text-base font-semibold tracking-tight [text-wrap:balance] ${isLight ? 'text-[#181614]' : 'text-white'}`}>
                             {rm.title}
                           </h3>
-                          <p className="text-xs text-[#665e56] line-clamp-2 leading-relaxed font-normal [text-wrap:pretty]">
+                          <p className={`text-xs line-clamp-2 leading-relaxed font-normal [text-wrap:pretty] ${isLight ? 'text-[#665e56]' : 'text-[#555]'}`}>
                             {rm.goal || rm.description || 'Targeted engineering curriculum.'}
                           </p>
                         </div>
 
-                        <div className="mt-6 pt-4 border-t border-[#e5decb] flex items-center justify-between">
-                          <div className="text-xs text-[#665e56]">
+                        <div className={`mt-6 pt-4 border-t flex items-center justify-between ${isLight ? 'border-[#e0d8cc]' : 'border-[#111]'}`}>
+                          <div className={`text-xs ${isLight ? 'text-[#665e56]' : 'text-[#444]'}`}>
                             <span>{rm.progress_percent || 0}% complete</span>
                           </div>
 
@@ -756,19 +764,27 @@ export default function DashboardPage({
                             <button
                               type="button"
                               onClick={() => setSelectedRoadmapForDetail(rm)}
-                              className="px-3 py-1.5 rounded-full border border-[#ded3bf] hover:border-[#c25e2e] text-xs text-[#181614] transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer flex items-center gap-1 active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-[#c25e2e]/50 focus-visible:outline-none"
+                              className={`px-3 py-1.5 rounded-full border text-xs transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer flex items-center gap-1 active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-[#c25e2e]/50 focus-visible:outline-none ${
+                                isLight
+                                  ? 'border-[#e0d8cc] text-[#181614] hover:border-[#c25e2e]'
+                                  : 'border-[#1c1c1c] text-[#aaa] hover:border-[#c25e2e]/40 hover:text-[#f0875a]'
+                              }`}
                             >
-                              <GitBranch className="h-3 w-3 text-[#c25e2e]" />
-                              <span>Inspect Skill Tree</span>
+                              <GitBranch className="h-3 w-3 text-[#f0875a]" />
+                              <span>Inspect</span>
                             </button>
 
                             {!isFocus && (
                               <button
                                 type="button"
                                 onClick={() => switchActiveRoadmap(rm)}
-                                className="px-3 py-1.5 rounded-full bg-[#ded3bf] hover:bg-[#c25e2e] hover:text-[#faf6ee] text-xs text-[#181614] transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-[#c25e2e]/50 focus-visible:outline-none"
+                                className={`px-3 py-1.5 rounded-full text-xs transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-[#c25e2e]/50 focus-visible:outline-none ${
+                                  isLight
+                                    ? 'bg-[#e8e0d4] text-[#181614] hover:bg-[#c25e2e] hover:text-white'
+                                    : 'bg-[#111] text-[#888] hover:bg-[#c25e2e] hover:text-white border border-[#1c1c1c]'
+                                }`}
                               >
-                                Set as Active
+                                Set Active
                               </button>
                             )}
 
@@ -776,7 +792,7 @@ export default function DashboardPage({
                               <button
                                 type="button"
                                 onClick={() => setActiveTab('overview')}
-                                className="px-3 py-1.5 rounded-full bg-[#c25e2e] text-[#faf6ee] font-medium text-xs hover:bg-[#ad4f22] transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer flex items-center gap-1 shadow-sm active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-[#c25e2e]/60 focus-visible:ring-offset-2 focus-visible:outline-none"
+                                className="px-3 py-1.5 rounded-full bg-[#c25e2e] text-white font-semibold text-xs hover:bg-[#d96a35] transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer flex items-center gap-1 shadow-lg active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-[#c25e2e]/60 focus-visible:ring-offset-2 focus-visible:outline-none"
                               >
                                 <span>Workspace</span>
                                 <ArrowRight className="h-3 w-3" />
@@ -811,10 +827,12 @@ export default function DashboardPage({
                 </div>
 
                 {filteredCatalog.length === 0 ? (
-                  <div className="p-12 text-center rounded-3xl border border-[#ded3bf] bg-[#faf6ee] text-[#181614] space-y-3">
-                    <Compass className="h-8 w-8 text-[#c25e2e] mx-auto opacity-80" />
-                    <h4 className="text-base font-medium">No roadmaps matched your search</h4>
-                    <p className="text-xs text-[#665e56] max-w-sm mx-auto">
+                  <div className={`p-12 text-center rounded-3xl border space-y-3 ${
+                    isLight ? 'border-[#e0d8cc] bg-white text-[#181614]' : 'border-[#1c1c1c] bg-[#060606] text-[#e8e3db]'
+                  }`}>
+                    <Compass className="h-8 w-8 text-[#f0875a] mx-auto opacity-80" />
+                    <h4 className={`text-base font-semibold ${isLight ? 'text-[#181614]' : 'text-white'}`}>No roadmaps matched your search</h4>
+                    <p className={`text-xs max-w-sm mx-auto ${isLight ? 'text-[#665e56]' : 'text-[#888]'}`}>
                       Try adjusting your keywords or clearing the category filter to explore all available engineering tracks.
                     </p>
                     <button
@@ -824,7 +842,7 @@ export default function DashboardPage({
                         setFilterCategory('all')
                         setFilterDifficulty('all')
                       }}
-                      className="px-4 py-2 rounded-full bg-[#c25e2e] text-[#faf6ee] text-xs font-medium hover:bg-[#ad4f22] transition-colors cursor-pointer"
+                      className="px-4 py-2 rounded-full bg-[#c25e2e] text-white text-xs font-semibold hover:bg-[#d96a35] transition-colors cursor-pointer"
                     >
                       Reset Filters
                     </button>
@@ -841,21 +859,25 @@ export default function DashboardPage({
                         <div
                           key={catRm.id}
                           onClick={() => setSelectedRoadmapForDetail(catRm)}
-                          className="group p-5 rounded-3xl border border-[#e5decb] bg-[#faf6ee] text-[#181614] hover:shadow-xl hover:-translate-y-0.5 active:scale-[0.99] transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] flex flex-col justify-between cursor-pointer relative"
+                          className={`group p-5 rounded-3xl border hover:shadow-xl hover:-translate-y-0.5 active:scale-[0.99] transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] flex flex-col justify-between cursor-pointer relative ${
+                            isLight
+                              ? 'border-[#e0d8cc] bg-white text-[#181614]'
+                              : 'border-[#1c1c1c] bg-[#060606] text-[#e8e3db] hover:border-[#2a2a2a]'
+                          }`}
                         >
                           <div>
-                            <div className="flex items-center justify-between text-xs text-[#8c8278] mb-2">
-                              <span className="px-2 py-0.5 rounded-md bg-[#ede5d5] text-[#665e56] font-medium">
+                            <div className={`flex items-center justify-between text-xs mb-2 ${isLight ? 'text-[#9a9189]' : 'text-[#555]'}`}>
+                              <span className={`px-2 py-0.5 rounded-md font-medium ${isLight ? 'bg-[#f4efe5] text-[#665e56]' : 'bg-[#111] text-[#666]'}`}>
                                 {catRm.category || 'Engineering'}
                               </span>
-                              <span className="font-medium text-[#c25e2e]">{catRm.difficulty || 'Intermediate'}</span>
+                              <span className="font-semibold text-[#f0875a]">{catRm.difficulty || 'Intermediate'}</span>
                             </div>
 
-                            <h3 className="text-base font-medium text-[#181614] mb-1.5 group-hover:text-[#c25e2e] transition-colors duration-200 tracking-tight [text-wrap:balance]">
+                            <h3 className={`text-base font-semibold mb-1.5 group-hover:text-[#f0875a] transition-colors duration-200 tracking-tight [text-wrap:balance] ${isLight ? 'text-[#181614]' : 'text-white'}`}>
                               {catRm.title}
                             </h3>
 
-                            <p className="text-xs text-[#665e56] line-clamp-3 leading-relaxed mb-3 [text-wrap:pretty]">
+                            <p className={`text-xs line-clamp-3 leading-relaxed mb-3 [text-wrap:pretty] ${isLight ? 'text-[#665e56]' : 'text-[#555]'}`}>
                               {catRm.description}
                             </p>
 
@@ -864,7 +886,7 @@ export default function DashboardPage({
                               {((catRm.skills_covered || ['Foundations', 'Patterns', 'Labs']).slice(0, 3)).map((sk) => (
                                 <span
                                   key={sk}
-                                  className="text-[10px] px-2 py-0.5 rounded-full bg-[#f3ecdf] text-[#786f66]"
+                                  className={`text-[10px] px-2 py-0.5 rounded-full ${isLight ? 'bg-[#f4efe5] text-[#786f66]' : 'bg-[#111] text-[#555]'}`}
                                 >
                                   {sk}
                                 </span>
@@ -872,19 +894,19 @@ export default function DashboardPage({
                             </div>
                           </div>
 
-                          <div className="mt-4 pt-3 border-t border-[#ded3bf] flex items-center justify-between">
-                            <span className="text-xs text-[#8c8278]">
+                          <div className={`mt-4 pt-3 border-t flex items-center justify-between ${isLight ? 'border-[#e0d8cc]' : 'border-[#111]'}`}>
+                            <span className={`text-xs ${isLight ? 'text-[#9a9189]' : 'text-[#444]'}`}>
                               {catRm.duration || '6 Weeks'}
                             </span>
 
                             <div className="flex items-center gap-2">
                               {isAlreadyActive ? (
-                                <span className="inline-flex items-center gap-1 text-xs text-[#c25e2e] font-medium">
+                                <span className="inline-flex items-center gap-1 text-xs text-[#f0875a] font-semibold">
                                   <CheckCircle2 className="h-3.5 w-3.5" />
                                   Active
                                 </span>
                               ) : (
-                                <span className="text-xs text-[#c25e2e] group-hover:text-[#ad4f22] font-medium flex items-center gap-1 transition-colors duration-200">
+                                <span className="text-xs text-[#f0875a] group-hover:text-[#d96a35] font-semibold flex items-center gap-1 transition-colors duration-200">
                                   <span>Inspect Tree</span>
                                   <ArrowRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform duration-200" />
                                 </span>
@@ -910,11 +932,11 @@ export default function DashboardPage({
               transition={{ duration: 0.15 }}
               className="space-y-6"
             >
-              <div className={`border-b pb-4 ${isLight ? 'border-[#ded4be]' : 'border-[#262320]'}`}>
-                <h1 className={`text-2xl font-normal tracking-tight [text-wrap:balance] ${isLight ? 'text-[#181614]' : 'text-[#faf6ee]'}`}>
+              <div className={`border-b pb-4 ${isLight ? 'border-[#e0d8cc]' : 'border-[#1c1c1c]'}`}>
+                <h1 className={`text-2xl font-light tracking-tight [text-wrap:balance] ${isLight ? 'text-[#181614]' : 'text-white'}`}>
                   Video &amp; Interactive Courses
                 </h1>
-                <p className={`text-xs mt-1 font-normal [text-wrap:pretty] ${isLight ? 'text-[#6e665d]' : 'text-[#a8a199]'}`}>
+                <p className={`text-xs mt-1 font-normal [text-wrap:pretty] ${isLight ? 'text-[#6e665d]' : 'text-[#555]'}`}>
                   Step-by-step curriculum units mapped to your active roadmap milestones.
                 </p>
               </div>
@@ -930,15 +952,19 @@ export default function DashboardPage({
                 ].map((course) => (
                   <div
                     key={course.id}
-                    className="p-5 rounded-2xl border border-[#e5decb] bg-[#faf6ee] text-[#181614] hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] flex flex-col justify-between"
+                    className={`p-5 rounded-2xl border hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] flex flex-col justify-between ${
+                      isLight
+                        ? 'border-[#e0d8cc] bg-white text-[#181614]'
+                        : 'border-[#1c1c1c] bg-[#060606] text-[#e8e3db] hover:border-[#2a2a2a]'
+                    }`}
                   >
                     <div>
-                      <div className="flex items-center justify-between text-xs text-[#8c8278] mb-2">
+                      <div className={`flex items-center justify-between text-xs mb-2 ${isLight ? 'text-[#9a9189]' : 'text-[#555]'}`}>
                         <span>{course.level}</span>
                         <span>{course.duration}</span>
                       </div>
-                      <h3 className="text-sm font-medium text-[#181614] mb-1.5 [text-wrap:balance]">{course.title}</h3>
-                      <p className="text-xs text-[#665e56] font-normal [text-wrap:pretty]">{course.lessons} video lessons</p>
+                      <h3 className={`text-sm font-semibold mb-1.5 [text-wrap:balance] ${isLight ? 'text-[#181614]' : 'text-white'}`}>{course.title}</h3>
+                      <p className={`text-xs font-normal [text-wrap:pretty] ${isLight ? 'text-[#6e665d]' : 'text-[#555]'}`}>{course.lessons} video lessons</p>
                     </div>
 
                     <button
@@ -1011,17 +1037,21 @@ export default function DashboardPage({
                 ].map((proj) => (
                   <div
                     key={proj.id}
-                    className="p-6 rounded-3xl border border-[#e5decb] bg-[#faf6ee] text-[#181614] backdrop-blur-xl flex flex-col justify-between shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]"
+                    className={`p-6 rounded-3xl border backdrop-blur-xl flex flex-col justify-between shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                      isLight
+                        ? 'border-[#e0d8cc] bg-white text-[#181614]'
+                        : 'border-[#1c1c1c] bg-[#060606] text-[#e8e3db] hover:border-[#2a2a2a] hover:shadow-[0_4px_24px_rgba(0,0,0,0.6)]'
+                    }`}
                   >
                     <div>
                       <div className="flex items-center justify-between mb-3">
                         <span
-                          className={`text-xs px-2.5 py-0.5 rounded-full border ${
+                          className={`text-xs px-2.5 py-0.5 rounded-full border font-medium ${
                             proj.status === 'in_progress'
-                              ? 'bg-[#c25e2e]/15 text-[#c25e2e] border-[#c25e2e]/30 font-medium'
+                              ? 'bg-[#c25e2e]/12 text-[#f0875a] border-[#c25e2e]/30'
                               : proj.status === 'unlocked'
-                              ? 'bg-[#ede5d5] text-[#544d45] border-[#ded3bf]'
-                              : 'bg-[#ede5d5]/60 text-[#8c8278] border-[#ded3bf]/60'
+                              ? isLight ? 'bg-[#f4efe5] text-[#544d45] border-[#e0d8cc]' : 'bg-[#111] text-[#888] border-[#1c1c1c]'
+                              : isLight ? 'bg-[#f4efe5]/60 text-[#9a9189] border-[#e0d8cc]/60' : 'bg-[#0a0a0a] text-[#444] border-[#111]'
                           }`}
                         >
                           {proj.status === 'in_progress'
@@ -1030,17 +1060,19 @@ export default function DashboardPage({
                             ? '✓ Unlocked'
                             : '○ Locked (Complete Milestone 4)'}
                         </span>
-                        <span className="text-xs text-[#8c8278]">{proj.difficulty}</span>
+                        <span className={`text-xs ${isLight ? 'text-[#9a9189]' : 'text-[#555]'}`}>{proj.difficulty}</span>
                       </div>
 
-                      <h3 className="text-base font-medium text-[#181614] mb-2 [text-wrap:balance]">{proj.title}</h3>
-                      <p className="text-xs text-[#665e56] leading-relaxed mb-4 font-normal [text-wrap:pretty]">{proj.desc}</p>
+                      <h3 className={`text-base font-semibold mb-2 [text-wrap:balance] ${isLight ? 'text-[#181614]' : 'text-white'}`}>{proj.title}</h3>
+                      <p className={`text-xs leading-relaxed mb-4 font-normal [text-wrap:pretty] ${isLight ? 'text-[#665e56]' : 'text-[#555]'}`}>{proj.desc}</p>
 
                       <div className="flex flex-wrap gap-1.5 mb-4">
                         {proj.tech.map((t) => (
                           <span
                             key={t}
-                            className="px-2 py-0.5 rounded-md bg-[#ede5d5] border border-[#ded3bf] text-xs text-[#544d45]"
+                            className={`px-2 py-0.5 rounded-md border text-xs ${
+                              isLight ? 'bg-[#f4efe5] border-[#e0d8cc] text-[#544d45]' : 'bg-[#111] border-[#1c1c1c] text-[#888]'
+                            }`}
                           >
                             {t}
                           </span>
@@ -1052,10 +1084,10 @@ export default function DashboardPage({
                       type="button"
                       disabled={proj.status === 'locked'}
                       onClick={() => showToast(`Project '${proj.title}' started!`, 'success')}
-                      className={`w-full py-2.5 rounded-full text-xs font-medium transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer active:scale-[0.98] active:translate-y-[0.5px] focus-visible:ring-2 focus-visible:ring-[#c25e2e]/60 focus-visible:ring-offset-2 focus-visible:outline-none ${
+                      className={`w-full py-2.5 rounded-full text-xs font-semibold transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer active:scale-[0.98] active:translate-y-[0.5px] focus-visible:ring-2 focus-visible:ring-[#c25e2e]/60 focus-visible:ring-offset-2 focus-visible:outline-none ${
                         proj.status === 'locked'
-                          ? 'bg-[#ede5d5]/40 text-[#a8a199] cursor-not-allowed'
-                          : 'bg-[#c25e2e] hover:bg-[#ad4f22] text-[#faf6ee] shadow-sm hover:shadow-md'
+                          ? isLight ? 'bg-[#f4efe5] text-[#9a9189] cursor-not-allowed' : 'bg-[#111] text-[#444] cursor-not-allowed'
+                          : 'bg-[#c25e2e] hover:bg-[#d96a35] text-white shadow-lg hover:shadow-xl'
                       }`}
                     >
                       {proj.status === 'locked' ? 'Locked Milestone' : 'Start Deliverable →'}
@@ -1089,11 +1121,11 @@ export default function DashboardPage({
               transition={{ duration: 0.15 }}
               className="space-y-6"
             >
-              <div className={`border-b pb-4 ${isLight ? 'border-[#ded4be]' : 'border-[#262320]'}`}>
-                <h1 className={`text-2xl font-normal tracking-tight [text-wrap:balance] ${isLight ? 'text-[#181614]' : 'text-[#faf6ee]'}`}>
+              <div className={`border-b pb-4 ${isLight ? 'border-[#e0d8cc]' : 'border-[#1c1c1c]'}`}>
+                <h1 className={`text-2xl font-light tracking-tight [text-wrap:balance] ${isLight ? 'text-[#181614]' : 'text-white'}`}>
                   Developer Portfolio &amp; Proof of Work
                 </h1>
-                <p className={`text-xs mt-1 font-normal [text-wrap:pretty] ${isLight ? 'text-[#6e665d]' : 'text-[#a8a199]'}`}>
+                <p className={`text-xs mt-1 font-normal [text-wrap:pretty] ${isLight ? 'text-[#6e665d]' : 'text-[#555]'}`}>
                   Verified platform achievements, milestone credentials, and earned developer badges.
                 </p>
               </div>
@@ -1110,25 +1142,27 @@ export default function DashboardPage({
                     key={ach.id || ach.achievement_id}
                     className={`p-5 rounded-2xl border backdrop-blur-xl transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-0.5 ${
                       ach.unlocked
-                        ? 'border-[#e5decb] bg-[#faf6ee] text-[#181614] shadow-sm hover:shadow-md'
-                        : 'border-[#262320] bg-[#141312] text-[#a8a199] opacity-60'
+                        ? isLight
+                          ? 'border-[#e0d8cc] bg-white text-[#181614] shadow-sm hover:shadow-md'
+                          : 'border-[#1c1c1c] bg-[#060606] text-[#e8e3db] shadow-sm hover:shadow-[0_4px_24px_rgba(0,0,0,0.6)]'
+                        : 'border-[#111] bg-[#060606] text-[#444] opacity-50'
                     }`}
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <Award className={`h-5 w-5 ${ach.unlocked ? 'text-[#c25e2e]' : 'text-[#8c8278]'}`} />
-                      <span className="text-xs text-[#8c8278]">
+                      <Award className={`h-5 w-5 ${ach.unlocked ? 'text-[#f0875a]' : 'text-[#333]'}`} />
+                      <span className={`text-xs ${isLight ? 'text-[#9a9189]' : 'text-[#444]'}`}>
                         {ach.unlocked ? '✓ Unlocked' : '○ In Progress'}
                       </span>
                     </div>
-                    <h3 className="text-sm font-medium text-[#181614] mb-1 [text-wrap:balance]">{ach.title}</h3>
-                    <p className="text-xs text-[#665e56] leading-relaxed font-normal [text-wrap:pretty]">{ach.description}</p>
+                    <h3 className={`text-sm font-semibold mb-1 [text-wrap:balance] ${isLight ? 'text-[#181614]' : 'text-white'}`}>{ach.title}</h3>
+                    <p className={`text-xs leading-relaxed font-normal [text-wrap:pretty] ${isLight ? 'text-[#665e56]' : 'text-[#555]'}`}>{ach.description}</p>
                   </div>
                 ))}
               </div>
             </motion.div>
           )}
 
-          {/* ══════════════ TAB 6: SETTINGS (WARM IVORY CARDS) ══════════════ */}
+          {/* ══════════════ TAB 6: SETTINGS ══════════════ */}
           {activeTab === 'settings' && (
             <motion.div
               key="settings"
@@ -1138,50 +1172,54 @@ export default function DashboardPage({
               transition={{ duration: 0.15 }}
               className="space-y-6 max-w-3xl"
             >
-              <div className={`border-b pb-4 ${isLight ? 'border-[#ded4be]' : 'border-[#262320]'}`}>
-                <h1 className={`text-2xl font-normal tracking-tight [text-wrap:balance] ${isLight ? 'text-[#181614]' : 'text-[#faf6ee]'}`}>
+              <div className={`border-b pb-4 ${isLight ? 'border-[#e0d8cc]' : 'border-[#1c1c1c]'}`}>
+                <h1 className={`text-2xl font-light tracking-tight [text-wrap:balance] ${isLight ? 'text-[#181614]' : 'text-white'}`}>
                   Account &amp; Workspace Settings
                 </h1>
-                <p className={`text-xs mt-1 font-normal [text-wrap:pretty] ${isLight ? 'text-[#6e665d]' : 'text-[#a8a199]'}`}>
+                <p className={`text-xs mt-1 font-normal [text-wrap:pretty] ${isLight ? 'text-[#6e665d]' : 'text-[#555]'}`}>
                   Manage your platform credentials, learning preferences, and active session.
                 </p>
               </div>
 
               <div className="space-y-4">
                 {/* Visual Theme Appearance Card */}
-                <div className="p-6 rounded-3xl border border-[#e5decb] bg-[#faf6ee] text-[#181614] space-y-4 shadow-sm hover:shadow-md transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]">
+                <div className={`p-6 rounded-3xl border space-y-4 shadow-sm hover:shadow-md transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                  isLight ? 'border-[#e0d8cc] bg-white text-[#181614]' : 'border-[#1c1c1c] bg-[#060606] text-[#e8e3db]'
+                }`}>
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-sm font-medium text-[#181614]">
-                      {isLight ? <Sun className="h-4 w-4 text-[#c25e2e]" /> : <Moon className="h-4 w-4 text-[#c25e2e]" />}
+                    <div className={`flex items-center gap-2 text-sm font-semibold ${isLight ? 'text-[#181614]' : 'text-white'}`}>
+                      {isLight ? <Sun className="h-4 w-4 text-[#c25e2e]" /> : <Moon className="h-4 w-4 text-[#f0875a]" />}
                       <span>Appearance &amp; Theme</span>
                     </div>
-                    <span className="text-xs px-2.5 py-0.5 rounded-full bg-[#ede5d5] text-[#544d45] font-medium capitalize">
+                    <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium capitalize ${
+                      isLight ? 'bg-[#f4efe5] text-[#544d45]' : 'bg-[#111] text-[#888]'
+                    }`}>
                       {theme} Theme Active
                     </span>
                   </div>
-                  <p className="text-xs text-[#665e56] [text-wrap:pretty]">
-                    Switch between Soft Black (Dark Theme) and Warm Ivory (Light Theme) with Burnt Orange accents.
+                  <p className={`text-xs [text-wrap:pretty] ${isLight ? 'text-[#665e56]' : 'text-[#555]'}`}>
+                    Switch between Pure Black (Dark Theme) and Warm Ivory (Light Theme) with Burnt Orange accents.
                   </p>
                   <div className="flex items-center gap-3 pt-1">
                     <button
                       type="button"
                       onClick={() => setTheme('dark')}
-                      className={`px-4 py-2 rounded-xl text-xs font-medium border transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer flex items-center gap-2 active:scale-95 focus-visible:ring-2 focus-visible:ring-[#c25e2e]/50 focus-visible:outline-none ${
+                      className={`px-4 py-2 rounded-xl text-xs font-semibold border transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer flex items-center gap-2 active:scale-95 focus-visible:ring-2 focus-visible:ring-[#c25e2e]/50 focus-visible:outline-none ${
                         !isLight
-                          ? 'border-[#c25e2e] bg-[#0e0d0c] text-[#faf6ee] shadow-sm'
-                          : 'border-[#ded3bf] bg-[#ede5d5] text-[#544d45] hover:border-[#c25e2e]/40'
+                          ? 'border-[#c25e2e] bg-black text-white shadow-sm'
+                          : 'border-[#e0d8cc] bg-[#f4efe5] text-[#544d45] hover:border-[#c25e2e]/40'
                       }`}
                     >
                       <Moon className="h-3.5 w-3.5" />
-                      <span>Soft Black (Dark)</span>
+                      <span>Pure Black (Dark)</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => setTheme('light')}
-                      className={`px-4 py-2 rounded-xl text-xs font-medium border transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer flex items-center gap-2 active:scale-95 focus-visible:ring-2 focus-visible:ring-[#c25e2e]/50 focus-visible:outline-none ${
+                      className={`px-4 py-2 rounded-xl text-xs font-semibold border transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer flex items-center gap-2 active:scale-95 focus-visible:ring-2 focus-visible:ring-[#c25e2e]/50 focus-visible:outline-none ${
                         isLight
-                          ? 'border-[#c25e2e] bg-[#fbf8f2] text-[#181614] shadow-sm'
-                          : 'border-[#ded3bf] bg-[#ede5d5] text-[#544d45] hover:border-[#c25e2e]/40'
+                          ? 'border-[#c25e2e] bg-white text-[#181614] shadow-sm'
+                          : 'border-[#1c1c1c] bg-[#111] text-[#888] hover:border-[#c25e2e]/40'
                       }`}
                     >
                       <Sun className="h-3.5 w-3.5" />
@@ -1191,21 +1229,27 @@ export default function DashboardPage({
                 </div>
 
                 {/* Profile Information */}
-                <div className="p-6 rounded-3xl border border-[#e5decb] bg-[#faf6ee] text-[#181614] space-y-4 shadow-sm hover:shadow-md transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]">
-                  <div className="flex items-center gap-2 text-sm font-medium text-[#181614]">
-                    <User className="h-4 w-4 text-[#c25e2e]" />
+                <div className={`p-6 rounded-3xl border space-y-4 shadow-sm hover:shadow-md transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                  isLight ? 'border-[#e0d8cc] bg-white text-[#181614]' : 'border-[#1c1c1c] bg-[#060606] text-[#e8e3db]'
+                }`}>
+                  <div className={`flex items-center gap-2 text-sm font-semibold ${isLight ? 'text-[#181614]' : 'text-white'}`}>
+                    <User className="h-4 w-4 text-[#f0875a]" />
                     <span>User Identity</span>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                     <div>
-                      <span className="text-[#665e56] block mb-1">Full Name</span>
-                      <div className="p-3 rounded-xl bg-[#ede5d5] border border-[#ded3bf] text-[#181614] font-normal">
+                      <span className={`block mb-1 ${isLight ? 'text-[#665e56]' : 'text-[#888]'}`}>Full Name</span>
+                      <div className={`p-3 rounded-xl border font-normal ${
+                        isLight ? 'bg-[#f4efe5] border-[#e0d8cc] text-[#181614]' : 'bg-[#111] border-[#1c1c1c] text-[#e8e3db]'
+                      }`}>
                         {user?.full_name || 'Harsh'}
                       </div>
                     </div>
                     <div>
-                      <span className="text-[#665e56] block mb-1">Email Address</span>
-                      <div className="p-3 rounded-xl bg-[#ede5d5] border border-[#ded3bf] text-[#181614] font-normal">
+                      <span className={`block mb-1 ${isLight ? 'text-[#665e56]' : 'text-[#888]'}`}>Email Address</span>
+                      <div className={`p-3 rounded-xl border font-normal ${
+                        isLight ? 'bg-[#f4efe5] border-[#e0d8cc] text-[#181614]' : 'bg-[#111] border-[#1c1c1c] text-[#e8e3db]'
+                      }`}>
                         {user?.email || 'user@technea.dev'}
                       </div>
                     </div>
@@ -1213,36 +1257,42 @@ export default function DashboardPage({
                 </div>
 
                 {/* Preferences */}
-                <div className="p-6 rounded-3xl border border-[#e5decb] bg-[#faf6ee] text-[#181614] space-y-4 shadow-sm hover:shadow-md transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]">
-                  <div className="flex items-center gap-2 text-sm font-medium text-[#181614]">
-                    <Shield className="h-4 w-4 text-[#c25e2e]" />
+                <div className={`p-6 rounded-3xl border space-y-4 shadow-sm hover:shadow-md transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                  isLight ? 'border-[#e0d8cc] bg-white text-[#181614]' : 'border-[#1c1c1c] bg-[#060606] text-[#e8e3db]'
+                }`}>
+                  <div className={`flex items-center gap-2 text-sm font-semibold ${isLight ? 'text-[#181614]' : 'text-white'}`}>
+                    <Shield className="h-4 w-4 text-[#f0875a]" />
                     <span>Learning Configuration</span>
                   </div>
                   <div className="space-y-3 text-xs">
-                    <div className="flex items-center justify-between p-3 rounded-xl bg-[#ede5d5] border border-[#ded3bf]">
+                    <div className={`flex items-center justify-between p-3 rounded-xl border ${
+                      isLight ? 'bg-[#f4efe5] border-[#e0d8cc]' : 'bg-[#111] border-[#1c1c1c]'
+                    }`}>
                       <div>
-                        <div className="text-[#181614] font-medium [text-wrap:pretty]">Active Engineering Focus</div>
-                        <div className="text-[#665e56] text-[11px] [text-wrap:pretty]">
+                        <div className={`font-semibold [text-wrap:pretty] ${isLight ? 'text-[#181614]' : 'text-white'}`}>Active Engineering Focus</div>
+                        <div className={`text-[11px] [text-wrap:pretty] ${isLight ? 'text-[#665e56]' : 'text-[#888]'}`}>
                           {activeRoadmap?.title || 'Full-Stack AI Engineer'}
                         </div>
                       </div>
                       <button
                         type="button"
                         onClick={() => setActiveTab('roadmaps')}
-                        className="text-xs text-[#c25e2e] hover:text-[#ad4f22] font-medium cursor-pointer active:scale-95 focus-visible:ring-2 focus-visible:ring-[#c25e2e]/50 focus-visible:outline-none rounded-md px-1 py-0.5 transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]"
+                        className="text-xs text-[#f0875a] hover:text-[#d96a35] font-semibold cursor-pointer active:scale-95 focus-visible:ring-2 focus-visible:ring-[#c25e2e]/50 focus-visible:outline-none rounded-md px-1 py-0.5 transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]"
                       >
                         Change Focus →
                       </button>
                     </div>
 
-                    <div className="flex items-center justify-between p-3 rounded-xl bg-[#ede5d5] border border-[#ded3bf]">
+                    <div className={`flex items-center justify-between p-3 rounded-xl border ${
+                      isLight ? 'bg-[#f4efe5] border-[#e0d8cc]' : 'bg-[#111] border-[#1c1c1c]'
+                    }`}>
                       <div>
-                        <div className="text-[#181614] font-medium [text-wrap:pretty]">AI Mentor Telemetry</div>
-                        <div className="text-[#665e56] text-[11px] [text-wrap:pretty]">
+                        <div className={`font-semibold [text-wrap:pretty] ${isLight ? 'text-[#181614]' : 'text-white'}`}>AI Mentor Telemetry</div>
+                        <div className={`text-[11px] [text-wrap:pretty] ${isLight ? 'text-[#665e56]' : 'text-[#888]'}`}>
                           Real-time lesson context synchronization enabled
                         </div>
                       </div>
-                      <span className="text-xs text-[#c25e2e] font-medium">Active</span>
+                      <span className="text-xs text-[#f0875a] font-semibold">Active</span>
                     </div>
                   </div>
                 </div>
@@ -1277,16 +1327,16 @@ export default function DashboardPage({
                   <Sparkles className="h-3.5 w-3.5" />
                   <span>AI Learning OS</span>
                 </div>
-                <h1 className={`text-2xl sm:text-3xl font-light tracking-tight ${isLight ? 'text-[#181614]' : 'text-[#fbf8f2]'}`}>
+                <h1 className={`text-2xl sm:text-3xl font-light tracking-tight ${isLight ? 'text-[#181614]' : 'text-white'}`}>
                   AI Technical Mentor Studio
                 </h1>
-                <p className={`text-xs sm:text-sm mt-1 ${isLight ? 'text-[#6e665d]' : 'text-[#a8a199]'}`}>
+                <p className={`text-xs sm:text-sm mt-1 ${isLight ? 'text-[#6e665d]' : 'text-[#888]'}`}>
                   Real-time architectural guidance, code reviews, and milestone explanations synchronized with {activeRoadmap?.title || 'your active roadmap'}.
                 </p>
               </div>
 
-              <div className={`rounded-3xl border overflow-hidden shadow-xl h-[650px] flex flex-col ${
-                isLight ? 'bg-[#faf6ee] border-[#e5decb]' : 'bg-[#141210] border-[#262320]'
+              <div className={`rounded-3xl border overflow-hidden shadow-2xl h-[650px] flex flex-col ${
+                isLight ? 'bg-white border-[#e0d8cc]' : 'bg-black border-[#1c1c1c]'
               }`}>
                 <DockedAIMentorCompanion
                   onMinimize={() => setActiveTab('overview')}
@@ -1303,7 +1353,7 @@ export default function DashboardPage({
         <aside
           aria-label="AI Technical Mentor Column"
           className={`hidden xl:block w-80 shrink-0 h-full border-l z-20 transition-colors duration-300 ${
-            isLight ? 'border-[#ded4be]' : 'border-[#262320]'
+            isLight ? 'border-[#ded4be] bg-white' : 'border-[#1c1c1c] bg-black'
           }`}
         >
           <DockedAIMentorCompanion

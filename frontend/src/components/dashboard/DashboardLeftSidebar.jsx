@@ -45,8 +45,8 @@ function DashboardLeftSidebar({
       aria-label="Dashboard Sidebar"
       className={`flex flex-col h-full justify-between border-r select-none px-4 py-6 transition-colors duration-300 ${
         isLight
-          ? 'bg-[#f0e9dc] border-[#ded4be] text-[#181614]'
-          : 'bg-[#141312] border-[#262320] text-[#faf6ee]'
+          ? 'bg-[#f5f0e8] border-[#e0d8cc] text-[#181614]'
+          : 'bg-black border-[#1c1c1c] text-[#e8e3db]'
       }`}
     >
       {/* ──────────────── Top Logo & Navigation ──────────────── */}
@@ -57,9 +57,8 @@ function DashboardLeftSidebar({
             as="div"
             size={28}
             textSizeClassName="text-[17px]"
-            textClassName={isLight ? 'text-[#181614]' : 'text-[#faf6ee]'}
+            textClassName={isLight ? 'text-[#181614]' : 'text-[#f0ebe3]'}
           />
-
 
           {/* Minimal, premium Theme Switch Button */}
           <button
@@ -69,8 +68,8 @@ function DashboardLeftSidebar({
             title={`Switch to ${isLight ? 'Dark' : 'Light'} theme`}
             className={`p-1.5 rounded-full border transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer flex items-center justify-center active:scale-95 focus-visible:ring-2 focus-visible:ring-[#c25e2e]/50 focus-visible:outline-none ${
               isLight
-                ? 'border-[#ded4be] bg-[#faf6ee] text-[#c25e2e] hover:bg-[#ffffff] shadow-xs'
-                : 'border-[#262320] bg-[#1a1816] text-[#e87a48] hover:bg-[#262320] hover:border-[#c25e2e]/40'
+                ? 'border-[#d8ccb6] bg-white text-[#c25e2e] hover:bg-[#f5f0e8] shadow-sm'
+                : 'border-[#2a2a2a] bg-[#111] text-[#e87a48] hover:bg-[#1a1a1a] hover:border-[#c25e2e]/50'
             }`}
           >
             {isLight ? (
@@ -82,7 +81,7 @@ function DashboardLeftSidebar({
         </div>
 
         {/* Nav Items */}
-        <div className="space-y-1">
+        <div className="space-y-0.5">
           {navItems.map((item) => {
             const isActive =
               activeTab === item.id || (item.id === 'portfolio' && activeTab === 'profile')
@@ -93,24 +92,29 @@ function DashboardLeftSidebar({
                 key={item.id}
                 type="button"
                 onClick={() => onSelectTab(item.id)}
-                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-normal transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-[#c25e2e]/50 focus-visible:outline-none ${
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-[#c25e2e]/50 focus-visible:outline-none ${
                   isActive
-                    ? 'bg-[#c25e2e]/15 text-[#e87a48] font-medium border border-[#c25e2e]/30'
+                    ? isLight
+                      ? 'bg-[#c25e2e]/10 text-[#c25e2e] font-semibold'
+                      : 'bg-[#c25e2e]/15 text-[#f0875a] font-semibold'
                     : isLight
-                    ? 'text-[#6e665d] hover:text-[#181614] hover:bg-[#181614]/5'
-                    : 'text-[#a8a199] hover:text-[#faf6ee] hover:bg-[#faf6ee]/5'
+                    ? 'font-normal text-[#5c5650] hover:text-[#181614] hover:bg-black/5'
+                    : 'font-normal text-[#666] hover:text-[#e8e3db] hover:bg-white/5'
                 }`}
               >
                 <Icon
                   className={`h-4 w-4 shrink-0 transition-colors duration-200 ${
                     isActive
-                      ? 'text-[#e87a48]'
+                      ? isLight ? 'text-[#c25e2e]' : 'text-[#f0875a]'
                       : isLight
                       ? 'text-[#7a7268]'
-                      : 'text-[#a8a199]'
+                      : 'text-[#555]'
                   }`}
                 />
                 <span className="[text-wrap:pretty]">{item.label}</span>
+                {isActive && (
+                  <span className={`ml-auto w-1.5 h-1.5 rounded-full ${isLight ? 'bg-[#c25e2e]' : 'bg-[#f0875a]'}`} />
+                )}
               </button>
             )
           })}
@@ -118,7 +122,7 @@ function DashboardLeftSidebar({
       </div>
 
       {/* ──────────────── Bottom User Profile matching reference ──────────────── */}
-      <div className={`pt-4 border-t ${isLight ? 'border-[#ded4be]' : 'border-[#262320]'}`}>
+      <div className={`pt-4 border-t ${isLight ? 'border-[#e0d8cc]' : 'border-[#1c1c1c]'}`}>
         <div className="flex items-center justify-between px-2 py-1">
           <div className="flex items-center gap-3">
             {avatarUrl ? (
@@ -128,15 +132,15 @@ function DashboardLeftSidebar({
                 className="h-7 w-7 rounded-full object-cover border border-[#c25e2e]/40"
               />
             ) : (
-              <div className={`h-7 w-7 rounded-full border flex items-center justify-center text-xs font-medium ${
+              <div className={`h-7 w-7 rounded-full border flex items-center justify-center text-xs font-semibold ${
                 isLight
-                  ? 'border-[#c25e2e]/40 bg-[#c25e2e]/10 text-[#c25e2e]'
-                  : 'border-[#e5decb]/30 bg-[#faf6ee]/10 text-[#faf6ee]'
+                  ? 'border-[#c25e2e]/50 bg-[#c25e2e]/10 text-[#c25e2e]'
+                  : 'border-[#c25e2e]/40 bg-[#c25e2e]/15 text-[#f0875a]'
               }`}>
                 {firstName[0]?.toUpperCase() || 'H'}
               </div>
             )}
-            <span className={`text-sm font-normal ${isLight ? 'text-[#181614]' : 'text-[#faf6ee]'}`}>
+            <span className={`text-sm font-medium ${isLight ? 'text-[#181614]' : 'text-[#e8e3db]'}`}>
               {firstName}
             </span>
           </div>
@@ -146,8 +150,8 @@ function DashboardLeftSidebar({
             onClick={onLogout}
             className={`p-1.5 rounded-lg transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer active:scale-95 focus-visible:ring-2 focus-visible:ring-[#c25e2e]/50 focus-visible:outline-none ${
               isLight
-                ? 'text-[#7a7268] hover:text-[#c25e2e] hover:bg-[#c25e2e]/10'
-                : 'text-[#a8a199] hover:text-[#e87a48] hover:bg-[#c25e2e]/10'
+                ? 'text-[#7a7268] hover:text-[#c25e2e] hover:bg-[#c25e2e]/8'
+                : 'text-[#555] hover:text-[#f0875a] hover:bg-[#c25e2e]/10'
             }`}
             title="Sign Out"
           >
